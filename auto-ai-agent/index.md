@@ -12,6 +12,7 @@ Prompts for continuously running local agents, shared autonomous behavior, monit
 * [Hermes curriculum orientation](hermes-curriculum-orient.md) - Verified self-orientation curriculum job.
 * [Hermes curriculum repository sweep](hermes-curriculum-reposweep.md) - Read-only GitHub triage curriculum job.
 * [Hermes curriculum Splunk investigation](hermes-curriculum-splunk.md) - Evidence-driven Splunk investigation curriculum job.
+* [GitHub specialist](github-specialist.md) - Platform-neutral GitHub operations prompt with tiered authority and verified results.
 * [Hermes daily fabric status](hermes-daily-fabric-status.md) - Hourly AI-fabric status and delta-reporting prompt.
 * [Hermes daily summary](hermes-daily-summary.md) - Once-daily delta-only operator rollup for the home channel.
 * [Hermes digest: anomaly hunt](hermes-digest-anomaly-hunt.md) - Twice-daily auto-delivered unmonitored-pattern anomaly hunt.
