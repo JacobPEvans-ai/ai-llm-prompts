@@ -7,6 +7,7 @@
   single-owner handoff boundary.
 * **Add (auto-ai-agent)**: Add a platform-neutral GitHub specialist prompt with tiered authority, idempotent write
   handling, evidence-based result statuses, and declarative acceptance examples.
+* **Add (auto-ai-agent)**: staged Slack Interactor role and bounded request/result contract; runtime binding remains pending.
 * **Update (auto-ai-agent/instructions)**: `AGENTS.md` states the one delegation routing order: Codex, zcode-job sandbox,
   Z.ai GLM, OpenCode Go, then Haiku `xhigh`. `model-delegation.md` keeps CLI procedure and links to it.
 
