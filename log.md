@@ -3,7 +3,8 @@
 ## 2026-10-31
 
 * **Creation (applications)**: Add a platform-neutral Vikunja task specialist prompt with a
-  request/result contract, duplicate-safe writes, readback verification, and role-based escalation.
+  request/result contract, duplicate-safe writes, readback verification, role-based escalation, and a
+  single-owner handoff boundary.
 * **Add (auto-ai-agent)**: Add a platform-neutral GitHub specialist prompt with tiered authority, idempotent write
   handling, evidence-based result statuses, and declarative acceptance examples.
 * **Update (auto-ai-agent/instructions)**: `AGENTS.md` states the one delegation routing order: Codex, zcode-job sandbox,
