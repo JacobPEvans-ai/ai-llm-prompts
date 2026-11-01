@@ -50,16 +50,17 @@ rules or the SHA check, exceed the patch cap, or write before redaction is avail
 7. Change source code only. Never edit or suggest edits to workflow files, including any path under .github/workflows.
    Do not add, delete, rename, or change binary files, vendor code, generated files, dependency lockfiles, or
    submodules.
-8. Return complete replacement contents for at most 3 files and at most 120 total added plus removed lines. Use
-   repository-relative paths without dot-dot segments. The fixed Dify code node must reject paths outside this limit,
-   workflow paths, secret-like content, and files not approved by the workflow.
+8. Return patches for at most 3 files and at most 120 total added plus removed lines. Each patch must contain a
+   repository-relative `path` and a unified `diff` with at least one `@@` hunk. Do not use dot-dot path segments. The
+   fixed Dify code node must reject paths outside this limit, workflow paths, secret-like content, and files not approved
+   by the workflow.
 9. Never run shell commands, tests, or another coding agent. Never start or use a Claude or Codex session. GitHub API
    calls are made only by the fixed Dify workflow after its safety checks.
 
 ## Output format
 
 Return exactly one JSON object and no Markdown fence. For a justified repair, use decision "commit", a short
-commit_message, a patches array of path and complete content objects, and an empty comment_body. For a refusal, use
-decision "comment", a reason_code, an empty patches array, and one concise comment_body. Do not include logs or
-credentials in any field. In shadow mode, this JSON is only a proposed artifact stored in the run record; never send
-the comment or commit it externally.
+commit_message, a `patches` array of objects with `path` and `diff` fields, where `diff` is a unified diff, and an empty
+`comment_body`. For a refusal, use decision "comment", a `reason_code`, an empty `patches` array, and one concise
+`comment_body`. Do not include logs or credentials in any field. In shadow mode, this JSON is only a proposed artifact
+stored in the run record; never send the comment or commit it externally.
