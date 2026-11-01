@@ -1,6 +1,7 @@
 name: code-simplifier
 owner: agent-platform
 home_platform: dify
+mode: shadow
 # Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
 # short-lived GitHub App installation token for the event repo; Dify holds no
 # PAT or App key.
@@ -16,23 +17,27 @@ mcp_servers: []
 privacy_class: public-code
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: pull_request
-    action:
-      - opened
-      - ready_for_review
-    org: dryvist
+mandate_binding:
+  required_fields: [repo, pr_number]
+  event: pull_request
+channels:
+  shadow: run_record_only
+  live: github.review
 memory_scope: none
 eval_set: agents/evals/code-simplifier.yaml
+promotion:
+  after_matching_shadow_runs: 20
+  against: agents/evals/code-simplifier.yaml # TBD-master
 identity: agent-code-simplifier
 secret_ref: agent-key/code-simplifier
 github_token_ref: github-token/code-simplifier
 guards:
   github.pulls.create_review:
-    repository_source: trigger_payload
-    pull_request_number_source: trigger_payload
+    bound_to:
+      repo: mandate.repo
+      pr_number: mandate.pr_number
+    repository_source: mandate.repo
+    pull_request_number_source: mandate.pr_number
     event: COMMENT
     event_enforced_in_code: true
     max_reviews_per_event: 1

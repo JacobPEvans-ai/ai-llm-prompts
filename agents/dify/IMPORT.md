@@ -3,10 +3,10 @@ type: Dify workflow import guide
 title: Dify workflow imports
 description: Import, configure, and publish the code-simplifier and ci-fixer workflows.
 tags: [dify, workflow, github, import]
-timestamp: 2026-11-01T22:32:19Z
+timestamp: 2026-11-01T22:43:08Z
 ---
 
-## Import steps
+## code-simplifier import and run
 
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
@@ -14,21 +14,42 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
    then add a chat model named `medium` for the router's `medium` role.
 2. Import [code-simplifier.dsl.yml](./code-simplifier.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, and `SHARED_PREFIX`. Store `OPENBAO_ROLE_ID` and
-   `OPENBAO_SECRET_ID` as secrets. Keep values out of this repository.
+   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and
+   `SHARED_PREFIX`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep values out of this repository.
 4. Publish the workflow.
-5. Copy the Webhook Trigger URL into the GitHub webhook relay route. Keep the URL reachable only from the relay.
-   The relay must verify `X-Hub-Signature-256` against the original request body, deduplicate `X-Hub-Delivery`,
-   forward `X-GitHub-Event`, `X-Hub-Delivery`, and the JSON payload, and set
-   `X-Relay-Signature-Verified: true` only after signature verification succeeds.
+5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
+   at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the
+   immutable Eval/Router Mandate as the `inputs` object. Use
+   `response_mode: "blocking"` and a stable caller identifier in `user`.
+
+   ```json
+   {
+     "inputs": {
+       "repo": "dryvist/<repository>",
+       "ref": "<branch>",
+       "head_sha": "<40-character commit SHA>",
+       "actor": "<GitHub actor>",
+       "event": "pull_request",
+       "strength": "<Eval/Router strength>",
+       "mode": "shadow",
+       "pr_number": 123
+     },
+     "response_mode": "blocking",
+     "user": "<stable caller identifier>"
+   }
+   ```
+
+   Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
+   and return the proposed review JSON and mandate trace in the workflow result. `mode: "live"` is comment-only:
+   it can submit a `COMMENT` review after the target is rechecked against the Mandate.
 
 ## Unverified for Dify 1.16.1
 
 - Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a live workspace.
-- Steps 2–5's Console labels, environment variable editor, publish flow, and Webhook Trigger URL location were not checked in a Dify 1.16.1 workspace.
-- The router's `medium` role and the relay's routing and deduplication behavior depend on the target deployment and were not exercised here.
+- Steps 2–5's Console labels, environment variable editor, publish flow, and Workflow Run API call were not checked in a Dify 1.16.1 workspace.
+- The router's `medium` role, Mandate values, and deployment API routing were not exercised here.
 
-## ci-fixer import steps
+## ci-fixer import and run
 
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
@@ -36,18 +57,43 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
    then add a chat model named `medium` for the router's `medium` role.
 2. Import [ci-fixer.dsl.yml](./ci-fixer.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `SHARED_PREFIX`, and `ENABLE_PUSH`. Store `OPENBAO_ROLE_ID` and
-   `OPENBAO_SECRET_ID` as secrets. Keep `ENABLE_PUSH` set to `false`; source writes are code-disabled until an
-   approved log-redaction service is wired in and the workflow guard is explicitly updated.
+   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`,
+   `SHARED_PREFIX`, and `ENABLE_PUSH`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep
+   `ENABLE_PUSH` set to `false` by default.
 4. Publish the workflow.
-5. Copy the Webhook Trigger URL into the GitHub webhook relay route for `check_run` events. The relay must verify
-   `X-Hub-Signature-256` against the original request body, deduplicate `X-Hub-Delivery`, forward
-   `X-GitHub-Event`, `X-Hub-Delivery`, and the JSON payload, and set `X-Relay-Signature-Verified: true` only after
-   signature verification succeeds.
+5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
+   at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the
+   immutable Eval/Router Mandate as the `inputs` object. Use
+   `response_mode: "blocking"` and a stable caller identifier in `user`.
+
+   ```json
+   {
+     "inputs": {
+       "repo": "dryvist/<repository>",
+       "ref": "<branch>",
+       "head_sha": "<40-character commit SHA>",
+       "actor": "<GitHub actor>",
+       "event": "check_run",
+       "strength": "<Eval/Router strength>",
+       "mode": "shadow",
+       "check_run_id": 123
+     },
+     "response_mode": "blocking",
+     "user": "<stable caller identifier>"
+   }
+   ```
+
+   Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
+   and return the proposed patch and mandate trace in the workflow result. Live mode requires `ENABLE_PUSH` to be
+   exactly `true`; source writes remain fail-closed while log redaction is unavailable.
 
 ## ci-fixer unverified for Dify 1.16.1
 
-- Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a live workspace.
-- Steps 2–5's Console labels, environment variable editor, publish flow, and Webhook Trigger URL location were not checked in a Dify 1.16.1 workspace.
-- The workflow's check_run input mapping, HTTP response fields, model provider binding, and webhook relay routing were not exercised in a Dify 1.16.1 workspace.
-- No log-redaction service is connected; model and Git Data writes remain blocked by code guards, and live GitHub behavior is unverified.
+- Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a
+  live workspace.
+- Steps 2–5's Console labels, environment variable editor, publish flow, and Workflow Run API call were not checked
+  in a Dify 1.16.1 workspace.
+- The workflow's check_run input mapping, HTTP response fields, model provider binding, and check-run-to-PR association
+  were not exercised in a Dify 1.16.1 workspace.
+- No log-redaction service is connected; source writes remain blocked by code guards, and live GitHub behavior is
+  unverified.
