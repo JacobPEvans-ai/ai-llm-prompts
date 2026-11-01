@@ -1,6 +1,10 @@
 name: ci-fixer
 owner: agent-platform
 home_platform: dify
+mode: shadow
+# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
+# short-lived GitHub App installation token for the event repo; Dify holds no
+# PAT or App key.
 prompt: agents/prompts/ci-fixer.md
 shared_prefix: shared/homelab.md
 tools:
@@ -18,15 +22,141 @@ tools:
   - github.issues.create_comment
 mcp_servers: []
 privacy_class: public-code
+# LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: check_run
-    action: completed
-    conclusion: failure
-    org: dryvist
+mandate_binding:
+  required_fields: [repo, ref, head_sha, strength]
+  event: check_run
+  push_strength: explicit
+channels:
+  shadow: run_record_only
+  live: [github.commit, github.comment]
 memory_scope: none
 eval_set: agents/evals/ci-fixer.yaml
+promotion:
+  after_matching_shadow_runs: 30
+  against: agents/evals/ci-fixer.yaml # TBD-master
 identity: agent-ci-fixer
-api_key_ref: openbao://llm-router-agent-keys/ci-fixer
+secret_ref: agent-key/ci-fixer
+github_token_ref: github-token/ci-fixer
+guards:
+  github.git.create_blob:
+    bound_to:
+      repo: mandate.repo
+      ref: mandate.ref
+      head_sha: mandate.head_sha
+      strength: mandate.strength
+    repository_source: mandate.repo
+    head_ref_source: mandate.ref
+    deny_if_mandate_value_missing_or_ambiguous: true
+    protected_ref_check:
+      api: github.repos.get_branch_rules
+      before_write: true
+      deny_refs: [main, develop]
+      deny_protected_refs: true
+      on_error: deny
+    expected_head_sha: must_equal_mandate.head_sha
+    patch_limit:
+      max_files: 3
+      max_added_plus_removed_lines: 120
+      enforce_before_any_git_data_write: true
+    log_redaction: required_before_any_git_data_write
+    if_log_redaction_unavailable: deny_git_data_writes_comment_only
+    token_scope:
+      permission: contents:write
+      repositories: [mandate_repo_only]
+      max_lifetime: 1h
+  github.git.create_tree:
+    bound_to:
+      repo: mandate.repo
+      ref: mandate.ref
+      head_sha: mandate.head_sha
+      strength: mandate.strength
+    repository_source: mandate.repo
+    head_ref_source: mandate.ref
+    deny_if_mandate_value_missing_or_ambiguous: true
+    protected_ref_check:
+      api: github.repos.get_branch_rules
+      before_write: true
+      deny_refs: [main, develop]
+      deny_protected_refs: true
+      on_error: deny
+    expected_head_sha: must_equal_mandate.head_sha
+    patch_limit:
+      max_files: 3
+      max_added_plus_removed_lines: 120
+      enforce_before_any_git_data_write: true
+    log_redaction: required_before_any_git_data_write
+    if_log_redaction_unavailable: deny_git_data_writes_comment_only
+    token_scope:
+      permission: contents:write
+      repositories: [mandate_repo_only]
+      max_lifetime: 1h
+  github.git.create_commit:
+    bound_to:
+      repo: mandate.repo
+      ref: mandate.ref
+      head_sha: mandate.head_sha
+      strength: mandate.strength
+    repository_source: mandate.repo
+    head_ref_source: mandate.ref
+    commit_parent_sha: mandate.head_sha
+    deny_if_mandate_value_missing_or_ambiguous: true
+    protected_ref_check:
+      api: github.repos.get_branch_rules
+      before_write: true
+      deny_refs: [main, develop]
+      deny_protected_refs: true
+      on_error: deny
+    expected_head_sha: must_equal_mandate.head_sha
+    patch_limit:
+      max_files: 3
+      max_added_plus_removed_lines: 120
+      enforce_before_any_git_data_write: true
+    log_redaction: required_before_any_git_data_write
+    if_log_redaction_unavailable: deny_git_data_writes_comment_only
+    token_scope:
+      permission: contents:write
+      repositories: [mandate_repo_only]
+      max_lifetime: 1h
+  github.git.update_ref:
+    bound_to:
+      repo: mandate.repo
+      ref: mandate.ref
+      head_sha: mandate.head_sha
+      strength: mandate.strength
+    repository_source: mandate.repo
+    head_ref_source: mandate.ref
+    deny_if_mandate_value_missing_or_ambiguous: true
+    protected_ref_check:
+      api: github.repos.get_branch_rules
+      before_write: true
+      deny_refs: [main, develop]
+      deny_protected_refs: true
+      on_error: deny
+    expected_head_sha: must_equal_mandate.head_sha
+    expected_old_ref_sha: must_equal_mandate.head_sha
+    force: false
+    patch_limit:
+      max_files: 3
+      max_added_plus_removed_lines: 120
+      enforce_before_any_git_data_write: true
+    log_redaction: required_before_any_git_data_write
+    if_log_redaction_unavailable: deny_git_data_writes_comment_only
+    token_scope:
+      permission: contents:write
+      repositories: [mandate_repo_only]
+      max_lifetime: 1h
+  github.issues.create_comment:
+    bound_to:
+      repo: mandate.repo
+      ref: mandate.ref
+      head_sha: mandate.head_sha
+    repository_source: mandate.repo
+    pull_request_number_source: matching_pr_in_mandate.repo_ref_head_sha
+    pull_request: must_match_mandate.head_sha
+    body: redact_secrets_and_never_include_raw_logs
+    token_scope:
+      permission: issues:write
+      repositories: [mandate_repo_only]
+      max_lifetime: 1h
