@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.36.0...v1.37.0) (2026-11-01)
+
+
+### Features
+
+* **agents:** let vikunja-clerk file and update tasks in guarded projects ([#183](https://github.com/dryvist/ai-llm-prompts/issues/183)) ([b76e7bf](https://github.com/dryvist/ai-llm-prompts/commit/b76e7bf8294fd09289b29e1fbf6961cd7f96a80f))
+
 ## [1.36.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.35.0...v1.36.0) (2026-11-01)
 
 
