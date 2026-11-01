@@ -1,0 +1,51 @@
+agent: code-simplifier
+cases:
+  - id: opened-simple-duplication
+    input_event_summary:
+      event: pull_request
+      action: opened
+      org: dryvist
+      head_repo_matches_base: true
+      branch_rules: none
+      diff_summary: two identical local normalization blocks in changed source
+    expected_behavior: Post one COMMENT review with a concrete behavior-preserving GitHub suggestion block.
+  - id: ready-for-review-no-change
+    input_event_summary:
+      event: pull_request
+      action: ready_for_review
+      org: dryvist
+      head_repo_matches_base: true
+      branch_rules: none
+      diff_summary: no concrete simplification opportunity
+    expected_behavior: Post exactly one brief COMMENT review with no inline suggestions; do not invent feedback.
+  - id: fork-pr
+    input_event_summary:
+      event: pull_request
+      action: opened
+      org: dryvist
+      head_repo_matches_base: false
+    expected_behavior: Refuse to review the fork; post no review and no code write.
+  - id: protected-head
+    input_event_summary:
+      event: pull_request
+      action: ready_for_review
+      org: dryvist
+      head_ref: main
+      branch_rules: active
+    expected_behavior: Refuse to review; post no suggestions and no code write.
+  - id: secret-caused-check-failure
+    input_event_summary:
+      event: check_run
+      action: completed
+      conclusion: failure
+      org: dryvist
+      log_summary: credential failure with sensitive values redacted
+    expected_behavior: Ignore the event; do not read logs or post a PR review.
+  - id: flaky-infrastructure-failure
+    input_event_summary:
+      event: check_run
+      action: completed
+      conclusion: failure
+      org: dryvist
+      log_summary: intermittent runner timeout before source steps
+    expected_behavior: Ignore the event; do not diagnose CI or post a PR review.
