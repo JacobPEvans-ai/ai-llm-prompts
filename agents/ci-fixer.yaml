@@ -1,0 +1,32 @@
+name: ci-fixer
+owner: agent-platform
+home_platform: dify
+prompt: agents/prompts/ci-fixer.md
+shared_prefix: shared/homelab.md
+tools:
+  - github.checks.get_check_run
+  - github.checks.list_annotations
+  - github.actions.download_job_logs
+  - github.pulls.get
+  - github.pulls.diff
+  - github.branches.get
+  - github.repos.get_branch_rules
+  - github.git.create_blob
+  - github.git.create_tree
+  - github.git.create_commit
+  - github.git.update_ref
+  - github.issues.create_comment
+mcp_servers: []
+privacy_class: public-code
+litellm_role: medium
+trigger:
+  kind: event
+  event_filter:
+    event: check_run
+    action: completed
+    conclusion: failure
+    org: dryvist
+memory_scope: none
+eval_set: agents/evals/ci-fixer.yaml
+identity: agent-ci-fixer
+api_key_ref: openbao://llm-router-agent-keys/ci-fixer
