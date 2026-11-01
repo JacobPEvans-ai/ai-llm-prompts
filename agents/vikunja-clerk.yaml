@@ -4,30 +4,45 @@ home_platform: dify
 prompt: agents/prompts/vikunja-clerk.md
 shared_prefix: shared/homelab.md
 tools:
-  # The deployed @democratize-technology/vikunja-mcp@0.2.0 registers this MCP tool.
+  # The upstream tool supports list/get/create/update; writes remain guarded before dispatch.
   - vikunja_task_crud.list
   - vikunja_task_crud.get
+  - vikunja_task_crud.create
+  - vikunja_task_crud.update
 mcp_servers: [vikunja]
 privacy_class: internal
 # LiteLLM router role, not a model ID.
 litellm_role: small
 trigger:
   kind: call
-memory_scope: hindsight/vikunja-clerk
+mode: shadow # shadow or live
+mandate_binding:
+  write_tools: [vikunja_task_crud.create, vikunja_task_crud.update]
+  from_fields: [caller, operation, project_id, task_id, title, description, due_date, priority]
+  source: structured_fields_only
+  immutable: true
+channels: [caller]
+memory_scope: none
+mcp_access: {vikunja: own_litellm_key_only}
+callers: any
 eval_set: agents/evals/vikunja-clerk.yaml
 identity: agent-vikunja-clerk
-secret_ref: agent-key/vikunja-clerk
+api_key_ref: openbao://agent-key/vikunja-clerk
 guards:
   vikunja:
     tool_allowlist: [vikunja_task_crud]
     tool_allowlist_enforced_in_code: true
     operation_allowlist:
-      vikunja_task_crud: [list, get]
+      vikunja_task_crud: [list, get, create, update]
     operation_allowlist_enforced_in_code: true
     deny_operations:
-      - create
-      - update
       - delete
+      - bulk-*
+      - move
+      - move-*
+      - move-to-project
+      - project-move
+      - project-move-*
       - comment
       - label
       - apply-label
@@ -41,6 +56,29 @@ guards:
       - unrelate
       - add-reminder
       - remove-reminder
+    allowed_projects_ref: policy://vikunja-clerk/allowed-projects
+    denied_projects_ref: policy://vikunja-clerk/denied-projects
+    default_project_ref: policy://vikunja-clerk/inbox
+    # HARD: Denied client trees, the partner tree, and the maintenance-window project are never written. Only its own machinery writes the maintenance-window project. Deny wins even when the allowed policy also names a denied project.
+    denied_projects_never_written: true
+    deny_wins: true
+    unknown_or_unscoped_project: refuse
+    create_without_named_project: inbox
+    allowed_projects_environment_variable: VIKUNJA_ALLOWED_PROJECTS
+    denied_projects_environment_variable: VIKUNJA_DENIED_PROJECTS
+    inbox_project_environment_variable: VIKUNJA_INBOX_PROJECT_ID
+    mode_environment_variable: VIKUNJA_MODE
+    project_id_argument: projectId # Structured mandate field: project_id
+    task_id_argument: id # Structured mandate field: task_id
+    project_scope_enforced_in_code: true
+    create_requires_project_id_in_allowed_projects: true
+    update_requires_existing_task_project_in_allowed_projects: true
+    update_project_id_must_match_existing_task: true
+    update_project_id_change_enforced_in_code: true
+    mode_enforced_in_code: true
+    shadow_mode:
+      dispatch_writes: false
+      return_intended_call: true
     deny_unknown_tools_and_operations: true
     enforce_before_dispatch: true
     on_error: deny
