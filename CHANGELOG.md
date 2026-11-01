@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.0...v1.37.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **agents:** tighten fleet agent guards, triggers and eval fixtures ([#185](https://github.com/dryvist/ai-llm-prompts/issues/185)) ([05b8fed](https://github.com/dryvist/ai-llm-prompts/commit/05b8fed0149582273a8d1063c0131b1506c2eccb))
+
 ## [1.37.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.36.0...v1.37.0) (2026-11-01)
 
 
