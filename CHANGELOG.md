@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.30.0...v1.31.0) (2026-11-01)
+
+
+### Features
+
+* **prompts:** add a staged Vikunja specialist contract ([#170](https://github.com/dryvist/ai-llm-prompts/issues/170)) ([b60d35e](https://github.com/dryvist/ai-llm-prompts/commit/b60d35e59d8ef5d9bc20fa753ec4d2bad53fdd95))
+
 ## [1.30.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.29.2...v1.30.0) (2026-11-01)
 
 
