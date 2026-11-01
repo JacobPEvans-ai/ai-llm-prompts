@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.34.0...v1.35.0) (2026-11-01)
+
+
+### Features
+
+* **agents:** add the vikunja-clerk agent definition ([#179](https://github.com/dryvist/ai-llm-prompts/issues/179)) ([1463a11](https://github.com/dryvist/ai-llm-prompts/commit/1463a11deb1b856b81914b5877129be980e579a3))
+
 ## [1.34.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.33.0...v1.34.0) (2026-11-01)
 
 
