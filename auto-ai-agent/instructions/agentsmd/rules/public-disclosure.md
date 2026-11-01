@@ -43,6 +43,7 @@ public docs site directly — the publisher projection alone turns private sourc
 PR. When a change lands in any repo, update the pages that describe it in the private source in the same
 session (its `docs-sync` skill does this). The private source may record sensitive facts; it never carries a
 raw live secret, private key, or recovery code — those live only in the secret store.
+For what belongs in docs, see [Documentation scope](on-demand/okf.md#documentation-scope).
 
 **Describe scrubs in categories, not mappings.** A sanitization sweep's PR/commit names the **category**
 removed ("real hostnames → placeholders"), never the **real-value → placeholder mapping**
