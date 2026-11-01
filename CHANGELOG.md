@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.35.0...v1.36.0) (2026-11-01)
+
+
+### Features
+
+* **agents:** run fleet agents in shadow mode bound to a mandate ([#181](https://github.com/dryvist/ai-llm-prompts/issues/181)) ([e34b783](https://github.com/dryvist/ai-llm-prompts/commit/e34b783d7fbcfd7565f2243bf064ca8740bad405))
+
 ## [1.35.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.34.0...v1.35.0) (2026-11-01)
 
 
