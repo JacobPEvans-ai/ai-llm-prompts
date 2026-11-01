@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T08:44:13-04:00"
+timestamp: "2026-11-01T11:14:58Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -26,6 +26,14 @@ human-readable, agent-parseable, and version-control compatible. There is no cen
 no required tooling — plain text readers can consume any OKF bundle.
 
 Canonical spec: [GoogleCloudPlatform/knowledge-catalog — okf/SPEC.md](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
+
+## Documentation scope
+
+- Central docs hold durable, cross-repo knowledge: architecture, conventions, and how systems fit together.
+- Keep specific incidents out of docs. Route them to the incident tracker.
+- Keep existing tasks, follow-ups, one-off fixes, and session records out of docs. Route them to the task tracker.
+- Keep repo-specific details in that repo's docs. Central pages link there instead of copying those details.
+- Give each fact one canonical home. Link to it; never restate it.
 
 ## Bundle Structure
 
