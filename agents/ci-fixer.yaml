@@ -24,6 +24,13 @@ mcp_servers: []
 privacy_class: public-code
 # LiteLLM router role, not a model ID.
 litellm_role: medium
+trigger:
+  kind: event
+  event_filter:
+    event: check_run
+    action: completed
+    conclusion: failure
+    org: dryvist
 mandate_binding:
   required_fields: [repo, ref, head_sha, strength]
   event: check_run

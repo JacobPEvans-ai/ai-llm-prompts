@@ -10,8 +10,17 @@ timestamp: 2026-11-01T22:43:08Z
 
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
+## Prompt synchronization
+
+Dify system prompts are copies of `agents/prompts/<name>.md` and must be re-synced whenever those files change.
+
+After editing either canonical prompt in `agents/prompts/`, copy its complete body, stripping only YAML/OKF
+frontmatter, into the matching Dify DSL system prompt. Preserve `{{#env.SHARED_PREFIX#}}` as the separate prefix.
+Dify cannot include the prompt files directly, so verify the copied text against the canonical prompt before import.
+
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then add a chat model named `medium` for the router's `medium` role.
+   then configure the `medium` LiteLLM router role alias. The Dify workflow model field takes the role name `medium`,
+   not a model ID.
 2. Import [code-simplifier.dsl.yml](./code-simplifier.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
    `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and
@@ -54,7 +63,8 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then add a chat model named `medium` for the router's `medium` role.
+   then configure the `medium` LiteLLM router role alias. The Dify workflow model field takes the role name `medium`,
+   not a model ID.
 2. Import [ci-fixer.dsl.yml](./ci-fixer.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
    `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`,
