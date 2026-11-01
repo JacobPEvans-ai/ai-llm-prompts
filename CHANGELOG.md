@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.32.0...v1.33.0) (2026-11-01)
+
+
+### Features
+
+* **rules:** define the scope of central documentation ([#175](https://github.com/dryvist/ai-llm-prompts/issues/175)) ([4137f0d](https://github.com/dryvist/ai-llm-prompts/commit/4137f0db679a3292b888914be0a4f659abce600d))
+
 ## [1.32.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.31.0...v1.32.0) (2026-11-01)
 
 
