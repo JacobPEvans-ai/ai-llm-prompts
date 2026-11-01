@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.32.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.31.0...v1.32.0) (2026-11-01)
+
+
+### Features
+
+* **prompts:** add a staged Slack interactor contract ([e3d8e7c](https://github.com/dryvist/ai-llm-prompts/commit/e3d8e7c3caf3632f6e150f84cfaa78a322e28e36))
+* **prompts:** add a staged Slack interactor contract ([#171](https://github.com/dryvist/ai-llm-prompts/issues/171)) ([488366e](https://github.com/dryvist/ai-llm-prompts/commit/488366e09db4ba3def760b4dab56fb6190db815a))
+
+
+### Bug Fixes
+
+* allow authorized first Slack sends without correlation state ([73491b5](https://github.com/dryvist/ai-llm-prompts/commit/73491b5d852616f6a352ac4d8e1dcff9a1559fc7))
+* **prompts:** keep the Slack interactor contract concise ([3be4ce2](https://github.com/dryvist/ai-llm-prompts/commit/3be4ce2c0afe2d8d060aa16738937747e918694b))
+
 ## [1.31.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.30.0...v1.31.0) (2026-11-01)
 
 
