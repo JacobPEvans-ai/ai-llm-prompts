@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.37.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.1...v1.37.2) (2026-11-01)
+
+
+### Bug Fixes
+
+* **agents:** take vikunja-clerk scope from the Mandate and refuse incidents by default ([#187](https://github.com/dryvist/ai-llm-prompts/issues/187)) ([13c710e](https://github.com/dryvist/ai-llm-prompts/commit/13c710e5104d9be9cc7497dc336c5e4d6da28bf7))
+
 ## [1.37.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.0...v1.37.1) (2026-11-01)
 
 
