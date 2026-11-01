@@ -17,6 +17,12 @@ mcp_servers: []
 privacy_class: public-code
 # LiteLLM router role, not a model ID.
 litellm_role: medium
+trigger:
+  kind: event
+  event_filter:
+    event: pull_request
+    action: opened
+    org: dryvist
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request
@@ -60,7 +66,7 @@ guards:
       max_changed_lines: 6000
       enforce_before_review: true
     token_scope:
-      permissions: [pull_requests:write, contents:read]
-      deny_permissions: [contents:write]
+      permissions: ["pull_requests:write", "contents:read"]
+      deny_permissions: ["contents:write"]
       repositories: [trigger_event_repository_only]
       max_lifetime: 1h
