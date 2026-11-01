@@ -59,7 +59,7 @@ guards:
     allowed_projects_ref: policy://vikunja-clerk/allowed-projects
     denied_projects_ref: policy://vikunja-clerk/denied-projects
     default_project_ref: policy://vikunja-clerk/inbox
-    # HARD: Denied client trees, the partner tree, and the maintenance-window project are never written. Only its own machinery writes the maintenance-window project. Deny wins even when the allowed policy also names a denied project.
+    # Denied projects are never written; deny wins.
     denied_projects_never_written: true
     deny_wins: true
     unknown_or_unscoped_project: refuse
