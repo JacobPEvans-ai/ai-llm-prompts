@@ -4,6 +4,8 @@ System and user prompt assets consumed by applications and infrastructure servic
 
 ## Prompts
 
+* [Vikunja task specialist](vikunja-specialist.md) - Portable task-domain contract for native Vikunja
+  operations and verified progress records.
 * [LangGraph homelab assistant](langgraph-homelab-assistant.md) - System prompt for the minimal self-hosted LangGraph ReAct agent.
 * [Nix AI code explanation example](nix-ai-code-explain-example.md) - Executable example system prompt for patient code explanation.
 * [Nix AI review analysis workflow example](nix-ai-code-review-analysis-example.md) - First LLM-call prompt in the executable code-review workflow example.
