@@ -1,0 +1,46 @@
+name: vikunja-clerk
+owner: agent-platform
+home_platform: dify
+prompt: agents/prompts/vikunja-clerk.md
+shared_prefix: shared/homelab.md
+tools:
+  # The deployed @democratize-technology/vikunja-mcp@0.2.0 registers this MCP tool.
+  - vikunja_task_crud.list
+  - vikunja_task_crud.get
+mcp_servers: [vikunja]
+privacy_class: internal
+# LiteLLM router role, not a model ID.
+litellm_role: small
+trigger:
+  kind: call
+memory_scope: hindsight/vikunja-clerk
+eval_set: agents/evals/vikunja-clerk.yaml
+identity: agent-vikunja-clerk
+secret_ref: agent-key/vikunja-clerk
+guards:
+  vikunja:
+    tool_allowlist: [vikunja_task_crud]
+    tool_allowlist_enforced_in_code: true
+    operation_allowlist:
+      vikunja_task_crud: [list, get]
+    operation_allowlist_enforced_in_code: true
+    deny_operations:
+      - create
+      - update
+      - delete
+      - comment
+      - label
+      - apply-label
+      - remove-label
+      - assign
+      - unassign
+      - bulk-create
+      - bulk-update
+      - bulk-delete
+      - relate
+      - unrelate
+      - add-reminder
+      - remove-reminder
+    deny_unknown_tools_and_operations: true
+    enforce_before_dispatch: true
+    on_error: deny
