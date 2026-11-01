@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.33.0...v1.34.0) (2026-11-01)
+
+
+### Features
+
+* **agents:** add the ci-fixer and code-simplifier agent definitions ([#177](https://github.com/dryvist/ai-llm-prompts/issues/177)) ([b5956b9](https://github.com/dryvist/ai-llm-prompts/commit/b5956b9c45f836f7a2b579f4feddc34b751268b4))
+
 ## [1.33.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.32.0...v1.33.0) (2026-11-01)
 
 
