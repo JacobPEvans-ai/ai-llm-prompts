@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.29.2...v1.30.0) (2026-11-01)
+
+
+### Features
+
+* **prompts:** add a draft GitHub specialist contract ([b59709e](https://github.com/dryvist/ai-llm-prompts/commit/b59709e4f59359a38857f996a503023967daff2d))
+* **prompts:** add a draft GitHub specialist contract ([#169](https://github.com/dryvist/ai-llm-prompts/issues/169)) ([ebfe323](https://github.com/dryvist/ai-llm-prompts/commit/ebfe323c1383e11bf66d7ba8f3f8327851f63f81))
+
 ## [1.29.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.29.1...v1.29.2) (2026-10-31)
 
 
