@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.47.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.47.0...v1.47.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **rules:** state the 10-minute component rule in the operator's terms ([#209](https://github.com/dryvist/ai-llm-prompts/issues/209)) ([6c345f7](https://github.com/dryvist/ai-llm-prompts/commit/6c345f730a15fcda4c33d5506821c5806702fec6))
+
 ## [1.47.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.46.0...v1.47.0) (2026-11-02)
 
 
