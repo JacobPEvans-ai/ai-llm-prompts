@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.44.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.43.0...v1.44.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** score expected output by field, patches by behavior, and the rubric with two judges ([#201](https://github.com/dryvist/ai-llm-prompts/issues/201)) ([e8d4914](https://github.com/dryvist/ai-llm-prompts/commit/e8d49143ae0c91b527c92e7712405ca8151d7ad0))
+
 ## [1.43.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.42.0...v1.43.0) (2026-11-02)
 
 
