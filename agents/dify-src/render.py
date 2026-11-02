@@ -35,20 +35,6 @@ def _repo_file(value, field):
 
 
 def _system_prompt(agent):
-    exception = agent.get("dify_system_prompt_exception")
-    if exception is not None:
-        if not isinstance(exception, dict) or not exception.get("node") or not exception.get("reason"):
-            raise ValueError("dify_system_prompt_exception must declare a node and reason")
-        source = _repo_file(exception.get("source"), "dify_system_prompt_exception.source")
-        try:
-            source.relative_to(SOURCE_ROOT)
-        except ValueError as error:
-            raise ValueError("Dify system-prompt exceptions must use a source under agents/dify-src/") from error
-        prompt = source.read_text().strip()
-        if not prompt:
-            raise ValueError(f"Dify system-prompt exception source is empty: {source.relative_to(ROOT)}")
-        return prompt, exception["source"]
-
     shared_prefix = _repo_file(agent.get("shared_prefix"), "shared_prefix")
     canonical_prompt = _repo_file(agent.get("prompt"), "prompt")
     prompt = "\n\n".join((prompt_body(shared_prefix).rstrip(), prompt_body(canonical_prompt).strip()))
