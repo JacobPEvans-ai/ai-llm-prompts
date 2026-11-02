@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.41.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.40.0...v1.41.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** add contract-derived parse expectations to the vikunja-clerk eval ([#195](https://github.com/dryvist/ai-llm-prompts/issues/195)) ([e3954a9](https://github.com/dryvist/ai-llm-prompts/commit/e3954a96bd386859e9594f2a50afa0d819df1e5e))
+
 ## [1.40.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.39.0...v1.40.0) (2026-11-02)
 
 
