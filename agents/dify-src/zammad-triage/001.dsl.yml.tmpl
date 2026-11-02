@@ -1,0 +1,56 @@
+                if not https(a) or not p or '..' in p.split('/'): raise ValueError()
+                c=req(a.rstrip('/')+'/v1/auth/approle/login','POST',{'Content-Type':'application/json'},json.dumps({'role_id':r,'secret_id':s}).encode())['auth']['client_token']
+                d=req(a.rstrip('/')+'/v1/'+p.strip('/'),h={'X-Vault-Token':c})['data']; t=d.get('token') or d.get('data',{}).get('token')
+                if not isinstance(t,str) or not t: raise ValueError()
+                return t
+            def bind(a,r):
+                k=a[K]; i=r['id']
+                if k=='rank': return 'PUT','/api/v1/tickets/'+i,{'priority_id':P[a['priority']]}
+                if k=='tag': return 'POST','/api/v1/tags/add',{'object':'Ticket','o_id':int(i),'item':a['tag']}
+                body='Triage (automated): proposed priority '+a['priority']+'; reason '+a['reason']+'.'
+                return 'POST','/api/v1/ticket_articles',{'ticket_id':int(i),'type':'note','internal':True,'content_type':'text/plain','body':body}
+            def main(text,refs,pol,ok,mode,base,addr,role,secret,path):
+                mode='live' if LIVE and mode=='live' else 'shadow'; empty={'actions':'[]','results':'[]','mode':mode}
+                try:
+                    p=json.loads(pol); by={r[I]:r for r in json.loads(refs)}; obj=json.loads(text)
+                    if not ok or not p.get('ok') or not isinstance(obj,dict) or set(obj)!={'actions'} or not isinstance(obj['actions'],list) or len(obj['actions'])>20: return empty
+                    for a in obj['actions']:
+                        if not isinstance(a,dict) or a.get(K) not in SH or set(a)!=SH[a[K]] or type(a[I]) is not int or a[I] not in by: return empty
+                        if a[K] in ('rank','note') and a['priority'] not in P or a[K]=='note' and a['reason'] not in R: return empty
+                        if a[K]=='propose_incident' and a['reason']!='incident_candidate' or a[K]=='tag' and type(a['tag'])!=str: return empty
+                    proposals={a[I] for a in obj['actions'] if a[K]=='propose_incident'}; actions=[]; plan=[]
+                    writable=set(p['allowed'])-set(p['readonly'])-set(p['denied'])
+                    for a in obj['actions']:
+                        i,k=a[I],a[K]; r=by[i]; g=r['group_id']
+                        if g not in p['read'] or g in p['readonly']: continue
+                        if k=='propose_incident': actions.append(a); continue
+                        if g not in writable or i in proposals or k=='tag' and a['tag'] not in p['tags'] or not re.fullmatch(r'[0-9]+',r['id']): continue
+                        actions.append(a); plan.append(bind(a,r))
+                    out=[]
+                    if mode=='live' and plan and https(base):
+                        tk=token(addr,role,secret,path); h={'Authorization':'Token token='+tk,'Content-Type':'application/json'}
+                        for n,(m,u,b) in enumerate(plan):
+                            try: req(base.rstrip('/')+u,m,h,json.dumps(b).encode()); out.append({'ok':True,'path':u})
+                            except Exception:
+                                out+=[{'ok':False,'path':u}]+[{'ok':False,'path':x[1],'denied':True} for x in plan[n+1:]]; break
+                    return {'actions':json.dumps(actions),'results':json.dumps(out),'mode':mode}
+                except Exception: return empty
+          code_language: python3
+          outputs: {actions: {type: string}, results: {type: string}, mode: {type: string}}
+          title: Guard and dispatch
+          type: code
+          variables:
+            - {variable: text, value_selector: [triage, text]}
+            - {variable: refs, value_selector: [fetch, refs]}
+            - {variable: pol, value_selector: [fetch, pol]}
+            - {variable: ok, value_selector: [fetch, ok]}
+            - {variable: mode, value_selector: [env, ZAMMAD_TRIAGE_MODE]}
+            - {variable: base, value_selector: [env, ZAMMAD_API_BASE]}
+            - {variable: addr, value_selector: [env, OPENBAO_ADDR]}
+            - {variable: role, value_selector: [env, OPENBAO_ROLE_ID]}
+            - {variable: secret, value_selector: [env, OPENBAO_SECRET_ID]}
+            - {variable: path, value_selector: [env, ZAMMAD_TOKEN_PATH]}
+        id: guard
+        position: {x: 940, y: 300}
+        type: custom
+      - {data: {outputs: [{variable: actions, value_selector: [guard, actions]}, {variable: mode, value_selector: [guard, mode]}, {variable: results, value_selector: [guard, results]}], title: Output, type: end}, id: done, position: {x: 1240, y: 300}, type: custom}

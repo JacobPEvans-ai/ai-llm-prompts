@@ -1,0 +1,326 @@
+app:
+  description: Bounded CI repair for eligible same-repository pull requests; source
+    writes stay disabled until log redaction is available.
+  icon: "\U0001F916"
+  icon_background: "#D5F5F6"
+  mode: workflow
+  name: ci-fixer
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000001
+      name: OPENBAO_ADDR
+      value: ''
+      value_type: string
+      description: OpenBao base URL supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000002
+      name: OPENBAO_ROLE_ID
+      value: ''
+      value_type: secret
+      description: OpenBao AppRole role ID supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000003
+      name: OPENBAO_SECRET_ID
+      value: ''
+      value_type: secret
+      description: OpenBao AppRole secret ID supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000004
+      name: GITHUB_API_BASE
+      value: ''
+      value_type: string
+      description: GitHub API base URL supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000005
+      name: GITHUB_TOKEN_MINT_PATH
+      value: ''
+      value_type: string
+      description: Approved installation-token mint path supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000007
+      name: ENABLE_PUSH
+      value: 'false'
+      value_type: string
+      description: Source writes require the exact value true and all code guards.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000008
+      name: GITHUB_TOKEN_WRITE_SET
+      value: ''
+      value_type: string
+      description: OpenBao GitHub token set used for live comments and source writes.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000009
+      name: GITHUB_TOKEN_READ_SET
+      value: ''
+      value_type: string
+      description: OpenBao read-only GitHub token set used in shadow mode.
+      selector: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: login-parse
+        source: openbao_login
+        sourceHandle: source
+        target: parse_openbao
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
+        id: login-branch
+        source: parse_openbao
+        sourceHandle: source
+        target: login_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: login-failed
+        source: login_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: mint-parse
+        source: mint_github_token
+        sourceHandle: source
+        target: parse_github_token
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
+        id: token-branch
+        source: parse_github_token
+        sourceHandle: source
+        target: token_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
+        id: token-ready
+        source: token_gate
+        sourceHandle: ready
+        target: get_check_run
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: token-failed
+        source: token_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: http-request
+        id: pr-rules
+        source: get_pull_request
+        sourceHandle: source
+        target: get_branch_rules
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: http-request
+        id: rules-files
+        source: get_branch_rules
+        sourceHandle: source
+        target: get_pull_files
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: http-request
+        id: files-head-commit
+        source: get_pull_files
+        sourceHandle: source
+        target: get_head_commit
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: preflight-checks
+        source: get_head_commit
+        sourceHandle: source
+        target: guard_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: code
+        id: preflight-branch
+        source: guard_context
+        sourceHandle: source
+        target: prepare_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
+        id: context-preflight
+        source: prepare_context
+        sourceHandle: source
+        target: preflight_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: if-else
+        id: preflight-eligible
+        source: preflight_gate
+        sourceHandle: eligible
+        target: safe_context_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: preflight-comment
+        source: preflight_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: llm
+        id: safe-context-model
+        source: safe_context_gate
+        sourceHandle: safe
+        target: fixer_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: unsafe-context-comment
+        source: safe_context_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: code
+        id: llm-validate
+        source: fixer_llm
+        sourceHandle: source
+        target: validate_patch
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
+        id: push-authorized
+        source: push_gate
+        sourceHandle: eligible
+        target: create_blob
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: blob-parse
+        source: create_blob
+        sourceHandle: source
+        target: parse_blob
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: recheck-guard
+        source: recheck_pull_request

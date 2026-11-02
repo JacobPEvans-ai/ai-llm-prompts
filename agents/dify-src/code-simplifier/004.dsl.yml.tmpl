@@ -1,0 +1,270 @@
+                body = result.get("review_body", "") if isinstance(result, dict) else ""
+                if decision == "refuse" or not isinstance(body, str) or not body or SECRET_RE.search(body):
+                    body, comments = generic, []
+                valid_comments = []
+                if isinstance(comments, list) and len(comments) <= 5:
+                    for comment in comments:
+                        if not isinstance(comment, dict):
+                            continue
+                        path, line = comment.get("path"), comment.get("line")
+                        start = comment.get("start_line", line)
+                        text = comment.get("body", "")
+                        if path not in changed or not isinstance(line, int) or not isinstance(start, int) or start > line:
+                            continue
+                        if line not in changed[path] or start not in changed[path] or not isinstance(text, str) or SECRET_RE.search(text):
+                            continue
+                        suggestion = re.search(r"```suggestion\s*\n(.*?)\n```", text, re.S)
+                        if text.count("```suggestion") != 1 or not suggestion or len(suggestion.group(1).splitlines()) > 20:
+                            continue
+                        if any(number not in changed[path] for number in range(start, line + 1)):
+                            continue
+                        valid_comments.append({"path": path, "start_line": start, "line": line, "side": "RIGHT", "body": text})
+                if len({comment["path"] for comment in valid_comments}) > 5:
+                    valid_comments = []
+                request = {"commit_id": head_sha, "event": "COMMENT", "body": body, "comments": valid_comments}
+                trace = {"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}
+                return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": "proposed"}
+          code_language: python3
+          desc: Forces COMMENT and accepts only changed-line suggestions of at most
+            20 lines.
+          outputs:
+            event:
+              type: string
+              children: null
+            request_json:
+              type: string
+              children: null
+            trace_json:
+              type: string
+              children: null
+            status:
+              type: string
+              children: null
+          selected: false
+          title: Validate and force comment review
+          type: code
+          variables:
+            - variable: model_text
+              value_selector:
+                - simplifier_llm
+                - text
+            - variable: changed_files_json
+              value_selector:
+                - prepare_review
+                - changed_files_json
+            - variable: repo
+              value_selector:
+                - start
+                - repo
+            - variable: pr_number
+              value_selector:
+                - start
+                - pr_number
+            - variable: ref
+              value_selector:
+                - start
+                - ref
+            - variable: head_sha
+              value_selector:
+                - start
+                - head_sha
+            - variable: actor
+              value_selector:
+                - start
+                - actor
+            - variable: event
+              value_selector:
+                - start
+                - event
+            - variable: strength
+              value_selector:
+                - start
+                - strength
+            - variable: mode
+              value_selector:
+                - start
+                - mode
+        height: 54
+        id: validate_review
+        position:
+          x: 5198
+          y: 100
+        positionAbsolute:
+          x: 5198
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: json
+            data:
+              - key: ''
+                type: text
+                value: "{{#validate_review.request_json#}}"
+          desc: Submits one review with the event forced to COMMENT by code.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Submit comment-only review
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/reviews"
+        height: 90
+        id: post_review
+        position:
+          x: 5502
+          y: 100
+        positionAbsolute:
+          x: 5502
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Returns the comment-only review artifact and mandate trace.
+          outputs:
+            - variable: status
+              value_selector:
+                - validate_review
+                - status
+            - variable: artifact
+              value_selector:
+                - validate_review
+                - request_json
+            - variable: trace
+              value_selector:
+                - validate_review
+                - trace_json
+          selected: false
+          title: End posted comment
+          type: end
+        height: 90
+        id: end_reviewed
+        position:
+          x: 5806
+          y: 150
+        positionAbsolute:
+          x: 5806
+          y: 150
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Immutable Eval/Router mandate supplied through the workflow run API.
+          variables:
+            - variable: repo
+              label: repo
+              type: text-input
+              required: true
+              max_length: 256
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: ref
+              label: ref
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: head_sha
+              label: head_sha
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: actor
+              label: actor
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: event
+              label: event
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: strength
+              label: strength
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: ''
+              hint: ''
+              placeholder: ''
+            - variable: mode
+              label: mode
+              type: text-input
+              required: true
+              max_length: 128
+              options: []
+              default: shadow
+              hint: ''
+              placeholder: ''
+            - variable: requested_action
+              label: requested_action
+              type: text-input
+              required: false
+              max_length: 2000
+              options: []
+              default: ''
+              hint: Optional untrusted request; it cannot widen the Mandate or tool permissions.
+              placeholder: ''
+            - variable: pr_number
+              label: pr_number
+              type: number
+              required: true
+              options: []
+          selected: false
+          title: Start
+          type: start
+        height: 90
+        id: start
+        position:
+          x: 30
+          y: 500
+        positionAbsolute:
+          x: 30
+          y: 500
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")

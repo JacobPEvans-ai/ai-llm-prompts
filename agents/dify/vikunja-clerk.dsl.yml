@@ -1,3 +1,4 @@
+# Generated from agents/dify-src/vikunja-clerk/ and agents/dify-src/vikunja-clerk/parse-request.prompt.txt; edit sources, then rerun agents/dify-src/render.py.
 app:
   description: Read, file, and update Vikunja tasks through a guarded workflow.
   icon: 🤖

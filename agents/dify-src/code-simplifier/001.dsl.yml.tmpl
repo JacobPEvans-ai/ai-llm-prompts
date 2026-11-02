@@ -1,0 +1,320 @@
+        id: token-request-gate
+        source: token_request
+        sourceHandle: source
+        target: token_request_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
+        id: token-request-ready
+        source: token_request_gate
+        sourceHandle: eligible
+        target: mint_github_token
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: token-request-failed
+        source: token_request_gate
+        sourceHandle: 'false'
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: code
+        id: review-validate-guard
+        source: validate_review
+        sourceHandle: source
+        target: guard_review_write
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
+        id: review-guard-branch
+        source: guard_review_write
+        sourceHandle: source
+        target: review_target_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: if-else
+        id: review-target-ready
+        source: review_target_gate
+        sourceHandle: eligible
+        target: review_mode_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
+        id: review-target-failed
+        source: review_target_gate
+        sourceHandle: 'false'
+        target: end_handback_review
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
+        id: review-live
+        source: review_mode_gate
+        sourceHandle: eligible
+        target: post_review
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
+        id: review-shadow
+        source: review_mode_gate
+        sourceHandle: 'false'
+        target: end_review_proposal
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: end
+        id: review-posted
+        source: post_review
+        sourceHandle: source
+        target: end_reviewed
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: end
+        id: prepare-handback-end
+        source: prepare_handback
+        sourceHandle: source
+        target: end_handback_run
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          authorization:
+            type: no-auth
+          body:
+            type: json
+            data:
+              - key: ''
+                type: text
+                value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'
+          desc: AppRole login; keep secret values in Dify environment variables.
+          headers: 'Content-Type: application/json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: OpenBao AppRole login
+          type: http-request
+          url: "{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login"
+        height: 90
+        id: openbao_login
+        position:
+          x: 942
+          y: 350
+        positionAbsolute:
+          x: 942
+          y: 350
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def main(response_body: str) -> dict:
+                try:
+                    token = json.loads(response_body).get("auth", {}).get("client_token", "")
+                except (TypeError, ValueError, AttributeError):
+                    token = ""
+                return {"client_token": token, "ready": 1 if token else 0}
+          code_language: python3
+          desc: Extracts the short-lived OpenBao client token.
+          outputs:
+            client_token:
+              type: string
+              children: null
+            ready:
+              type: number
+              children: null
+          selected: false
+          title: Parse OpenBao response
+          type: code
+          variables:
+            - variable: response_body
+              value_selector:
+                - openbao_login
+                - body
+        height: 54
+        id: parse_openbao
+        position:
+          x: 1246
+          y: 350
+        positionAbsolute:
+          x: 1246
+          y: 350
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: ready
+              id: ready
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="
+                  id: login-ready
+                  value: '1'
+                  varType: number
+                  variable_selector:
+                    - parse_openbao
+                    - ready
+          desc: Stops if OpenBao did not return a token.
+          selected: false
+          title: OpenBao token gate
+          type: if-else
+        height: 126
+        id: login_ready_gate
+        position:
+          x: 1430
+          y: 300
+        positionAbsolute:
+          x: 1430
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_openbao.client_token#}}"
+              header: Authorization
+          body:
+            type: json
+            data:
+              - key: ''
+                type: text
+                value: "{{#token_request.request_json#}}"
+          desc: Requests an installation token scoped to the mandated repository.
+          headers: 'Content-Type: application/json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Mint repository-scoped GitHub token
+          type: http-request
+          url: "{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}"
+        height: 90
+        id: mint_github_token
+        position:
+          x: 1854
+          y: 300
+        positionAbsolute:
+          x: 1854
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def main(response_body: str) -> dict:
+                try:
+                    data = json.loads(response_body)
+                    token = data.get("token", data.get("installation_token", ""))
+                except (TypeError, ValueError, AttributeError):
+                    token = ""
+                return {"token": token, "ready": 1 if token else 0}
+          code_language: python3
+          desc: Extracts the scoped installation token.
+          outputs:
+            token:
+              type: string
+              children: null
+            ready:
+              type: number
+              children: null
+          selected: false
+          title: Parse GitHub token
+          type: code
+          variables:
+            - variable: response_body
+              value_selector:
+                - mint_github_token
+                - body
+        height: 54
+        id: parse_github_token
+        position:
+          x: 2158
+          y: 300
+        positionAbsolute:
+          x: 2158
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: ready
+              id: ready
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="

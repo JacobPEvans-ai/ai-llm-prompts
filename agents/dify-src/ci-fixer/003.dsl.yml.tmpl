@@ -1,0 +1,258 @@
+                except (TypeError, ValueError, AttributeError):
+                    token = ""
+                return {"token": token, "ready": 1 if token else 0}
+          code_language: python3
+          desc: Extracts the scoped installation token.
+          outputs:
+            token:
+              type: string
+              children: null
+            ready:
+              type: number
+              children: null
+          selected: false
+          title: Parse GitHub token
+          type: code
+          variables:
+            - {variable: response_body, value_selector: [mint_github_token, body]}
+        height: 54
+        id: parse_github_token
+        position: {x: 2158, y: 300}
+        positionAbsolute: {x: 2158, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: ready
+              id: ready
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: token-ready, value: '1', varType: number, variable_selector: [parse_github_token, ready]}
+          desc: Stops when token minting fails.
+          selected: false
+          title: GitHub token gate
+          type: if-else
+        height: 126
+        id: token_gate
+        position: {x: 2462, y: 300}
+        positionAbsolute: {x: 2462, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads the mandated check run.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read check run
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}"
+        height: 90
+        id: get_check_run
+        position: {x: 2766, y: 200}
+        positionAbsolute: {x: 2766, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads annotations; no raw logs.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: 'per_page: 100'
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read check annotations
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}/annotations"
+        height: 90
+        id: get_annotations
+        position: {x: 3070, y: 200}
+        positionAbsolute: {x: 3070, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads the PR linked to the check run.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read pull request
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}"
+        height: 90
+        id: get_pull_request
+        position: {x: 3374, y: 200}
+        positionAbsolute: {x: 3374, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads rules before write eligibility.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read branch rules
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#validate_mandate.encoded_ref#}}"
+        height: 90
+        id: get_branch_rules
+        position: {x: 3678, y: 200}
+        positionAbsolute: {x: 3678, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads changed files and line counts.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: 'per_page: 100'
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read pull request files
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}/files"
+        height: 90
+        id: get_pull_files
+        position: {x: 3982, y: 200}
+        positionAbsolute: {x: 3982, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Reads the current head tree.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read current head commit
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits/{{#start.head_sha#}}"
+        height: 90
+        id: get_head_commit
+        position: {x: 4286, y: 200}
+        positionAbsolute: {x: 4286, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
+            LOG_REDACTION_AVAILABLE = False
+
+            def main(payload_repo: str, payload_head_ref: str, payload_head_sha: str, payload_check_run_id: int, payload_pr_number: int, check_run_body: str, annotations_body: str, current_pr_body: str, rules_body: str, files_body: str, head_commit_body: str, mode: str) -> dict:
+                try:
+                    check, annotations, pr = json.loads(check_run_body), json.loads(annotations_body), json.loads(current_pr_body)
+                    rules, files, commit = json.loads(rules_body), json.loads(files_body), json.loads(head_commit_body)
+                except (TypeError, ValueError):
+                    return {"eligible": 0, "model_allowed": 0, "tree_sha": "", "current_head_sha": "", "reason": "GitHub context could not be read"}
+                if isinstance(rules, dict):
+                    rules = rules.get("rules")
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}

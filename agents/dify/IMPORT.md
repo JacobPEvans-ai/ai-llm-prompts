@@ -3,7 +3,7 @@ type: Dify workflow import guide
 title: Dify workflow imports
 description: Import, configure, and publish the code-simplifier and ci-fixer workflows.
 tags: [dify, workflow, github, import]
-timestamp: 2026-11-01T22:43:08Z
+timestamp: 2026-11-02T00:00:00Z
 ---
 
 ## code-simplifier import and run
@@ -12,19 +12,22 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
 
 ## Prompt synchronization
 
-Dify system prompts are copies of `agents/prompts/<name>.md` and must be re-synced whenever those files change.
+The committed DSL files in `agents/dify/` are rendered from the templates in `agents/dify-src/`, each agent's
+`prompt` and `shared_prefix` paths, and the frontmatter-stripped prompt bodies. After editing a template or canonical
+prompt, run `python3 agents/dify-src/render.py` and commit the updated DSL output with its sources. Run
+`python3 agents/dify-src/render.py --check` to verify that the committed imports match their sources.
 
-After editing either canonical prompt in `agents/prompts/`, copy its complete body, stripping only YAML/OKF
-frontmatter, into the matching Dify DSL system prompt. Preserve `{{#env.SHARED_PREFIX#}}` as the separate prefix.
-Dify cannot include the prompt files directly, so verify the copied text against the canonical prompt before import.
+Vikunja Clerk's `Parse request` node is an intentional exception: its classifier prompt is declared in
+`agents/vikunja-clerk.yaml` and sourced from `agents/dify-src/vikunja-clerk/parse-request.prompt.txt` because that
+node converts caller text to structured intent instead of running the full task-agent prompt.
 
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
    then configure the `medium` LiteLLM router role alias. The Dify workflow model field takes the role name `medium`,
    not a model ID.
 2. Import [code-simplifier.dsl.yml](./code-simplifier.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and
-   `SHARED_PREFIX`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep values out of this repository.
+   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, and `GITHUB_TOKEN_WRITE_SET`. Store
+   `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep values out of this repository.
 4. Publish the workflow.
 5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
    at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the
@@ -67,9 +70,9 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
    not a model ID.
 2. Import [ci-fixer.dsl.yml](./ci-fixer.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`,
-   `SHARED_PREFIX`, and `ENABLE_PUSH`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep
-   `ENABLE_PUSH` set to `false` by default.
+   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and
+   `ENABLE_PUSH`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep `ENABLE_PUSH` set to `false`
+   by default.
 4. Publish the workflow.
 5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
    at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the

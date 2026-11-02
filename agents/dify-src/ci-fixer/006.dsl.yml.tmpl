@@ -1,0 +1,223 @@
+            def main(base_tree_sha: str, path: str, blob_sha: str) -> dict:
+                body = {
+                    "base_tree": base_tree_sha,
+                    "tree": [{"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}],
+                }
+                return {"tree_json": json.dumps(body, ensure_ascii=False)}
+          code_language: python3
+          desc: Builds a Git tree from validated paths.
+          outputs:
+            tree_json:
+              type: string
+              children: null
+          selected: false
+          title: Build Git tree request
+          type: code
+          variables:
+            - {variable: base_tree_sha, value_selector: [guard_context, tree_sha]}
+            - {variable: path, value_selector: [validate_patch, path]}
+            - {variable: blob_sha, value_selector: [parse_blob, sha]}
+        height: 54
+        id: build_tree_request
+        position: {x: 7022, y: 0}
+        positionAbsolute: {x: 7022, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: json
+            data:
+              - key: ''
+                type: text
+                value: "{{#build_tree_request.tree_json#}}"
+          desc: Creates a tree behind the write gate.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Create Git tree
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/trees"
+        height: 90
+        id: create_tree
+        position: {x: 7326, y: 0}
+        positionAbsolute: {x: 7326, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: json
+            data:
+              - key: ''
+                type: text
+                value: '{"message":"{{#validate_patch.commit_message#}}","tree":"{{#create_tree.sha#}}","parents":["{{#start.head_sha#}}"]}'
+          desc: Creates a commit on the mandate head.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Create Git commit
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits"
+        height: 90
+        id: create_commit
+        position: {x: 7630, y: 0}
+        positionAbsolute: {x: 7630, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization
+          body:
+            type: none
+            data: []
+          desc: Re-reads PR head before ref update.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Recheck pull request head
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}"
+        height: 90
+        id: recheck_pull_request
+        position: {x: 7934, y: 0}
+        positionAbsolute: {x: 7934, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+            import urllib.parse
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+            LOG_REDACTION_AVAILABLE = False
+
+            def main(pr_body: str, expected_head_sha: str, mandate_ref: str, enable_push: str, commit_body: str, repo: str, pr_number: int, rules_body: str, mode: str) -> dict:
+                try:
+                    pr, commit, rules = json.loads(pr_body), json.loads(commit_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                except (TypeError, ValueError, AttributeError):
+                    return {"eligible": 0, "ref_encoded": ""}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                head_ref = head.get("ref", "")
+                new_sha = commit.get("sha", "")
+                ref_valid = (isinstance(mandate_ref, str) and REF_RE.fullmatch(mandate_ref) is not None
+                    and not mandate_ref.startswith("/") and not mandate_ref.startswith("refs/")
+                    and ".." not in mandate_ref and "//" not in mandate_ref)
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and isinstance(rules, list) and not rules and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head.get("sha") == expected_head_sha
+                    and ref_valid and head_ref == mandate_ref and SHA_RE.fullmatch(expected_head_sha) is not None and bool(new_sha)
+                    and mode == "live" and enable_push == "true" and LOG_REDACTION_AVAILABLE)
+                return {"eligible": 1 if valid else 0,
+                    "ref_encoded": urllib.parse.quote(mandate_ref, safe="/") if valid else ""}
+          code_language: python3
+          desc: Rechecks the mandate ref against PR head.
+          outputs:
+            eligible:
+              type: number
+              children: null
+            ref_encoded:
+              type: string
+              children: null
+          selected: false
+          title: Guard ref update
+          type: code
+          variables:
+            - {variable: pr_body, value_selector: [recheck_pull_request, body]}
+            - {variable: expected_head_sha, value_selector: [start, head_sha]}
+            - {variable: mandate_ref, value_selector: [start, ref]}
+            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
+            - {variable: commit_body, value_selector: [create_commit, body]}
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
+            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - {variable: mode, value_selector: [start, mode]}
+        height: 54
+        id: guard_ref_update
+        position: {x: 8238, y: 0}
+        positionAbsolute: {x: 8238, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: ref-eligible, value: '1', varType: number, variable_selector: [guard_ref_update, eligible]}
+                - {comparison_operator: "=", id: ref-live, value: live, varType: string, variable_selector: [start, mode]}
+                - {comparison_operator: "=", id: ref-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
+          desc: Blocks stale ref updates.
+          selected: false
+          title: Ref update gate
+          type: if-else
+        height: 126
+        id: ref_update_gate
+        position: {x: 8542, y: 0}
+        positionAbsolute: {x: 8542, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config:
+              type: bearer
+              api_key: "{{#parse_github_token.token#}}"
+              header: Authorization

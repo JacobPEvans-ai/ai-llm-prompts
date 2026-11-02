@@ -1,0 +1,269 @@
+              value_selector:
+                - get_branch_rules
+                - body
+            - variable: review_json
+              value_selector:
+                - validate_review
+                - request_json
+          selected: false
+          title: Recheck review target
+          type: code
+        height: 54
+        id: guard_review_write
+        position:
+          x: 5200
+          y: 100
+        positionAbsolute:
+          x: 5200
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="
+                  id: target-authorized
+                  value: '1'
+                  varType: number
+                  variable_selector:
+                    - guard_review_write
+                    - allowed
+          desc: ''
+          selected: false
+          title: Review target gate
+          type: if-else
+        height: 126
+        id: review_target_gate
+        position:
+          x: 5480
+          y: 100
+        positionAbsolute:
+          x: 5480
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="
+                  id: live-mode
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+          desc: Shadow mode ends with the review artifact and trace. Live mode can
+            submit only the fixed COMMENT payload.
+          selected: false
+          title: Live comment gate
+          type: if-else
+        height: 126
+        id: review_mode_gate
+        position:
+          x: 5760
+          y: 100
+        positionAbsolute:
+          x: 5760
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            def main(repo: str, mode: str) -> dict:
+                return {"status": "handback", "reason": "OpenBao, token, or pull request eligibility checks did not authorize this mandate."}
+          code_language: python3
+          desc: ''
+          outputs:
+            status:
+              type: string
+              children: null
+            reason:
+              type: string
+              children: null
+          variables:
+            - variable: repo
+              value_selector:
+                - start
+                - repo
+            - variable: mode
+              value_selector:
+                - start
+                - mode
+          selected: false
+          title: Prepare handback
+          type: code
+        height: 54
+        id: prepare_handback
+        position:
+          x: 5800
+          y: 700
+        positionAbsolute:
+          x: 5800
+          y: 700
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - validate_mandate
+                - status
+            - variable: reason
+              value_selector:
+                - validate_mandate
+                - reason
+          selected: false
+          title: End mandate handback
+          type: end
+        height: 90
+        id: end_handback_mandate
+        position:
+          x: 900
+          y: 850
+        positionAbsolute:
+          x: 900
+          y: 850
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - prepare_handback
+                - status
+            - variable: reason
+              value_selector:
+                - prepare_handback
+                - reason
+          selected: false
+          title: End run handback
+          type: end
+        height: 90
+        id: end_handback_run
+        position:
+          x: 6100
+          y: 700
+        positionAbsolute:
+          x: 6100
+          y: 700
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - guard_review_write
+                - status
+            - variable: reason
+              value_selector:
+                - guard_review_write
+                - reason
+          selected: false
+          title: End review handback
+          type: end
+        height: 90
+        id: end_handback_review
+        position:
+          x: 6040
+          y: 450
+        positionAbsolute:
+          x: 6040
+          y: 450
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - validate_review
+                - status
+            - variable: artifact
+              value_selector:
+                - validate_review
+                - request_json
+            - variable: trace
+              value_selector:
+                - validate_review
+                - trace_json
+          selected: false
+          title: End proposed review
+          type: end
+        height: 90
+        id: end_review_proposal
+        position:
+          x: 6040
+          y: 100
+        positionAbsolute:
+          x: 6040
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - prepare_review
+                - status
+            - variable: artifact
+              value_selector:
+                - prepare_review
+                - fallback_json
+            - variable: trace
+              value_selector:
+                - prepare_review
+                - trace_json
+          selected: false
+          title: End fallback review
+          type: end
+        height: 90
+        id: end_fallback_proposal
+        position:
+          x: 4900
+          y: 500
+        positionAbsolute:
+          x: 4900
+          y: 500
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.65

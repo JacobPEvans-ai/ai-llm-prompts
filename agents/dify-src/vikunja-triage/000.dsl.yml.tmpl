@@ -1,0 +1,144 @@
+app:
+  description: Scheduled, policy-scoped task triage with guarded shadow and live branches.
+  icon: 🤖
+  icon_background: '#D5F5F6'
+  mode: workflow
+  name: vikunja-triage
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - {id: allowed, name: VIKUNJA_TRIAGE_ALLOWED_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/allowed-projects}
+    - {id: readonly, name: VIKUNJA_TRIAGE_READONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/readonly-projects}
+    - {id: rank_only, name: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/rank-only-projects}
+    - {id: denied, name: VIKUNJA_TRIAGE_DENIED_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/denied-projects}
+    - {id: mode, name: VIKUNJA_TRIAGE_MODE, value_type: string, value: shadow, description: shadow or live; default shadow}
+    - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: '', description: Approved OpenBao API base placeholder}
+    - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: '', description: Agent AppRole ID}
+    - {id: bao_secret, name: OPENBAO_SECRET_ID, value_type: secret, value: '', description: Agent AppRole secret}
+    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving github-token/vikunja-clerk}
+    - {id: github_api, name: GITHUB_API_BASE, value_type: string, value: '', description: Approved public GitHub API base placeholder}
+    - {id: github_web, name: GITHUB_WEB_HOST, value_type: string, value: '', description: Approved public GitHub web host placeholder}
+  features:
+    file_upload: {enabled: false}
+    opening_statement: ''
+    retriever_resource: {enabled: false}
+    sensitive_word_avoidance: {enabled: false}
+    speech_to_text: {enabled: false}
+    suggested_questions: []
+    suggested_questions_after_answer: {enabled: false}
+    text_to_speech: {enabled: false}
+  graph:
+    edges:
+      - {data: {isInIteration: false, sourceType: trigger-schedule, targetType: code}, id: schedule-policy, source: schedule, sourceHandle: source, target: policy, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: code, targetType: iteration}, id: policy-projects, source: policy, sourceHandle: source, target: project_loop, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: iteration, targetType: code}, id: projects-context, source: project_loop, sourceHandle: source, target: prepare, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: code, targetType: llm}, id: context-model, source: prepare, sourceHandle: source, target: triage, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: llm, targetType: code}, id: model-guard, source: triage, sourceHandle: source, target: guard, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: code, targetType: if-else}, id: guard-mode, source: guard, sourceHandle: source, target: mode_gate, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: if-else, targetType: end}, id: shadow-output, source: mode_gate, sourceHandle: 'false', target: shadow_end, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: if-else, targetType: iteration}, id: live-dispatch, source: mode_gate, sourceHandle: live, target: dispatch_loop, targetHandle: target, type: custom}
+      - {data: {isInIteration: false, sourceType: iteration, targetType: end}, id: live-output, source: dispatch_loop, sourceHandle: source, target: live_end, targetHandle: target, type: custom}
+      - {data: {isInIteration: true, iteration_id: project_loop, sourceType: tool, targetType: code}, id: list-bind-result, source: list_tasks, sourceHandle: source, target: scope_list_result, targetHandle: target, type: custom, zIndex: 1002}
+      - {data: {isInIteration: true, iteration_id: dispatch_loop, sourceType: code, targetType: tool}, id: action-write, source: bind_action, sourceHandle: source, target: dispatch_write, targetHandle: target, type: custom, zIndex: 1002}
+    nodes:
+      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '*/10 * * * *', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
+        height: 54
+        id: schedule
+        position: {x: 40, y: 320}
+        positionAbsolute: {x: 40, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            def projects(raw):
+                value=json.loads(raw)
+                if not isinstance(value,list) or any(not str(x).strip() for x in value): raise ValueError()
+                return {str(x).strip() for x in value}
+            def main(allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str)->dict:
+                try:
+                    a,r,k,d=map(projects,(allowed_raw,readonly_raw,rank_raw,denied_raw))
+                    ok=k<=a
+                    mode=str(mode_raw or '').strip().lower()
+                    ids=sorted((a|r)-d) if ok else []
+                    return {'project_ids':ids,'mode':mode if mode in ('shadow','live') else 'invalid','policy_ok':ok}
+                except Exception: return {'project_ids':[],'mode':'invalid','policy_ok':False}
+          code_language: python3
+          desc: Load policy from protected env; deny wins and unlisted projects are never read.
+          outputs: {project_ids: {type: 'array[string]', children: null}, mode: {type: string}, policy_ok: {type: boolean}}
+          selected: false
+          title: Load project policy
+          type: code
+          variables:
+            - {variable: allowed_raw, value_selector: [env, VIKUNJA_TRIAGE_ALLOWED_PROJECTS]}
+            - {variable: readonly_raw, value_selector: [env, VIKUNJA_TRIAGE_READONLY_PROJECTS]}
+            - {variable: rank_raw, value_selector: [env, VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS]}
+            - {variable: denied_raw, value_selector: [env, VIKUNJA_TRIAGE_DENIED_PROJECTS]}
+            - {variable: mode_raw, value_selector: [env, VIKUNJA_TRIAGE_MODE]}
+        height: 54
+        id: policy
+        position: {x: 340, y: 320}
+        positionAbsolute: {x: 340, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data: {desc: Run one project-filtered list call for each authorized read scope., iterator_selector: [policy, project_ids], output_selector: [scope_list_result, result_json], output_type: 'array[string]', selected: false, startNodeType: tool, start_node_id: list_tasks, title: List authorized projects, type: iteration}
+        height: 280
+        id: project_loop
+        position: {x: 650, y: 320}
+        positionAbsolute: {x: 650, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 540
+      - data:
+          desc: A list call always carries the current project filter.
+          isInIteration: true
+          isIterationStart: true
+          iteration_id: project_loop
+          provider_id: VIKUNJA_MCP_PROVIDER_ID
+          provider_name: vikunja
+          provider_type: mcp
+          selected: false
+          title: List Vikunja tasks
+          type: tool
+          tool_configurations: {}
+          tool_label: vikunja_task_crud
+          tool_name: vikunja_task_crud
+          tool_parameters:
+            operation: {type: mixed, value: list}
+            projectId: {type: variable, value: [project_loop, item]}
+        height: 80
+        id: list_tasks
+        parentId: project_loop
+        extent: parent
+        position: {x: 60, y: 60}
+        positionAbsolute: {x: 710, y: 380}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            def main(project_id:str, body:str)->dict:
+                try:
+                    data=json.loads(body)
+                    tasks=data if isinstance(data,list) else next((data.get(k) for k in ('tasks','items','data','result') if isinstance(data.get(k),list)),[])
+                    return {'result_json':json.dumps({'project_id':project_id,'tasks':tasks})}
+                except Exception: return {'result_json':'{}'}
+          code_language: python3
+          desc: Bind each result to its policy-selected project, not model output.
+          isInIteration: true
+          iteration_id: project_loop

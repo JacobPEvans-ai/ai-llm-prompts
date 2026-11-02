@@ -31,19 +31,6 @@ _OKF_FIELDS = {
     "render",
     "source_history",
 }
-_KNOWN_DSL_PREFIX_GAPS = {
-    name: pytest.mark.xfail(
-        strict=True,
-        reason="The existing Dify system prompt does not contain the canonical shared-prefix body before the agent prompt.",
-    )
-    for name in (
-        "ci-fixer",
-        "code-simplifier",
-        "vikunja-clerk",
-        "vikunja-triage",
-        "zammad-triage",
-    )
-}
 
 
 def _definitions():
@@ -98,31 +85,49 @@ _DSL_AGENTS = []
 for _path, _agent in _definitions():
     _name = _path.stem
     if (_AGENTS / "dify" / f"{_name}.dsl.yml").is_file():
-        _case = pytest.param(_name, marks=_KNOWN_DSL_PREFIX_GAPS[_name]) if _name in _KNOWN_DSL_PREFIX_GAPS else _name
-        _DSL_AGENTS.append(_case)
+        _DSL_AGENTS.append(_name)
 
 
-@pytest.mark.parametrize("agent_name", _DSL_AGENTS)
-def test_dify_system_prompt_contains_prefix_before_canonical_prompt(agent_name):
-    agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
-    expected = _prompt_body(_ROOT / agent["prompt"])
-    shared_prefix = _prompt_body(_ROOT / agent["shared_prefix"])
-    dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
-    system_prompts = [
-        message["text"]
+def _system_prompts(dsl):
+    return [
+        (data.get("title"), message["text"])
         for node in dsl["workflow"]["graph"]["nodes"]
         for data in [node.get("data", {})]
         if data.get("type") == "llm"
         for message in data.get("prompt_template", [])
         if message.get("role") == "system"
     ]
-    assert len(system_prompts) == 1, f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
 
-    actual = _normalize_whitespace(system_prompts[0])
-    normalized_prefix = _normalize_whitespace(shared_prefix)
-    normalized_prompt = _normalize_whitespace(expected)
-    assert actual.startswith(normalized_prefix) and actual[len(normalized_prefix) :].lstrip().startswith(
-        normalized_prompt
-    ), (
-        f"{agent_name} Dify system prompt must contain the canonical shared prefix before the agent prompt"
+
+@pytest.mark.parametrize("agent_name", _DSL_AGENTS)
+def test_dify_system_prompt_matches_its_declared_source(agent_name):
+    agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
+    dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
+    system_prompts = _system_prompts(dsl)
+    assert len(system_prompts) == 1, f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
+    node_title, actual_prompt = system_prompts[0]
+    exception = agent.get("dify_system_prompt_exception")
+    if exception is not None:
+        assert exception.get("node") == node_title, f"{agent_name} exception must name its Dify system-prompt node"
+        assert exception.get("reason"), f"{agent_name} exception must document why it differs"
+        exception_source = _ROOT / exception["source"]
+        assert exception_source.is_file(), f"{agent_name} exception source does not exist: {exception['source']}"
+        assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(exception_source.read_text()), (
+            f"{agent_name} Dify system prompt must match its declared exception source"
+        )
+        return
+
+    expected = "\n\n".join(
+        (
+            _prompt_body(_ROOT / agent["shared_prefix"]),
+            _prompt_body(_ROOT / agent["prompt"]),
+        )
     )
+    assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
+        f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
+    )
+
+
+def test_only_vikunja_clerk_uses_a_declared_dify_system_prompt_exception():
+    exceptions = {path.stem for path, agent in _definitions() if "dify_system_prompt_exception" in agent}
+    assert exceptions == {"vikunja-clerk"}

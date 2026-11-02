@@ -130,6 +130,7 @@
           } ''
             cp -R ${self}/. source
             cd source
+            python3 agents/dify-src/render.py --check
             python3 -m pytest -q agents/judges
             touch $out
           '';
