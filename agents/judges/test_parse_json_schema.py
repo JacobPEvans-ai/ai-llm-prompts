@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+import yaml
 
 _SOURCE = Path(__file__).with_name("parse-json-schema.py")
 _spec = importlib.util.spec_from_file_location("parse_json_schema", _SOURCE)
@@ -49,3 +50,16 @@ def test_evaluate_returns_one_boolean_score():
     assert result.scores[0].name == "parse-json-schema-valid"
     assert result.scores[0].value is True
     assert result.scores[0].data_type == "BOOLEAN"
+
+
+def test_vikunja_expected_parse_fields_are_allowed_by_parse_schema():
+    eval_set = Path(__file__).parents[1] / "evals" / "vikunja-clerk.yaml"
+    cases = yaml.safe_load(eval_set.read_text(encoding="utf-8"))["cases"]
+    unexpected = {
+        key
+        for case in cases
+        for key in case.get("expected_parse", {})
+        if key not in schema.ALLOWED_KEYS
+    }
+
+    assert not unexpected
