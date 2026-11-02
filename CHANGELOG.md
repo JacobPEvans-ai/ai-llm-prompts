@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.38.0...v1.39.0) (2026-11-02)
+
+
+### Features
+
+* **agents:** add Vikunja parse judge evaluators as code ([#191](https://github.com/dryvist/ai-llm-prompts/issues/191)) ([81b699c](https://github.com/dryvist/ai-llm-prompts/commit/81b699c280fa1f5c78940d43c98922e772c76e29))
+
 ## [1.38.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.2...v1.38.0) (2026-11-02)
 
 
