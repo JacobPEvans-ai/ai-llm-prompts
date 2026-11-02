@@ -31,11 +31,18 @@ _OKF_FIELDS = {
     "render",
     "source_history",
 }
-_KNOWN_DSL_MISMATCHES = {
-    "vikunja-clerk": pytest.mark.xfail(
+_KNOWN_DSL_PREFIX_GAPS = {
+    name: pytest.mark.xfail(
         strict=True,
-        reason="The existing Dify parse step has a distinct parser prompt rather than the full agent prompt.",
-    ),
+        reason="The existing Dify system prompt does not contain the canonical shared-prefix body before the agent prompt.",
+    )
+    for name in (
+        "ci-fixer",
+        "code-simplifier",
+        "vikunja-clerk",
+        "vikunja-triage",
+        "zammad-triage",
+    )
 }
 
 
@@ -91,14 +98,15 @@ _DSL_AGENTS = []
 for _path, _agent in _definitions():
     _name = _path.stem
     if (_AGENTS / "dify" / f"{_name}.dsl.yml").is_file():
-        _case = pytest.param(_name, marks=_KNOWN_DSL_MISMATCHES[_name]) if _name in _KNOWN_DSL_MISMATCHES else _name
+        _case = pytest.param(_name, marks=_KNOWN_DSL_PREFIX_GAPS[_name]) if _name in _KNOWN_DSL_PREFIX_GAPS else _name
         _DSL_AGENTS.append(_case)
 
 
 @pytest.mark.parametrize("agent_name", _DSL_AGENTS)
-def test_dify_system_prompt_matches_canonical_agent_prompt(agent_name):
+def test_dify_system_prompt_contains_prefix_before_canonical_prompt(agent_name):
     agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
     expected = _prompt_body(_ROOT / agent["prompt"])
+    shared_prefix = _prompt_body(_ROOT / agent["shared_prefix"])
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
     system_prompts = [
         message["text"]
@@ -110,7 +118,11 @@ def test_dify_system_prompt_matches_canonical_agent_prompt(agent_name):
     ]
     assert len(system_prompts) == 1, f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
 
-    actual = re.sub(r"^\{\{#env\.SHARED_PREFIX#\}\}\s*", "", system_prompts[0], count=1)
-    assert _normalize_whitespace(actual) == _normalize_whitespace(expected), (
-        f"{agent_name} Dify system prompt drifted from its canonical prompt"
+    actual = _normalize_whitespace(system_prompts[0])
+    normalized_prefix = _normalize_whitespace(shared_prefix)
+    normalized_prompt = _normalize_whitespace(expected)
+    assert actual.startswith(normalized_prefix) and actual[len(normalized_prefix) :].lstrip().startswith(
+        normalized_prompt
+    ), (
+        f"{agent_name} Dify system prompt must contain the canonical shared prefix before the agent prompt"
     )

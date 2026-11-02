@@ -42,3 +42,4 @@ jobs:
         nix:
           - '**.nix'
           - 'flake.lock'
+          - 'agents/**'
