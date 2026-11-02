@@ -1,4 +1,5 @@
 agent: zammad-triage
+# Live writes are hard-disabled in the DSL guard, so every case expects shadow output and no write.
 cases:
   - id: rank-stale-ticket
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
@@ -6,14 +7,14 @@ cases:
     proposed: [{ticket_index: 0, kind: rank, priority: high}]
     expected_calls: [{tool: zammad_rest, operation: search, args: {group_id: "<ALLOWED_GROUP_ID>", limit: 50}}]
     expected_actions: [{ticket_index: 0, kind: rank, priority: high}]
-    expected_writes: [{operation: update_priority, id: "<TICKET_ID>", body: {priority_id: 3}}]
+    expected_writes: []
 
   - id: tag-from-vocabulary
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: ["<ALLOWED_TAG>"]}
     tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>", title: "<TICKET_TITLE>"}]
     proposed: [{ticket_index: 0, kind: tag, tag: "<ALLOWED_TAG>"}]
     expected_actions: [{ticket_index: 0, kind: tag, tag: "<ALLOWED_TAG>"}]
-    expected_writes: [{operation: add_tag, id: "<TICKET_ID>", tag: "<ALLOWED_TAG>"}]
+    expected_writes: []
 
   - id: unknown-tag-dropped
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: ["<ALLOWED_TAG>"]}
@@ -26,7 +27,7 @@ cases:
     tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>", title: "<TICKET_TITLE>"}]
     proposed: [{ticket_index: 0, kind: note, priority: high, reason: blocked}]
     expected_actions: [{ticket_index: 0, kind: note, priority: high, reason: blocked}]
-    expected_writes: [{operation: internal_note, id: "<TICKET_ID>", type: note, internal: true, content_type: text/plain, body: "Triage (automated): proposed priority high; reason blocked."}]
+    expected_writes: []
 
   - id: readonly-group-refuses-write
     policy: {allowed: [], readonly: ["<READONLY_GROUP_ID>"], denied: [], tag_vocabulary: []}

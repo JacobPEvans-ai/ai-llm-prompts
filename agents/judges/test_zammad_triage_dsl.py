@@ -3,6 +3,7 @@
 import inspect
 import json
 from pathlib import Path
+import re
 
 import yaml
 
@@ -50,14 +51,38 @@ def _guard(actions, mode="shadow", text=None, **node):
     return json.loads(out["actions"]), out, calls
 
 
-def test_every_code_node_main_takes_exactly_its_declared_variables():
+def _outputs(node_id):
+    """Outputs a selector may name: declared code outputs, an LLM node's text, and the sys values used here."""
+    if node_id == "sys":
+        return {"timestamp"}
+    data = _NODES[node_id]
+    return set(data.get("outputs") or {}) | ({"text"} if data["type"] == "llm" else set())
+
+
+def _selectors():
+    for data in _NODES.values():
+        for item in data.get("variables", []) + (data.get("outputs") if data["type"] == "end" else []):
+            yield item["value_selector"]
+        for message in data.get("prompt_template", []):
+            yield from (ref.split(".") for ref in re.findall(r"\{\{#([^#]+)#\}\}", message["text"]))
+
+
+def test_every_selector_names_a_declared_output_or_env_variable():
     env = {variable["name"] for variable in _DSL["workflow"]["environment_variables"]}
     assert all(e["source"] in _NODES and e["target"] in _NODES for e in _DSL["workflow"]["graph"]["edges"])
+    selectors = list(_selectors())
+    assert ["fetch", "model"] in selectors and ["triage", "text"] in selectors
+    for source, name in selectors:
+        assert name in (env if source == "env" else _outputs(source)), (source, name)
+
+
+def test_every_code_node_main_takes_exactly_its_declared_variables_by_keyword():
+    keyword_kinds = {inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY}
     for node_id, data in _NODES.items():
         if data.get("type") == "code":
-            declared = [variable["variable"] for variable in data["variables"]]
-            assert list(inspect.signature(_node(node_id)[0]).parameters) == declared
-            assert all(v["value_selector"][1] in env for v in data["variables"] if v["value_selector"][0] == "env")
+            params = inspect.signature(_node(node_id)[0]).parameters
+            assert list(params) == [variable["variable"] for variable in data["variables"]]
+            assert all(p.kind in keyword_kinds for p in params.values())
 
 
 def test_empty_or_malformed_policy_refuses_before_any_request():
