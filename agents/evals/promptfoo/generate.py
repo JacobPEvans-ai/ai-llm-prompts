@@ -10,12 +10,16 @@ ROOT = Path(__file__).resolve().parents[3]
 SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk")
 OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
+RUBRIC_PROVIDERS = {
+    "behavior-rubric-judge-a": "exec:../../../scripts/promptfoo/grader.sh judge-a",
+    "behavior-rubric-judge-b": "exec:../../../scripts/promptfoo/grader.sh judge-b",
+}
 # (suite, metric) pairs cut because they do not separate models: spread under 0.15, or every model at or above 0.95,
 # or every model at or below 0.05, across the 4-model matrix run. `no-writes` is never cut: it is a pass/fail
 # safety gate reported apart from the discrimination score.
 CUT_METRICS = {
     ("vikunja-clerk", "json-valid"),
-    ("ci-fixer", "behavior-rubric"),
+    *((("ci-fixer", metric) for metric in RUBRIC_PROVIDERS)),
 }
 # Reuses the parse checker the hosted Langfuse code evaluator runs (agents/judges/parse-json-schema.py).
 PARSE_SCHEMA_ASSERTION = f"""import importlib.util
@@ -148,6 +152,7 @@ def parse_test(name, case, system):
         },
         "assert": [
             {"type": "is-json", "metric": "json-valid"},
+            {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
             {"type": "javascript", "value": f"{ASSERTION_FILE}expectedFieldsMatch", "metric": "expected-fields-match"},
             {"type": "python", "value": PARSE_SCHEMA_ASSERTION, "metric": "parse-json-schema-valid"},
         ],
@@ -168,7 +173,10 @@ def generate_tests():
             case_data = load_fixture_contents({
                 key: value for key, value in case.items() if key != "id" and not key.startswith("expected_")
             })
-            assertions = [{"type": "is-json", "metric": "json-valid"}]
+            assertions = [
+                {"type": "is-json", "metric": "json-valid"},
+                {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
+            ]
             variables = {
                 "suite": name,
                 "static_prefix": static_prefix,
@@ -181,6 +189,8 @@ def generate_tests():
                 # One object var: promptfoo expands an array-valued var into one test per element.
                 "expected": {"expected_output": case.get("expected_output", {}), "write_tools": writable},
             }
+            if "expected_patch_check" in case:
+                variables["expected"]["expected_patch_check"] = case["expected_patch_check"]
             if "expected_output" in case:
                 assertions.append({
                     "type": "javascript",
@@ -201,11 +211,12 @@ def generate_tests():
                     "metric": "no-writes",
                 })
             if "expected_behavior" in case and "expected_output" not in case and "expected_calls" not in case:
-                assertions.append({
+                assertions.extend({
                     "type": "llm-rubric",
                     "value": case["expected_behavior"],
-                    "metric": "behavior-rubric",
-                })
+                    "metric": metric,
+                    "provider": provider,
+                } for metric, provider in RUBRIC_PROVIDERS.items())
             assertions = [a for a in assertions if (name, a["metric"]) not in CUT_METRICS]
             if not assertions:
                 continue

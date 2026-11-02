@@ -1,12 +1,27 @@
 #!/bin/sh
-# promptfoo exec provider for the behavior-rubric grader. The run sets EVAL_GRADER_BASE_URL and
-# EVAL_GRADER_MODEL to a local model that is NOT the candidate under test, so no model grades itself.
-# The grading prompt arrives as $1: a JSON chat array, or plain text.
+# Promptfoo 0.118.14 appends prompt, options JSON, and context JSON after fixed exec-provider arguments.
+# The judge name is $1 and the grading prompt is $2: a JSON chat array, or plain text.
 set -eu
-jq -n --arg p "$1" --arg m "$EVAL_GRADER_MODEL" '{
+judge=${1:?judge name required}
+prompt=${2:?grading prompt required}
+case "$judge" in
+  judge-a)
+    model=${EVAL_JUDGE_A_MODEL:?EVAL_JUDGE_A_MODEL is required}
+    base_url=${EVAL_JUDGE_A_BASE_URL:?EVAL_JUDGE_A_BASE_URL is required}
+    ;;
+  judge-b)
+    model=${EVAL_JUDGE_B_MODEL:?EVAL_JUDGE_B_MODEL is required}
+    base_url=${EVAL_JUDGE_B_BASE_URL:?EVAL_JUDGE_B_BASE_URL is required}
+    ;;
+  *)
+    echo "unknown judge: $judge" >&2
+    exit 2
+    ;;
+esac
+jq -n --arg p "$prompt" --arg m "$model" '{
   model: $m,
   temperature: 0,
   messages: (($p | fromjson? | select(type == "array")) // [{role: "user", content: $p}])
-}' | curl -sf -m 600 "${EVAL_GRADER_BASE_URL%/}/chat/completions" \
+}' | curl -sf -m 600 "${base_url%/}/chat/completions" \
   -H 'Content-Type: application/json' --data-binary @- \
   | jq -r '.choices[0].message.content'

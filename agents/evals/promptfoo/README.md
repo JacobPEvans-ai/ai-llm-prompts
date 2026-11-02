@@ -23,8 +23,10 @@ and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.p
 | `luna` | Codex, through `scripts/promptfoo/luna.sh` | an operator-signed-in `codex` CLI |
 | `go-kimi` | OpenCode Go, through `scripts/promptfoo/go-kimi.sh` | an operator-signed-in `opencode` CLI |
 
-The behavior rubric is graded by `scripts/promptfoo/grader.sh`, which calls `EVAL_GRADER_BASE_URL` with
-`EVAL_GRADER_MODEL`. Point it at a model that is not the candidate under test.
+Only the four `code-simplifier` behavior-rubric cases use two graders: `behavior-rubric-judge-a` reads
+`EVAL_JUDGE_A_BASE_URL` and `EVAL_JUDGE_A_MODEL`, and `behavior-rubric-judge-b` reads
+`EVAL_JUDGE_B_BASE_URL` and `EVAL_JUDGE_B_MODEL`. Both judges must be models outside the candidate set. Rubric scores
+count only for cases where `not-truncated` passes.
 
 ## Installation
 
@@ -45,7 +47,7 @@ PROMPTFOO_PYTHON=python3 nix --extra-experimental-features 'nix-command flakes' 
 ```
 
 Promptfoo records per-assertion metric scores in each result's `namedScores`. Print suite/provider/metric counts and mean
-scores with:
+scores with (rubric scores are included only when `not-truncated` scored 1):
 
 ```sh
 jq -r '
@@ -55,9 +57,24 @@ jq -r '
       provider: ($result.provider.label // $result.provider.id),
       metric: .key,
       score: .value
-    })
+    } | select((.metric | startswith("behavior-rubric-") | not) or $result.namedScores["not-truncated"] == 1))
   | group_by([.suite, .provider, .metric])[]
   | [.[0].suite, .[0].provider, .[0].metric, (length | tostring), (map(.score) | add / length | tostring)]
   | @tsv
+' /tmp/agent-evals-local.json
+```
+
+Print the share of result cases where both judges' pass values agree:
+
+```sh
+jq -r '
+  [.results.results[]
+   | [(.gradingResult.componentResults // [])[] | select(.assertion.metric == "behavior-rubric-judge-a") | .pass] as $judge_a
+   | [(.gradingResult.componentResults // [])[] | select(.assertion.metric == "behavior-rubric-judge-b") | .pass] as $judge_b
+   | select(($judge_a | length) > 0 and ($judge_b | length) > 0)
+   | ($judge_a[0] == $judge_b[0])]
+  | if length == 0 then "no paired judge results"
+    else "agreement=\((map(select(.)) | length) / length)"
+    end
 ' /tmp/agent-evals-local.json
 ```

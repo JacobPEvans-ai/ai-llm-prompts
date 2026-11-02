@@ -21,11 +21,6 @@ providers:
     label: luna
   - id: exec:../../../scripts/promptfoo/go-kimi.sh
     label: go-kimi
-defaultTest:
-  options:
-    # The behavior rubric is graded by a local model that is not the candidate (EVAL_GRADER_* per run).
-    provider:
-      id: exec:../../../scripts/promptfoo/grader.sh
 tests: file://generate.py
 sharing: false
 writeLatestResults: false

@@ -31,6 +31,10 @@ cases:
         +    return sum(values) / counts
       failing_log_excerpt: |
         src/average.py:3: NameError: name 'counts' is not defined
+    expected_patch_check:
+      source_path: src/average.py
+      test_fixture: agents/evals/fixtures/ci-fixer/test_average.py
+      test_command: [python3, -m, unittest, test_average]
     expected_output:
       decision: commit
       patches:
@@ -345,6 +349,10 @@ cases:
         +    return sum(values) / counts
       failing_log_excerpt: |
         src/average.py:3: NameError: name 'counts' is not defined
+    expected_patch_check:
+      source_path: src/average.py
+      test_fixture: agents/evals/fixtures/ci-fixer/test_average.py
+      test_command: [python3, -m, unittest, test_average]
     expected_output:
       decision: commit
       patches:

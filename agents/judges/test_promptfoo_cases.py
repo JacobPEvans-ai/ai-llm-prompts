@@ -3,6 +3,8 @@
 import importlib.util
 import json
 from pathlib import Path
+import shutil
+import subprocess
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +24,7 @@ def test_generated_cases_have_assertions_and_static_prefixes():
     assert counts == {"ci-fixer": 19, "code-simplifier": 9, "vikunja-clerk": 20, "vikunja-clerk-parse": 20}
     assert len(tests) == 68
     assert all(test["assert"] for test in tests)
+    assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
     for name in names:
         prefixes = {test["vars"]["static_prefix"] for test in tests if test["vars"]["suite"] == name}
@@ -81,8 +84,42 @@ def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
     assert generated["vars"]["static_prefix"] == cases.parse_prompt()
     assert "Use keys: route, operation" in generated["vars"]["static_prefix"]
     assert {a["metric"] for a in generated["assert"]} == {
-        "json-valid", "expected-fields-match", "parse-json-schema-valid"
+        "json-valid", "not-truncated", "expected-fields-match", "parse-json-schema-valid"
     }
+
+
+def test_behavior_rubric_uses_two_judges_only_for_four_code_simplifier_cases():
+    tests = cases.generate_tests()
+    rubric_assertions = [
+        (test, assertion)
+        for test in tests
+        for assertion in test["assert"]
+        if assertion["type"] == "llm-rubric"
+    ]
+    expected = {
+        "behavior-rubric-judge-a": "exec:../../../scripts/promptfoo/grader.sh judge-a",
+        "behavior-rubric-judge-b": "exec:../../../scripts/promptfoo/grader.sh judge-b",
+    }
+
+    assert len(rubric_assertions) == 8
+    assert {assertion["metric"] for _, assertion in rubric_assertions} == set(expected)
+    assert all(test["vars"]["suite"] == "code-simplifier" for test, _ in rubric_assertions)
+    assert all(assertion["provider"] == expected[assertion["metric"]] for _, assertion in rubric_assertions)
+
+
+def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
+    source = next(case for case in suite["cases"] if case["id"] == "same-repo-code-failure")
+    generated = next(
+        test for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "ci-fixer", "case": source["id"]}
+    )
+
+    assert generated["vars"]["expected"]["expected_patch_check"] == source["expected_patch_check"]
+    assert "expected_patch_check" not in json.loads(generated["vars"]["case_data"])
+    for case_id in ("same-repo-code-failure", "patch-diff-format"):
+        case = next(case for case in suite["cases"] if case["id"] == case_id)
+        assert case["expected_patch_check"]["source_path"] == "src/average.py"
 
 
 def test_fixture_cases_include_the_fixture_contents():
@@ -94,6 +131,108 @@ def test_fixture_cases_include_the_fixture_contents():
     fixture = (_ROOT / "agents" / "evals" / "fixtures" / "ci-log-injection.txt").read_text()
 
     assert supplied["input_event_summary"]["failing_log_excerpt"] == fixture
+
+
+def _run_expected_output(output, expected_output, case_data=None, patch_check=None):
+    node = shutil.which("node")
+    if node is None:
+        import pytest
+
+        pytest.skip("node is not installed; JavaScript assertion cases require node")
+
+    assertions = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
+    context = {
+        "vars": {
+            "expected": {
+                "expected_output": expected_output,
+                "expected_patch_check": patch_check,
+            },
+            "case_data": json.dumps(case_data or {}),
+        }
+    }
+    script = """
+const { expectedOutput } = require(process.argv[1]);
+const result = expectedOutput(process.argv[2], JSON.parse(process.argv[3]));
+process.stdout.write(JSON.stringify(result));
+"""
+    result = subprocess.run(
+        [node, "-e", script, str(assertions), json.dumps(output), json.dumps(context)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_expected_output_returns_field_level_partial_credit():
+    expected = {"status": "refused", "decision": "comment"}
+
+    all_match = _run_expected_output(expected, expected)
+    half_match = _run_expected_output({"status": "refused", "decision": "write"}, expected)
+
+    assert all_match["pass"] is True and all_match["score"] == 1
+    assert half_match["pass"] is False and half_match["score"] == 0.5
+    assert half_match["reason"] == "Mismatched keys: decision"
+
+
+def test_expected_output_contains_list_is_any_of():
+    result = _run_expected_output(
+        {"reply": "The second keyword is present."},
+        {"reply_contains": ["first keyword", "second keyword"]},
+    )
+
+    assert result["pass"] is True and result["score"] == 1
+
+
+def _patch_case():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
+    source = next(case for case in suite["cases"] if case["id"] == "same-repo-code-failure")
+    case_data = {
+        key: value for key, value in source.items()
+        if key != "id" and not key.startswith("expected_")
+    }
+    return source, case_data
+
+
+def test_expected_output_patch_check_passes_for_the_expected_fix():
+    source, case_data = _patch_case()
+    actual = source["expected_output"]
+    result = _run_expected_output(
+        actual,
+        source["expected_output"],
+        case_data,
+        source["expected_patch_check"],
+    )
+
+    assert result["pass"] is True and result["score"] == 1
+
+
+def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
+    source, case_data = _patch_case()
+    actual = {
+        **source["expected_output"],
+        "patches": [{
+            "path": "src/average.py",
+            "diff": """diff --git a/src/average.py b/src/average.py
+--- a/src/average.py
++++ b/src/average.py
+@@ -1,3 +1,4 @@
++# comment only; leave the NameError in place
+ def average(values):
+     count = len(values)
+     return sum(values) / counts
+""",
+        }],
+    }
+    result = _run_expected_output(
+        actual,
+        source["expected_output"],
+        case_data,
+        source["expected_patch_check"],
+    )
+
+    assert result["pass"] is False
+    assert "patches" in result["reason"]
 
 
 def test_no_test_var_is_a_list():
