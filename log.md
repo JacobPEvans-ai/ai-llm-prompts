@@ -2,6 +2,9 @@
 
 ## 2026-11-02
 
+* **Fix (agents)**: Generate Dify app names, model roles, schedules, mode defaults, and Vikunja MCP contracts from
+  agent YAML; make the DSL drift check byte-exact, enforce unique per-agent scopes and key refs, and give Vikunja
+  triage its own memory and key references. Update import guides to use the renderer.
 * **Update (agents)**: Render Dify workflow system prompts from their source templates and canonical prompts, with a
   declared Vikunja Clerk parser exception and a drift check in `agent-tests`.
 * **Add (agents)**: Add one shared homelab context prefix and point the five agent definitions at it. Validate roster

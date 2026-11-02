@@ -13,10 +13,10 @@ litellm_role: medium
 trigger: {kind: schedule, cron: "*/10 * * * *"}
 mode: shadow
 # Hindsight banks are per-agent; this scope is capped.
-memory_scope: hindsight/vikunja-clerk
+memory_scope: hindsight/vikunja-triage
 eval_set: agents/evals/vikunja-triage.yaml
-identity: agent-vikunja-clerk
-api_key_ref: openbao://agent-key/vikunja-clerk
+identity: agent-vikunja-triage
+api_key_ref: openbao://agent-key/vikunja-triage
 channels: [langfuse-trace]
 mandate_binding:
   kind: fixed_in_app
@@ -48,8 +48,8 @@ policies:
     mode: VIKUNJA_TRIAGE_MODE
 github_reader:
   kind: public_read_only_rest
-  github_token_ref: github-token/vikunja-clerk
-  minted_by_identity: agent-vikunja-clerk
+  github_token_ref: github-token/vikunja-triage
+  minted_by_identity: agent-vikunja-triage
   enforce_in_code: true
 guards:
   enforce_before_dispatch: true

@@ -3,7 +3,7 @@ app:
   icon: 🤖
   icon_background: '#D5F5F6'
   mode: workflow
-  name: vikunja-triage
+  name: __DIFY_AGENT_NAME__
   use_icon_as_answer_icon: false
 dependencies: []
 kind: app
@@ -15,11 +15,11 @@ workflow:
     - {id: readonly, name: VIKUNJA_TRIAGE_READONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/readonly-projects}
     - {id: rank_only, name: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/rank-only-projects}
     - {id: denied, name: VIKUNJA_TRIAGE_DENIED_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/denied-projects}
-    - {id: mode, name: VIKUNJA_TRIAGE_MODE, value_type: string, value: shadow, description: shadow or live; default shadow}
+    - {id: mode, name: VIKUNJA_TRIAGE_MODE, value_type: string, value: __DIFY_MODE__, description: shadow or live; default shadow}
     - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: '', description: Approved OpenBao API base placeholder}
     - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: '', description: Agent AppRole ID}
     - {id: bao_secret, name: OPENBAO_SECRET_ID, value_type: secret, value: '', description: Agent AppRole secret}
-    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving github-token/vikunja-clerk}
+    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving __DIFY_GITHUB_TOKEN_REF__}
     - {id: github_api, name: GITHUB_API_BASE, value_type: string, value: '', description: Approved public GitHub API base placeholder}
     - {id: github_web, name: GITHUB_WEB_HOST, value_type: string, value: '', description: Approved public GitHub web host placeholder}
   features:
@@ -45,7 +45,7 @@ workflow:
       - {data: {isInIteration: true, iteration_id: project_loop, sourceType: tool, targetType: code}, id: list-bind-result, source: list_tasks, sourceHandle: source, target: scope_list_result, targetHandle: target, type: custom, zIndex: 1002}
       - {data: {isInIteration: true, iteration_id: dispatch_loop, sourceType: code, targetType: tool}, id: action-write, source: bind_action, sourceHandle: source, target: dispatch_write, targetHandle: target, type: custom, zIndex: 1002}
     nodes:
-      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '*/10 * * * *', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
+      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '__DIFY_TRIGGER_CRON__', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
         height: 54
         id: schedule
         position: {x: 40, y: 320}
@@ -107,16 +107,16 @@ workflow:
           isIterationStart: true
           iteration_id: project_loop
           provider_id: VIKUNJA_MCP_PROVIDER_ID
-          provider_name: vikunja
+          provider_name: __DIFY_MCP_SERVER__
           provider_type: mcp
           selected: false
           title: List Vikunja tasks
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
           tool_parameters:
-            operation: {type: mixed, value: list}
+            operation: {type: mixed, value: __DIFY_TOOL_OPERATION_LIST__}
             projectId: {type: variable, value: [project_loop, item]}
         height: 80
         id: list_tasks

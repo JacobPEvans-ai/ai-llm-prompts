@@ -81,6 +81,38 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
     _prompt_body(_ROOT / next(iter(shared_prefixes)))
 
 
+def _key_references(value):
+    if isinstance(value, dict):
+        for field, child in value.items():
+            if field in {"api_key_ref", "secret_ref", "github_token_ref", "router_key_ref"}:
+                if isinstance(child, str):
+                    yield child
+            yield from _key_references(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _key_references(child)
+
+
+def test_agent_memory_scopes_identities_and_key_references_are_unique():
+    definitions = _definitions()
+    memory_scopes = [
+        agent["memory_scope"]
+        for _, agent in definitions
+        if agent.get("memory_scope") not in (None, "", "none")
+    ]
+    identities = [agent["identity"] for _, agent in definitions]
+    key_owners = {}
+    for path, agent in definitions:
+        for reference in set(_key_references(agent)):
+            key_owners.setdefault(reference, set()).add(path.stem)
+
+    assert len(memory_scopes) == len(set(memory_scopes)), "agent memory scopes must be unique"
+    assert len(identities) == len(set(identities)), "agent identities must be unique"
+    assert all(len(owners) == 1 for owners in key_owners.values()), (
+        f"agent key references must be unique: {key_owners}"
+    )
+
+
 _DSL_AGENTS = []
 for _path, _agent in _definitions():
     _name = _path.stem
@@ -97,6 +129,60 @@ def _system_prompts(dsl):
         for message in data.get("prompt_template", [])
         if message.get("role") == "system"
     ]
+
+
+@pytest.mark.parametrize("agent_name", _DSL_AGENTS)
+def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
+    agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
+    dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
+    nodes = dsl["workflow"]["graph"]["nodes"]
+    assert dsl["app"]["name"] == agent["name"]
+    model_names = [
+        data["model"]["name"]
+        for node in nodes
+        for data in [node.get("data", {})]
+        if isinstance(data.get("model"), dict) and "name" in data["model"]
+    ]
+    assert model_names and set(model_names) == {agent["litellm_role"]}
+
+    mode_defaults = [
+        variable["value"]
+        for variable in dsl["workflow"].get("environment_variables", [])
+        if str(variable.get("name", "")).endswith("_MODE")
+    ]
+    assert all(value == agent["mode"] for value in mode_defaults)
+
+    schedules = [
+        data
+        for node in nodes
+        for data in [node.get("data", {})]
+        if data.get("type") == "trigger-schedule"
+    ]
+    trigger = agent["trigger"]
+    if trigger["kind"] == "schedule":
+        assert len(schedules) == 1
+        assert schedules[0]["cron_expression"] == trigger["cron"]
+    else:
+        assert not schedules
+
+    if agent.get("mcp_servers"):
+        expected_tools = {tool.split(".", 1)[0] for tool in agent["tools"]}
+        actual_tools = {
+            node.get("data", {}).get("tool_name")
+            for node in nodes
+            if node.get("data", {}).get("type") == "tool"
+        }
+        assert actual_tools == expected_tools
+
+    github_reader = agent.get("github_reader")
+    if github_reader:
+        token_path = [
+            variable
+            for variable in dsl["workflow"].get("environment_variables", [])
+            if variable.get("name") == "GITHUB_READ_TOKEN_PATH"
+        ]
+        assert len(token_path) == 1
+        assert github_reader["github_token_ref"] in token_path[0].get("description", "")
 
 
 @pytest.mark.parametrize("agent_name", _DSL_AGENTS)

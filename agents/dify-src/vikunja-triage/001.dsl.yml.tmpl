@@ -89,7 +89,7 @@
           context: {enabled: false, variable_selector: []}
           desc: Propose structured triage actions only; no tools or target IDs.
           memory: {query_prompt_template: '{{#sys.timestamp#}}', role_prefix: {assistant: '', user: ''}, window: {enabled: false, size: 10}}
-          model: {completion_params: {temperature: 0}, mode: chat, name: medium, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
           prompt_template:
             - id: system-prompt
               role: system

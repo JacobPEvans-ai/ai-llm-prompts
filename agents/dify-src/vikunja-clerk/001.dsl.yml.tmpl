@@ -30,7 +30,7 @@
 
             def preview_call(operation, **args):
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
-                return json.dumps({"tool": "vikunja_task_crud", "args": {"operation": operation, **args}}, separators=(",", ":"))
+                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"operation": operation, **args}}, separators=(",", ":"))
 
             def main(intent_text: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, inbox_project_id: str, mode_raw: str) -> dict:
                 try:
@@ -42,7 +42,7 @@
                     if has_incident_marker(title, description, intent.get("category"), intent.get("categories")):
                         return output(reason="Refused; file this in Zammad.")
                     operation = intent.get("operation")
-                    if operation not in {"list", "get", "create", "update"}:
+                    if operation not in __DIFY_TOOL_OPERATIONS__:
                         return output(reason="The operation is missing or unsupported.")
                     mode = str(mode_raw or "").strip().lower()
                     if operation in {"create", "update"} and mode not in {"shadow", "live"}:

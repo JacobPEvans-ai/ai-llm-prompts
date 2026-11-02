@@ -1,4 +1,4 @@
-app: {description: 'Scheduled, policy-scoped Zammad triage with guarded shadow and live branches.', mode: workflow, name: zammad-triage}
+app: {description: 'Scheduled, policy-scoped Zammad triage with guarded shadow and live branches.', mode: workflow, name: __DIFY_AGENT_NAME__}
 dependencies: []
 kind: app
 version: 0.7.0
@@ -8,7 +8,7 @@ workflow:
     - {id: readonly, name: ZAMMAD_TRIAGE_READONLY_GROUPS, value_type: secret, value: '[]'}
     - {id: denied, name: ZAMMAD_TRIAGE_DENIED_GROUPS, value_type: secret, value: '[]', description: Include all client and business group IDs}
     - {id: tags, name: ZAMMAD_TRIAGE_TAG_VOCABULARY, value_type: secret, value: '[]'}
-    - {id: mode, name: ZAMMAD_TRIAGE_MODE, value_type: string, value: shadow, description: Only exact live enables writes}
+    - {id: mode, name: ZAMMAD_TRIAGE_MODE, value_type: string, value: __DIFY_MODE__, description: Only exact live enables writes}
     - {id: api_base, name: ZAMMAD_API_BASE, value_type: string, value: ''}
     - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: ''}
     - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: ''}
@@ -22,7 +22,7 @@ workflow:
       - {data: {sourceType: llm, targetType: code}, id: e3, source: triage, sourceHandle: source, target: guard, targetHandle: target, type: custom}
       - {data: {sourceType: code, targetType: end}, id: e4, source: guard, sourceHandle: source, target: done, targetHandle: target, type: custom}
     nodes:
-      - {data: {mode: cron, cron_expression: '*/10 * * * *', timezone: UTC, title: Schedule, type: trigger-schedule}, id: schedule, position: {x: 40, y: 300}, type: custom}
+      - {data: {mode: cron, cron_expression: '__DIFY_TRIGGER_CRON__', timezone: UTC, title: Schedule, type: trigger-schedule}, id: schedule, position: {x: 40, y: 300}, type: custom}
       - data:
           # The Zammad token is fetched and used inside this node only; it never becomes a workflow variable.
           code: |-
@@ -93,7 +93,7 @@ workflow:
         position: {x: 340, y: 300}
         type: custom
       - data:
-          model: {completion_params: {temperature: 0}, mode: chat, name: medium, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
           prompt_template:
             - id: system-prompt
               role: system

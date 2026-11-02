@@ -1,4 +1,4 @@
-# Generated from agents/dify-src/code-simplifier/ and agents/prompts/shared/homelab.md + agents/prompts/code-simplifier.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/code-simplifier.yaml, agents/dify-src/code-simplifier/, and agents/prompts/shared/homelab.md + agents/prompts/code-simplifier.md; edit sources, then rerun agents/dify-src/render.py.
 app:
   description: Bounded, comment-only simplification reviews for eligible pull requests.
   icon: "\U0001F916"
