@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.41.0...v1.42.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** match clerk refusal reasons against keyword lists ([#197](https://github.com/dryvist/ai-llm-prompts/issues/197)) ([26891e6](https://github.com/dryvist/ai-llm-prompts/commit/26891e60326a97a96779895daa592d64586a447f))
+
 ## [1.41.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.40.0...v1.41.0) (2026-11-02)
 
 
