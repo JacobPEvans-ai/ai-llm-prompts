@@ -31,7 +31,9 @@ function expectedOutput(output, context) {
   return Object.entries(context.vars.expected.expected_output).every(([field, expected]) => {
     if (!field.endsWith("_contains")) return same(actual[field], expected);
     const target = field.slice(0, -9);
-    return String(actual[target] ?? actual.reply ?? "").includes(expected);
+    const text = String(actual[target] ?? actual.reply ?? "");
+    // A list is an any-of keyword set.
+    return (Array.isArray(expected) ? expected : [expected]).some((keyword) => text.includes(keyword));
   });
 }
 
