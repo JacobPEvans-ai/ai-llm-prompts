@@ -130,9 +130,13 @@ function expectedOutput(output, context) {
       mismatches.push(field);
     }
   }
-  const score = expectedEntries.length === 0 ? 1 : (expectedEntries.length - mismatches.length) / expectedEntries.length;
+  const pass = mismatches.length === 0;
+  // The suite's expected_output_scoring: "strict" scores all-or-nothing, "field-credit" the share of matching keys.
+  const score = context.vars.expected.expected_output_scoring === "strict" || expectedEntries.length === 0
+    ? Number(pass)
+    : (expectedEntries.length - mismatches.length) / expectedEntries.length;
   return {
-    pass: mismatches.length === 0,
+    pass,
     score,
     reason: mismatches.length ? `Mismatched keys: ${mismatches.join(", ")}` : "All expected keys match.",
   };

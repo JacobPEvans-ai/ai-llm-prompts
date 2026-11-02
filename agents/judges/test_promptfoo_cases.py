@@ -133,7 +133,7 @@ def test_fixture_cases_include_the_fixture_contents():
     assert supplied["input_event_summary"]["failing_log_excerpt"] == fixture
 
 
-def _run_expected_output(output, expected_output, case_data=None, patch_check=None):
+def _run_expected_output(output, expected_output, case_data=None, patch_check=None, scoring="field-credit"):
     node = shutil.which("node")
     if node is None:
         import pytest
@@ -146,6 +146,7 @@ def _run_expected_output(output, expected_output, case_data=None, patch_check=No
             "expected": {
                 "expected_output": expected_output,
                 "expected_patch_check": patch_check,
+                "expected_output_scoring": scoring,
             },
             "case_data": json.dumps(case_data or {}),
         }
@@ -173,6 +174,22 @@ def test_expected_output_returns_field_level_partial_credit():
     assert all_match["pass"] is True and all_match["score"] == 1
     assert half_match["pass"] is False and half_match["score"] == 0.5
     assert half_match["reason"] == "Mismatched keys: decision"
+
+
+def test_strict_scoring_gives_no_partial_credit():
+    expected = {"refused": True, "reason_contains": ["Zammad"]}
+
+    result = _run_expected_output({"refused": True, "reason": "not routed"}, expected, scoring="strict")
+
+    assert result["pass"] is False and result["score"] == 0
+    assert result["reason"] == "Mismatched keys: reason_contains"
+
+
+def test_scoring_mode_comes_from_the_suite():
+    modes = {test["vars"]["suite"]: test["vars"]["expected"].get("expected_output_scoring")
+             for test in cases.generate_tests() if "expected" in test["vars"] and "expected_output" in test["vars"]["expected"]}
+
+    assert modes == {"ci-fixer": "field-credit", "code-simplifier": "field-credit", "vikunja-clerk": "strict"}
 
 
 def test_expected_output_contains_list_is_any_of():
