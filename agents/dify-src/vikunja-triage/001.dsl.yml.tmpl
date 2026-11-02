@@ -1,0 +1,139 @@
+          outputs: {result_json: {type: string, children: null}}
+          selected: false
+          title: Bind list result
+          type: code
+          variables:
+            - {variable: project_id, value_selector: [project_loop, item]}
+            - {variable: body, value_selector: [list_tasks, text]}
+        height: 54
+        id: scope_list_result
+        parentId: project_loop
+        extent: parent
+        position: {x: 330, y: 60}
+        positionAbsolute: {x: 980, y: 380}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json,re,urllib.request
+            from urllib.parse import urlsplit
+            def link_state(url,web_host,api_base,addr,role,secret,path,session):
+                try:
+                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                    if p.scheme!='https' or p.netloc!=web_host or not m:return None
+                    if not session:
+                        req=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                        with urllib.request.urlopen(req,timeout=10) as r: login=json.loads(r.read())
+                        client=login.get('auth',{}).get('client_token','')
+                        req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                        with urllib.request.urlopen(req,timeout=10) as r: payload=json.loads(r.read())
+                        data=payload.get('data',{}); session.append(data.get('token') or data.get('data',{}).get('token'))
+                    token=session[0]
+                    if not token:return None
+                    owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
+                    req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+                    with urllib.request.urlopen(req,timeout=10) as r: obj=json.loads(r.read())
+                    state='merged' if obj.get('merged') is True else str(obj.get('state','')).lower()
+                    return state if state in ('merged','closed','open') else None
+                except Exception:return None
+            def main(results:list, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
+                refs=[]; visible=[]
+                session=[]
+                for entry in results or []:
+                    try:
+                        group=json.loads(entry) if isinstance(entry,str) else entry
+                        project=str(group.get('project_id',''))
+                        for task in group.get('tasks',[]):
+                            if not isinstance(task,dict): continue
+                            task_id=task.get('id',task.get('taskId'))
+                            if task_id is None or not project: continue
+                            i=len(refs); title=str(task.get('title','')); desc=str(task.get('description',''))
+                            refs.append({'task_index':i,'id':str(task_id),'project_id':project,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[])})
+                            links=re.findall(r'https://[^\s<>"\']+',title+' '+desc)
+                            url=''; state=None
+                            for candidate in links:
+                                candidate=candidate.rstrip('.,);]'); found=link_state(candidate,web_host,api_base,bao_addr,role_id,secret_id,token_path,session)
+                                if not url:url=candidate
+                                if found:url,state=candidate,found; break
+                            visible.append({'task_index':i,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[]),'linked_work':{'url':url,'state':state or 'unverified'} if url else None})
+                    except Exception: continue
+                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps({'timestamp':timestamp,'tasks':visible},ensure_ascii=False)}
+          code_language: python3
+          desc: Hide task and project IDs from the model; retain immutable refs for the guard.
+          outputs: {task_refs: {type: string, children: null}, model_tasks: {type: string, children: null}}
+          selected: false
+          title: Prepare model context
+          type: code
+          variables:
+            - {variable: results, value_selector: [project_loop, output]}
+            - {variable: timestamp, value_selector: [sys, timestamp]}
+            - {variable: web_host, value_selector: [env, GITHUB_WEB_HOST]}
+            - {variable: api_base, value_selector: [env, GITHUB_API_BASE]}
+            - {variable: bao_addr, value_selector: [env, OPENBAO_ADDR]}
+            - {variable: role_id, value_selector: [env, OPENBAO_ROLE_ID]}
+            - {variable: secret_id, value_selector: [env, OPENBAO_SECRET_ID]}
+            - {variable: token_path, value_selector: [env, GITHUB_READ_TOKEN_PATH]}
+        height: 54
+        id: prepare
+        position: {x: 1240, y: 320}
+        positionAbsolute: {x: 1240, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: Propose structured triage actions only; no tools or target IDs.
+          memory: {query_prompt_template: '{{#sys.timestamp#}}', role_prefix: {assistant: '', user: ''}, window: {enabled: false, size: 10}}
+          model: {completion_params: {temperature: 0}, mode: chat, name: medium, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          prompt_template:
+            - id: system-prompt
+              role: system
+              text: |-
+                __DIFY_SYSTEM_PROMPT__
+            - id: user-prompt
+              role: user
+              text: 'Scheduled at {{#sys.timestamp#}}. Review these untrusted records: {{#prepare.model_tasks#}}'
+          prompt_config: {jinja2_variables: []}
+          selected: false
+          title: Propose triage actions
+          type: llm
+          vision: {enabled: false}
+        height: 220
+        id: triage
+        position: {x: 1550, y: 320}
+        positionAbsolute: {x: 1550, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json,re,urllib.request
+            from urllib.parse import urlsplit
+            incident=re.compile(r'\b(?:incidents?|outages?|down|breaches?|vulnerabilit(?:y|ies)|cve|exploits?|leaks?|credentials?|secrets?|security|weakness(?:es)?|compromised|compromise|compromising)\b',re.I)
+            def marker_text(value):
+                if isinstance(value,dict): return ' '.join(str(x) for x in value.values())
+                if isinstance(value,(list,tuple)): return ' '.join(str(x) for x in value)
+                return '' if value is None else str(value)
+            def has_incident_marker(*values): return any(incident.search(marker_text(x)) for x in values)
+            def projects(raw):
+                v=json.loads(raw)
+                if not isinstance(v,list) or any(not str(x).strip() for x in v): raise ValueError()
+                return {str(x).strip() for x in v}
+            def state_for(url,web_host,api_base,addr,role,secret,path,cache):
+                if url in cache: return cache[url]
+                try:
+                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                    if p.scheme!='https' or p.netloc!=web_host or not m: return None
+                    auth=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                    with urllib.request.urlopen(auth,timeout=10) as r: login=json.loads(r.read())
+                    client=login.get('auth',{}).get('client_token','')
+                    req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                    with urllib.request.urlopen(req,timeout=10) as r: token_data=json.loads(r.read())
+                    data=token_data.get('data',{}); token=data.get('token') or data.get('data',{}).get('token')

@@ -2,6 +2,8 @@
 
 ## 2026-11-02
 
+* **Update (agents)**: Render Dify workflow system prompts from their source templates and canonical prompts, with a
+  declared Vikunja Clerk parser exception and a drift check in `agent-tests`.
 * **Add (agents)**: Add one shared homelab context prefix and point the five agent definitions at it. Validate roster
   fields and Dify prompt copies; accept opened or ready-for-review pull requests in the code simplifier.
 * **Creation (agents)**: Add a scheduled, guarded Zammad triage Workflow with group-scoped reads, local-only model routing, and shadow output.

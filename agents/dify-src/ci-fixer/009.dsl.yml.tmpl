@@ -1,0 +1,165 @@
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed:
+              type: number
+              children: null
+            reason:
+              type: string
+              children: null
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
+            - {variable: ref, value_selector: [start, ref]}
+            - {variable: head_sha, value_selector: [start, head_sha]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
+            - {variable: mode, value_selector: [start, mode]}
+            - {variable: target_body, value_selector: [build_tree_request, tree_json]}
+          selected: false
+          title: Recheck tree write target
+          type: code
+        height: 54
+        id: guard_tree_write
+        position: {x: 7040, y: 0}
+        positionAbsolute: {x: 7040, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: tree-write-authorized, value: '1', varType: number, variable_selector: [guard_tree_write, allowed]}
+                - {comparison_operator: "=", id: tree-live, value: live, varType: string, variable_selector: [start, mode]}
+                - {comparison_operator: "=", id: tree-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
+          desc: ''
+          selected: false
+          title: Tree write gate
+          type: if-else
+        height: 126
+        id: tree_write_gate
+        position: {x: 7320, y: 0}
+        positionAbsolute: {x: 7320, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, pr_body: str, rules_body: str, enable_push: str, mode: str, target_body: str) -> dict:
+                try:
+                    pr, rules = json.loads(pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                    target = json.loads(target_body) if target_body else {}
+                except (TypeError, ValueError, AttributeError):
+                    return {"allowed": 0, "reason": "target could not be revalidated"}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed:
+              type: number
+              children: null
+            reason:
+              type: string
+              children: null
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
+            - {variable: ref, value_selector: [start, ref]}
+            - {variable: head_sha, value_selector: [start, head_sha]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
+            - {variable: mode, value_selector: [start, mode]}
+            - {variable: target_body, value_selector: [create_tree, body]}
+          selected: false
+          title: Recheck commit write target
+          type: code
+        height: 54
+        id: guard_commit_write
+        position: {x: 7900, y: 0}
+        positionAbsolute: {x: 7900, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: commit-write-authorized, value: '1', varType: number, variable_selector: [guard_commit_write, allowed]}
+                - {comparison_operator: "=", id: commit-live, value: live, varType: string, variable_selector: [start, mode]}
+                - {comparison_operator: "=", id: commit-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
+          desc: ''
+          selected: false
+          title: Commit write gate
+          type: if-else
+        height: 126
+        id: commit_write_gate
+        position: {x: 8180, y: 0}
+        positionAbsolute: {x: 8180, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, pr_body: str, rules_body: str, enable_push: str, mode: str, target_body: str) -> dict:
+                try:
+                    pr, rules = json.loads(pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                    target = json.loads(target_body) if target_body else {}
+                except (TypeError, ValueError, AttributeError):
+                    return {"allowed": 0, "reason": "target could not be revalidated"}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))

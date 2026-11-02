@@ -1,0 +1,182 @@
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                tree = commit.get("tree") if isinstance(commit.get("tree"), dict) else {}
+                changed_lines, counts_valid = 0, isinstance(files, list) and len(files) <= 3
+                if counts_valid:
+                    for item in files:
+                        if not isinstance(item, dict):
+                            counts_valid = False
+                            break
+                        additions, deletions = item.get("additions"), item.get("deletions")
+                        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in (additions, deletions)):
+                            counts_valid = False
+                            break
+                        changed_lines += additions + deletions
+                context_text = json.dumps({"check": check, "annotations": annotations, "files": files}, ensure_ascii=False)
+                safe_context = not SECRET_RE.search(context_text)
+                valid = (isinstance(annotations, list) and isinstance(rules, list) and len(rules) == 0 and pr.get("state") == "open"
+                    and pr.get("number") == payload_pr_number and base_repo.get("full_name", "").lower() == payload_repo.lower()
+                    and head_repo.get("full_name", "").lower() == payload_repo.lower() and head.get("ref") == payload_head_ref
+                    and head.get("sha") == payload_head_sha and payload_head_ref not in {"main", "develop"}
+                    and SHA_RE.fullmatch(payload_head_sha) is not None and check.get("id") == payload_check_run_id
+                    and check.get("status") == "completed" and check.get("conclusion") == "failure" and check.get("head_sha") == payload_head_sha
+                    and check.get("head_branch") == payload_head_ref and counts_valid and changed_lines <= 120
+                    and SHA_RE.fullmatch(tree.get("sha", "")) is not None)
+                comment_allowed = (pr.get("number") == payload_pr_number and isinstance(payload_pr_number, int) and not isinstance(payload_pr_number, bool)
+                    and payload_pr_number > 0 and base_repo.get("full_name", "").lower() == payload_repo.lower()
+                    and head.get("ref") == payload_head_ref and head.get("sha") == payload_head_sha)
+                model_allowed = bool(valid and safe_context and (mode == "shadow" or LOG_REDACTION_AVAILABLE))
+                return {"eligible": 1 if valid else 0, "comment_allowed": 1 if comment_allowed else 0,
+                    "model_allowed": 1 if model_allowed else 0, "tree_sha": tree.get("sha", "") if valid else "",
+                    "current_head_sha": head.get("sha", ""), "changed_lines": changed_lines,
+                    "reason": "" if model_allowed else "bounded context or secret scan did not authorize model input"}
+          code_language: python3
+          desc: Rejects fork, stale, protected, and oversized PRs.
+          outputs:
+            eligible:
+              type: number
+              children: null
+            comment_allowed:
+              type: number
+              children: null
+            model_allowed:
+              type: number
+              children: null
+            tree_sha:
+              type: string
+              children: null
+            current_head_sha:
+              type: string
+              children: null
+            changed_lines:
+              type: number
+              children: null
+            reason:
+              type: string
+              children: null
+          selected: false
+          title: Guard pull request and branch rules
+          type: code
+          variables:
+            - {variable: payload_repo, value_selector: [start, repo]}
+            - {variable: payload_head_ref, value_selector: [start, ref]}
+            - {variable: payload_head_sha, value_selector: [start, head_sha]}
+            - {variable: payload_check_run_id, value_selector: [start, check_run_id]}
+            - {variable: payload_pr_number, value_selector: [extract_check_target, pr_number]}
+            - {variable: check_run_body, value_selector: [get_check_run, body]}
+            - {variable: annotations_body, value_selector: [get_annotations, body]}
+            - {variable: current_pr_body, value_selector: [get_pull_request, body]}
+            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - {variable: files_body, value_selector: [get_pull_files, body]}
+            - {variable: head_commit_body, value_selector: [get_head_commit, body]}
+            - {variable: mode, value_selector: [start, mode]}
+        height: 54
+        id: guard_context
+        position: {x: 4590, y: 200}
+        positionAbsolute: {x: 4590, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: pr-eligible, value: '1', varType: number, variable_selector: [guard_context, eligible]}
+          desc: Gates model use on current eligible PRs.
+          selected: false
+          title: Pull request gate
+          type: if-else
+        height: 126
+        id: preflight_gate
+        position: {x: 4894, y: 200}
+        positionAbsolute: {x: 4894, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: safe
+              id: safe
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: model-safe, value: '1', varType: number, variable_selector: [guard_context, model_allowed]}
+          desc: Gates model access on log redaction.
+          selected: false
+          title: Redaction gate
+          type: if-else
+        height: 126
+        id: safe_context_gate
+        position: {x: 5198, y: 100}
+        positionAbsolute: {x: 5198, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Applies the CI repair prompt.
+          memory:
+            enabled: false
+            window:
+              enabled: false
+              size: 10
+          model:
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+            name: medium
+            mode: chat
+            completion_params:
+              temperature: 0
+          prompt_config:
+            jinja2_variables: []
+          prompt_template:
+            - role: system
+              text: |
+                __DIFY_SYSTEM_PROMPT__
+            - role: user
+              text: "{{#prepare_context.review_context#}}"
+          selected: false
+          title: CI repair model
+          type: llm
+          vision:
+            enabled: false
+            configs:
+              variable_selector: []
+        height: 90
+        id: fixer_llm
+        position: {x: 5502, y: 100}
+        positionAbsolute: {x: 5502, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            LOG_REDACTION_AVAILABLE = False
+            DENIED_PARTS = {".github", "vendor", "generated", "node_modules"}
+
+            def main(model_text: str, files_body: str, enable_push: str, eligible: int, repo: str, pr_number: int, ref: str, head_sha: str, mode: str, actor: str, event: str, strength: str, current_pr_body: str, rules_body: str) -> dict:
+                try:
+                    result, files = json.loads(model_text), json.loads(files_body)
+                    pr, rules = json.loads(current_pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                except (TypeError, ValueError, AttributeError):
+                    result, files, pr, rules = {}, [], {}, None
+                changed_paths = {item.get("filename") for item in files if isinstance(item, dict)} if isinstance(files, list) else set()
+                patches = result.get("patches", []) if isinstance(result, dict) else []
+                valid = isinstance(patches, list) and 0 < len(patches) <= 3 and result.get("decision") == "commit"

@@ -1,0 +1,165 @@
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed:
+              type: number
+              children: null
+            reason:
+              type: string
+              children: null
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
+            - {variable: ref, value_selector: [start, ref]}
+            - {variable: head_sha, value_selector: [start, head_sha]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
+            - {variable: mode, value_selector: [start, mode]}
+            - {variable: target_body, value_selector: [prepare_comment, request_json]}
+          selected: false
+          title: Recheck comment target
+          type: code
+        height: 54
+        id: guard_comment_write
+        position: {x: 6100, y: 400}
+        positionAbsolute: {x: 6100, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: "=", id: comment-target-authorized, value: '1', varType: number, variable_selector: [guard_comment_write, allowed]}
+                - {comparison_operator: "=", id: comment-live, value: live, varType: string, variable_selector: [start, mode]}
+                - {comparison_operator: "=", id: comment-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
+          desc: ''
+          selected: false
+          title: Live comment gate
+          type: if-else
+        height: 126
+        id: comment_write_gate
+        position: {x: 6400, y: 400}
+        positionAbsolute: {x: 6400, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [validate_patch, status]}
+            - {variable: artifact, value_selector: [validate_patch, artifact_json]}
+            - {variable: trace, value_selector: [validate_patch, trace_json]}
+            - {variable: reason, value_selector: [validate_patch, reason]}
+          selected: false
+          title: End proposed patch
+          type: end
+        height: 90
+        id: end_proposed
+        position: {x: 6400, y: 100}
+        positionAbsolute: {x: 6400, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [validate_mandate, status]}
+            - {variable: reason, value_selector: [validate_mandate, reason]}
+          selected: false
+          title: End mandate handback
+          type: end
+        height: 90
+        id: end_handback_mandate
+        position: {x: 900, y: 850}
+        positionAbsolute: {x: 900, y: 850}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [prepare_handback, status]}
+            - {variable: reason, value_selector: [prepare_handback, reason]}
+          selected: false
+          title: End run handback
+          type: end
+        height: 90
+        id: end_handback_run
+        position: {x: 9500, y: 650}
+        positionAbsolute: {x: 9500, y: 650}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [prepare_comment, status]}
+            - {variable: reason, value_selector: [prepare_comment, reason]}
+            - {variable: trace, value_selector: [prepare_comment, trace_json]}
+          selected: false
+          title: End comment handback
+          type: end
+        height: 90
+        id: end_handback_comment
+        position: {x: 6700, y: 650}
+        positionAbsolute: {x: 6700, y: 650}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [prepare_comment, status]}
+            - {variable: artifact, value_selector: [prepare_comment, request_json]}
+            - {variable: trace, value_selector: [prepare_comment, trace_json]}
+          selected: false
+          title: End posted comment
+          type: end
+        height: 90
+        id: end_comment
+        position: {x: 6700, y: 400}
+        positionAbsolute: {x: 6700, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - {variable: status, value_selector: [validate_patch, status]}
+            - {variable: artifact, value_selector: [validate_patch, artifact_json]}
+            - {variable: trace, value_selector: [validate_patch, trace_json]}
+          selected: false
+          title: End source update
+          type: end
+        height: 90
+        id: end_pushed
+        position: {x: 9150, y: 0}
+        positionAbsolute: {x: 9150, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.55

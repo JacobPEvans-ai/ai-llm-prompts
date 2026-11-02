@@ -13,6 +13,8 @@ repos:
         exclude: '^(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$'
       - id: check-added-large-files
         args: [--maxkb=100, --enforce-all]
+        # Rendered by agents/dify-src/render.py; its sources stay under the limit.
+        exclude: '^agents/dify/[^/]+\.dsl\.yml$'
 
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.23.3
