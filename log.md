@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-11-01
+
+* **Creation (agents)**: Add a scheduled, guarded Vikunja triage Workflow with shadow output, policy-scoped reads, evidence checks, and regression cases.
+
 ## 2026-10-31
 
 * **Creation (applications)**: Add a platform-neutral Vikunja task specialist prompt with a

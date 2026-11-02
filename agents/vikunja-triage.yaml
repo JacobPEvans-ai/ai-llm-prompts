@@ -1,0 +1,62 @@
+name: vikunja-triage
+owner: agent-platform
+home_platform: dify
+prompt: agents/prompts/vikunja-triage.md
+shared_prefix: shared/homelab.md
+tools:
+  - vikunja_task_crud.list
+  - vikunja_task_crud.update
+  - vikunja_task_crud.comment
+mcp_servers: [vikunja]
+privacy_class: internal
+litellm_role: medium
+trigger: {kind: schedule, cron: "*/10 * * * *"}
+mode: shadow
+# Hindsight banks are per-agent; this scope is capped.
+memory_scope: hindsight/vikunja-clerk
+eval_set: agents/evals/vikunja-triage.yaml
+identity: agent-vikunja-clerk
+api_key_ref: openbao://agent-key/vikunja-clerk
+channels: [langfuse-trace]
+mandate_binding:
+  kind: fixed_in_app
+  source: environment_and_policy_refs
+  schedule_inputs: {}
+  model_writable: false
+  immutable: true
+capabilities:
+  rank: [priority, labels]
+  comment: verified_link_url_and_github_state
+  done: linked_github_pr_or_issue_state_in [merged, closed]
+  forbidden: [delete, create, project_move, reassign]
+policies:
+  allowed_projects_ref: policy://vikunja-triage/allowed-projects
+  readonly_projects_ref: policy://vikunja-triage/readonly-projects
+  rank_only_projects_ref: policy://vikunja-triage/rank-only-projects
+  denied_projects_ref: policy://vikunja-triage/denied-projects
+  deny_wins: true
+  default_project: deny_reads_and_writes
+  unfiltered_list: refuse
+  list_scope: allowed_union_readonly_minus_denied
+  rank_only_must_be_subset_of_allowed: true
+  refs_are_opaque: true
+  environment:
+    allowed_projects: VIKUNJA_TRIAGE_ALLOWED_PROJECTS
+    readonly_projects: VIKUNJA_TRIAGE_READONLY_PROJECTS
+    rank_only_projects: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS
+    denied_projects: VIKUNJA_TRIAGE_DENIED_PROJECTS
+    mode: VIKUNJA_TRIAGE_MODE
+github_reader:
+  kind: public_read_only_rest
+  github_token_ref: github-token/vikunja-clerk
+  minted_by_identity: agent-vikunja-clerk
+  enforce_in_code: true
+guards:
+  enforce_before_dispatch: true
+  deny_unknown_tools_and_operations: true
+  allowed_operations: [list, update, comment]
+  no_delete_create_move_or_reassignment: true
+  incident_security_classifier: copied_from_vikunja_clerk_guard
+  incident_action: fixed_zammad_comment_only
+  shadow_mode: {dispatch_writes: false, return_intended_actions: true}
+  on_error: deny
