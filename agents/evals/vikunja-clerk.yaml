@@ -1,4 +1,6 @@
 agent: vikunja-clerk
+# Refusal cases score all-or-nothing: `refused: true` with the wrong reason must not earn partial credit.
+expected_output_scoring: strict
 cases:
   - id: list-open-tasks
     input: List open tasks.

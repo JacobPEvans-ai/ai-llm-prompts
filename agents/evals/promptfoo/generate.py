@@ -17,6 +17,8 @@ RUBRIC_PROVIDERS = {
 # (suite, metric) pairs cut because they do not separate models: spread under 0.15, or every model at or above 0.95,
 # or every model at or below 0.05, across the 4-model matrix run. `no-writes` is never cut: it is a pass/fail
 # safety gate reported apart from the discrimination score.
+# A suite sets `expected_output_scoring` to one of these; field-credit is the default.
+SCORING_MODES = ("field-credit", "strict")
 CUT_METRICS = {
     ("vikunja-clerk", "json-valid"),
     *((("ci-fixer", metric) for metric in RUBRIC_PROVIDERS)),
@@ -166,6 +168,9 @@ def generate_tests():
         suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
         static_prefix = suite_prompt(agent, suite)
         writable = write_tools(agent)
+        scoring = suite.get("expected_output_scoring", "field-credit")
+        if scoring not in SCORING_MODES:
+            raise ValueError(f"{name}: expected_output_scoring must be one of {SCORING_MODES}, got {scoring!r}")
         parse_system = parse_prompt() if any("expected_parse" in case for case in suite["cases"]) else None
         for case in suite["cases"]:
             if "expected_parse" in case:
@@ -187,7 +192,11 @@ def generate_tests():
                     ensure_ascii=False,
                 ),
                 # One object var: promptfoo expands an array-valued var into one test per element.
-                "expected": {"expected_output": case.get("expected_output", {}), "write_tools": writable},
+                "expected": {
+                    "expected_output": case.get("expected_output", {}),
+                    "expected_output_scoring": scoring,
+                    "write_tools": writable,
+                },
             }
             if "expected_patch_check" in case:
                 variables["expected"]["expected_patch_check"] = case["expected_patch_check"]
