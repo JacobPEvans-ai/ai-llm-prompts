@@ -3,27 +3,30 @@ type: Dify workflow import guide
 title: Dify workflow imports
 description: Import, configure, and publish the code-simplifier and ci-fixer workflows.
 tags: [dify, workflow, github, import]
-timestamp: 2026-11-02T00:00:00Z
+timestamp: "2026-11-02T20:51:21Z"
 ---
 
 ## code-simplifier import and run
 
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
-## Prompt synchronization
+## Generated DSL source and synchronization
 
-The committed DSL files in `agents/dify/` are rendered from the templates in `agents/dify-src/`, each agent's
-`prompt` and `shared_prefix` paths, and the frontmatter-stripped prompt bodies. After editing a template or canonical
-prompt, run `python3 agents/dify-src/render.py` and commit the updated DSL output with its sources. Run
-`python3 agents/dify-src/render.py --check` to verify that the committed imports match their sources.
+Each committed DSL in `agents/dify/` is generated from its `agents/<name>.yaml` definition, workflow templates in
+`agents/dify-src/<name>/`, and prompt source paths declared in that YAML. The YAML supplies the Dify app name and
+LiteLLM role, plus schedule, mode-default, and MCP fields where declared; the templates supply graph structure. The
+renderer inserts the declared system prompt. Never copy a prompt into Dify or edit a committed DSL by hand. Edit the
+agent YAML or canonical prompt (or the template for graph changes), run `python3 agents/dify-src/render.py`, and commit
+all changed sources with the generated DSL. The CI check runs
+`python3 agents/dify-src/render.py --check` and fails on any byte difference.
 
 Vikunja Clerk's `Parse request` node is an intentional exception: its classifier prompt is declared in
 `agents/vikunja-clerk.yaml` and sourced from `agents/dify-src/vikunja-clerk/parse-request.prompt.txt` because that
 node converts caller text to structured intent instead of running the full task-agent prompt.
 
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then configure the `medium` LiteLLM router role alias. The Dify workflow model field takes the role name `medium`,
-   not a model ID.
+   then configure the `litellm_role` declared in `agents/code-simplifier.yaml` (`medium`). The Dify model field takes
+   the role name, not a model ID.
 2. Import [code-simplifier.dsl.yml](./code-simplifier.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
    `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, and `GITHUB_TOKEN_WRITE_SET`. Store
@@ -66,8 +69,8 @@ node converts caller text to structured intent instead of running the full task-
 Target: Dify 1.16.1 with App DSL 0.7.0.
 
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then configure the `medium` LiteLLM router role alias. The Dify workflow model field takes the role name `medium`,
-   not a model ID.
+   then configure the `litellm_role` declared in `agents/ci-fixer.yaml` (`medium`). The Dify model field takes the
+   role name, not a model ID.
 2. Import [ci-fixer.dsl.yml](./ci-fixer.dsl.yml) as a Workflow app.
 3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
    `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and

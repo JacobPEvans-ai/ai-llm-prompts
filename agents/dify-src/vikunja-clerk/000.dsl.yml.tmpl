@@ -3,7 +3,7 @@ app:
   icon: 🤖
   icon_background: '#D5F5F6'
   mode: advanced-chat
-  name: vikunja-clerk
+  name: __DIFY_AGENT_NAME__
   use_icon_as_answer_icon: false
 dependencies: []
 kind: app
@@ -29,7 +29,7 @@ workflow:
     - id: vikunja_mode
       name: VIKUNJA_MODE
       value_type: string
-      value: shadow
+      value: __DIFY_MODE__
       description: Use shadow to preview writes; use live only when live writes are authorized.
   features:
     file_upload:
@@ -210,7 +210,7 @@ workflow:
           model:
             completion_params: {temperature: 0}
             mode: chat
-            name: small
+            name: __DIFY_LITELLM_ROLE__
             provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_template:
             - id: system-prompt

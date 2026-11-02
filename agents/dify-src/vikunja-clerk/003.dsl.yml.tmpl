@@ -97,16 +97,16 @@
           desc: The only path to this MCP node passes through the update Code guard.
           is_team_authorization: false
           provider_id: VIKUNJA_MCP_PROVIDER_ID
-          provider_name: vikunja
+          provider_name: __DIFY_MCP_SERVER__
           provider_type: mcp
           selected: false
-          title: vikunja_task_crud update
+          title: __DIFY_TOOL_NAME__ update
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
           tool_parameters:
-            operation: {type: constant, value: update}
+            operation: {type: constant, value: __DIFY_TOOL_OPERATION_UPDATE__}
             id: {type: variable, value: [update-guard, task_id]}
             projectId: {type: variable, value: [update-guard, project_id]}
             title: {type: variable, value: [update-guard, title]}

@@ -1,4 +1,4 @@
-# Generated from agents/dify-src/vikunja-clerk/ and agents/dify-src/vikunja-clerk/parse-request.prompt.txt; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/vikunja-clerk.yaml, agents/dify-src/vikunja-clerk/, and agents/dify-src/vikunja-clerk/parse-request.prompt.txt; edit sources, then rerun agents/dify-src/render.py.
 app:
   description: Read, file, and update Vikunja tasks through a guarded workflow.
   icon: 🤖
@@ -305,7 +305,7 @@ workflow:
                     if has_incident_marker(title, description, intent.get("category"), intent.get("categories")):
                         return output(reason="Refused; file this in Zammad.")
                     operation = intent.get("operation")
-                    if operation not in {"list", "get", "create", "update"}:
+                    if operation not in {'create', 'get', 'list', 'update'}:
                         return output(reason="The operation is missing or unsupported.")
                     mode = str(mode_raw or "").strip().lower()
                     if operation in {"create", "update"} and mode not in {"shadow", "live"}:

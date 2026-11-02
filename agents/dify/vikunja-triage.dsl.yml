@@ -1,4 +1,4 @@
-# Generated from agents/dify-src/vikunja-triage/ and agents/prompts/shared/homelab.md + agents/prompts/vikunja-triage.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/vikunja-triage.yaml, agents/dify-src/vikunja-triage/, and agents/prompts/shared/homelab.md + agents/prompts/vikunja-triage.md; edit sources, then rerun agents/dify-src/render.py.
 app:
   description: Scheduled, policy-scoped task triage with guarded shadow and live branches.
   icon: 🤖
@@ -20,7 +20,7 @@ workflow:
     - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: '', description: Approved OpenBao API base placeholder}
     - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: '', description: Agent AppRole ID}
     - {id: bao_secret, name: OPENBAO_SECRET_ID, value_type: secret, value: '', description: Agent AppRole secret}
-    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving github-token/vikunja-clerk}
+    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving github-token/vikunja-triage}
     - {id: github_api, name: GITHUB_API_BASE, value_type: string, value: '', description: Approved public GitHub API base placeholder}
     - {id: github_web, name: GITHUB_WEB_HOST, value_type: string, value: '', description: Approved public GitHub web host placeholder}
   features:
@@ -321,7 +321,9 @@ workflow:
                     intent=json.loads(model_text); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
                 except Exception: proposed=[]
                 cache={}
+                allowed_operations={'comment', 'list', 'update'}
                 def add(ref,op,**fields):
+                    if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
                     key=(ref['id'],op,json.dumps(fields,sort_keys=True,ensure_ascii=False))
                     if key in seen:return
                     seen.add(key); actions.append({'operation':op,'id':ref['id'],'projectId':ref['project_id'],**fields})

@@ -1,4 +1,4 @@
-# Generated from agents/dify-src/ci-fixer/ and agents/prompts/shared/homelab.md + agents/prompts/ci-fixer.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/ci-fixer.yaml, agents/dify-src/ci-fixer/, and agents/prompts/shared/homelab.md + agents/prompts/ci-fixer.md; edit sources, then rerun agents/dify-src/render.py.
 app:
   description: Bounded CI repair for eligible same-repository pull requests; source
     writes stay disabled until log redaction is available.

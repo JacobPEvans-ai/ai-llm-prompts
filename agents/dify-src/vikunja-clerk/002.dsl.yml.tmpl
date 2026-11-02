@@ -61,14 +61,14 @@
           desc: The only path to this MCP node passes through the Code guard.
           is_team_authorization: false
           provider_id: VIKUNJA_MCP_PROVIDER_ID
-          provider_name: vikunja
+          provider_name: __DIFY_MCP_SERVER__
           provider_type: mcp
           selected: false
-          title: vikunja_task_crud
+          title: __DIFY_TOOL_NAME__
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
           tool_parameters:
             operation: {type: variable, value: [guard, operation]}
             id: {type: variable, value: [guard, task_id]}
@@ -133,7 +133,7 @@
 
             def preview_call(**args):
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
-                return json.dumps({"tool": "vikunja_task_crud", "args": {"operation": "update", **args}}, separators=(",", ":"))
+                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"operation": "__DIFY_TOOL_OPERATION_UPDATE__", **args}}, separators=(",", ":"))
 
             def main(intent_text: str, task_result: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, mode_raw: str) -> dict:
                 try:

@@ -17,7 +17,9 @@
                     intent=json.loads(model_text); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
                 except Exception: proposed=[]
                 cache={}
+                allowed_operations=__DIFY_TOOL_OPERATIONS__
                 def add(ref,op,**fields):
+                    if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
                     key=(ref['id'],op,json.dumps(fields,sort_keys=True,ensure_ascii=False))
                     if key in seen:return
                     seen.add(key); actions.append({'operation':op,'id':ref['id'],'projectId':ref['project_id'],**fields})
@@ -26,7 +28,7 @@
                     if project in denied or project not in allowed|readonly: continue
                     text=(str(ref.get('title',''))+' '+str(ref.get('description','')))
                     if has_incident_marker(ref.get('title'),ref.get('description'),ref.get('category'),ref.get('categories')):
-                        if project in allowed and project not in rank_only: add(ref,'comment',comment='This item belongs in Zammad.')
+                        if project in allowed and project not in rank_only: add(ref,'__DIFY_TOOL_OPERATION_COMMENT__',comment='This item belongs in Zammad.')
                         continue
                     for item in proposed if isinstance(proposed,list) else []:
                         if not isinstance(item,dict) or type(item.get('task_index')) is not int or item['task_index']!=ref['task_index']: continue
@@ -37,7 +39,7 @@
                             if isinstance(p,(int,float)) and not isinstance(p,bool): fields['priority']=p
                             labels=item.get('labels',ref.get('labels',[]))
                             if isinstance(labels,list) and all(isinstance(x,str) for x in labels): fields['labels']=labels
-                            if fields: add(ref,'update',**fields)
+                            if fields: add(ref,'__DIFY_TOOL_OPERATION_UPDATE__',**fields)
                         elif kind in ('comment','done') and project in allowed and project not in rank_only:
                             urls=re.findall(r'https://[^\s<>"\']+',text)
                             for raw_url in urls:
@@ -45,10 +47,10 @@
                                 state=state_for(url,web_host,api_base,bao_addr,role_id,secret_id,token_path,cache)
                                 if state is None: continue
                                 if kind=='comment':
-                                    add(ref,'comment',comment=f'Linked GitHub work: {url} (state: {state}).')
+                                    add(ref,'__DIFY_TOOL_OPERATION_COMMENT__',comment=f'Linked GitHub work: {url} (state: {state}).')
                                     break
                                 if kind=='done' and state in ('merged','closed') and not ref.get('done'):
-                                    add(ref,'update',done=True); break
+                                    add(ref,'__DIFY_TOOL_OPERATION_UPDATE__',done=True); break
                 return {'actions':actions,'actions_json':json.dumps(actions,ensure_ascii=False),'dispatch':mode=='live','mode':mode}
           code_language: python3
           desc: Enforce project tiers and incidents; mint a short-lived public-read token through AppRole and verify GitHub state in code before authorizing comments or done.

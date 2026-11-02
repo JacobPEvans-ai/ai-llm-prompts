@@ -1,4 +1,4 @@
-# Generated from agents/dify-src/zammad-triage/ and agents/prompts/shared/homelab.md + agents/prompts/zammad-triage.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/zammad-triage.yaml, agents/dify-src/zammad-triage/, and agents/prompts/shared/homelab.md + agents/prompts/zammad-triage.md; edit sources, then rerun agents/dify-src/render.py.
 app: {description: 'Scheduled, policy-scoped Zammad triage with guarded shadow and live branches.', mode: workflow, name: zammad-triage}
 dependencies: []
 kind: app
