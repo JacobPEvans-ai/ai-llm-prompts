@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.45.0...v1.46.0) (2026-11-02)
+
+
+### Features
+
+* **agents:** add a scheduled zammad-triage Workflow in shadow ([#205](https://github.com/dryvist/ai-llm-prompts/issues/205)) ([dde8639](https://github.com/dryvist/ai-llm-prompts/commit/dde8639c64058e2fcf44729c0e36f7988f3a21c1))
+
 ## [1.45.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.44.0...v1.45.0) (2026-11-02)
 
 
