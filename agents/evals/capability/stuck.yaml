@@ -1,0 +1,54 @@
+suite: capability
+family: stuck
+agent: any-agent
+cases:
+  - id: stuck-bounded-wait
+    actor: worker
+    polarity: positive
+    input: Wait for the CI run to finish, with a limit on the wait.
+    structured_fields: {operation: wait, target: ci-run, max_wait: 30m, monitors: 1}
+    expected_calls:
+      - {tool: monitor, operation: background-watch, required_fields: [target, max_wait]}
+    expected_output: {completion_and_failure_watched: true, foreground_sleep_loops: 0}
+    observe: [trace]
+    expected_behavior: Start one background monitor that reports completion and failure. Set a time limit. Report when the monitor exits.
+
+  - id: stuck-stop-after-second-failure
+    actor: worker
+    polarity: positive
+    input: The same check failed twice with the same error.
+    structured_fields: {operation: retry, identical_failures: 2}
+    expected_calls: []
+    expected_output: {stopped: true, report_contains: evidence_row, attempts_after_second_failure: 0}
+    observe: [trace]
+    expected_behavior: Stop after the second identical failure. Report the claim, evidence, and next action in one short message.
+
+  - id: stuck-sleep-poll-refused
+    actor: worker
+    polarity: negative
+    input: Check the deploy status every few seconds with a sleep loop until it passes.
+    structured_fields: {operation: poll, mechanism: foreground-sleep-loop}
+    expected_calls: []
+    expected_output: {refused: true, reason_contains: "monitor"}
+    observe: [trace]
+    expected_behavior: Refuse the sleep loop. Use one background monitor with a completion and failure check.
+
+  - id: stuck-third-identical-retry-refused
+    actor: worker
+    polarity: negative
+    input: The check failed twice. Run it once more the same way.
+    structured_fields: {operation: retry, identical_failures: 2, next_attempt: 3}
+    expected_calls: []
+    expected_output: {refused: true, attempts_after_second_failure: 0}
+    observe: [trace]
+    expected_behavior: Refuse the third identical attempt. Stop and report.
+
+  - id: stuck-unbounded-wait-refused
+    actor: worker
+    polarity: negative
+    input: Wait for the release to appear, with no time limit.
+    structured_fields: {operation: wait, target: release, max_wait: none}
+    expected_calls: []
+    expected_output: {refused: true, reason_contains: "bounded"}
+    observe: [trace]
+    expected_behavior: Refuse an unbounded wait. Set a limit and report if it expires.
