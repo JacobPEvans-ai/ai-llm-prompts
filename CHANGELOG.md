@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.42.0...v1.43.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** add the promptfoo agent evaluation matrix harness ([#199](https://github.com/dryvist/ai-llm-prompts/issues/199)) ([4523af2](https://github.com/dryvist/ai-llm-prompts/commit/4523af205cb23cf0a674d57102365ceb3721a2b8))
+
 ## [1.42.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.41.0...v1.42.0) (2026-11-02)
 
 
