@@ -1,0 +1,31 @@
+description: Agent evaluation suite matrix
+prompts:
+  - |
+    - role: system
+      content: {{static_prefix_json}}
+    - role: user
+      content: {{case_content_json}}
+providers:
+  - id: "openai:chat:{{ env.EVAL_LOCAL_MODEL }}"
+    label: local
+    # Endpoint and key come from promptfoo's native OPENAI_BASE_URL and OPENAI_API_KEY.
+    config:
+      temperature: 0
+      # Every local candidate answers directly with the same budget: a reasoning model otherwise prints its
+      # thinking as plain text and runs out of tokens before the JSON.
+      max_tokens: 4096
+      passthrough:
+        chat_template_kwargs:
+          enable_thinking: false
+  - id: exec:../../../scripts/promptfoo/luna.sh
+    label: luna
+  - id: exec:../../../scripts/promptfoo/go-kimi.sh
+    label: go-kimi
+defaultTest:
+  options:
+    # The behavior rubric is graded by a local model that is not the candidate (EVAL_GRADER_* per run).
+    provider:
+      id: exec:../../../scripts/promptfoo/grader.sh
+tests: file://generate.py
+sharing: false
+writeLatestResults: false
