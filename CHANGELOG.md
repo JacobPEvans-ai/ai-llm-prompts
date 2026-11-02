@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.39.0...v1.40.0) (2026-11-02)
+
+
+### Features
+
+* **agents:** add a scheduled vikunja-triage Workflow in shadow ([#193](https://github.com/dryvist/ai-llm-prompts/issues/193)) ([6b7419f](https://github.com/dryvist/ai-llm-prompts/commit/6b7419f4d3c7cb2c7bec43b78ab00adea63b5900))
+
 ## [1.39.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.38.0...v1.39.0) (2026-11-02)
 
 
