@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-11-02
+
+* **Creation (agents)**: Add a scheduled, guarded Zammad triage Workflow with group-scoped reads, local-only model routing, and shadow output.
+
 ## 2026-11-01
 
 * **Creation (agents)**: Add a scheduled, guarded Vikunja triage Workflow with shadow output, policy-scoped reads, evidence checks, and regression cases.
