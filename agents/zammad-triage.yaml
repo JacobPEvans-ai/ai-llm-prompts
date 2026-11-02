@@ -1,0 +1,54 @@
+name: zammad-triage
+owner: agent-platform
+home_platform: dify
+prompt: agents/prompts/zammad-triage.md
+shared_prefix: shared/homelab.md
+tools: [zammad_rest.search, zammad_rest.update_priority, zammad_rest.add_tag, zammad_rest.internal_note]
+mcp_servers: []
+privacy_class: internal
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden, router_key_ref: openbao://agent-key/zammad-triage}
+trigger: {kind: schedule, cron: "*/10 * * * *"}
+mode: shadow
+memory_scope: hindsight/zammad-triage
+eval_set: agents/evals/zammad-triage.yaml
+identity: agent-zammad-triage
+api_key_ref: openbao://agent-key/zammad-triage
+channels: [langfuse-trace]
+mandate_binding:
+  kind: fixed_in_app
+  source: environment_and_policy_refs
+  schedule_inputs: {}
+  model_writable: false
+  immutable: true
+capabilities:
+  rank: {field: priority_id, values: {low: 1, normal: 2, high: 3}}
+  tag: {operation: add_only, vocabulary: ZAMMAD_TRIAGE_TAG_VOCABULARY}
+  note: {type: note, internal: true, content_type: text/plain, body_template: "Triage (automated): proposed priority <low|normal|high>; reason <REASON_CODE>.", reason_codes: [blocked, stale, explicit_priority, duplicate_candidate, needs_owner, incident_candidate]}
+  incident: {kind: propose_incident, dispatch: false}
+  forbidden: [create, close, state_change, delete, merge, reassign_owner, group_move, customer_visible_article, email_reply, tag_remove, priority_on_readonly_group]
+policies:
+  allowed_groups_ref: policy://zammad-triage/allowed-groups
+  readonly_groups_ref: policy://zammad-triage/readonly-groups
+  denied_groups_ref: policy://zammad-triage/denied-groups
+  deny_wins: true
+  default_group: deny_reads_and_writes
+  unfiltered_search: refuse
+  search_scope: allowed_union_readonly_minus_denied
+  client_groups: always_denied
+  refs_are_opaque: true
+  environment:
+    allowed_groups: ZAMMAD_TRIAGE_ALLOWED_GROUPS
+    readonly_groups: ZAMMAD_TRIAGE_READONLY_GROUPS
+    denied_groups: ZAMMAD_TRIAGE_DENIED_GROUPS
+    mode: ZAMMAD_TRIAGE_MODE
+    tag_vocabulary: ZAMMAD_TRIAGE_TAG_VOCABULARY
+guards:
+  enforce_before_dispatch: true
+  deny_unknown_kinds_fields_and_operations: true
+  drop_actions_on_readonly_or_out_of_scope: true
+  drop_tags_outside_vocabulary: true
+  max_actions_per_run: 20
+  incident_proposals_never_dispatched: true
+  shadow_mode: {dispatch_writes: false, return_intended_actions: true}
+  on_error: deny
