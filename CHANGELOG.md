@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.48.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.47.1...v1.48.0) (2026-11-02)
+
+
+### Features
+
+* **agents:** add the shared homelab prefix and an agent definition contract test ([#211](https://github.com/dryvist/ai-llm-prompts/issues/211)) ([61b5a96](https://github.com/dryvist/ai-llm-prompts/commit/61b5a96e99ed6354adbccc76838e1c33677b34f6))
+
 ## [1.47.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.47.0...v1.47.1) (2026-11-02)
 
 
