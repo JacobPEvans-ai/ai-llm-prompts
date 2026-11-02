@@ -1,5 +1,12 @@
 "use strict";
 
+const { execFileSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+
+const REPO_ROOT = path.resolve(__dirname, "../../..");
+
 function same(left, right) {
   if (left === right) return true;
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -25,16 +32,123 @@ function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function sourceFromInputDiff(diff, sourcePath) {
+  if (typeof diff !== "string") return null;
+
+  const lines = diff.split(/\r?\n/);
+  const fileHeader = `diff --git a/${sourcePath} b/${sourcePath}`;
+  const start = lines.indexOf(fileHeader);
+  if (start < 0) return null;
+
+  const source = [];
+  let remaining = 0;
+  let sawHunk = false;
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith("diff --git ")) break;
+    // The case diff introduced the bug, so the file under test is its post-image: context and added lines.
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
+    if (hunk) {
+      if (remaining > 0 || Number(hunk[1]) !== source.length + 1) return null;
+      remaining = Number(hunk[2] ?? 1);
+      sawHunk = true;
+      continue;
+    }
+    if (remaining === 0) continue;
+    if (line.startsWith("\\")) continue;
+    if (line.startsWith(" ") || line.startsWith("+")) {
+      source.push(line.slice(1));
+      remaining -= 1;
+    } else if (!line.startsWith("-")) {
+      return null;
+    }
+  }
+
+  return sawHunk && remaining === 0 && source.length > 0 ? `${source.join("\n")}\n` : null;
+}
+
+function patchBehaviorMatches(actual, context) {
+  const check = context.vars.expected.expected_patch_check;
+  const input = parseOutput(context.vars.case_data);
+  const source = sourceFromInputDiff(input?.input_event_summary?.diff, check?.source_path);
+  const patches = actual.patches;
+  if (!source || !Array.isArray(patches) || patches.length === 0 || !Array.isArray(check?.test_command) || check.test_command.length === 0) {
+    return false;
+  }
+
+  if (typeof check.source_path !== "string" || path.isAbsolute(check.source_path) || check.source_path.split(/[\\/]/).includes("..")) {
+    return false;
+  }
+  const testPath = path.resolve(REPO_ROOT, check.test_fixture);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "promptfoo-patch-check-"));
+  try {
+    if (!testPath.startsWith(`${REPO_ROOT}${path.sep}`) || !fs.statSync(testPath).isFile()) return false;
+
+    const sourceFile = path.resolve(tempDir, check.source_path);
+    if (!sourceFile.startsWith(`${tempDir}${path.sep}`)) return false;
+    fs.mkdirSync(path.dirname(sourceFile), { recursive: true });
+    fs.writeFileSync(sourceFile, source);
+    fs.copyFileSync(testPath, path.join(tempDir, path.basename(testPath)));
+    execFileSync("git", ["init", "--quiet"], { cwd: tempDir, timeout: 60000, stdio: "pipe" });
+    for (const patch of patches) {
+      if (!patch || typeof patch.diff !== "string" || patch.diff.length === 0) return false;
+      execFileSync("git", ["apply", "--"], { cwd: tempDir, input: patch.diff, timeout: 60000, stdio: "pipe" });
+    }
+    execFileSync(check.test_command[0], check.test_command.slice(1), {
+      cwd: tempDir,
+      timeout: 60000,
+      stdio: "pipe",
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 function expectedOutput(output, context) {
   const actual = parseOutput(output);
-  if (!isObject(actual)) return false;
-  return Object.entries(context.vars.expected.expected_output).every(([field, expected]) => {
-    if (!field.endsWith("_contains")) return same(actual[field], expected);
+  const expectedOutput = context.vars.expected.expected_output;
+  const expectedEntries = Object.entries(expectedOutput);
+  const mismatches = [];
+  for (const [field, expected] of expectedEntries) {
+    if (!isObject(actual)) {
+      mismatches.push(field);
+      continue;
+    }
+    if (field === "patches" && Array.isArray(expected) && expected.length > 0) {
+      if (!patchBehaviorMatches(actual, context)) mismatches.push(field);
+      continue;
+    }
+    if (!field.endsWith("_contains")) {
+      if (!same(actual[field], expected)) mismatches.push(field);
+      continue;
+    }
     const target = field.slice(0, -9);
     const text = String(actual[target] ?? actual.reply ?? "");
-    // A list is an any-of keyword set.
-    return (Array.isArray(expected) ? expected : [expected]).some((keyword) => text.includes(keyword));
-  });
+    if (!(Array.isArray(expected) ? expected : [expected]).some((keyword) => text.includes(keyword))) {
+      mismatches.push(field);
+    }
+  }
+  const score = expectedEntries.length === 0 ? 1 : (expectedEntries.length - mismatches.length) / expectedEntries.length;
+  return {
+    pass: mismatches.length === 0,
+    score,
+    reason: mismatches.length ? `Mismatched keys: ${mismatches.join(", ")}` : "All expected keys match.",
+  };
+}
+
+function notTruncated(output, context) {
+  const finishReason = context.providerResponse?.finishReason?.toLowerCase();
+  const lengthStop = typeof finishReason === "string"
+    && (finishReason === "length" || finishReason === "max_tokens" || finishReason.includes("token_limit"));
+  const completeObject = isObject(parseOutput(output));
+  const pass = !lengthStop && completeObject;
+  return {
+    pass,
+    score: pass ? 1 : 0,
+    reason: lengthStop ? "Provider stopped at the output length limit." : completeObject ? "Complete JSON object." : "Output is not one complete JSON object.",
+  };
 }
 
 function expectedCalls(output, context) {
@@ -82,4 +196,4 @@ function expectedFieldsMatch(output, context) {
     : { pass: true, score: 1, reason: "All expected fields match." };
 }
 
-module.exports = { expectedOutput, expectedCalls, noWrites, expectedFieldsMatch };
+module.exports = { expectedOutput, expectedCalls, noWrites, expectedFieldsMatch, notTruncated };
