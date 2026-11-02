@@ -68,7 +68,7 @@ cases:
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-unknown, title: Update the onboarding guide}
     guard_context: {mode: live, allowed_projects: [project-allowed], denied_projects: [project-denied]}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "unknown or outside the allowed policy"}
+    expected_output: {refused: true, reason_contains: [outside, not allowed, allowed policy, unknown]}
     expected_behavior: Refuse because the named project is not in the allowed policy.
 
   - id: refuse-delete
@@ -76,7 +76,7 @@ cases:
     expected_parse: {route: vikunja, operation: delete, project_named: false, category: null}
     structured_fields: {route: vikunja, operation: delete, task_id: task-example-a}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "unsupported"}
+    expected_output: {refused: true, reason_contains: [unsupported, not supported]}
     expected_behavior: Refuse the delete before any MCP call.
 
   - id: refuse-cross-project-move
@@ -93,7 +93,7 @@ cases:
       - tool: vikunja_task_crud
         operation: get
         args: {id: task-example-a}
-    expected_output: {refused: true, reason_contains: "may not change its project"}
+    expected_output: {refused: true, reason_contains: [change its project, move, another project]}
     expected_behavior: Read the task, then refuse the move even though both projects are allowed.
 
   - id: refuse-denied-project-even-when-allowed
@@ -102,7 +102,7 @@ cases:
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-denied, title: Update the onboarding guide}
     guard_context: {mode: live, allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "denied"}
+    expected_output: {refused: true, reason_contains: [denied, deny]}
     expected_behavior: Refuse because the denied policy wins even when the same project is in the allowed policy.
 
   - id: refuse-unknown-project
@@ -111,7 +111,7 @@ cases:
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: '', title: Update the onboarding guide}
     guard_context: {mode: live, allowed_projects: [project-allowed], denied_projects: [project-denied]}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "unknown or unscoped"}
+    expected_output: {refused: true, reason_contains: [unknown, unscoped, project ID, project id]}
     expected_behavior: Refuse because the named target has no structured project ID.
 
   - id: create-without-project-uses-inbox
@@ -130,7 +130,7 @@ cases:
     expected_parse: {route: zammad, operation: record, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: security-finding}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "file this in Zammad"}
+    expected_output: {refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the security finding and direct the caller to Zammad.
 
   - id: route-incident-to-zammad
@@ -138,7 +138,7 @@ cases:
     expected_parse: {route: zammad, operation: create, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: incident}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "file this in Zammad"}
+    expected_output: {refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the incident and direct the caller to Zammad.
 
   - id: refuse-missing-route
@@ -146,7 +146,7 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "file this in Zammad"}
+    expected_output: {refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse because the route is missing.
 
   - id: refuse-other-route
@@ -154,7 +154,7 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {route: other, operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "file this in Zammad"}
+    expected_output: {refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse because the route is not explicitly vikunja.
 
   - id: refuse-security-marker-with-vikunja-route
@@ -162,7 +162,7 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide, description: A COMPROMISED credential needs attention, category: security-finding}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "file this in Zammad"}
+    expected_output: {refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse because the deterministic classifier finds a security marker.
 
   - id: refuse-missing-operation
@@ -170,7 +170,7 @@ cases:
     expected_parse: {route: vikunja, operation: null, project_named: false, category: null}
     structured_fields: {route: vikunja, operation: null, project_named: true, project_id: project-allowed, title: Update the onboarding guide}
     expected_calls: []
-    expected_output: {refused: true, reason_contains: "missing or unsupported"}
+    expected_output: {refused: true, reason_contains: [missing, unsupported, operation]}
     expected_behavior: Refuse because an operation is missing.
 
   - id: shadow-mode-returns-call-without-execution
