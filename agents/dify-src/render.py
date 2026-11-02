@@ -1,6 +1,7 @@
 """Render the committed Dify workflow DSLs from templates and agent prompts."""
 
 import argparse
+import hashlib
 from pathlib import Path
 import re
 import sys
@@ -55,6 +56,60 @@ def _template(name):
     return "".join(path.read_text() for path in fragments)
 
 
+def _fragment_paths():
+    return sorted(SOURCE_ROOT.rglob("*.tmpl"), key=lambda path: path.relative_to(ROOT).as_posix())
+
+
+def _manifest_errors():
+    manifest = SOURCE_ROOT / "fragments.sha256"
+    fragments = {
+        path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in _fragment_paths()
+    }
+    try:
+        lines = manifest.read_text().splitlines()
+    except FileNotFoundError:
+        return [f"{name} (missing from manifest)" for name in fragments] or [
+            f"{manifest.relative_to(ROOT)} (missing manifest)"
+        ]
+
+    entries = []
+    errors = []
+    for number, line in enumerate(lines, 1):
+        match = re.fullmatch(r"([0-9a-f]{64})  (.+)", line)
+        if match is None:
+            errors.append(f"{manifest.relative_to(ROOT)}:{number} (invalid sha256sum entry)")
+        else:
+            entries.append((match.group(2), match.group(1)))
+
+    names = [name for name, _ in entries]
+    if names != sorted(names):
+        errors.append(f"{manifest.relative_to(ROOT)} (entries are not sorted)")
+    if len(names) != len(set(names)):
+        errors.append(f"{manifest.relative_to(ROOT)} (duplicate fragment entries)")
+
+    recorded = dict(entries)
+    for name, digest in fragments.items():
+        if name not in recorded:
+            errors.append(f"{name} (missing from manifest)")
+        elif recorded[name] != digest:
+            errors.append(f"{name} (sha256 mismatch)")
+    errors.extend(f"{name} (fragment missing from source tree)" for name in recorded.keys() - fragments.keys())
+    return errors
+
+
+def _write_manifest():
+    fragments = _fragment_paths()
+    if not fragments:
+        raise ValueError("no Dify template fragments found")
+    manifest = SOURCE_ROOT / "fragments.sha256"
+    manifest.write_text("".join(
+        f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(ROOT).as_posix()}\n"
+        for path in fragments
+    ))
+    return len(fragments)
+
+
 def render_agent(definition_path):
     name = definition_path.stem
     agent = load_yaml(definition_path)
@@ -87,10 +142,31 @@ def render_all():
     return outputs
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="fail if any committed DSL differs from rendered output")
-    args = parser.parse_args()
+    parser.add_argument("--update-manifest", action="store_true", help="rewrite the Dify fragment hash manifest")
+    args = parser.parse_args(argv)
+
+    if args.check and args.update_manifest:
+        parser.error("--check and --update-manifest cannot be used together")
+
+    if args.update_manifest:
+        try:
+            count = _write_manifest()
+        except (OSError, ValueError) as error:
+            print(f"Dify renderer error: {error}", file=sys.stderr)
+            return 2
+        print(f"Updated Dify fragment manifest ({count} fragments).")
+        return 0
+
+    if args.check:
+        errors = _manifest_errors()
+        if errors:
+            print("Dify fragment check failed:", file=sys.stderr)
+            for error in errors:
+                print(f"  {error}", file=sys.stderr)
+            return 1
 
     try:
         outputs = render_all()

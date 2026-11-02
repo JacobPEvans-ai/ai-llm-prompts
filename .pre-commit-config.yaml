@@ -3,14 +3,14 @@ repos:
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
-        exclude: '^(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$'
+        exclude: '^(?:agents/dify-src/.+\.tmpl$|(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$)'
       - id: trailing-whitespace
-        exclude: '^(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$'
+        exclude: '^(?:agents/dify-src/.+\.tmpl$|(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$)'
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: mixed-line-ending
         args: [--fix=lf]
-        exclude: '^(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$'
+        exclude: '^(?:agents/dify-src/.+\.tmpl$|(auto-ai-agent|automation|applications|developer-tools)/(?!.*index\.md$).*\.md$)'
       - id: check-added-large-files
         args: [--maxkb=100, --enforce-all]
         # Rendered by agents/dify-src/render.py; its sources stay under the limit.
