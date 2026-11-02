@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.49.0...v1.49.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **agents:** generate Dify DSL fields from agent YAML and give vikunja-triage its own scope ([#216](https://github.com/dryvist/ai-llm-prompts/issues/216)) ([6ccdd18](https://github.com/dryvist/ai-llm-prompts/commit/6ccdd18501a44623b130cd7d3926958851e3746a))
+
 ## [1.49.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.48.0...v1.49.0) (2026-11-02)
 
 
