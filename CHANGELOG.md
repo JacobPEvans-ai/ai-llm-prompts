@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.45.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.44.0...v1.45.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** set the expected-output scoring mode per suite, strict for the vikunja clerk ([#203](https://github.com/dryvist/ai-llm-prompts/issues/203)) ([ef693a0](https://github.com/dryvist/ai-llm-prompts/commit/ef693a067a48bb7025bd04bd6e7441f5747d9c00))
+
 ## [1.44.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.43.0...v1.44.0) (2026-11-02)
 
 
