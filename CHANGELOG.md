@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.47.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.46.0...v1.47.0) (2026-11-02)
+
+
+### Features
+
+* **rules:** every component runs in under 10 minutes ([#207](https://github.com/dryvist/ai-llm-prompts/issues/207)) ([b87ac7a](https://github.com/dryvist/ai-llm-prompts/commit/b87ac7aa79a7de254533d22c7bfbe8bfb5b8c7db))
+
 ## [1.46.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.45.0...v1.46.0) (2026-11-02)
 
 
