@@ -36,10 +36,12 @@ Use OpenTofu with the `tofu` command for infrastructure-as-code operations.
 - Prefer rebuild-from-source over snapshot restore. A snapshot restores the
   drift along with the service.
 
-## Every change runs in under 10 minutes
+## Every component runs in under 10 minutes
 
-Every change must run in 10 minutes or less in development: a converge, apply, job, test suite or seed. Promotions
-from develop to main are the only exception. A run that takes longer is a defect: split it before using it.
+Break every change into individual components: converges, applies, jobs, test suites and seeds. Each component must
+run on its own in 10 minutes or less in development. A component that takes longer is a defect: split it before
+using it. A full run that chains components may take longer, though ideally it does not. Promotions from develop to
+main are exempt.
 
 - **Every piece, on its own.** Any part, component or chunk that another session might need to run alone must also
   run alone in under 10 minutes. Use tag entry points, changed-only paths, one object or one host per run.
