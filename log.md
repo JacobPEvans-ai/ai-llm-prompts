@@ -2,6 +2,8 @@
 
 ## 2026-11-02
 
+* **Add (agents)**: Add one shared homelab context prefix and point the five agent definitions at it. Validate roster
+  fields and Dify prompt copies; accept opened or ready-for-review pull requests in the code simplifier.
 * **Creation (agents)**: Add a scheduled, guarded Zammad triage Workflow with group-scoped reads, local-only model routing, and shadow output.
 
 ## 2026-11-01

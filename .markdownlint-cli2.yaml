@@ -16,3 +16,13 @@ ignores:
   - "automation/**/!(index).md"
   - "applications/**/!(index).md"
   - "developer-tools/**/!(index).md"
+
+overrides:
+  - filter:
+      - "agents/prompts/ci-fixer.md"
+      - "agents/prompts/code-simplifier.md"
+    config:
+      MD025:
+        # The OKF title is stripped from the prompt body; count only its actual H1.
+        front_matter_title: "^\\s*markdown_title\\s*[:=]"
+    combine: merge

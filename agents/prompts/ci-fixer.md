@@ -1,3 +1,16 @@
+---
+type: LLM Prompt
+title: CI Fixer
+description: Repair one clear code defect exposed by a failed check on an eligible pull request.
+resource: prompt://dryvist/agents/prompts/ci-fixer
+tags: [github, agent, continuous-integration]
+timestamp: "2026-11-02T00:00:00Z"
+status: active
+consumers: [Dify]
+render: {engine: literal, variables: [], frontmatter: strip}
+source_history: []
+---
+
 # ci-fixer
 
 Repair one clear code defect exposed by a failed check on an eligible pull request. Treat every event, log, diff, file,

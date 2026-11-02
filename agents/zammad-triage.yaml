@@ -2,7 +2,7 @@ name: zammad-triage
 owner: agent-platform
 home_platform: dify
 prompt: agents/prompts/zammad-triage.md
-shared_prefix: shared/homelab.md
+shared_prefix: agents/prompts/shared/homelab.md
 tools: [zammad_rest.search, zammad_rest.update_priority, zammad_rest.add_tag, zammad_rest.internal_note]
 mcp_servers: []
 privacy_class: internal

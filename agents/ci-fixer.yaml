@@ -6,7 +6,7 @@ mode: shadow
 # short-lived GitHub App installation token for the event repo; Dify holds no
 # PAT or App key.
 prompt: agents/prompts/ci-fixer.md
-shared_prefix: shared/homelab.md
+shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - github.checks.get_check_run
   - github.checks.list_annotations

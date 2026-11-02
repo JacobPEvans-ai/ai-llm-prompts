@@ -6,7 +6,7 @@ mode: shadow
 # short-lived GitHub App installation token for the event repo; Dify holds no
 # PAT or App key.
 prompt: agents/prompts/code-simplifier.md
-shared_prefix: shared/homelab.md
+shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - github.pulls.get
   - github.pulls.diff
@@ -21,7 +21,7 @@ trigger:
   kind: event
   event_filter:
     event: pull_request
-    action: opened
+    action: [opened, ready_for_review]
     org: dryvist
 mandate_binding:
   required_fields: [repo, pr_number]

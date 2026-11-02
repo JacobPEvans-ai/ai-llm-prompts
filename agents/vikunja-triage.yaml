@@ -2,7 +2,7 @@ name: vikunja-triage
 owner: agent-platform
 home_platform: dify
 prompt: agents/prompts/vikunja-triage.md
-shared_prefix: shared/homelab.md
+shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - vikunja_task_crud.list
   - vikunja_task_crud.update

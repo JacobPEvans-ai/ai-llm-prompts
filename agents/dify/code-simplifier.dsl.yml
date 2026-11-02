@@ -1114,7 +1114,7 @@ workflow:
                 policy. Never choose another repository or PR, change the review event, request approval or changes, or attempt a
                 source write.
 
-                1. Act only when `mandate.event` is `pull_request`, task inputs show action `opened`, and the
+                1. Act only when `mandate.event` is `pull_request`, task inputs show action `opened` or `ready_for_review`, and the
                    mandated PR is open with a base repository belonging to dryvist. Ignore every other event, including check_run
                    failures.
                 2. Refuse fork PRs and PRs whose head ref is main, develop, or has active branch rules. If branch rules cannot be read,
