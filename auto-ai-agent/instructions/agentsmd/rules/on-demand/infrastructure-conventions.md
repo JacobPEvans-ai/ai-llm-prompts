@@ -36,6 +36,19 @@ Use OpenTofu with the `tofu` command for infrastructure-as-code operations.
 - Prefer rebuild-from-source over snapshot restore. A snapshot restores the
   drift along with the service.
 
+## Every change runs in under 10 minutes
+
+Every change must run in 10 minutes or less in development: a converge, apply, job, test suite or seed. Promotions
+from develop to main are the only exception. A run that takes longer is a defect: split it before using it.
+
+- **Every piece, on its own.** Any part, component or chunk that another session might need to run alone must also
+  run alone in under 10 minutes. Use tag entry points, changed-only paths, one object or one host per run.
+- **Long work runs detached.** Model training or a bulk backfill is dispatched and collected in two steps of under 10
+  minutes each. It is never one long converge.
+- **Modular, never copied.** Split runs select shared task files and vars and never duplicate them. The same applies
+  across repos and inside one repo. A monolithic repo may be broken into several.
+- Keep the full run only as the promotion or reconcile path. Measure wall time before and after the split.
+
 ## Never manually touch a live guest
 
 No SSH in and run, no one-off container exec, no hand-edited inventory pointing
