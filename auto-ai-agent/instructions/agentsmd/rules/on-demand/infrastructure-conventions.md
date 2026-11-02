@@ -36,20 +36,14 @@ Use OpenTofu with the `tofu` command for infrastructure-as-code operations.
 - Prefer rebuild-from-source over snapshot restore. A snapshot restores the
   drift along with the service.
 
-## Every component runs in under 10 minutes
+## Every component runs in 10 minutes or less
 
-Break every change into individual components: converges, applies, jobs, test suites and seeds. Each component must
-run on its own in 10 minutes or less in development. A component that takes longer is a defect: split it before
-using it. A full run that chains components may take longer, though ideally it does not. Promotions from develop to
-main are exempt.
-
-- **Every piece, on its own.** Any part, component or chunk that another session might need to run alone must also
-  run alone in under 10 minutes. Use tag entry points, changed-only paths, one object or one host per run.
-- **Long work runs detached.** Model training or a bulk backfill is dispatched and collected in two steps of under 10
-  minutes each. It is never one long converge.
-- **Modular, never copied.** Split runs select shared task files and vars and never duplicate them. The same applies
-  across repos and inside one repo. A monolithic repo may be broken into several.
-- Keep the full run only as the promotion or reconcile path. Measure wall time before and after the split.
+- Break every change into individual components. Each component must be able to run on its own in development in
+  10 minutes or less. Promotions from develop to main are the only exception.
+- If any other session ever needs to do one part of your work, that part must also be able to run on its own in
+  10 minutes or less.
+- A full run that chains components may take longer, though ideally it does not.
+- Always build DRY, reusable modules, across repos and within each repo. Any repo may be split into several.
 
 ## Never manually touch a live guest
 
