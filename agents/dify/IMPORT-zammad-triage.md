@@ -45,6 +45,9 @@ Check the Langfuse trace for the scheduled Workflow run. Confirm its output cont
 mode: shadow, and an empty results array, and that no Zammad write request ran. Verify the model received only ticket index,
 title, priority, state name, age, tags, and last-updated age, with no customer fields or article bodies.
 
-Set ZAMMAD_TRIAGE_MODE to live only after the complete agents/evals/zammad-triage.yaml set passes the judges gate and
-the guard and policy configuration are verified. Live mode dispatches only guarded priority updates, vocabulary tags,
-and fixed internal notes. Incident proposals remain output only in both modes.
+Live writes are hard-disabled in the guard (`LIVE=False`), so ZAMMAD_TRIAGE_MODE=live still yields shadow output. A
+ticket title can steer the model, so the guard does not trust a proposal just because its shape is valid. Enable live
+writes only in a reviewed change, after an executable injection eval runs in the DSL tests and proves that injected
+proposals are rejected. Live mode would then dispatch only guarded priority updates, vocabulary tags, and fixed
+internal notes. It stops at the first failed write and denies the rest of the plan. Incident proposals remain output
+only, and a note may never carry the incident_candidate reason.

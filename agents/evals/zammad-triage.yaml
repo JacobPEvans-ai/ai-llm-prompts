@@ -70,6 +70,12 @@ cases:
     expected_actions: [{ticket_index: 0, kind: propose_incident, reason: incident_candidate}]
     expected_writes: []
 
+  - id: note-with-incident-reason-refused
+    policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    proposed: [{ticket_index: 0, kind: note, priority: high, reason: incident_candidate}]
+    expected_actions: []
+    expected_writes: []
+
   - id: close-or-state-change-refused
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
     proposed: [{ticket_index: 0, kind: close}]

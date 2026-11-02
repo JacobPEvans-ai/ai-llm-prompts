@@ -1,4 +1,4 @@
-"""Contract tests for the zammad-triage Dify DSL code nodes."""
+"""Contract tests for the zammad-triage Dify DSL code nodes, with the HTTP helper mocked."""
 
 import inspect
 import json
@@ -9,73 +9,111 @@ import yaml
 
 _DSL = yaml.safe_load((Path(__file__).resolve().parents[2] / "agents" / "dify" / "zammad-triage.dsl.yml").read_text())
 _NODES = {node["id"]: node["data"] for node in _DSL["workflow"]["graph"]["nodes"]}
+_FAKE_TOKEN = "fake-zammad-token-0f3a"
 _POLICY = {"ok": True, "allowed": ["1", "3"], "readonly": ["2"], "denied": ["3"], "read": ["1", "2"],
            "write": ["1"], "tags": ["stale"]}
 _REFS = [{"ticket_index": 0, "id": "10", "group_id": "1"}, {"ticket_index": 1, "id": "11", "group_id": "2"},
          {"ticket_index": 2, "id": "12", "group_id": "3"}]
 _ENV = ("https://zammad.example.test", "https://bao.example.test", "<ROLE>", "<SECRET>", "<PATH>")
+_STAMP = "2026-11-02T00:00:00Z"
 
 
-def _main(node_id):
+def _node(node_id, fail_writes=False, live=None):
+    """Exec a code node with `req` replaced by a recorder that serves fake OpenBao and Zammad answers."""
+    calls = []
+
+    def req(url, m="GET", h=None, b=None):  # same parameter names as the nodes' helper
+        calls.append((m, url, json.dumps(h or {}), b))
+        if url.endswith("/auth/approle/login"):
+            return {"auth": {"client_token": "fake-bao-token"}}
+        if url.startswith(_ENV[1]):
+            return {"data": {"token": _FAKE_TOKEN}}
+        if "/tickets/search" in url:
+            group = url.split("group_id%3A")[1].split("&")[0]
+            return [{"id": 10 + int(group), "group_id": int(group), "title": "Ticket " + group, "priority_id": 2,
+                     "state": "open", "created_at": "2026-10-01T00:00:00Z", "updated_at": "2026-10-20T00:00:00Z"}]
+        if fail_writes:
+            raise OSError("write failed")
+        return {}
+
     namespace = {}
     exec(compile(_NODES[node_id]["code"], node_id, "exec"), namespace)
-    return namespace["main"]
+    namespace["req"] = req
+    if live is not None:
+        namespace["LIVE"] = live
+    return namespace["main"], calls
 
 
-def _guard(actions, mode="shadow", text=None):
-    out = _main("guard")(text or json.dumps({"actions": actions}), json.dumps(_REFS), json.dumps(_POLICY), True,
-                         mode, *_ENV)
-    return json.loads(out["actions"]), out
+def _guard(actions, mode="shadow", text=None, **node):
+    main, calls = _node("guard", **node)
+    out = main(text or json.dumps({"actions": actions}), json.dumps(_REFS), json.dumps(_POLICY), True, mode, *_ENV)
+    return json.loads(out["actions"]), out, calls
 
 
 def test_every_code_node_main_takes_exactly_its_declared_variables():
-    edges_ok = all(e["source"] in _NODES and e["target"] in _NODES for e in _DSL["workflow"]["graph"]["edges"])
     env = {variable["name"] for variable in _DSL["workflow"]["environment_variables"]}
-    assert edges_ok
+    assert all(e["source"] in _NODES and e["target"] in _NODES for e in _DSL["workflow"]["graph"]["edges"])
     for node_id, data in _NODES.items():
         if data.get("type") == "code":
             declared = [variable["variable"] for variable in data["variables"]]
-            assert list(inspect.signature(_main(node_id)).parameters) == declared
+            assert list(inspect.signature(_node(node_id)[0]).parameters) == declared
             assert all(v["value_selector"][1] in env for v in data["variables"] if v["value_selector"][0] == "env")
 
 
-def test_no_node_outputs_or_reads_the_zammad_token():
-    for data in _NODES.values():
-        assert "token" not in json.dumps(data.get("outputs", {})).lower()
-        assert all("token" not in str(v["value_selector"]).lower() or v["value_selector"][1] == "ZAMMAD_TOKEN_PATH"
-                   for v in data.get("variables", []))
+def test_empty_or_malformed_policy_refuses_before_any_request():
+    for allowed in ("[]", "not json", '[""]', "[1]"):
+        main, calls = _node("fetch")
+        assert main(allowed, "[]", "[]", "[]", *_ENV, _STAMP)["ok"] is False
+        assert calls == []
 
 
-def test_fetch_refuses_an_empty_or_malformed_policy_before_any_request():
-    fetch = _main("fetch")
-    assert fetch("[]", "[]", "[]", "[]", *_ENV, "2026-11-02T00:00:00Z")["ok"] is False
-    assert fetch("not json", "[]", "[]", "[]", *_ENV, "2026-11-02T00:00:00Z")["ok"] is False
+def test_fetch_keeps_the_token_out_of_every_output_and_the_model_prompt():
+    main, calls = _node("fetch")
+    out = main('["1"]', '["2"]', '["3"]', '["stale"]', *_ENV, _STAMP)
+    assert out["ok"] is True
+    assert [c[1].split("?")[0] for c in calls if "/tickets/search" in c[1]] == [_ENV[0] + "/api/v1/tickets/search"] * 2
+    assert _FAKE_TOKEN not in json.dumps(out)
+    assert all(set(t) == {"ticket_index", "title", "priority", "state", "age_days", "tags", "last_updated_age_days"}
+               for t in json.loads(out["model"]))
+    actions, guarded, _ = _guard([{"ticket_index": 0, "kind": "rank", "priority": "high"}], mode="live", live=True)
+    assert _FAKE_TOKEN not in json.dumps(guarded)
 
 
-def test_guard_keeps_only_writable_in_vocabulary_actions_in_shadow():
-    actions, out = _guard([{"ticket_index": 0, "kind": "rank", "priority": "high"}])
-    assert actions == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
-    assert out["results"] == "[]" and out["mode"] == "shadow"
+def test_shadow_and_hard_disabled_live_make_no_request():
+    for mode in ("shadow", "live", "LIVE"):
+        actions, out, calls = _guard([{"ticket_index": 0, "kind": "rank", "priority": "high"}], mode=mode)
+        assert actions == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+        assert out["mode"] == "shadow" and out["results"] == "[]" and calls == []
+
+
+def test_guard_drops_readonly_denied_unscoped_and_unlisted_actions():
     for refused in ([{"ticket_index": 1, "kind": "rank", "priority": "high"}],
                     [{"ticket_index": 2, "kind": "rank", "priority": "high"}],
                     [{"ticket_index": 0, "kind": "tag", "tag": "unlisted"}]):
         assert _guard(refused)[0] == []
 
 
-def test_guard_denies_the_whole_run_on_unknown_shapes_and_over_cap():
+def test_guard_denies_the_whole_run_on_unknown_shapes_reasons_and_over_cap():
     for refused in ([{"ticket_index": 0, "kind": "close"}],
                     [{"ticket_index": 0, "kind": "rank", "priority": "high", "state": "closed"}],
                     [{"ticket_index": 9, "kind": "rank", "priority": "high"}],
+                    [{"ticket_index": 0, "kind": "note", "priority": "high", "reason": "incident_candidate"},
+                     {"ticket_index": 0, "kind": "rank", "priority": "high"}],
                     [{"ticket_index": 0, "kind": "rank", "priority": "low"}] * 21):
         assert _guard(refused)[0] == []
     assert _guard([], text="not json")[0] == []
 
 
 def test_incident_proposals_are_never_dispatched_and_block_writes_on_that_ticket():
-    actions, out = _guard([{"ticket_index": 0, "kind": "propose_incident", "reason": "incident_candidate"},
-                           {"ticket_index": 0, "kind": "rank", "priority": "high"}], mode="live")
-    assert [a["kind"] for a in actions] == ["propose_incident"] and out["results"] == "[]"
+    actions, out, calls = _guard([{"ticket_index": 0, "kind": "propose_incident", "reason": "incident_candidate"},
+                                  {"ticket_index": 0, "kind": "rank", "priority": "high"}], mode="live", live=True)
+    assert [a["kind"] for a in actions] == ["propose_incident"] and calls == []
 
 
-def test_only_exact_live_leaves_shadow():
-    assert _guard([], mode="LIVE")[1]["mode"] == "shadow"
+def test_live_dispatch_stops_at_the_first_failed_write_and_denies_the_rest():
+    plan = [{"ticket_index": 0, "kind": "rank", "priority": "high"}, {"ticket_index": 0, "kind": "tag", "tag": "stale"}]
+    _, out, calls = _guard(plan, mode="live", live=True, fail_writes=True)
+    writes = [c for c in calls if c[1].startswith(_ENV[0])]
+    assert [w[0] for w in writes] == ["PUT"]
+    assert [r.get("denied", False) for r in json.loads(out["results"])] == [False, True]
+    assert all(not r["ok"] for r in json.loads(out["results"]))
