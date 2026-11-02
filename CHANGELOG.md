@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.48.0...v1.49.0) (2026-11-02)
+
+
+### Features
+
+* **agents:** render Dify DSLs from templates, the shared prefix and each agent prompt ([#214](https://github.com/dryvist/ai-llm-prompts/issues/214)) ([fd50ecb](https://github.com/dryvist/ai-llm-prompts/commit/fd50ecb83f88090fc5590a562a51b4a5268c1e4d))
+
 ## [1.48.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.47.1...v1.48.0) (2026-11-02)
 
 
