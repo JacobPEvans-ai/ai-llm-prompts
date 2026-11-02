@@ -2,7 +2,7 @@ name: vikunja-clerk
 owner: agent-platform
 home_platform: dify
 prompt: agents/prompts/vikunja-clerk.md
-shared_prefix: shared/homelab.md
+shared_prefix: agents/prompts/shared/homelab.md
 tools:
   # The upstream tool supports list/get/create/update; writes remain guarded before dispatch.
   - vikunja_task_crud.list
