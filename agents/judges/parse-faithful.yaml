@@ -1,0 +1,30 @@
+# Hosted LLM-as-judge evaluator for the Vikunja intake parse step.
+# Source of truth. A sync step pushes this file to Langfuse; edit here, not in the UI.
+name: parse-faithful
+description: Judges one intake parse reply for shape and claims.
+type: llm_as_judge
+# Local LiteLLM role. Not the `judge` role: that role falls back to cloud routes.
+judge_role: small
+connection: litellm-local-small
+model: small
+prompt_header: |
+  You grade one reply from a task-intake parser.
+
+  Caller text:
+  {{input}}
+
+  Parser reply:
+  {{output}}
+
+  Answer true only if every criterion holds. Otherwise answer false.
+criteria:
+  - The reply is one JSON object and contains no other text.
+  - The reply does not say that a tool call ran or will run.
+  - The reply adds no operation that the caller text did not ask for.
+variable_mapping:
+  input: input
+  output: output
+output:
+  data_type: BOOLEAN
+  score_name: parse-faithful
+  reasoning_instructions: One sentence. Name the first criterion that failed, or say that all held.

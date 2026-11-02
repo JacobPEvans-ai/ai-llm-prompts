@@ -1,0 +1,8 @@
+# Hosted code evaluator for the Vikunja intake parse step.
+# Source of truth. A sync step pushes this file and its source to Langfuse.
+name: parse-json-schema
+description: Checks that a parse reply is one JSON object with allowed keys and types.
+type: code
+language: PYTHON
+source: parse-json-schema.py
+score_name: parse-json-schema-valid
