@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.2...v1.38.0) (2026-11-02)
+
+
+### Features
+
+* **evals:** add capability scenarios for basic agent operations ([#189](https://github.com/dryvist/ai-llm-prompts/issues/189)) ([bf66b54](https://github.com/dryvist/ai-llm-prompts/commit/bf66b541d208a7a784c88eb80014b8b629a663df))
+
 ## [1.37.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.37.1...v1.37.2) (2026-11-01)
 
 
