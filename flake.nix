@@ -122,6 +122,17 @@
         let pkgs = nixpkgs.legacyPackages.${system};
         in
         self.packages.${system} // {
+          agent-tests = pkgs.runCommand "ai-llm-prompts-agent-tests" {
+            nativeBuildInputs = [
+              pkgs.yq
+              (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
+            ];
+          } ''
+            cp -R ${self}/. source
+            cd source
+            python3 -m pytest -q agents/judges
+            touch $out
+          '';
           okf = assert nixpkgs.lib.all validPrompt promptFiles;
             assert builtins.length resources == builtins.length (nixpkgs.lib.unique resources);
             assert builtins.length bodyHashes == builtins.length (nixpkgs.lib.unique bodyHashes);
