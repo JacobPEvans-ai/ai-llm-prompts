@@ -41,7 +41,7 @@ Use OpenTofu with the `tofu` command for infrastructure-as-code operations.
 - Break every change into individual components. Each component must be able to run on its own in development in
   10 minutes or less. Promotions from develop to main are the only exception.
 - If any other session ever needs to do one part of your work, that part must also be able to run on its own in
-  10 minutes or less.
+  under 10 minutes.
 - A full run that chains components may take longer, though ideally it does not.
 - Always build DRY, reusable modules, across repos and within each repo. Any repo may be split into several.
 
