@@ -57,7 +57,8 @@ all changed sources with the generated DSL. The CI check runs
 ## code-simplifier: provider credential scope
 
 1. The agent's router key is `agent-key/code-simplifier` from `agents/code-simplifier.yaml`.
-   Dify sets model-provider credentials per workspace. This app uses the workspace key from step 1 unless the per-agent design question changes it.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
 
 ## code-simplifier: enable Langfuse tracing
 
@@ -74,10 +75,10 @@ Do this before the first published run.
 4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
    blocking response of that run's Workflow Run API call, documented at
    <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
-   (inferred from Dify's Langfuse field table, which maps `workflow_app_log_id/workflow_run_id` to the `id`
-   column; confirm at first import, and if the trace id differs, match on the run id in trace metadata instead).
-   The router log line for this run's request shows the key alias that request used. Take the alias from that
-   line. If the alias is not the one this app uses, stop before any promotion.
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
 
 ## Unverified for Dify 1.16.1
 
@@ -127,7 +128,8 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
 ## ci-fixer: provider credential scope
 
 1. The agent's router key is `agent-key/ci-fixer` from `agents/ci-fixer.yaml`.
-   Dify sets model-provider credentials per workspace. This app uses the workspace key from step 1 unless the per-agent design question changes it.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
 
 ## ci-fixer: enable Langfuse tracing
 
@@ -144,10 +146,10 @@ Do this before the first published run.
 4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
    blocking response of that run's Workflow Run API call, documented at
    <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
-   (inferred from Dify's Langfuse field table, which maps `workflow_app_log_id/workflow_run_id` to the `id`
-   column; confirm at first import, and if the trace id differs, match on the run id in trace metadata instead).
-   The router log line for this run's request shows the key alias that request used. Take the alias from that
-   line. If the alias is not the one this app uses, stop before any promotion.
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
 
 ## ci-fixer unverified for Dify 1.16.1
 

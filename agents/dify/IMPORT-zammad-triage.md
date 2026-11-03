@@ -22,7 +22,8 @@ prompt by hand.
    Its router key must be scoped to local-only models; cloud fallback is forbidden.
 2. Import [zammad-triage.dsl.yml](./zammad-triage.dsl.yml) as a **Workflow** app, not a Chatflow. The agent's router
    key is `openbao://agent-key/zammad-triage` from `agents/zammad-triage.yaml`.
-   Dify sets model-provider credentials per workspace. This app uses the workspace key from step 1 unless the per-agent design question changes it.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
 3. Set the native Schedule Trigger from `trigger.cron` in `agents/zammad-triage.yaml` (`*/10 * * * *`, ten minutes,
    minute resolution). Scheduled inputs are {}; the workflow uses sys.timestamp. Publish with ZAMMAD_TRIAGE_MODE=shadow.
 
@@ -63,10 +64,10 @@ Do this before the first published run.
 4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
    blocking response of that run's Workflow Run API call, documented at
    <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
-   (inferred from Dify's Langfuse field table, which maps `workflow_app_log_id/workflow_run_id` to the `id`
-   column; confirm at first import, and if the trace id differs, match on the run id in trace metadata instead).
-   The router log line for this run's request shows the key alias that request used. Take the alias from that
-   line. If the alias is not the one this app uses, stop before any promotion.
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
 
 ## Shadow trace and promotion
 
