@@ -126,9 +126,10 @@ and never in any committed artifact.
 
 ## Minted tokens: record the accessor, revoke on exit
 
-- **Record the accessor at mint time.** Capture the token accessor in the same command that mints the token.
-- **Revoke in an EXIT trap in the same shell.** Set the trap in the shell that holds the token. It revokes on every
-  exit path, including failure.
+- **Record the accessor at mint time.** Capture the token accessor in the same command that mints the token. Hold it in
+  memory with the token. Never write it to a file.
+- **Revoke in an EXIT trap in the same shell.** Set the trap in the shell that holds the token, before the token is
+  used. The trap revokes that accessor on every exit path, including failure.
 - **Never leave a minted token alive after its shell exits.** A live token outlives its owner and becomes a standing
   credential.
 
