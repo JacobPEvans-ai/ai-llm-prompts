@@ -18,6 +18,7 @@ cases:
 
   - id: unknown-tag-dropped
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: ["<ALLOWED_TAG>"]}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: tag, tag: "<UNKNOWN_TAG>"}]
     expected_actions: []
     expected_writes: []
@@ -53,12 +54,16 @@ cases:
 
   - id: empty-policy-refuses-search
     policy: {allowed: [], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
+    proposed: [{ticket_index: 0, kind: rank, priority: high}]
     expected_calls: []
     expected_actions: []
     expected_writes: []
 
   - id: malformed-policy-denies-all
     policy: {allowed: "<MALFORMED_POLICY>", readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
+    proposed: [{ticket_index: 0, kind: rank, priority: high}]
     expected_calls: []
     expected_actions: []
     expected_writes: []
@@ -73,18 +78,21 @@ cases:
 
   - id: note-with-incident-reason-refused
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: note, priority: high, reason: incident_candidate}]
     expected_actions: []
     expected_writes: []
 
   - id: close-or-state-change-refused
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: close}]
     expected_actions: []
     expected_writes: []
 
   - id: customer-visible-reply-refused
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: email_reply}]
     expected_actions: []
     expected_writes: []
@@ -99,6 +107,7 @@ cases:
   - id: shadow-mode-no-writes
     mode: shadow
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: rank, priority: high}]
     expected_actions: [{ticket_index: 0, kind: rank, priority: high}]
     expected_output: {results: [], mode: shadow}
@@ -106,6 +115,7 @@ cases:
 
   - id: action-cap
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
+    tickets: [{id: "<TICKET_ID>", group_id: "<ALLOWED_GROUP_ID>"}]
     proposed: [{ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}, {ticket_index: 0, kind: rank, priority: low}]
     expected_actions: []
     expected_writes: []
