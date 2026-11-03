@@ -72,10 +72,11 @@ Do this before the first published run.
    `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
    Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
 3. Save. The status on the same page must read started.
-4. Acceptance check, after one test run of the published app: a Langfuse trace named `workflow_<workflow id>`
-   exists, where `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a
-   line for that run, and its key is the one recorded at import for this app (the workspace key, or the agent
-   key if a per-agent node is used). If the key differs, stop before any promotion.
+4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
+   blocking response of that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist.
+   The router log has a line for that run, and its key is the one recorded at import for this app (the workspace
+   key, or the agent key if a per-agent node is used). If the key differs, stop before any promotion.
 
 ## Unverified for Dify 1.16.1
 
@@ -140,10 +141,11 @@ Do this before the first published run.
    `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
    Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
 3. Save. The status on the same page must read started.
-4. Acceptance check, after one test run of the published app: a Langfuse trace named `workflow_<workflow id>`
-   exists, where `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a
-   line for that run, and its key is the one recorded at import for this app (the workspace key, or the agent
-   key if a per-agent node is used). If the key differs, stop before any promotion.
+4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
+   blocking response of that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist.
+   The router log has a line for that run, and its key is the one recorded at import for this app (the workspace
+   key, or the agent key if a per-agent node is used). If the key differs, stop before any promotion.
 
 ## ci-fixer unverified for Dify 1.16.1
 
