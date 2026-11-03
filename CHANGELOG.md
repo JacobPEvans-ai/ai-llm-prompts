@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.52.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.51.1...v1.52.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** score the triage agents in the Promptfoo harness ([#225](https://github.com/dryvist/ai-llm-prompts/issues/225)) ([07a3725](https://github.com/dryvist/ai-llm-prompts/commit/07a3725a52063ae7a6d1132744b4ee2d00439ec5))
+
 ## [1.51.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.51.0...v1.51.1) (2026-11-03)
 
 
