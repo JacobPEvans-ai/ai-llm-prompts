@@ -44,9 +44,13 @@ def _prompt_body(path):
     text = path.read_text()
     assert text.startswith("---\n"), f"{path.relative_to(_ROOT)} has no OKF frontmatter"
     separator = text.find("\n---\n", 4)
-    assert separator >= 0, f"{path.relative_to(_ROOT)} has an unterminated OKF frontmatter block"
+    assert separator >= 0, (
+        f"{path.relative_to(_ROOT)} has an unterminated OKF frontmatter block"
+    )
     frontmatter = yaml.safe_load(text[4:separator])
-    assert isinstance(frontmatter, dict), f"{path.relative_to(_ROOT)} has invalid OKF frontmatter"
+    assert isinstance(frontmatter, dict), (
+        f"{path.relative_to(_ROOT)} has invalid OKF frontmatter"
+    )
     assert _OKF_FIELDS <= frontmatter.keys(), (
         f"{path.relative_to(_ROOT)} is missing OKF fields: {_OKF_FIELDS - frontmatter.keys()}"
     )
@@ -59,7 +63,11 @@ def _normalize_whitespace(text):
 
 
 def _missing_roster_fields(agent):
-    return [field for field in _ROSTER_FIELDS if field not in agent or agent[field] in (None, "", [], {})]
+    return [
+        field
+        for field in _ROSTER_FIELDS
+        if field not in agent or agent[field] in (None, "", [], {})
+    ]
 
 
 def test_roster_names_the_eight_criterion_six_fields():
@@ -102,19 +110,28 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
 
         for field in ("prompt", "eval_set", "shared_prefix"):
             target = _ROOT / agent[field]
-            assert target.is_file(), f"{path.name} {field} does not name a file: {agent[field]}"
+            assert target.is_file(), (
+                f"{path.name} {field} does not name a file: {agent[field]}"
+            )
 
         shared_prefixes.add(agent["shared_prefix"])
         _prompt_body(_ROOT / agent["prompt"])
 
-    assert len(shared_prefixes) == 1, f"agents use different shared prefixes: {sorted(shared_prefixes)}"
+    assert len(shared_prefixes) == 1, (
+        f"agents use different shared prefixes: {sorted(shared_prefixes)}"
+    )
     _prompt_body(_ROOT / next(iter(shared_prefixes)))
 
 
 def _key_references(value):
     if isinstance(value, dict):
         for field, child in value.items():
-            if field in {"api_key_ref", "secret_ref", "github_token_ref", "router_key_ref"}:
+            if field in {
+                "api_key_ref",
+                "secret_ref",
+                "github_token_ref",
+                "router_key_ref",
+            }:
                 if isinstance(child, str):
                     yield child
             yield from _key_references(child)
@@ -136,7 +153,9 @@ def test_agent_memory_scopes_identities_and_key_references_are_unique():
         for reference in set(_key_references(agent)):
             key_owners.setdefault(reference, set()).add(path.stem)
 
-    assert len(memory_scopes) == len(set(memory_scopes)), "agent memory scopes must be unique"
+    assert len(memory_scopes) == len(set(memory_scopes)), (
+        "agent memory scopes must be unique"
+    )
     assert len(identities) == len(set(identities)), "agent identities must be unique"
     assert all(len(owners) == 1 for owners in key_owners.values()), (
         f"agent key references must be unique: {key_owners}"
@@ -151,8 +170,14 @@ def test_agents_without_memory_scope_declare_no_memory_tool():
         if agent["memory_scope"] != "none":
             continue
         declared = [*agent.get("tools", []), *agent.get("mcp_servers", [])]
-        memory_names = [name for name in declared if any(token in str(name).lower() for token in _MEMORY_TOKENS)]
-        assert not memory_names, f"{path.name} has memory_scope none but declares memory tools: {memory_names}"
+        memory_names = [
+            name
+            for name in declared
+            if any(token in str(name).lower() for token in _MEMORY_TOKENS)
+        ]
+        assert not memory_names, (
+            f"{path.name} has memory_scope none but declares memory tools: {memory_names}"
+        )
 
 
 def test_memory_bank_names_appear_only_in_their_own_definition():
@@ -163,7 +188,8 @@ def test_memory_bank_names_appear_only_in_their_own_definition():
         mentions = [
             file.relative_to(_ROOT).as_posix()
             for file in sorted(_AGENTS.rglob("*"))
-            if file.is_file() and file.suffix in {".yaml", ".yml", ".md", ".py", ".tmpl", ".json"}
+            if file.is_file()
+            and file.suffix in {".yaml", ".yml", ".md", ".py", ".tmpl", ".json"}
             and file.resolve() != Path(__file__).resolve()
             and scope in file.read_text(errors="ignore")
         ]
@@ -249,7 +275,9 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
     system_prompts = _system_prompts(dsl)
-    assert len(system_prompts) == 1, f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
+    assert len(system_prompts) == 1, (
+        f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
+    )
     _, actual_prompt = system_prompts[0]
     expected = "\n\n".join(
         (

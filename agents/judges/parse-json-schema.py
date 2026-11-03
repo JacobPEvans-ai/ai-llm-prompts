@@ -71,7 +71,16 @@ ALLOWED_KEYS = {
     "category",
 }
 ROUTES = {"vikunja", "zammad"}
-TEXT_OR_NULL = {"operation", "task_id", "title", "description", "due_date", "filter", "search", "category"}
+TEXT_OR_NULL = {
+    "operation",
+    "task_id",
+    "title",
+    "description",
+    "due_date",
+    "filter",
+    "search",
+    "category",
+}
 
 
 def strip_json_fence(text: str) -> str:
@@ -108,12 +117,22 @@ def check_reply(value: Any) -> str | None:
     for key in TEXT_OR_NULL & set(value):
         if value[key] is not None and not isinstance(value[key], str):
             return f"{key} must be a string or null"
-    if "project_named" in value and value["project_named"] is not None and not isinstance(value["project_named"], bool):
+    if (
+        "project_named" in value
+        and value["project_named"] is not None
+        and not isinstance(value["project_named"], bool)
+    ):
         return "project_named must be a boolean or null"
-    if "done" in value and value["done"] is not None and not isinstance(value["done"], bool):
+    if (
+        "done" in value
+        and value["done"] is not None
+        and not isinstance(value["done"], bool)
+    ):
         return "done must be a boolean or null"
     priority = value.get("priority")
-    if priority is not None and (isinstance(priority, bool) or not isinstance(priority, (int, float))):
+    if priority is not None and (
+        isinstance(priority, bool) or not isinstance(priority, (int, float))
+    ):
         return "priority must be a number or null"
     return None
 

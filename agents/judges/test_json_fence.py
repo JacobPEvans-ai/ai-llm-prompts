@@ -32,7 +32,10 @@ _CASES = [
     (f"```\n{_OBJECT}\n```", _OBJECT),
     (f"  ```JSON\n{_OBJECT}\n```  ", _OBJECT),
     (f"```json{_OBJECT}```", _OBJECT),
-    (f"Here you go:\n```json\n{_OBJECT}\n```", f"Here you go:\n```json\n{_OBJECT}\n```"),
+    (
+        f"Here you go:\n```json\n{_OBJECT}\n```",
+        f"Here you go:\n```json\n{_OBJECT}\n```",
+    ),
     ("```unterminated", "```unterminated"),
     ("null", "null"),
     ("  " + _OBJECT + "  ", "  " + _OBJECT + "  "),
@@ -52,7 +55,9 @@ def test_python_judge_copy_matches_the_helper(raw, expected):
 
 
 def test_fenced_object_parses_and_bare_prose_still_fails():
-    assert json.loads(_helper.strip_json_fence(f"```json\n{_OBJECT}\n```")) == json.loads(_OBJECT)
+    assert json.loads(
+        _helper.strip_json_fence(f"```json\n{_OBJECT}\n```")
+    ) == json.loads(_OBJECT)
     with pytest.raises(json.JSONDecodeError):
         json.loads(_helper.strip_json_fence("Here you go: " + _OBJECT))
 
@@ -87,8 +92,12 @@ def test_every_model_output_parse_node_routes_through_the_helper():
     }
 
 
-@pytest.mark.parametrize(("file", "title", "code"), _NODES, ids=[f"{f}:{t}" for f, t, _ in _NODES])
+@pytest.mark.parametrize(
+    ("file", "title", "code"), _NODES, ids=[f"{f}:{t}" for f, t, _ in _NODES]
+)
 def test_rendered_node_defines_helper_and_accepts_a_fenced_reply(file, title, code):
     namespace = {}
-    exec(compile(code, f"{file}:{title}", "exec"), namespace)  # defines the node's functions only
+    exec(
+        compile(code, f"{file}:{title}", "exec"), namespace
+    )  # defines the node's functions only
     assert namespace["strip_json_fence"](f"```json\n{_OBJECT}\n```") == _OBJECT

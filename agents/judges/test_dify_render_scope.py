@@ -41,7 +41,9 @@ def test_non_dify_definition_is_skipped_without_rendering(tmp_path, monkeypatch)
     rendered = []
     monkeypatch.setattr(render, "ROOT", tmp_path)
     monkeypatch.setattr(render, "AGENTS", tmp_path / "agents")
-    monkeypatch.setattr(render, "render_agent", lambda path: rendered.append(path.stem) or (path, ""))
+    monkeypatch.setattr(
+        render, "render_agent", lambda path: rendered.append(path.stem) or (path, "")
+    )
     render.render_all()
     assert rendered == ["homed"]
 
@@ -51,5 +53,7 @@ def test_definition_without_home_platform_fails_the_render(tmp_path, monkeypatch
     (tmp_path / "agents" / "orphan.yaml").write_text("name: orphan\n")
     monkeypatch.setattr(render, "ROOT", tmp_path)
     monkeypatch.setattr(render, "AGENTS", tmp_path / "agents")
-    with pytest.raises(ValueError, match="agents/orphan.yaml must declare home_platform"):
+    with pytest.raises(
+        ValueError, match="agents/orphan.yaml must declare home_platform"
+    ):
         render.render_all()

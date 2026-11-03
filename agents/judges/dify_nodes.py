@@ -29,5 +29,8 @@ def _nodes(workflow):
 
 def node_main(workflow, node_id):
     namespace = {}
-    exec(compile(_nodes(workflow)[node_id]["code"], f"{workflow}:{node_id}", "exec"), namespace)  # defines functions only
+    exec(
+        compile(_nodes(workflow)[node_id]["code"], f"{workflow}:{node_id}", "exec"),
+        namespace,
+    )  # defines functions only
     return namespace["main"]

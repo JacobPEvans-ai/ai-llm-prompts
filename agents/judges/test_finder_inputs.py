@@ -6,7 +6,9 @@ from pathlib import Path
 
 
 _ROOT = Path(__file__).resolve().parents[2]
-_SPEC = importlib.util.spec_from_file_location("finder_inputs", _ROOT / "agents" / "dify-src" / "helpers" / "finder_inputs.py")
+_SPEC = importlib.util.spec_from_file_location(
+    "finder_inputs", _ROOT / "agents" / "dify-src" / "helpers" / "finder_inputs.py"
+)
 finder_inputs = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(finder_inputs)
 build = finder_inputs.build_finder_inputs
@@ -17,12 +19,19 @@ def _paths(json_text):
 
 
 def test_changed_pages_are_the_pr_files_that_are_pages_in_sorted_order():
-    pages = {"/policy/merge.md": "merge", "/policy/roles.md": "roles", "/other/x.md": "x"}
+    pages = {
+        "/policy/merge.md": "merge",
+        "/policy/roles.md": "roles",
+        "/other/x.md": "x",
+    }
 
     result = build(["/policy/roles.md", "/policy/merge.md", "README.md"], pages, [])
 
     assert _paths(result["changed_pages"]) == ["/policy/merge.md", "/policy/roles.md"]
-    assert json.loads(result["changed_pages"])[0] == {"page_path": "/policy/merge.md", "text": "merge"}
+    assert json.loads(result["changed_pages"])[0] == {
+        "page_path": "/policy/merge.md",
+        "text": "merge",
+    }
 
 
 def test_related_pages_are_siblings_and_nearest_index_deduped_and_exclude_changed():
@@ -40,7 +49,11 @@ def test_related_pages_are_siblings_and_nearest_index_deduped_and_exclude_change
 
 
 def test_nearest_index_walks_up_when_the_directory_has_none():
-    pages = {"/services/deep/page.md": "page", "/services/index.md": "services index", "/index.md": "root index"}
+    pages = {
+        "/services/deep/page.md": "page",
+        "/services/index.md": "services index",
+        "/index.md": "root index",
+    }
 
     result = build(["/services/deep/page.md"], pages, [])
 
@@ -76,7 +89,13 @@ def test_related_pages_over_the_cap_are_dropped_and_listed():
 
 def test_fingerprints_are_deduped_non_strings_skipped_and_capped():
     tail = [f"topic-{index:03d}:/p/{index}.md" for index in range(400)]
-    fingerprints = ["merge-rules:/a.md:/b.md", "merge-rules:/a.md:/b.md", None, "", 3] + tail
+    fingerprints = [
+        "merge-rules:/a.md:/b.md",
+        "merge-rules:/a.md:/b.md",
+        None,
+        "",
+        3,
+    ] + tail
 
     result = build([], {}, fingerprints)
     kept = json.loads(result["known_open_fingerprints"])
@@ -95,7 +114,11 @@ def test_empty_inputs_return_empty_arrays():
     assert result["changed_pages"] == "[]"
     assert result["related_pages"] == "[]"
     assert result["known_open_fingerprints"] == "[]"
-    assert result["dropped"] == {"changed_pages": [], "related_pages": [], "known_open_fingerprints": []}
+    assert result["dropped"] == {
+        "changed_pages": [],
+        "related_pages": [],
+        "known_open_fingerprints": [],
+    }
 
 
 def test_unsafe_paths_are_not_candidate_pages():
@@ -122,7 +145,9 @@ def test_string_path_helpers_match_posixpath_for_paths_without_empty_segments():
     for path in ["a.md", "docs/a.md", "docs/guide/a.md", "docs/index.md"]:
         assert finder_inputs._dirname(path) == posixpath.dirname(path), path
     for directory in ["", "/", "/docs", "docs", "docs/guide"]:
-        assert finder_inputs._index_in(directory) == posixpath.join(directory, "index.md"), directory
+        assert finder_inputs._index_in(directory) == posixpath.join(
+            directory, "index.md"
+        ), directory
 
 
 def test_a_double_slash_path_terminates():

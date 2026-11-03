@@ -34,7 +34,10 @@ def test_valid_replies_pass(reply):
         ('{"route": "vikunja", "project_id": "101"}', "project_id must not appear"),
         ('{"route": "slack"}', "route must be vikunja or zammad"),
         ('{"route": "vikunja", "title": 7}', "title must be a string or null"),
-        ('{"route": "vikunja", "project_named": "yes"}', "project_named must be a boolean or null"),
+        (
+            '{"route": "vikunja", "project_named": "yes"}',
+            "project_named must be a boolean or null",
+        ),
         ('{"route": "vikunja", "done": 1}', "done must be a boolean or null"),
         ('{"route": "vikunja", "priority": true}', "priority must be a number or null"),
     ],
@@ -44,7 +47,9 @@ def test_invalid_replies_name_the_problem(reply, problem):
 
 
 def test_evaluate_returns_one_boolean_score():
-    ctx = schema.EvaluationContext(observation=schema.ObservationContext(output='{"route": "vikunja"}'))
+    ctx = schema.EvaluationContext(
+        observation=schema.ObservationContext(output='{"route": "vikunja"}')
+    )
     result = schema.evaluate(ctx)
     assert len(result.scores) == 1
     assert result.scores[0].name == "parse-json-schema-valid"

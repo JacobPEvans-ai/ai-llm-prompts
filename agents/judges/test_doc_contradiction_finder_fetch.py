@@ -52,7 +52,9 @@ def _run(files, pr=_PR, repo=_REPO, responses=None):
     pages = []
     for page in select["pages"]:
         # The mock stands in for the fetch_page HTTP node, which reads the page at the merged commit.
-        status, body = responses.get(page["page_path"], (200, f"# {page['page_path']}\nBody."))
+        status, body = responses.get(
+            page["page_path"], (200, f"# {page['page_path']}\nBody.")
+        )
         pages.append(_main("page_text")(status, body, page)["page"])
     build = _main("build_inputs")(pages, select["pages"], select["eligible"])
     prepared = _main("prepare_context")(
@@ -76,7 +78,9 @@ def test_changed_markdown_page_is_read_and_reaches_the_prepare_step():
     assert len(select["pages"]) == 1
     assert prepared["eligible"] == 1
     context = json.loads(prepared["context_json"])
-    assert context["changed_pages"] == [{"page_path": "docs/a.md", "text": "# docs/a.md\nBody."}]
+    assert context["changed_pages"] == [
+        {"page_path": "docs/a.md", "text": "# docs/a.md\nBody."}
+    ]
     assert context["related_pages"] == []
     assert context["known_open_fingerprints"] == []
 
@@ -101,7 +105,9 @@ def test_unmerged_pr_without_markdown_is_not_a_zero_findings_result():
 
 
 def test_failed_page_read_makes_the_run_ineligible():
-    _, build, prepared = _run(_files("docs/a.md"), responses={"docs/a.md": (404, '{"message": "Not Found"}')})
+    _, build, prepared = _run(
+        _files("docs/a.md"), responses={"docs/a.md": (404, '{"message": "Not Found"}')}
+    )
 
     assert build["eligible"] == 0
     assert prepared["eligible"] == 0
@@ -109,7 +115,9 @@ def test_failed_page_read_makes_the_run_ineligible():
 
 def test_changed_page_over_the_size_cap_makes_the_run_ineligible_not_a_zero_result():
     big = "x" * 70000
-    _, build, prepared = _run(_files("docs/big.md"), responses={"docs/big.md": (200, big)})
+    _, build, prepared = _run(
+        _files("docs/big.md"), responses={"docs/big.md": (200, big)}
+    )
 
     assert build["eligible"] == 0
     assert prepared["eligible"] == 0
@@ -125,7 +133,9 @@ def test_two_changed_pages_that_exceed_the_cap_together_make_the_run_ineligible(
 
 def test_loop_returning_fewer_items_than_selected_makes_the_run_ineligible():
     # A loop that returns [] for a non-empty selection must not read as "no pages".
-    select = _main("select_pages")(_REPO, _files("docs/a.md", "docs/b.md"), json.dumps(_PR))
+    select = _main("select_pages")(
+        _REPO, _files("docs/a.md", "docs/b.md"), json.dumps(_PR)
+    )
     assert len(select["pages"]) == 2
 
     build = _main("build_inputs")([], select["pages"], select["eligible"])
@@ -152,22 +162,40 @@ def test_removed_markdown_files_are_not_read():
 
 
 def test_absolute_or_parent_paths_make_the_selection_ineligible():
-    assert _main("select_pages")(_REPO, _files("/abs.md"), json.dumps(_PR))["eligible"] == 0
-    assert _main("select_pages")(_REPO, _files("../escape.md"), json.dumps(_PR))["eligible"] == 0
+    assert (
+        _main("select_pages")(_REPO, _files("/abs.md"), json.dumps(_PR))["eligible"]
+        == 0
+    )
+    assert (
+        _main("select_pages")(_REPO, _files("../escape.md"), json.dumps(_PR))[
+            "eligible"
+        ]
+        == 0
+    )
 
 
 def test_path_with_an_empty_segment_makes_the_selection_ineligible():
-    assert _main("select_pages")(_REPO, _files("docs//a.md"), json.dumps(_PR))["eligible"] == 0
+    assert (
+        _main("select_pages")(_REPO, _files("docs//a.md"), json.dumps(_PR))["eligible"]
+        == 0
+    )
 
 
 def test_more_than_twenty_five_markdown_pages_make_the_selection_ineligible():
     names = [f"docs/page-{index}.md" for index in range(26)]
 
-    assert _main("select_pages")(_REPO, _files(*names), json.dumps(_PR))["eligible"] == 0
+    assert (
+        _main("select_pages")(_REPO, _files(*names), json.dumps(_PR))["eligible"] == 0
+    )
 
 
 def test_repository_outside_the_dryvist_owner_is_ineligible():
-    assert _main("select_pages")("example/docs", _files("docs/a.md"), json.dumps(_PR))["eligible"] == 0
+    assert (
+        _main("select_pages")("example/docs", _files("docs/a.md"), json.dumps(_PR))[
+            "eligible"
+        ]
+        == 0
+    )
 
 
 def test_page_path_is_percent_encoded_once_for_the_contents_api():
@@ -195,7 +223,9 @@ def test_page_iteration_terminates_on_a_failed_child_so_no_partial_page_set_is_u
 def test_no_github_request_in_the_finder_uses_a_write_method():
     for node in _NODES.values():
         data = node["data"]
-        if data.get("type") == "http-request" and "GITHUB_API_BASE" in data.get("url", ""):
+        if data.get("type") == "http-request" and "GITHUB_API_BASE" in data.get(
+            "url", ""
+        ):
             assert data["method"] == "get", node["id"]
 
 
@@ -209,16 +239,27 @@ def test_graph_routes_files_through_the_read_path_into_prepare():
     assert _EDGES["pages-read"]["source"] == "page_loop"
     assert _EDGES["pages-read"]["target"] == "build_inputs"
     assert _EDGES["inputs-built"]["target"] == "prepare_context"
-    sources = [edge["source"] for edge in _GRAPH["edges"] if edge["target"] == "prepare_context"]
+    sources = [
+        edge["source"]
+        for edge in _GRAPH["edges"]
+        if edge["target"] == "prepare_context"
+    ]
     assert sources == ["build_inputs"]
 
 
 def test_no_pages_gate_handle_ends_with_zero_findings():
     edge = _EDGES["context-no-pages"]
 
-    assert (edge["source"], edge["sourceHandle"], edge["target"]) == ("context_gate", "no_pages", "end_no_pages")
+    assert (edge["source"], edge["sourceHandle"], edge["target"]) == (
+        "context_gate",
+        "no_pages",
+        "end_no_pages",
+    )
     gate = _NODES["context_gate"]["data"]
     assert [case["case_id"] for case in gate["cases"]] == ["eligible", "no_pages"]
     assert _NODES["end_no_pages"]["data"]["outputs"] == [
-        {"variable": "findings_json", "value_selector": ["prepare_context", "findings_json"]}
+        {
+            "variable": "findings_json",
+            "value_selector": ["prepare_context", "findings_json"],
+        }
     ]
