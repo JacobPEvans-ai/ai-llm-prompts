@@ -151,7 +151,7 @@
                 return value
 
             def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str) -> dict:
-                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]"}
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}"}
                 try:
                     repo_data = json.loads(repo_body)
                     pr = json.loads(pr_body)
@@ -192,6 +192,9 @@
                         return empty
                     changed_files.append({"path": item["filename"], "status": item.get("status", ""), "patch": patch})
                 page_paths = list(dict.fromkeys(page["page_path"] for page in changed + related))
+                page_texts = {}
+                for page in changed + related:
+                    page_texts.setdefault(page["page_path"], page["text"])
                 pr_title, pr_text = pr.get("title"), pr.get("body") or ""
                 if not isinstance(pr_title, str) or not isinstance(pr_text, str):
                     return empty
@@ -216,5 +219,6 @@
                     "context_json": json.dumps(context, ensure_ascii=False),
                     "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
                     "known_fingerprints_json": json.dumps(known, ensure_ascii=False),
+                    "page_texts_json": json.dumps(page_texts, ensure_ascii=False),
                 }
           code_language: python3

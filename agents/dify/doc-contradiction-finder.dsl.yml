@@ -639,7 +639,7 @@ workflow:
                 return value
 
             def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str) -> dict:
-                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]"}
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}"}
                 try:
                     repo_data = json.loads(repo_body)
                     pr = json.loads(pr_body)
@@ -680,6 +680,9 @@ workflow:
                         return empty
                     changed_files.append({"path": item["filename"], "status": item.get("status", ""), "patch": patch})
                 page_paths = list(dict.fromkeys(page["page_path"] for page in changed + related))
+                page_texts = {}
+                for page in changed + related:
+                    page_texts.setdefault(page["page_path"], page["text"])
                 pr_title, pr_text = pr.get("title"), pr.get("body") or ""
                 if not isinstance(pr_title, str) or not isinstance(pr_text, str):
                     return empty
@@ -704,6 +707,7 @@ workflow:
                     "context_json": json.dumps(context, ensure_ascii=False),
                     "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
                     "known_fingerprints_json": json.dumps(known, ensure_ascii=False),
+                    "page_texts_json": json.dumps(page_texts, ensure_ascii=False),
                 }
           code_language: python3
           desc: Checks the merged PR target, bounds its changed files, and prepares the documentation pages to compare.
@@ -712,6 +716,7 @@ workflow:
             context_json: {type: string, children: null}
             page_paths_json: {type: string, children: null}
             known_fingerprints_json: {type: string, children: null}
+            page_texts_json: {type: string, children: null}
           selected: false
           title: Prepare contradiction context
           type: code
@@ -862,6 +867,10 @@ workflow:
             STATEMENT_KEYS = {"page_path", "line", "quote"}
             FINGERPRINT_RE = re.compile(r"^[a-z0-9][a-z0-9:/._-]{0,190}$")
 
+            def normalized(text):
+                # Same normalization on both sides of the quote check: each run of whitespace becomes one space.
+                return " ".join(text.split())
+
             def has_private_address(text):
                 for candidate in IPV4_RE.findall(text):
                     try:
@@ -894,14 +903,17 @@ workflow:
                         body = body[4:].strip(" \t\r\n")
                     return body
                 return value
-            def main(model_text: str, page_paths_json: str, known_fingerprints_json: str) -> dict:
+            def main(model_text: str, page_paths_json: str, known_fingerprints_json: str, page_texts_json: str) -> dict:
                 if not isinstance(model_text, str) or not model_text.strip():
                     return {"findings_json": ""}
                 try:
                     result = json.loads(strip_json_fence(model_text))
                     page_paths = set(json.loads(page_paths_json))
                     known = set(json.loads(known_fingerprints_json))
+                    texts = json.loads(page_texts_json)
                 except (TypeError, ValueError):
+                    return {"findings_json": ""}
+                if not isinstance(texts, dict):
                     return {"findings_json": ""}
                 if not isinstance(result, dict) or set(result) != {"findings"} or not isinstance(result["findings"], list):
                     return {"findings_json": ""}
@@ -926,9 +938,12 @@ workflow:
                         if (not isinstance(path, str) or path not in page_paths or "://" in path
                             or ".." in path.split("/")
                             or not isinstance(line, int) or isinstance(line, bool) or line < 1
+                            or not isinstance(texts.get(path), str)
                             or not isinstance(quote, str) or not quote.strip() or len(quote) > 300):
                             return {"findings_json": ""}
                         safe_statements.append({"page_path": path, "line": line, "quote": quote})
+                    if not all(normalized(s["quote"]) in normalized(texts[s["page_path"]]) for s in safe_statements):
+                        continue  # A quote that is not verbatim in its cited page drops only this finding.
                     text = "\n".join([fingerprint, question] + [s["page_path"] + "\n" + s["quote"] for s in safe_statements])
                     if SECRET_RE.search(text) or has_private_address(text):
                         return {"findings_json": ""}
@@ -952,6 +967,7 @@ workflow:
             - {variable: model_text, value_selector: [docs_updater_llm, text]}
             - {variable: page_paths_json, value_selector: [prepare_context, page_paths_json]}
             - {variable: known_fingerprints_json, value_selector: [prepare_context, known_fingerprints_json]}
+            - {variable: page_texts_json, value_selector: [prepare_context, page_texts_json]}
         height: 54
         id: validate_proposal
         position: {x: 4894, y: 200}
