@@ -92,8 +92,17 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
     secret_quote = "The import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
     address_quote = "The import runs on 192.0.2.10."
     ipv6_colon_quote = "Peer 2001:db8::1: is down."
+    ipv6_double_colon_quote = "Gateway 2001:db8::: is down."
+    ipv6_leading_colon_quote = "Peer:2001:db8::7 is down."
     cctld_host_quote = "Backups go to backup.example.md nightly."
-    quotes = (secret_quote, address_quote, ipv6_colon_quote, cctld_host_quote)
+    quotes = (
+        secret_quote,
+        address_quote,
+        ipv6_colon_quote,
+        ipv6_double_colon_quote,
+        ipv6_leading_colon_quote,
+        cctld_host_quote,
+    )
     texts = {**_TEXTS, "/services/import.md": "# Import\n" + "\n".join(quotes)}
     assert _findings(_run(_model(_FINDING)))[0]["security"] is False
     for quote in quotes:
@@ -102,7 +111,7 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
         assert finding["ask"] is False
         assert "[REDACTED]" in finding["statements"][0]["quote"]
         serialized = json.dumps(finding)
-        for raw in ("A" * 24, "192.0.2.10", "2001:db8::1", "backup.example.md"):
+        for raw in ("A" * 24, "192.0.2.10", "2001:db8:", "backup.example.md"):
             assert raw not in serialized
 
 
