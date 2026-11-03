@@ -54,6 +54,32 @@ all changed sources with the generated DSL. The CI check runs
    and return the proposed review JSON and mandate trace in the workflow result. `mode: "live"` is comment-only:
    it can submit a `COMMENT` review after the target is rechecked against the Mandate.
 
+## code-simplifier: provider credential scope
+
+1. The agent's router key is `agent-key/code-simplifier` from `agents/code-simplifier.yaml`.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
+
+## code-simplifier: enable Langfuse tracing
+
+Do this before the first published run.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
+   blocking response of that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
+
 ## Unverified for Dify 1.16.1
 
 - Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a live workspace.
@@ -98,6 +124,32 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
    Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
    and return the proposed patch and mandate trace in the workflow result. Live mode requires `ENABLE_PUSH` to be
    exactly `true`; source writes remain fail-closed while log redaction is unavailable.
+
+## ci-fixer: provider credential scope
+
+1. The agent's router key is `agent-key/ci-fixer` from `agents/ci-fixer.yaml`.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
+
+## ci-fixer: enable Langfuse tracing
+
+Do this before the first published run.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
+   blocking response of that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
 
 ## ci-fixer unverified for Dify 1.16.1
 

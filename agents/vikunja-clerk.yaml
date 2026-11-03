@@ -21,7 +21,7 @@ mandate_binding:
   from_fields: [caller, operation, project_id, task_id, title, description, due_date, priority]
   source: structured_fields_only
   immutable: true
-channels: [caller]
+channels: [caller, langfuse-trace]
 memory_scope: none
 mcp_access: {vikunja: own_litellm_key_only}
 callers: any

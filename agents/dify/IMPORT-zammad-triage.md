@@ -20,8 +20,10 @@ prompt by hand.
 
 1. Configure the OpenAI-compatible provider and the `litellm_role` declared in `agents/zammad-triage.yaml` (`medium`).
    Its router key must be scoped to local-only models; cloud fallback is forbidden.
-2. Bind this app to the agent-zammad-triage identity key through openbao://agent-key/zammad-triage. Import
-   [zammad-triage.dsl.yml](./zammad-triage.dsl.yml) as a **Workflow** app, not a Chatflow.
+2. Import [zammad-triage.dsl.yml](./zammad-triage.dsl.yml) as a **Workflow** app, not a Chatflow. The agent's router
+   key is `openbao://agent-key/zammad-triage` from `agents/zammad-triage.yaml`.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
 3. Set the native Schedule Trigger from `trigger.cron` in `agents/zammad-triage.yaml` (`*/10 * * * *`, ten minutes,
    minute resolution). Scheduled inputs are {}; the workflow uses sys.timestamp. Publish with ZAMMAD_TRIAGE_MODE=shadow.
 
@@ -46,6 +48,26 @@ call Zammad and is never a workflow variable, log line, or output.
 The search node refuses malformed group policy and an empty read scope. It searches each group in
 allowed ∪ readonly, subtracting denied IDs. Deny wins, and readonly groups permit reads only. Malformed policy denies
 all reads and writes. Every HTTP request rejects redirects.
+
+## Enable Langfuse tracing
+
+Do this before the first published run.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
+   blocking response of that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before any promotion if the log line shows a different alias.
 
 ## Shadow trace and promotion
 

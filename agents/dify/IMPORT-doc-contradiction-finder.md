@@ -47,6 +47,32 @@ DSL by hand.
    - b. Run on a merged pull request with no Markdown changes. The run must return {"findings": []}. This confirms the
      empty-list path.
 
+## Provider credential scope
+
+1. The agent's router key is `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`.
+   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
+   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
+
+## Enable Langfuse tracing
+
+Do this before step 6, so the live checks produce traces.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after the step 6a run: take the top-level `workflow_run_id` from the blocking response of
+   that run's Workflow Run API call, documented at
+   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
+   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
+   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
+   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
+   alias named in step 1. Stop before enabling the trigger if the log line shows a different alias.
+
 ## Unverified until the step 6 checks pass
 
 - The iteration output key (check 6a) and the empty-list behavior (check 6b) were not confirmed from Dify source. The Python
