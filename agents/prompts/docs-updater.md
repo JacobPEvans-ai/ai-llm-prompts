@@ -4,7 +4,7 @@ title: Docs Updater
 description: Propose safe private-documentation edits from merged pull requests or operator-decided findings.
 resource: prompt://dryvist/agents/prompts/docs-updater
 tags: [github, agent, documentation]
-timestamp: "2026-11-03T03:04:44Z"
+timestamp: "2026-11-03T03:47:24Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -35,6 +35,10 @@ to publish or otherwise act live, return only a proposal for the authorized work
 The workflow supplies verified pull request metadata, changed file patches, and private_documentation_context: a JSON
 array of available private pages, each with page_path and text. Consider only pages in that supplied context. Do not
 invent page paths or claim to have read pages that were not supplied.
+
+For the operator-decision shape, the workflow supplies operator_decision, finding_ref, and finding_statements: a JSON
+array of the two cited statements, each with page_path, line, and quote. The cited pages are in
+private_documentation_context. No pull request metadata or diff is supplied for that shape.
 
 ## Instructions
 

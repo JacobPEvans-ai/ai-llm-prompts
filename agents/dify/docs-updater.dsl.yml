@@ -857,6 +857,10 @@ workflow:
                 array of available private pages, each with page_path and text. Consider only pages in that supplied context. Do not
                 invent page paths or claim to have read pages that were not supplied.
 
+                For the operator-decision shape, the workflow supplies operator_decision, finding_ref, and finding_statements: a JSON
+                array of the two cited statements, each with page_path, line, and quote. The cited pages are in
+                private_documentation_context. No pull request metadata or diff is supplied for that shape.
+
                 ## Instructions
 
                 1. Decide whether the merged diff changes behavior, configuration, a name, a version, or an endpoint that an available
