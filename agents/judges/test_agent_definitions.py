@@ -113,6 +113,34 @@ def test_agent_memory_scopes_identities_and_key_references_are_unique():
     )
 
 
+_MEMORY_TOKENS = ("hindsight", "memory")
+
+
+def test_agents_without_memory_scope_declare_no_memory_tool():
+    for path, agent in _definitions():
+        if agent["memory_scope"] != "none":
+            continue
+        declared = [*agent.get("tools", []), *agent.get("mcp_servers", [])]
+        memory_names = [name for name in declared if any(token in str(name).lower() for token in _MEMORY_TOKENS)]
+        assert not memory_names, f"{path.name} has memory_scope none but declares memory tools: {memory_names}"
+
+
+def test_memory_bank_names_appear_only_in_their_own_definition():
+    for path, agent in _definitions():
+        scope = agent["memory_scope"]
+        if scope == "none":
+            continue
+        mentions = [
+            file.relative_to(_ROOT).as_posix()
+            for file in sorted(_AGENTS.rglob("*"))
+            if file.is_file() and file.suffix in {".yaml", ".yml", ".md", ".py", ".tmpl", ".json"}
+            and scope in file.read_text(errors="ignore")
+        ]
+        assert mentions == [path.relative_to(_ROOT).as_posix()], (
+            f"memory bank {scope} must appear only in its own definition: {mentions}"
+        )
+
+
 _DSL_AGENTS = []
 for _path, _agent in _definitions():
     _name = _path.stem
