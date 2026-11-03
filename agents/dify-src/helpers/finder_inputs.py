@@ -1,6 +1,6 @@
-"""Builds the doc-contradiction finder's start inputs from pages the fetcher has read.
+"""Builds the doc-contradiction finder's start inputs from the pages the finder has read.
 
-Pure: no network and no tokens. The fetcher sub-workflow calls it in a later change. Caps are measured on the exact JSON
+Pure: no network and no tokens. The finder's build step calls it. Caps are measured on the exact JSON
 strings returned, so each value fits its start variable.
 """
 
