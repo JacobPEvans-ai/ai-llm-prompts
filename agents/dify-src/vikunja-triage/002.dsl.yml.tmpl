@@ -6,6 +6,7 @@
                     cache[url]=value if value in ('merged','closed','open') else None
                     return cache[url]
                 except Exception: return None
+            __DIFY_HELPER_JSON_FENCE__
             def main(model_text:str,refs_text:str,allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str,web_host:str,api_base:str,bao_addr:str,role_id:str,secret_id:str,token_path:str)->dict:
                 actions=[]; seen=set(); mode=str(mode_raw or '').strip().lower()
                 try:
@@ -14,7 +15,7 @@
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
                 except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid'}
                 try:
-                    intent=json.loads(model_text); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
+                    intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
                 except Exception: proposed=[]
                 cache={}
                 allowed_operations=__DIFY_TOOL_OPERATIONS__

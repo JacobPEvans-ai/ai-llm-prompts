@@ -135,9 +135,10 @@
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
                 return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"subcommand": "__DIFY_TOOL_OPERATION_UPDATE__", **args}}, separators=(",", ":"))
 
+            __DIFY_HELPER_JSON_FENCE__
             def main(intent_text: str, task_result: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, mode_raw: str) -> dict:
                 try:
-                    intent = json.loads(intent_text)
+                    intent = json.loads(strip_json_fence(intent_text))
                     mode = str(mode_raw or "").strip().lower()
                     if mode not in {"shadow", "live"}:
                         return output(reason="Write mode is missing or invalid; update refused.")

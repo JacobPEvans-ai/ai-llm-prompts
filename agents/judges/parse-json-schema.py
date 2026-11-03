@@ -74,11 +74,25 @@ ROUTES = {"vikunja", "zammad"}
 TEXT_OR_NULL = {"operation", "task_id", "title", "description", "due_date", "filter", "search", "category"}
 
 
+def strip_json_fence(text: str) -> str:
+    """Mirror of strip_json_fence in agents/dify-src/helpers/json_fence.py.
+
+    The hosted evaluator cannot import repository files. agents/judges/test_json_fence.py keeps the two in step.
+    """
+    stripped = str(text).strip()
+    if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+        body = stripped[3:-3].strip()
+        if body[:4].lower() == "json":
+            body = body[4:].strip()
+        return body
+    return stripped
+
+
 def check_reply(value: Any) -> str | None:
     """Return the first problem found, or None when the reply is valid."""
     if isinstance(value, str):
         try:
-            value = json.loads(value)
+            value = json.loads(strip_json_fence(value))
         except json.JSONDecodeError:
             return "reply is not JSON"
     if not isinstance(value, dict):

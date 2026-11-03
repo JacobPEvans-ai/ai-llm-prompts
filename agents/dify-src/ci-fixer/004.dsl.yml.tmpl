@@ -169,9 +169,10 @@
             LOG_REDACTION_AVAILABLE = False
             DENIED_PARTS = {".github", "vendor", "generated", "node_modules"}
 
+            __DIFY_HELPER_JSON_FENCE__
             def main(model_text: str, files_body: str, enable_push: str, eligible: int, repo: str, pr_number: int, ref: str, head_sha: str, mode: str, actor: str, event: str, strength: str, current_pr_body: str, rules_body: str) -> dict:
                 try:
-                    result, files = json.loads(model_text), json.loads(files_body)
+                    result, files = json.loads(strip_json_fence(model_text)), json.loads(files_body)
                     pr, rules = json.loads(current_pr_body), json.loads(rules_body)
                     if not isinstance(rules, list):
                         rules = rules.get("rules", []) if isinstance(rules, dict) else None

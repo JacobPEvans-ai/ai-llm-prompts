@@ -103,11 +103,12 @@
                         return True
                 return False
 
+            __DIFY_HELPER_JSON_FENCE__
             def main(model_text: str, page_paths_json: str) -> dict:
                 if not isinstance(model_text, str) or not model_text.strip():
                     return {"proposal_json": ""}
                 try:
-                    result = json.loads(model_text)
+                    result = json.loads(strip_json_fence(model_text))
                     page_paths = set(json.loads(page_paths_json))
                 except (TypeError, ValueError):
                     return {"proposal_json": ""}

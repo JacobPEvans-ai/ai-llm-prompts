@@ -342,9 +342,18 @@ workflow:
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
                 return json.dumps({"tool": "vikunja_tasks", "args": {"subcommand": operation, **args}}, separators=(",", ":"))
 
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Other text is returned trimmed.
+                stripped = str(text).strip()
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip()
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip()
+                    return body
+                return stripped
             def main(intent_text: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, inbox_project_id: str, mode_raw: str) -> dict:
                 try:
-                    intent = json.loads(intent_text)
+                    intent = json.loads(strip_json_fence(intent_text))
                     if not isinstance(intent, dict) or intent.get("route") != "vikunja":
                         return output(reason="Refused; file this in Zammad.")
                     title = "" if intent.get("title") is None else str(intent["title"])
@@ -590,9 +599,18 @@ workflow:
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
                 return json.dumps({"tool": "vikunja_tasks", "args": {"subcommand": "update", **args}}, separators=(",", ":"))
 
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Other text is returned trimmed.
+                stripped = str(text).strip()
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip()
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip()
+                    return body
+                return stripped
             def main(intent_text: str, task_result: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, mode_raw: str) -> dict:
                 try:
-                    intent = json.loads(intent_text)
+                    intent = json.loads(strip_json_fence(intent_text))
                     mode = str(mode_raw or "").strip().lower()
                     if mode not in {"shadow", "live"}:
                         return output(reason="Write mode is missing or invalid; update refused.")
