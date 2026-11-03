@@ -4,7 +4,7 @@ title: Doc Contradiction Finder
 description: Report contradictions between documentation pages after a merged pull request. Read-only and shadow-only.
 resource: prompt://dryvist/agents/prompts/doc-contradiction-finder
 tags: [github, agent, documentation, shadow]
-timestamp: "2026-11-03T03:08:21Z"
+timestamp: "2026-11-03T03:47:24Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -45,7 +45,7 @@ Use exactly these labels:
 - If one page contradicts itself, one statement may be enough. Say so in the question.
 - Never quote a credential, token, address, or hostname. Replace each such value with [REDACTED] in the quote.
 - Give exactly one question in this form: "Which is right? A: <first statement, paraphrased in one line> B: <second
-  statement, paraphrased in one line> Neither: propose a different fix."
+  statement, paraphrased in one line> Neither: take no action."
 - Give a fingerprint: a lowercase slug of the topic and the page paths, for example `merge-rules:/a.md:/b.md`. The
   workflow hashes it for dedupe.
 - Set "ask" to false when the fingerprint is in known_open_fingerprints. Otherwise set "ask" to true.
