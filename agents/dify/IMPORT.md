@@ -54,6 +54,11 @@ all changed sources with the generated DSL. The CI check runs
    and return the proposed review JSON and mandate trace in the workflow result. `mode: "live"` is comment-only:
    it can submit a `COMMENT` review after the target is rechecked against the Mandate.
 
+## code-simplifier: bind the router key
+
+1. Bind this app to its own router key, `agent-key/code-simplifier` from `agents/code-simplifier.yaml`. Do not use
+   the workspace key from step 1. The acceptance check in the next section depends on this binding.
+
 ## code-simplifier: enable Langfuse tracing
 
 Do this before the first published run.
@@ -115,6 +120,11 @@ Target: Dify 1.16.1 with App DSL 0.7.0.
    Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
    and return the proposed patch and mandate trace in the workflow result. Live mode requires `ENABLE_PUSH` to be
    exactly `true`; source writes remain fail-closed while log redaction is unavailable.
+
+## ci-fixer: bind the router key
+
+1. Bind this app to its own router key, `agent-key/ci-fixer` from `agents/ci-fixer.yaml`. Do not use the
+   workspace key from step 1. The acceptance check in the next section depends on this binding.
 
 ## ci-fixer: enable Langfuse tracing
 

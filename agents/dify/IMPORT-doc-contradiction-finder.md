@@ -47,6 +47,12 @@ DSL by hand.
    - b. Run on a merged pull request with no Markdown changes. The run must return {"findings": []}. This confirms the
      empty-list path.
 
+## Bind the router key
+
+1. Bind this app to its own router key, `agent-key/doc-contradiction-finder` from
+   `agents/doc-contradiction-finder.yaml`. Do not use the workspace key from step 1. The acceptance check in the
+   next section depends on this binding.
+
 ## Enable Langfuse tracing
 
 Do this before step 6, so the live checks produce traces.

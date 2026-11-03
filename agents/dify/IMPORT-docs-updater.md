@@ -29,6 +29,11 @@ DSL by hand.
    no documentation write operation. The docs_private.pull_request live channel remains off until the
    agent-docs-updater identity receives its required docs-private write grant.
 
+## Bind the router key
+
+1. Bind this app to its own router key, `agent-key/docs-updater` from `agents/docs-updater.yaml`. Do not use the
+   workspace key from step 1. The acceptance check in the next section depends on this binding.
+
 ## Enable Langfuse tracing
 
 Do this before the first published run.
