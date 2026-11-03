@@ -15,6 +15,8 @@ providers:
       # thinking as plain text and runs out of tokens before the JSON.
       max_tokens: 4096
       passthrough:
+        # vLLM serves smaller priority values first, so 100 yields to interactive calls at the default 0.
+        priority: 100
         chat_template_kwargs:
           enable_thinking: false
   - id: exec:../../../scripts/promptfoo/luna.sh
