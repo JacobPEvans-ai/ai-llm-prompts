@@ -4,6 +4,8 @@
 
 * **Fix (agents)**: Vikunja triage proposes a done action only for a merged linked PR or a closed linked issue; an open
   linked PR or issue is not done.
+* **Fix (agents)**: Redact finder quotes with one shared rule before the verbatim check, and mark a finding whose quote needed
+  redaction as a security finding that is never asked in Slack.
 * **Fix (agents)**: Route an accepted docs-updater operator decision to the model node, with its cited statements and pages
   as context and no pull request reads. Pull request routing is unchanged.
 * **Add (agents)**: Add the shadow-only doc-contradiction-finder for documentation pages after merged pull requests. It

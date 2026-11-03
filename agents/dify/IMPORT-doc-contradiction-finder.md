@@ -35,7 +35,9 @@ DSL by hand.
    Slack tool, no memory bank, and no documentation write operation. Dedupe: the validator compares each fingerprint,
    unchanged, with known_open_fingerprints, and a match sets ask to false. The router fills that list from the operator's
    store, which is outside this repository. Posting and asking happen at a Slack step that is not bound in this
-   repository, so the live channel stays disabled until that step is bound.
+   repository, so the live channel stays disabled until that step is bound. The validator redacts each quote with the same rule
+   it applies to the cited page before the verbatim check. A finding whose quote needed redaction carries security true and is
+   never asked; the router sends it to the incident tracker, which is outside this repository.
 
 ## Unverified for Dify 1.16.1
 

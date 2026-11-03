@@ -79,10 +79,27 @@ def test_quote_must_appear_in_the_page_it_cites_not_in_another_page():
     assert _findings(_run(_model(wrong_page))) == []
 
 
-def test_private_ip_address_in_a_verified_quote_is_rejected():
-    texts = {**_TEXTS, "/services/import.md": "# Import\nThe import runs on 192.0.2.10."}
-    finding = _finding_with_quote(0, "The import runs on 192.0.2.10.")
-    assert _run(_model(finding), texts=texts) == {"findings_json": ""}
+def test_redacted_quote_verifies_against_unredacted_page_text():
+    # The page still holds the raw value; the quote holds the redacted form that the prompt asks for.
+    quote = "The import uses App DSL 0.7.0 with token = [REDACTED] for CI."
+    page = "# Import\nThe import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
+    texts = {**_TEXTS, "/services/import.md": page}
+    kept = _findings(_run(_model(_finding_with_quote(0, quote)), texts=texts))
+    assert [f["statements"][0]["quote"] for f in kept] == [quote]
+
+
+def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
+    secret_quote = "The import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
+    address_quote = "The import runs on 192.0.2.10."
+    texts = {**_TEXTS, "/services/import.md": "# Import\n" + secret_quote + "\n" + address_quote}
+    assert _findings(_run(_model(_FINDING)))[0]["security"] is False
+    for quote in (secret_quote, address_quote):
+        (finding,) = _findings(_run(_model(_finding_with_quote(0, quote)), texts=texts))
+        assert finding["security"] is True
+        assert finding["ask"] is False
+        assert "[REDACTED]" in finding["statements"][0]["quote"]
+        serialized = json.dumps(finding)
+        assert "A" * 24 not in serialized and "192.0.2.10" not in serialized
 
 
 def test_unknown_top_level_key_fails_closed():
@@ -97,13 +114,6 @@ def test_statement_on_an_unsupplied_page_fails_closed():
     finding = json.loads(json.dumps(_FINDING))
     finding["statements"][1]["page_path"] = "/services/other.md"
     assert _run(_model(finding)) == {"findings_json": ""}
-
-
-def test_secret_shaped_quote_fails_closed():
-    quote = "token = <TOKEN>".replace("<TOKEN>", "A" * 24)  # runtime fake token, 24 characters
-    texts = {**_TEXTS, "/services/import.md": "# Import\n" + quote}
-    finding = _finding_with_quote(0, quote)
-    assert _run(_model(finding), texts=texts) == {"findings_json": ""}
 
 
 def test_duplicate_fingerprint_forces_ask_false_even_when_the_model_asks():

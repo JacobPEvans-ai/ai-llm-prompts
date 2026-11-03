@@ -20,7 +20,10 @@ TOOL_NAME_MARKER = "__DIFY_TOOL_NAME__"
 TOOL_OPERATIONS_MARKER = "__DIFY_TOOL_OPERATIONS__"
 GITHUB_TOKEN_REF_MARKER = "__DIFY_GITHUB_TOKEN_REF__"
 # Shared code-node helpers: each marker line is replaced by the helper source at the marker's indent.
-HELPER_MARKERS = {"__DIFY_HELPER_JSON_FENCE__": SOURCE_ROOT / "helpers" / "json_fence.py"}
+HELPER_MARKERS = {
+    "__DIFY_HELPER_REDACT__": SOURCE_ROOT / "helpers" / "redact.py",
+    "__DIFY_HELPER_JSON_FENCE__": SOURCE_ROOT / "helpers" / "json_fence.py",
+}
 
 sys.path.insert(0, str(AGENTS / "evals" / "promptfoo"))
 sys.dont_write_bytecode = True
