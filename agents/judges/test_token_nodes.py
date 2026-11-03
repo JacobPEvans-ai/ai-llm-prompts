@@ -6,13 +6,12 @@ refused or failing case, must hold no token value. The token request node carrie
 """
 
 import json
-from pathlib import Path
 
 import pytest
-import yaml
+
+from dify_nodes import node_main
 
 
-_DIFY = Path(__file__).resolve().parents[2] / "agents" / "dify"
 _WORKFLOWS = ("doc-contradiction-finder", "docs-updater", "ci-fixer", "code-simplifier")
 _READ_SET_WORKFLOWS = ("doc-contradiction-finder", "docs-updater")
 _TOKEN_FIELD = {"parse_openbao": "client_token", "parse_github_token": "token"}
@@ -42,11 +41,7 @@ _GITHUB = {
 
 
 def _main(workflow, node_id):
-    dsl = yaml.safe_load((_DIFY / f"{workflow}.dsl.yml").read_text())
-    node = next(item for item in dsl["workflow"]["graph"]["nodes"] if item["id"] == node_id)
-    namespace = {}
-    exec(compile(node["data"]["code"], f"{workflow}:{node_id}", "exec"), namespace)  # defines the node's functions only
-    return namespace["main"]
+    return node_main(workflow, node_id)
 
 
 def _holders(out, value):

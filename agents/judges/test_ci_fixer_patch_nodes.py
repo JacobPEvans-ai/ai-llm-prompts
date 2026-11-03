@@ -9,8 +9,9 @@ import json
 
 import pytest
 
+from dify_nodes import SECRET as _SECRET
 from test_ci_fixer_nodes import (
-    _CHECK_RUN, _COMMIT, _FILES, _OTHER_SHA, _PR_NUMBER, _REF, _REPO, _SECRET, _SECRET_CONTEXT, _SHA, _TREE,
+    _CHECK_RUN, _COMMIT, _FILES, _OTHER_SHA, _PR_NUMBER, _REF, _REPO, _SECRET_CONTEXT, _SHA, _TREE,
     _check, _head_commit, _main, _pr,
 )
 

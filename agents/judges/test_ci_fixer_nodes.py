@@ -8,35 +8,26 @@ A node with no refusal branch is checked on its output shape, and the test says 
 """
 
 import json
-from pathlib import Path
 
 import pytest
-import yaml
 
-
-_DSL = Path(__file__).resolve().parents[2] / "agents" / "dify" / "ci-fixer.dsl.yml"
-_NODES = {node["id"]: node["data"] for node in yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]}
-
-_REPO = "dryvist/ai-llm-prompts"
-_REF = "feature/fix-ci"
-_SHA = "a" * 40
-_OTHER_SHA = "e" * 40
-_TREE = "b" * 40
-_COMMIT = "c" * 40
-_BLOB = "d" * 40
-_PR_NUMBER = 7
-_CHECK_RUN = 99
-_FILES = [{"filename": "docs/a.md", "additions": 2, "deletions": 1}]
-# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match these.
-_SECRET = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
-_SECRET_CONTEXT = "token" + ": " + "abcdefghijklmnopqrstuvwxyz0123"
-_ZERO = {"sha": "", "ready": 0}
+from dify_nodes import OTHER_SHA as _OTHER_SHA, PR_NUMBER as _PR_NUMBER, REPO as _REPO, SHA as _SHA
+from dify_nodes import node_main
 
 
 def _main(node_id):
-    namespace = {}
-    exec(compile(_NODES[node_id]["code"], f"ci-fixer:{node_id}", "exec"), namespace)  # defines the node's functions only
-    return namespace["main"]
+    return node_main("ci-fixer", node_id)
+
+
+_REF = "feature/fix-ci"
+_TREE = "b" * 40
+_COMMIT = "c" * 40
+_BLOB = "d" * 40
+_CHECK_RUN = 99
+_FILES = [{"filename": "docs/a.md", "additions": 2, "deletions": 1}]
+# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match this.
+_SECRET_CONTEXT = "token" + ": " + "abcdefghijklmnopqrstuvwxyz0123"
+_ZERO = {"sha": "", "ready": 0}
 
 
 def _pr(**overrides):

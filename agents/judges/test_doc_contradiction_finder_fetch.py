@@ -9,6 +9,8 @@ from pathlib import Path
 
 import yaml
 
+from dify_nodes import node_main
+
 
 _ROOT = Path(__file__).resolve().parents[2]
 _DSL = _ROOT / "agents" / "dify" / "doc-contradiction-finder.dsl.yml"
@@ -31,9 +33,7 @@ _PR = {
 
 @functools.lru_cache(maxsize=None)
 def _main(node_id):
-    namespace = {}
-    exec(compile(_NODES[node_id]["data"]["code"], node_id, "exec"), namespace)
-    return namespace["main"]
+    return node_main("doc-contradiction-finder", node_id)
 
 
 def _files(*entries):

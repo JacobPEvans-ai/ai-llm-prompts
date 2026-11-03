@@ -8,36 +8,26 @@ whether the review is written.
 """
 
 import json
-from pathlib import Path
 
 import pytest
-import yaml
+
+from dify_nodes import OTHER_SHA as _OTHER_SHA, PR_NUMBER as _PR_NUMBER, REPO as _REPO, SECRET as _SECRET, SHA as _SHA
+from dify_nodes import node_main
 
 
-_DSL = Path(__file__).resolve().parents[2] / "agents" / "dify" / "code-simplifier.dsl.yml"
-_NODES = {node["id"]: node["data"] for node in yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]}
+def _main(node_id):
+    return node_main("code-simplifier", node_id)
 
-_REPO = "dryvist/ai-llm-prompts"
+
 _REF = "feature/simplify"
-_SHA = "a" * 40
-_OTHER_SHA = "e" * 40
-_PR_NUMBER = 7
 _GENERIC = "No concrete behavior-preserving simplification was established."
 _HANDBACK = "OpenBao, token, or pull request eligibility checks did not authorize this mandate."
-# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match it.
-_SECRET = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
 # The hunk starts at line 1. The context line is line 1 and the added line is line 2.
 _PATCH = "@@ -1 +1,2 @@\n old\n+new line\n"
 _FILES = [{"filename": "docs/a.md", "status": "modified", "changes": 2, "patch": _PATCH}]
 _CHANGED = [{"path": "docs/a.md", "lines": [2]}]
 _SUGGESTION = {"path": "docs/a.md", "line": 2, "body": "Tighten this.\n```suggestion\nnew line\n```"}
 _REVIEW_JSON = json.dumps({"event": "COMMENT", "commit_id": _SHA, "body": _GENERIC, "comments": []})
-
-
-def _main(node_id):
-    namespace = {}
-    exec(compile(_NODES[node_id]["code"], f"code-simplifier:{node_id}", "exec"), namespace)  # defines functions only
-    return namespace["main"]
 
 
 def _pr(**overrides):
