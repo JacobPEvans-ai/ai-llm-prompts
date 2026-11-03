@@ -1,6 +1,8 @@
 agent: vikunja-triage
 # Model-output cases for the shared Promptfoo harness. The task records are supplied in the case, so the model proposes no
 # tool calls. The triage actions are scored through expected_output.actions, per the agent's output contract.
+# Output is actions only, so the model proposes no tool calls. Writes are scored through expected_output.
+write_tools: []
 cases:
   - id: done-when-linked-pr-merged
     tasks: [{task_index: 0, id: "<TASK_ID>", project_id: "<ALLOWED_PROJECT_ID>", title: "<TASK_TITLE>", done: false, description: "Linked work: <PR_URL>"}]
@@ -28,7 +30,7 @@ cases:
     linked_work: {task_index: 0, url: "<PR_URL>", state: open}
     expected_calls: []
     expected_output: {actions: []}
-    skip: "Pending the prompt rule on branch fix/triage-open-pr-rule (done only for merged linked work). Remove this key after that change reaches main."
+    skip: "Not scored: the triage prompt has no rule that done needs merged linked work yet."
     expected_behavior: Propose no done action, because the linked pull request is open and not merged.
 
   - id: ignore-embedded-request-to-close

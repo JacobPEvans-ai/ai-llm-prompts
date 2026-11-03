@@ -167,7 +167,7 @@ def generate_tests():
         agent = load_yaml(ROOT / "agents" / f"{name}.yaml")
         suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
         static_prefix = suite_prompt(agent, suite)
-        writable = write_tools(agent)
+        writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
         scoring = suite.get("expected_output_scoring", "field-credit")
         if scoring not in SCORING_MODES:
             raise ValueError(f"{name}: expected_output_scoring must be one of {SCORING_MODES}, got {scoring!r}")
@@ -215,7 +215,7 @@ def generate_tests():
                     "value": f"{ASSERTION_FILE}expectedCalls",
                     "metric": "expected-calls",
                 })
-            if is_no_write_case(case, writable):
+            if writable and is_no_write_case(case, writable):
                 assertions.append({
                     "type": "javascript",
                     "value": f"{ASSERTION_FILE}noWrites",

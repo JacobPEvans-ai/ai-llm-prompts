@@ -272,10 +272,16 @@ def test_skipped_case_stays_in_its_suite_and_is_not_generated():
     skipped = [case for case in suite["cases"] if case.get("skip")]
 
     assert [case["id"] for case in skipped] == ["open-linked-pr-is-not-done"]
-    assert "fix/triage-open-pr-rule" in skipped[0]["skip"]
+    assert skipped[0]["skip"].strip()
     assert all(
         test["metadata"]["case"] != "open-linked-pr-is-not-done" for test in cases.generate_tests()
     )
+
+
+def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
+    for test in cases.generate_tests():
+        if test["vars"]["suite"] in {"vikunja-triage", "zammad-triage"}:
+            assert all(assertion["metric"] != "no-writes" for assertion in test["assert"])
 
 
 def test_no_test_var_is_a_list():
