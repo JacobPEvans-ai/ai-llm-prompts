@@ -253,12 +253,14 @@ workflow:
       - data:
           desc: Immutable event and mandate fields plus the available private documentation page context.
           variables:
-            - {variable: event, label: event, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: action, label: action, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: merged, label: merged, type: text-input, required: true, max_length: 16, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: org, label: org, type: text-input, required: true, max_length: 128, options: [], default: '', hint: '', placeholder: ''}
+            - {variable: event, label: event, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
+            - {variable: action, label: action, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
+            - {variable: merged, label: merged, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
+            - {variable: org, label: org, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
             - {variable: repo, label: repo, type: text-input, required: true, max_length: 256, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: pr_number, label: pr_number, type: number, required: true}
+            - {variable: pr_number, label: pr_number, type: number, required: false}
+            - {variable: finding_ref, label: finding_ref, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Finding reference for the operator-decision shape.', placeholder: ''}
+            - {variable: operator_decision, label: operator_decision, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Operator decision for the operator-decision shape: A, B, or neither.', placeholder: ''}
             - {variable: private_documentation_context, label: private_documentation_context, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of available private pages with page_path and text fields.', placeholder: ''}
           selected: false
           title: Start
@@ -277,25 +279,43 @@ workflow:
             import re
 
             REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            FINDING_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+            DECISIONS = ("A", "B", "neither")
 
-            def main(event: str, action: str, merged: str, org: str, repo: str, pr_number: int) -> dict:
+            def main(event: str, action: str, merged: str, org: str, repo: str, pr_number: int, finding_ref: str, operator_decision: str) -> dict:
+                repo_allowed = isinstance(repo, str) and REPO_RE.fullmatch(repo) is not None
+                if isinstance(operator_decision, str) and operator_decision:
+                    valid = (
+                        repo_allowed
+                        and operator_decision in DECISIONS
+                        and isinstance(finding_ref, str)
+                        and FINDING_RE.fullmatch(finding_ref) is not None
+                    )
+                    return {
+                        "accepted": 1 if valid else 0,
+                        "eligible": 0,
+                        "decision": operator_decision if valid else "",
+                        "finding_ref": finding_ref if valid else "",
+                    }
                 valid = (
                     event == "pull_request"
                     and action == "closed"
                     and str(merged).lower() == "true"
                     and isinstance(org, str)
                     and org.lower() == "dryvist"
-                    and isinstance(repo, str)
-                    and REPO_RE.fullmatch(repo) is not None
+                    and repo_allowed
                     and isinstance(pr_number, int)
                     and not isinstance(pr_number, bool)
                     and pr_number > 0
                 )
-                return {"eligible": 1 if valid else 0}
+                return {"accepted": 1 if valid else 0, "eligible": 1 if valid else 0, "decision": "", "finding_ref": ""}
           code_language: python3
-          desc: Accepts only merged pull_request closed events from dryvist repositories.
+          desc: Accepts merged pull_request closed events from dryvist repositories, or one operator decision on a reported finding. Only the pull request path continues to the pull request reads.
           outputs:
+            accepted: {type: number, children: null}
             eligible: {type: number, children: null}
+            decision: {type: string, children: null}
+            finding_ref: {type: string, children: null}
           selected: false
           title: Validate merged PR event
           type: code
@@ -306,6 +326,8 @@ workflow:
             - {variable: org, value_selector: [start, org]}
             - {variable: repo, value_selector: [start, repo]}
             - {variable: pr_number, value_selector: [start, pr_number]}
+            - {variable: finding_ref, value_selector: [start, finding_ref]}
+            - {variable: operator_decision, value_selector: [start, operator_decision]}
         height: 54
         id: validate_event
         position: {x: 334, y: 500}
