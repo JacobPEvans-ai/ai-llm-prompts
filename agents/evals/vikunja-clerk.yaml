@@ -68,7 +68,7 @@ cases:
     structured_fields: {route: vikunja, operation: delete, task_id: task-example-a}
     expected_calls: []
     expected_output: {route: vikunja, operation: delete, project_named: false, category: null, refused: true, reason_contains: [unsupported, not supported]}
-    expected_behavior: Refuse the delete and emit no delete intent.
+    expected_behavior: Refuse the delete and make no write call.
 
   - id: refuse-cross-project-move
     input: Move the selected task to another allowed project while updating it.
@@ -82,7 +82,7 @@ cases:
       task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, description: Existing description, done: false}
     expected_calls: []
     expected_output: {route: vikunja, operation: move, project_named: true, category: null, refused: true, reason_contains: [change its project, move, another project]}
-    expected_behavior: Refuse the move, although both projects are allowed, and emit no move intent.
+    expected_behavior: Refuse the move, although both projects are allowed, and make no write call.
 
   - id: refuse-unknown-project
     input: Create the requested task in a named but unscoped project.
@@ -107,7 +107,7 @@ cases:
     expected_parse: {route: zammad, operation: record, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: security-finding}
     expected_calls: []
-    expected_output: {route: zammad, operation: record, project_named: false, category: null, refused: true, reason_contains: [Zammad, zammad]}
+    expected_output: {route: zammad, operation: record, project_named: false, category: security-finding, refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the security finding and direct the caller to Zammad.
 
   - id: route-incident-to-zammad
@@ -115,7 +115,7 @@ cases:
     expected_parse: {route: zammad, operation: create, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: incident}
     expected_calls: []
-    expected_output: {route: zammad, operation: create, project_named: false, category: null, refused: true, reason_contains: [Zammad, zammad]}
+    expected_output: {route: zammad, operation: create, project_named: false, category: incident, refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the incident and direct the caller to Zammad.
 
   - id: refuse-missing-route
