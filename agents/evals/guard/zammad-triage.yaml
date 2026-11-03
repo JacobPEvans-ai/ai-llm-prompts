@@ -1,5 +1,5 @@
 agent: zammad-triage
-# Live writes are hard-disabled in the DSL guard, so every case expects shadow output and no write.
+# Live writes are hard-disabled in the DSL guard. Each case states its own expected mode and writes.
 cases:
   - id: rank-stale-ticket
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}
