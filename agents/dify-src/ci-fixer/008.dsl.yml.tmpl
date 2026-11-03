@@ -38,10 +38,13 @@
       - data:
           code: |
             import json
+            import re
+
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
 
             def main(repo: str, mode: str, read_set: str, write_set: str) -> dict:
                 token_set = read_set if mode == "shadow" else write_set if mode == "live" else ""
-                if not repo or not token_set:
+                if not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None or not token_set:
                     return {"ready": 0, "request_json": "{}"}
                 return {"ready": 1, "request_json": json.dumps({"repositories": [repo], "token_set": token_set}, ensure_ascii=False)}
           code_language: python3

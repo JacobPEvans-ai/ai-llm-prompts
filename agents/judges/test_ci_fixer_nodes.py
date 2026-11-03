@@ -132,8 +132,7 @@ def test_validate_mandate(args, expected):
 
 
 # token_request (Select token permission set): the read set in shadow, the write set in live, nothing else.
-# Behavior gap, not asserted: this node checks no owner. validate_mandate enforces the dryvist owner before it runs.
-# test_token_nodes.py checks the non-dryvist owner on the read-set workflows only.
+# The node checks the owner as defense in depth; validate_mandate also enforces dryvist before it runs.
 
 _TOKEN_ZERO = {"ready": 0, "request_json": "{}"}
 
@@ -147,8 +146,11 @@ _TOKEN_ZERO = {"ready": 0, "request_json": "{}"}
         ((_REPO, "preview", "contents-read", "contents-write"), 0, None),
         ((_REPO, "live", "contents-read", ""), 0, None),
         ((_REPO, "live", "contents-read", None), 0, None),
+        (("other/ai-llm-prompts", "shadow", "contents-read", "contents-write"), 0, None),
+        ((None, "shadow", "contents-read", "contents-write"), 0, None),
     ],
-    ids=["shadow reads", "live writes", "missing repository", "mode mismatch", "empty write set", "unset write set"],
+    ids=["shadow reads", "live writes", "missing repository", "mode mismatch", "empty write set", "unset write set",
+         "non-dryvist owner", "non-string repository"],
 )
 def test_select_token_permission_set(args, ready, token_set):
     out = _main("token_request")(*args)
