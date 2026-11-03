@@ -1,4 +1,4 @@
-"""Contract test for the Promptfoo local provider's request priority."""
+"""Contract test for the Promptfoo local provider's request priority and spend-log tags."""
 
 from pathlib import Path
 
@@ -21,3 +21,4 @@ def test_local_provider_sends_low_scheduling_priority():
 
     assert passthrough["priority"] == 100
     assert passthrough["chat_template_kwargs"] == {"enable_thinking": False}
+    assert passthrough["metadata"]["tags"] == ["fill", "priority-100"]
