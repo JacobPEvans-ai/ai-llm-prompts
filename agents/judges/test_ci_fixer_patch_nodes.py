@@ -83,7 +83,7 @@ def test_guard_context_keeps_a_secret_out_of_model_input():
     assert _SECRET_CONTEXT not in json.dumps(out)
 
 
-# validate_patch: the model's patch and the write guards. Live writes stay closed.
+# validate_patch: the model's patch and the write guards. Live pushes stay closed unless log redaction is on.
 
 _GOOD_PATCH = {"decision": "commit", "patches": [{"path": "docs/a.md", "content": "hello\n",
                                                  "diff": "@@ -1 +1 @@\n-old\n+new\n"}]}
@@ -142,7 +142,7 @@ def test_validate_patch_allows_a_live_push_when_every_gate_is_open():
         # eligible only gates the push here; a shadow proposal still forms. Routing must not reach this node with eligible 0.
         (json.dumps(_GOOD_PATCH), None, "shadow", 0, "proposed"),
     ],
-    ids=["live writes stay closed", "missing field", "error payload", "path not changed",
+    ids=["live writes stay closed", "malformed", "error payload", "path not changed",
          "denied path", "secret in content", "over the line limit", "guard not eligible"],
 )
 def test_validate_patch_refuses(model_text, files, mode, eligible, status):
