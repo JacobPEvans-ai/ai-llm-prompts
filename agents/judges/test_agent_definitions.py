@@ -82,10 +82,11 @@ def test_a_definition_missing_one_roster_field_fails_the_check(field):
     assert _missing_roster_fields(broken) == [field]
 
 
+@pytest.mark.parametrize("empty", [None, "", [], {}])
 @pytest.mark.parametrize("field", _ROSTER_FIELDS)
-def test_a_definition_with_an_empty_roster_field_fails_the_check(field):
+def test_a_definition_with_an_empty_roster_field_fails_the_check(field, empty):
     _, agent = _definitions()[0]
-    broken = {**agent, field: None}
+    broken = {**agent, field: empty}
     assert _missing_roster_fields(broken) == [field]
 
 
