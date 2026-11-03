@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.53.1...v1.54.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** add a pure builder for the finder's start inputs ([#242](https://github.com/dryvist/ai-llm-prompts/issues/242)) ([fea55b0](https://github.com/dryvist/ai-llm-prompts/commit/fea55b0470d615df83377582fa10603930bf1133))
+
 ## [1.53.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.53.0...v1.53.1) (2026-11-03)
 
 
