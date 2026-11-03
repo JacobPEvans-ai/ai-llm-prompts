@@ -310,3 +310,29 @@ def test_guard_review_write_refuses(kwargs, reason):
 @pytest.mark.parametrize("args", [(_REPO, "shadow"), ("", "live")], ids=["shadow", "live with no repository"])
 def test_prepare_handback_always_hands_back(args):
     assert _main("prepare_handback")(*args) == {"status": "handback", "reason": _HANDBACK}
+
+
+# Routing: only a proposed review reaches the target guard and the post. Refused and handback reviews end unposted.
+
+def _edges():
+    dsl = yaml.safe_load(_DSL.read_text())
+    return {(edge["source"], edge["sourceHandle"], edge["target"]) for edge in dsl["workflow"]["graph"]["edges"]}
+
+
+def test_only_a_proposed_review_reaches_the_guard_and_the_post():
+    edges = _edges()
+    assert {edge for edge in edges if edge[2] == "guard_review_write"} == {
+        ("review_status_gate", "eligible", "guard_review_write"),
+    }
+    assert {edge for edge in edges if edge[2] == "review_status_gate"} == {
+        ("validate_review", "source", "review_status_gate"),
+    }
+    assert {edge for edge in edges if edge[0] == "review_status_gate"} == {
+        ("review_status_gate", "eligible", "guard_review_write"),
+        ("review_status_gate", "false", "review_refusal_gate"),
+    }
+    assert {edge for edge in edges if edge[0] == "review_refusal_gate"} == {
+        ("review_refusal_gate", "eligible", "end_review_refused"),
+        ("review_refusal_gate", "false", "prepare_handback"),
+    }
+    assert {edge for edge in edges if edge[2] == "post_review"} == {("review_mode_gate", "eligible", "post_review")}
