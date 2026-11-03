@@ -56,6 +56,8 @@ def write_tools(agent):
 
 
 def is_no_write_case(case, writable):
+    if case.get("expected_write_proposal"):  # the correct reply may propose a write, such as an authorized create or a shadow call
+        return False
     if "expected_calls" in case:
         return not any(
             call.get("tool") in writable
@@ -174,7 +176,7 @@ def generate_tests():
         parse_system = parse_prompt() if any("expected_parse" in case for case in suite["cases"]) else None
         for case in suite["cases"]:
             if case.get("skip"):
-                continue  # kept in the suite with its reason; the skip key names the pending change
+                continue  # kept in the suite with its reason, so the case stays visible
             if "expected_parse" in case:
                 tests.append(parse_test(name, case, parse_system))
             case_data = load_fixture_contents({
