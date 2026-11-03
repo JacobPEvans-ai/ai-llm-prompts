@@ -36,8 +36,8 @@
                 path, content = selected if selected else ("", "")
                 artifact = json.dumps({"decision": "commit", "patches": patches}, ensure_ascii=False) if valid and line_limit_ok else json.dumps({"decision": "comment", "patches": []})
                 trace = json.dumps({"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}, ensure_ascii=False)
-                status = "proposed" if mode == "shadow" and valid and line_limit_ok and target_ok and eligible == 1 else "handback" if not target_ok or eligible != 1 else "refused"
-                reason = "" if status == "proposed" else "patch or target failed validation, or live writes remain fail-closed"
+                status = "ready" if push_allowed else "proposed" if mode == "shadow" and valid and line_limit_ok and target_ok and eligible == 1 else "handback" if not target_ok or eligible != 1 else "refused"
+                reason = "" if status in {"proposed", "ready"} else "patch or target failed validation, or live writes remain fail-closed"
                 return {"push_allowed": 1 if push_allowed else 0, "path": path, "content_json": json.dumps(content, ensure_ascii=False),
                     "commit_message": "fix: repair CI failure", "artifact_json": artifact, "trace_json": trace, "status": status, "reason": reason}
           code_language: python3

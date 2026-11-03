@@ -125,6 +125,7 @@ def test_validate_patch_proposes_in_shadow_and_never_pushes():
 def test_validate_patch_allows_a_live_push_when_every_gate_is_open():
     out = _patch(json.dumps(_GOOD_PATCH), mode="live", log_available=True)
     assert out["push_allowed"] == 1
+    assert out["status"] == "ready" and out["reason"] == ""
 
 
 @pytest.mark.parametrize(
