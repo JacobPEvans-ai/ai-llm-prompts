@@ -20,12 +20,27 @@ function same(left, right) {
   return false;
 }
 
+// Mirrors strip_json_fence in agents/dify-src/helpers/json_fence.py, which the Dify parse nodes use.
+function stripJsonFence(text) {
+  const stripped = String(text).trim();
+  if (stripped.length >= 6 && stripped.startsWith("```") && stripped.endsWith("```")) {
+    let body = stripped.slice(3, -3).trim();
+    if (body.slice(0, 4).toLowerCase() === "json") body = body.slice(4).trim();
+    return body;
+  }
+  return stripped;
+}
+
 function parseOutput(output) {
   try {
-    return typeof output === "string" ? JSON.parse(output) : output;
+    return typeof output === "string" ? JSON.parse(stripJsonFence(output)) : output;
   } catch {
     return null;
   }
+}
+
+function jsonValid(output) {
+  return parseOutput(output) !== null;
 }
 
 function isObject(value) {
@@ -200,4 +215,4 @@ function expectedFieldsMatch(output, context) {
     : { pass: true, score: 1, reason: "All expected fields match." };
 }
 
-module.exports = { expectedOutput, expectedCalls, noWrites, expectedFieldsMatch, notTruncated };
+module.exports = { expectedOutput, expectedCalls, noWrites, expectedFieldsMatch, notTruncated, jsonValid, stripJsonFence };
