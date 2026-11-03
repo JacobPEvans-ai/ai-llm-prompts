@@ -278,7 +278,7 @@ def test_skipped_case_stays_in_its_suite_and_is_not_generated():
     )
 
 
-def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
+def test_triage_suites_with_no_write_tools_attach_no_check():
     for test in cases.generate_tests():
         if test["vars"]["suite"] in {"vikunja-triage", "zammad-triage"}:
             assert all(assertion["metric"] != "no-writes" for assertion in test["assert"])
