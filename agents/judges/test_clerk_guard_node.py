@@ -2,7 +2,7 @@
 
 The mandates and the environment come from the matching model-suite case. The Code guard
 builds a create call as a preview. It builds list and get calls from its output fields. An
-update returns the get that checks the task first, so only that first call is compared.
+update returns the get that checks the task first. Only that first call is compared.
 """
 
 import json
@@ -55,6 +55,7 @@ def _run(case):
     if result["needs_update_check"]:
         return [_call("get", {"id": result["task_id"]})], True
     if result["preview"]:
+        assert result["dispatch"] == (context["mode"] == "live"), "a shadow call must not dispatch"
         call = json.loads(result["preview"])
         operation = call["args"].pop("subcommand")
         return [_call(operation, call["args"])], False
