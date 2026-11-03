@@ -1,0 +1,127 @@
+# Code-guard fixtures for the Update project guard node: the remaining refusal rules (project scope, policies, priority and done types, current and requested projects).
+# Same keys and rules as vikunja-clerk-update.yaml. Each refusal has a "<id>-control" case.
+cases:
+  - id: refuse-current-project-not-allowed
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-unknown, title: Update the onboarding guide, done: false}}
+    refusal: The current task project is unknown or outside the allowed policy
+    offends: [task_result.task.projectId]
+    expected_tool_calls: []
+  - id: refuse-current-project-not-allowed-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-requested-project-denied
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-denied, task_id: task-example-a}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: The requested project is denied
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: refuse-requested-project-denied-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-allowed, task_id: task-example-a}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-requested-project-not-allowed
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-unknown, task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: The requested project is unknown or outside the allowed policy
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: refuse-requested-project-not-allowed-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-allowed, task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-update-named-project-unscoped
+    intent: {route: vikunja, operation: update, project_named: true, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: The named project is unknown or unscoped
+    offends: [intent.project_named]
+    expected_tool_calls: []
+  - id: refuse-update-named-project-unscoped-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-update-priority-not-number
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., priority: high, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: Priority must be a number
+    offends: [intent.priority]
+    expected_tool_calls: []
+  - id: refuse-update-priority-not-number-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., priority: 3, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps., priority: 3}
+  - id: refuse-update-done-not-bool
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., done: "yes", category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: Done must be a boolean
+    offends: [intent.done]
+    expected_tool_calls: []
+  - id: refuse-update-done-not-bool-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., done: false, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps., done: false}
+  - id: refuse-update-project-scope-missing
+    intent: {route: vikunja, operation: update, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: Project scope is missing or ambiguous
+    offends: [intent.project_named]
+    expected_tool_calls: []
+  - id: refuse-update-project-scope-missing-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-update-policy-not-list
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    context: {allowed_projects_raw: '{"project-allowed": true}'}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    refusal: could not be parsed safely
+    offends: [context.allowed_projects_raw]
+    expected_tool_calls: []
+  - id: refuse-update-policy-not-list-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    context: {allowed_projects_raw: '["project-allowed"]'}
+    task_result: {tool: vikunja_tasks, operation: get, args: {id: task-example-a}, task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, done: false}}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
