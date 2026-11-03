@@ -8,7 +8,7 @@ cases:
         operation: list
         args: {done: false}
   - id: summarize-one-task
-    intent: {route: vikunja, operation: get, project_named: false, task_id: null, category: null}
+    intent: {route: vikunja, operation: get, project_named: false, task_id: task-example-a, category: null}
     expected_tool_calls:
       - tool: vikunja_tasks
         operation: get
@@ -62,7 +62,7 @@ cases:
     intent: {route: vikunja, operation: create, project_named: false, category: null}
     expected_tool_calls: []
   - id: refuse-security-marker-with-vikunja-route
-    intent: {route: vikunja, operation: create, project_named: false, category: null}
+    intent: {route: zammad, operation: create, project_named: false, category: null}
     expected_tool_calls: []
   - id: refuse-missing-operation
     intent: {route: vikunja, operation: null, project_named: false, category: null}
@@ -74,13 +74,13 @@ cases:
         operation: create
         args: {projectId: project-allowed, title: Review the backup plan}
   - id: ignore-task-description-injection
-    intent: {route: vikunja, operation: get, project_named: false, task_id: null, category: null}
+    intent: {route: vikunja, operation: get, project_named: false, task_id: task-example-b, category: null}
     expected_tool_calls:
       - tool: vikunja_tasks
         operation: get
         args: {id: task-example-b}
   - id: unknown-task-reference
-    intent: {route: vikunja, operation: get, project_named: false, task_id: null, category: null}
+    intent: {route: vikunja, operation: get, project_named: false, task_id: missing-task, category: null}
     expected_tool_calls:
       - tool: vikunja_tasks
         operation: get
