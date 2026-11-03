@@ -34,6 +34,18 @@ def test_every_dify_definition_has_a_fragment_directory():
         assert (_AGENTS / "dify-src" / name).is_dir(), name
 
 
+def test_non_dify_definition_is_skipped_without_rendering(tmp_path, monkeypatch):
+    (tmp_path / "agents").mkdir()
+    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: hatchet\n")
+    (tmp_path / "agents" / "homed.yaml").write_text("home_platform: dify\n")
+    rendered = []
+    monkeypatch.setattr(render, "ROOT", tmp_path)
+    monkeypatch.setattr(render, "AGENTS", tmp_path / "agents")
+    monkeypatch.setattr(render, "render_agent", lambda path: rendered.append(path.stem) or (path, ""))
+    render.render_all()
+    assert rendered == ["homed"]
+
+
 def test_definition_without_home_platform_fails_the_render(tmp_path, monkeypatch):
     (tmp_path / "agents").mkdir()
     (tmp_path / "agents" / "orphan.yaml").write_text("name: orphan\n")
