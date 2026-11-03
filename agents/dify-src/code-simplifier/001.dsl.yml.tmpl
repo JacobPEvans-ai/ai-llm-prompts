@@ -33,11 +33,59 @@
           isInIteration: false
           isInLoop: false
           sourceType: code
-          targetType: code
-        id: review-validate-guard
+          targetType: if-else
+        id: review-validate-status
         source: validate_review
         sourceHandle: source
+        target: review_status_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: review-status-proposed
+        source: review_status_gate
+        sourceHandle: eligible
         target: guard_review_write
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: if-else
+        id: review-status-unproposed
+        source: review_status_gate
+        sourceHandle: 'false'
+        target: review_refusal_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
+        id: review-refused
+        source: review_refusal_gate
+        sourceHandle: eligible
+        target: end_review_refused
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: review-handback
+        source: review_refusal_gate
+        sourceHandle: 'false'
+        target: prepare_handback
         targetHandle: target
         type: custom
         zIndex: 0

@@ -58,6 +58,93 @@
               logical_operator: and
               conditions:
                 - comparison_operator: "="
+                  id: review-proposed
+                  value: proposed
+                  varType: string
+                  variable_selector:
+                    - validate_review
+                    - status
+          desc: Only a proposed review reaches the target guard. Refused and handback reviews never post.
+          selected: false
+          title: Review status gate
+          type: if-else
+        height: 126
+        id: review_status_gate
+        position:
+          x: 5200
+          y: 100
+        positionAbsolute:
+          x: 5200
+          y: 100
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="
+                  id: review-refused
+                  value: refused
+                  varType: string
+                  variable_selector:
+                    - validate_review
+                    - status
+          desc: A refused review ends with a run record. Any other unproposed review takes the handback record.
+          selected: false
+          title: Review refusal gate
+          type: if-else
+        height: 126
+        id: review_refusal_gate
+        position:
+          x: 5200
+          y: 300
+        positionAbsolute:
+          x: 5200
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - variable: status
+              value_selector:
+                - validate_review
+                - status
+            - variable: trace
+              value_selector:
+                - validate_review
+                - trace_json
+          selected: false
+          title: End refused review
+          type: end
+        height: 90
+        id: end_review_refused
+        position:
+          x: 5480
+          y: 300
+        positionAbsolute:
+          x: 5480
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - comparison_operator: "="
                   id: live-mode
                   value: live
                   varType: string
