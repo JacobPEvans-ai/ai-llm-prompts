@@ -26,7 +26,6 @@ cases:
             # Roles
             Agents never merge. The master session merges.
       known_open_fingerprints: []
-    expected_calls: []
     expected_behavior: >
       One S1 finding about merge rules. Statements: /policy/merge.md line 2 (agents may merge once checks are green) and
       /policy/roles.md line 2 (agents never merge). The question has A, B, and Neither. "ask" is true.
@@ -56,7 +55,6 @@ cases:
             # Requirements
             App DSL 0.6.0 is required.
       known_open_fingerprints: []
-    expected_calls: []
     expected_behavior: >
       One S2 finding about the App DSL version. Statements: /services/import.md line 2 (0.7.0) and
       /services/requirements.md line 2 (0.6.0). Fingerprint: app-dsl-version:/services/import.md:/services/requirements.md.
@@ -87,7 +85,6 @@ cases:
             # Schedule
             Re-run the check every 24 hours.
       known_open_fingerprints: []
-    expected_calls: []
     expected_behavior: >
       One S4 finding about the ambiguous word "stale", because two careful readers would act on it differently. Statements:
       /ops/checks.md line 2 and /ops/schedule.md line 2. "ask" is true.
@@ -117,7 +114,6 @@ cases:
             # Retry policy
             Failed jobs are retried twice.
       known_open_fingerprints: []
-    expected_calls: []
     expected_output: {findings: []}
     expected_behavior: >
       The two pages agree, so there are zero findings. The output is exactly {"findings":[]} with no other text.
@@ -148,7 +144,6 @@ cases:
             App DSL 0.6.0 is required.
       known_open_fingerprints:
         - app-dsl-version:/services/import.md:/services/requirements.md
-    expected_calls: []
     expected_behavior: >
       The same App DSL version conflict as planted-s2-version. Its fingerprint is already in known_open_fingerprints, so
       the finding is present with "ask": false, and no question is raised for it.
