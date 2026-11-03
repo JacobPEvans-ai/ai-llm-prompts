@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T12:20:33-04:00"
+timestamp: "2026-11-03T12:00:00-05:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -123,6 +123,14 @@ Instead:
 The concrete helper, its variable names, and the endpoints are
 environment-specific and live in the operator's own local files — never here,
 and never in any committed artifact.
+
+## Minted tokens: record the accessor, revoke on exit
+
+- **Record the accessor at mint time.** Capture the token accessor in the same command that mints the token.
+- **Revoke in an EXIT trap in the same shell.** Set the trap in the shell that holds the token. It revokes on every
+  exit path, including failure.
+- **Never leave a minted token alive after its shell exits.** A live token outlives its owner and becomes a standing
+  credential.
 
 ## Access: certificate first, break-glass never casually
 
