@@ -1,19 +1,22 @@
 # Promptfoo agent evaluation matrix
 
-The test generator loads the three source suites directly. Run it from the repository root to check its case and
+The test generator loads the three source suites directly; the other suites, such as `agents/evals/docs-updater.yaml`,
+are not part of this matrix. Run it from the repository root to check its case and
 assertion counts:
 
 ```sh
 python3 agents/evals/promptfoo/generate.py
 ```
 
-Each suite's static prefix is its agent prompt, the declared tool list, fixed JSON instructions and the names (never the
-values) of the outcome fields that suite scores. The prefix is byte-identical across the suite's cases; case data comes
-last, in the user message. The shared prefix the agents name, `shared/homelab.md`, is absent, so it is skipped.
+Each suite's static prefix contains its declared shared prefix when that file exists, its canonical prompt, the declared
+tool list, fixed JSON instructions and the names (never the values) of the outcome fields that suite scores. The prefix
+is byte-identical across the suite's cases; case data comes last, in the user message. The generator includes
+`shared/homelab.md` because the agent definitions declare that existing file.
 
 Every `vikunja-clerk` case with `expected_parse` also yields a `vikunja-clerk-parse` test. That test sends the raw caller
-input to the Dify "Parse request" node prompt (`agents/dify/vikunja-clerk.dsl.yml`) and scores `expected-fields-match`
-and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.py`).
+input to the Dify "Parse request" node prompt (`agents/dify/vikunja-clerk.dsl.yml`), now composed from the shared prefix
+and canonical `agents/prompts/vikunja-clerk.md` prompt, including its "Parse request (classifier step)" section. It
+scores `expected-fields-match` and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.py`).
 
 A suite's top-level `expected_output_scoring` sets how `expected-output` scores: `field-credit` (the default) is the
 share of expected keys that match, and `strict` is 1 only when every key matches. `vikunja-clerk` is `strict`.

@@ -1,0 +1,33 @@
+name: docs-updater
+owner: agent-platform
+home_platform: dify
+mode: shadow
+# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a short-lived GitHub App installation token for the event repo.
+prompt: agents/prompts/docs-updater.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools:
+  - github.pulls.get
+  - github.pulls.diff
+  - github.repos.get
+mcp_servers: []
+privacy_class: internal
+# LiteLLM router role, not a model ID.
+litellm_role: medium
+trigger:
+  kind: event
+  event_filter:
+    event: pull_request
+    action: [closed]
+    merged: true
+    org: dryvist
+mandate_binding:
+  required_fields: [repo, pr_number]
+  event: pull_request
+channels:
+  shadow: run_record_only
+  live: docs_private.pull_request # Requires a docs-private write grant, which agent-docs-updater lacks today; its GitHub set is read-only on public repos, so live stays off until the grant exists.
+memory_scope: none
+eval_set: agents/evals/docs-updater.yaml
+identity: agent-docs-updater
+secret_ref: agent-key/docs-updater
+github_token_ref: github-token/docs-updater

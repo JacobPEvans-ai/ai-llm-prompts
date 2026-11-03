@@ -3,7 +3,7 @@ type: Dify workflow import guide
 title: Dify workflow imports
 description: Import, configure, and publish the code-simplifier and ci-fixer workflows.
 tags: [dify, workflow, github, import]
-timestamp: "2026-11-02T20:51:21Z"
+timestamp: "2026-11-02T23:11:47Z"
 ---
 
 ## code-simplifier import and run
@@ -19,10 +19,6 @@ renderer inserts the declared system prompt. Never copy a prompt into Dify or ed
 agent YAML or canonical prompt (or the template for graph changes), run `python3 agents/dify-src/render.py`, and commit
 all changed sources with the generated DSL. The CI check runs
 `python3 agents/dify-src/render.py --check` and fails on any byte difference.
-
-Vikunja Clerk's `Parse request` node is an intentional exception: its classifier prompt is declared in
-`agents/vikunja-clerk.yaml` and sourced from `agents/dify-src/vikunja-clerk/parse-request.prompt.txt` because that
-node converts caller text to structured intent instead of running the full task-agent prompt.
 
 1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
    then configure the `litellm_role` declared in `agents/code-simplifier.yaml` (`medium`). The Dify model field takes

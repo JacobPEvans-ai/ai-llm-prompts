@@ -191,18 +191,7 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
     system_prompts = _system_prompts(dsl)
     assert len(system_prompts) == 1, f"{agent_name} must have exactly one system prompt in its Dify LLM nodes"
-    node_title, actual_prompt = system_prompts[0]
-    exception = agent.get("dify_system_prompt_exception")
-    if exception is not None:
-        assert exception.get("node") == node_title, f"{agent_name} exception must name its Dify system-prompt node"
-        assert exception.get("reason"), f"{agent_name} exception must document why it differs"
-        exception_source = _ROOT / exception["source"]
-        assert exception_source.is_file(), f"{agent_name} exception source does not exist: {exception['source']}"
-        assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(exception_source.read_text()), (
-            f"{agent_name} Dify system prompt must match its declared exception source"
-        )
-        return
-
+    _, actual_prompt = system_prompts[0]
     expected = "\n\n".join(
         (
             _prompt_body(_ROOT / agent["shared_prefix"]),
@@ -212,8 +201,3 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
         f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
     )
-
-
-def test_only_vikunja_clerk_uses_a_declared_dify_system_prompt_exception():
-    exceptions = {path.stem for path, agent in _definitions() if "dify_system_prompt_exception" in agent}
-    assert exceptions == {"vikunja-clerk"}

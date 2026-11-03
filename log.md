@@ -2,6 +2,10 @@
 
 ## 2026-11-02
 
+* **Add (agents)**: Add the shadow-only docs-updater for merged pull requests, with safe private-documentation proposals
+  and a read-only GitHub set.
+* **Fix (agents)**: Compose Vikunja Clerk's `Parse request` classifier from its shared prefix and canonical prompt;
+  clarify shared-prefix inclusion in Promptfoo generation docs.
 * **Fix (agents)**: Generate Dify app names, model roles, schedules, mode defaults, and Vikunja MCP contracts from
   agent YAML; make the DSL drift check byte-exact, enforce unique per-agent scopes and key refs, and give Vikunja
   triage its own memory and key references. Update import guides to use the renderer.
