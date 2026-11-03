@@ -20,7 +20,8 @@ DSL by hand.
 2. Import docs-updater.dsl.yml as a Workflow app.
 3. Set OPENBAO_ADDR, OPENBAO_ROLE_ID, OPENBAO_SECRET_ID, GITHUB_API_BASE, GITHUB_TOKEN_MINT_PATH, and
    GITHUB_TOKEN_READ_SET in the workflow environment. Store the AppRole values as secrets. Use the read-only set
-   referenced by github-token/docs-updater; do not configure a GitHub write set.
+   referenced by github-token/docs-updater; do not configure a GitHub write set. GITHUB_TOKEN_MINT_PATH must begin
+   with a slash, because the workflow appends it to OPENBAO_ADDR.
 4. Have the event router start the workflow only for pull_request closed events with merged true in the dryvist org.
    Pass the immutable repo and pr_number mandate, event metadata, and private_documentation_context as a JSON array
    of available pages with page_path and text fields.
