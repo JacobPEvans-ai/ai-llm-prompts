@@ -47,11 +47,12 @@ DSL by hand.
    - b. Run on a merged pull request with no Markdown changes. The run must return {"findings": []}. This confirms the
      empty-list path.
 
-## Bind the router key
+## Provider credential scope
 
-1. Bind this app to its own router key, `agent-key/doc-contradiction-finder` from
-   `agents/doc-contradiction-finder.yaml`. Do not use the workspace key from step 1. The acceptance check in the
-   next section depends on this binding.
+1. The agent's router key is `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`. Dify
+   sets model-provider credentials per workspace, so this app uses the workspace key from step 1 unless you add a
+   per-agent workspace or an HTTP-request node that calls the router with that key. Record the key this app uses at
+   import time.
 
 ## Enable Langfuse tracing
 
@@ -67,8 +68,8 @@ Do this before step 6, so the live checks produce traces.
 3. Save. The status on the same page must read started.
 4. Acceptance check, after the step 6a run: a Langfuse trace named `workflow_<workflow id>` exists, where
    `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a line for that
-   run under the key `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`. If the
-   router line shows another key, stop and fix the key binding before enabling the trigger.
+   run, and its key is the one recorded at import for this app (the workspace key, or the agent key if a per-agent
+   node is used). If the key differs, stop before enabling the trigger.
 
 ## Unverified until the step 6 checks pass
 

@@ -89,8 +89,8 @@ Do this before the first published run.
 3. Save. The status on the same page must read started.
 4. Acceptance check, after one test run of the published app: a Langfuse trace named `workflow_<workflow id>`
    exists, where `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a
-   line for that run under the key `openbao://agent-key/vikunja-clerk` from `agents/vikunja-clerk.yaml`. If the
-   router line shows another key, stop and fix the key binding before any promotion.
+   line for that run, and its key is the one recorded at import for this app (the workspace key, or the agent
+   key if a per-agent node is used). If the key differs, stop before any promotion.
 
 ## Unverified for Dify 1.16.1
 
