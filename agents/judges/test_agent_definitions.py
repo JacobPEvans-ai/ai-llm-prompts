@@ -58,6 +58,37 @@ def _normalize_whitespace(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _missing_roster_fields(agent):
+    return [field for field in _ROSTER_FIELDS if field not in agent or agent[field] in (None, "", [], {})]
+
+
+def test_roster_names_the_eight_criterion_six_fields():
+    assert _ROSTER_FIELDS == (
+        "home_platform",
+        "prompt",
+        "tools",
+        "privacy_class",
+        "litellm_role",
+        "trigger",
+        "memory_scope",
+        "eval_set",
+    )
+
+
+@pytest.mark.parametrize("field", _ROSTER_FIELDS)
+def test_a_definition_missing_one_roster_field_fails_the_check(field):
+    _, agent = _definitions()[0]
+    broken = {key: value for key, value in agent.items() if key != field}
+    assert _missing_roster_fields(broken) == [field]
+
+
+@pytest.mark.parametrize("field", _ROSTER_FIELDS)
+def test_a_definition_with_an_empty_roster_field_fails_the_check(field):
+    _, agent = _definitions()[0]
+    broken = {**agent, field: None}
+    assert _missing_roster_fields(broken) == [field]
+
+
 def test_agent_roster_paths_and_prompt_metadata_are_complete():
     definitions = _definitions()
     assert definitions
@@ -65,10 +96,8 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
     shared_prefixes = set()
     for path, agent in definitions:
         assert isinstance(agent, dict), f"{path.name} must contain a YAML mapping"
-        for field in _ROSTER_FIELDS:
-            assert field in agent and agent[field] not in (None, "", [], {}), (
-                f"{path.name} is missing non-empty roster field {field}"
-            )
+        missing = _missing_roster_fields(agent)
+        assert not missing, f"{path.name} is missing non-empty roster fields: {missing}"
 
         for field in ("prompt", "eval_set", "shared_prefix"):
             target = _ROOT / agent[field]
