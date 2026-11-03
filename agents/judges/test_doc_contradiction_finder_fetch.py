@@ -165,6 +165,11 @@ def test_fetch_node_is_a_read_only_raw_get_at_the_merged_commit():
     )
 
 
+def test_page_iteration_terminates_on_a_failed_child_so_no_partial_page_set_is_used():
+    # Dify's ErrorHandleMode.Terminated is 'terminated' (web/app/components/workflow/types.ts at tag 1.18.0).
+    assert _NODES["page_loop"]["data"]["error_handle_mode"] == "terminated"
+
+
 def test_no_github_request_in_the_finder_uses_a_write_method():
     for node in _NODES.values():
         data = node["data"]

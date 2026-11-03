@@ -116,7 +116,7 @@ def test_a_dropped_changed_page_is_not_listed_as_related():
     assert result["related_pages"] == "[]"
 
 
-def test_string_path_helpers_match_posixpath_for_paths_the_workflow_admits():
+def test_string_path_helpers_match_posixpath_for_paths_without_empty_segments():
     import posixpath
 
     for path in ["a.md", "docs/a.md", "/docs/a.md", "/index.md", "docs/guide/a.md", "docs/index.md"]:

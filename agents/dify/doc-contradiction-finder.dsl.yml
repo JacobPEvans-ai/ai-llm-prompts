@@ -1138,6 +1138,7 @@ workflow:
           iterator_selector: [select_pages, pages]
           output_selector: [page_text, page]
           output_type: 'array[object]'
+          error_handle_mode: terminated
           selected: false
           startNodeType: http-request
           start_node_id: fetch_page
