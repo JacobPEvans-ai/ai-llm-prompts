@@ -1,0 +1,195 @@
+# Code-guard fixtures for the clerk's first Code guard node: project scope, project policies, inbox and update.
+# Same keys as vikunja-clerk-args.yaml: intent, mandates, context, refusal, offends, and a "<id>-control" for each refusal.
+cases:
+  - id: project-scope-missing
+    intent: {route: vikunja, operation: create, title: Update the onboarding guide, category: null}
+    mandates: {project_id: "", task_id: ""}
+    context: {allowed_projects: [project-allowed, project-inbox]}
+    refusal: Project scope is missing or ambiguous.
+    offends: [intent.project_named]
+    expected_tool_calls: []
+  - id: project-scope-missing-control
+    intent: {route: vikunja, operation: create, project_named: false, title: Update the onboarding guide, category: null}
+    mandates: {project_id: "", task_id: ""}
+    context: {allowed_projects: [project-allowed, project-inbox]}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-inbox, title: Update the onboarding guide}
+  - id: project-policy-not-list
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {allowed_projects_raw: '{"project-allowed": true}'}
+    refusal: Project policies are missing or invalid
+    offends: [context.allowed_projects_raw]
+    expected_tool_calls: []
+  - id: project-policy-not-list-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {allowed_projects_raw: '["project-allowed"]'}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: project-policy-empty-item
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {allowed_projects_raw: '["project-allowed", ""]'}
+    refusal: Project policies are missing or invalid
+    offends: [context.allowed_projects_raw]
+    expected_tool_calls: []
+  - id: project-policy-empty-item-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {allowed_projects_raw: '["project-allowed"]'}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: create-inbox-missing
+    intent: {route: vikunja, operation: create, project_named: false, title: Review the backup plan, category: null}
+    mandates: {project_id: "", task_id: ""}
+    context: {allowed_projects: [project-allowed, project-inbox], inbox: ""}
+    refusal: The inbox project policy is missing
+    offends: [context.inbox]
+    expected_tool_calls: []
+  - id: create-inbox-missing-control
+    intent: {route: vikunja, operation: create, project_named: false, title: Review the backup plan, category: null}
+    mandates: {project_id: "", task_id: ""}
+    context: {allowed_projects: [project-allowed, project-inbox], inbox: project-inbox}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-inbox, title: Review the backup plan}
+  - id: refuse-denied-project-even-when-allowed
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-denied, task_id: ""}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    refusal: The target project is denied
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: refuse-denied-project-even-when-allowed-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: refuse-create-outside-allowed-projects
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-unknown, task_id: ""}
+    refusal: The target project is unknown or outside the allowed policy
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: refuse-create-outside-allowed-projects-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: refuse-unknown-project
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: "", task_id: ""}
+    refusal: The named project is unknown or unscoped
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: refuse-unknown-project-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  # Node 1 cannot read the task's current project, so it fetches the task. The move refusal is in the Update project guard fixtures.
+  - id: refuse-cross-project-move
+    intent: {route: vikunja, operation: update, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-other-allowed, task_id: task-example-a}
+    context: {allowed_projects: [project-allowed, project-other-allowed]}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: update-named-unscoped-project
+    intent: {route: vikunja, operation: update, project_named: true, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    refusal: The named project is unknown or unscoped
+    offends: [intent.project_named]
+    expected_tool_calls: []
+  - id: update-named-unscoped-project-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: update-requested-denied
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-denied, task_id: task-example-a}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    refusal: The requested project is denied
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: update-requested-denied-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-allowed, task_id: task-example-a}
+    context: {allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: update-requested-not-allowed
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-unknown, task_id: task-example-a}
+    refusal: The requested project is unknown or outside the allowed policy
+    offends: [mandates.project_id]
+    expected_tool_calls: []
+  - id: update-requested-not-allowed-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: project-allowed, task_id: task-example-a}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: update-task-id-missing
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: ""}
+    refusal: A task reference is required for update.
+    offends: [mandates.task_id]
+    expected_tool_calls: []
+  - id: update-task-id-missing-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: update-no-fields
+    intent: {route: vikunja, operation: update, project_named: false, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    refusal: At least one task field is required for update.
+    offends: [intent.description]
+    expected_tool_calls: []
+  - id: update-no-fields-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: mode-invalid-update
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    context: {mode: ""}
+    refusal: Write mode is missing or invalid
+    offends: [context.mode]
+    expected_tool_calls: []
+  - id: mode-invalid-update-control
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    context: {mode: live}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
