@@ -55,7 +55,7 @@ def _run(case):
     if result["needs_update_check"]:
         return [_call("get", {"id": result["task_id"]})], True
     if result["preview"]:
-        assert result["dispatch"] == (context["mode"] == "live"), "a shadow call must not dispatch"
+        assert result["dispatch"] == (context["mode"] == "live"), "dispatch must equal (mode == live)"
         call = json.loads(result["preview"])
         operation = call["args"].pop("subcommand")
         return [_call(operation, call["args"])], False
