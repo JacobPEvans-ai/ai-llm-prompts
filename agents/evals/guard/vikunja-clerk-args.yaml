@@ -59,10 +59,13 @@ cases:
     intent: {route: other, operation: create, project_named: true, title: Review the onboarding guide, category: null}
     expected_tool_calls: []
   - id: refuse-security-marker-with-vikunja-route
-    intent: {route: zammad, operation: create, project_named: true, category: security-finding}
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: security-finding}
     expected_tool_calls: []
   - id: refuse-missing-operation
     intent: {route: vikunja, operation: null, project_named: true, category: null}
+    expected_tool_calls: []
+  - id: refuse-denied-project-even-when-allowed
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
     expected_tool_calls: []
   - id: shadow-mode-returns-call-without-execution
     intent: {route: vikunja, operation: create, project_named: true, title: Review the backup plan, category: null}
