@@ -100,6 +100,13 @@ def test_pull_url_for_a_merged_pr_is_merged(monkeypatch):
     assert _state_for(monkeypatch, url, objects) == "merged"
 
 
+def test_issues_url_with_a_malformed_pull_request_field_is_not_done(monkeypatch):
+    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
+    objects = {f"{_REPO}/issues/236": {"state": "closed", "pull_request": "not-an-object"}}
+
+    assert _state_for(monkeypatch, url, objects) == "closed-unmerged"
+
+
 def test_issues_url_for_a_closed_issue_stays_closed_and_done(monkeypatch):
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/12"
     objects = {f"{_REPO}/issues/12": {"state": "closed"}}
