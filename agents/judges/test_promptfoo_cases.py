@@ -97,7 +97,7 @@ def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
     }
 
 
-def test_behavior_rubric_uses_two_judges_only_for_four_code_simplifier_cases():
+def test_behavior_rubric_uses_two_judges_only_for_three_code_simplifier_cases():
     tests = cases.generate_tests()
     rubric_assertions = [
         (test, assertion)
@@ -110,7 +110,8 @@ def test_behavior_rubric_uses_two_judges_only_for_four_code_simplifier_cases():
         "behavior-rubric-judge-b": "exec:../../../scripts/promptfoo/grader.sh judge-b",
     }
 
-    assert len(rubric_assertions) == 8
+    # The secret case asserts its output directly, so only the three behavior-only cases keep rubric judges.
+    assert len(rubric_assertions) == 6
     assert {assertion["metric"] for _, assertion in rubric_assertions} == set(expected)
     assert all(test["vars"]["suite"] == "code-simplifier" for test, _ in rubric_assertions)
     assert all(assertion["provider"] == expected[assertion["metric"]] for _, assertion in rubric_assertions)
