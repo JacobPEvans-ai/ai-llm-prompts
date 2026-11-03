@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.3](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.2...v1.57.3) (2026-11-03)
+
+
+### Bug Fixes
+
+* post code-simplifier reviews only when proposed ([#266](https://github.com/dryvist/ai-llm-prompts/issues/266)) ([3bbbb27](https://github.com/dryvist/ai-llm-prompts/commit/3bbbb27d4b5d19cb210d867860e39a7d77ac26d0))
+
 ## [1.57.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.1...v1.57.2) (2026-11-03)
 
 
