@@ -1,7 +1,6 @@
 agent: zammad-triage
-# Model-output cases for the shared Promptfoo harness. Ticket records are supplied in the case, so the model proposes no
-# tool calls. Triage actions are scored through expected_output.actions, per the agent's output contract.
-# Output is actions only, so the model proposes no tool calls. A write appears as an action and is scored by the exact actions match.
+# Model-output cases. Each case supplies its ticket records. Triage actions are scored through expected_output.actions.
+# Output is actions only. A write appears as an action and is scored by the exact actions match.
 write_tools: []
 cases:
   - id: incident-candidate-proposed
