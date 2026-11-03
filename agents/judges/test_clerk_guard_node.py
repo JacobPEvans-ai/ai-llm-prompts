@@ -176,3 +176,13 @@ def test_each_update_refusal_has_a_control_that_changes_only_what_it_offends(cas
     control = _UPDATE_BY_ID[case["id"] + "-control"]
     assert "refusal" not in control
     assert _changed_paths(_inputs(case), _inputs(control)) == set(case["offends"])
+
+
+_MODEL_REFUSALS = [case for case in _MODEL.values() if case["expected_output"].get("refused") and case["id"] in _BY_ID]
+
+
+@pytest.mark.parametrize("model_case", _MODEL_REFUSALS, ids=[case["id"] for case in _MODEL_REFUSALS])
+def test_model_suite_reason_names_the_guard_refusal(model_case):
+    _, _, result = _run(_BY_ID[model_case["id"]])
+    assert result["allowed"] is False, result["reason"]
+    assert any(fragment in result["reason"] for fragment in model_case["expected_output"]["reason_contains"])
