@@ -116,6 +116,15 @@ def test_a_dropped_changed_page_is_not_listed_as_related():
     assert result["related_pages"] == "[]"
 
 
+def test_string_path_helpers_match_posixpath_for_paths_the_workflow_admits():
+    import posixpath
+
+    for path in ["a.md", "docs/a.md", "/docs/a.md", "/index.md", "docs/guide/a.md", "docs/index.md"]:
+        assert finder_inputs._dirname(path) == posixpath.dirname(path), path
+    for directory in ["", "/", "/docs", "docs", "docs/guide"]:
+        assert finder_inputs._index_in(directory) == posixpath.join(directory, "index.md"), directory
+
+
 def test_a_double_slash_path_terminates():
     result = build(["//x.md"], {"//x.md": "t"}, [])
 

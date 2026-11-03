@@ -134,6 +134,10 @@ def test_absolute_or_parent_paths_make_the_selection_ineligible():
     assert _main("select_pages")(_REPO, _files("../escape.md"), json.dumps(_PR))["eligible"] == 0
 
 
+def test_path_with_an_empty_segment_makes_the_selection_ineligible():
+    assert _main("select_pages")(_REPO, _files("docs//a.md"), json.dumps(_PR))["eligible"] == 0
+
+
 def test_more_than_twenty_five_markdown_pages_make_the_selection_ineligible():
     names = [f"docs/page-{index}.md" for index in range(26)]
 

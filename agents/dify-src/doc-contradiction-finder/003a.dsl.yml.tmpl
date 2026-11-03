@@ -30,7 +30,7 @@
                     if item.get("status") == "removed" or not item["filename"].endswith(".md"):
                         continue
                     path = item["filename"]
-                    if path.startswith("/") or not path.strip() or ".." in path.split("/"):
+                    if path.startswith("/") or not path.strip() or ".." in path.split("/") or "" in path.split("/"):
                         return empty
                     paths.append(path)
                 if len(paths) > MAX_PAGES:

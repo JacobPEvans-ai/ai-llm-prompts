@@ -32,7 +32,7 @@ def _usable(path):
 
 
 def _dirname(path):
-    # Matches posixpath.dirname for the paths here, without importing a module the workflow sandbox may not allow.
+    # Matches posixpath.dirname for paths with no empty segment, which the workflow guarantees. Avoids importing posixpath.
     if "/" not in path:
         return ""
     return path.rsplit("/", 1)[0] or "/"
