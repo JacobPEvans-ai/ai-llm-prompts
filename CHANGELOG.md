@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.50.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.49.1...v1.50.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** add docs-updater and compose the vikunja-clerk classifier from the shared prefix ([#218](https://github.com/dryvist/ai-llm-prompts/issues/218)) ([a9a42de](https://github.com/dryvist/ai-llm-prompts/commit/a9a42debbcaf8056d70d9bca7adaa806d18e9df3))
+
 ## [1.49.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.49.0...v1.49.1) (2026-11-02)
 
 
