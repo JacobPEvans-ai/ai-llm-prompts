@@ -7,7 +7,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk")
+SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk", "vikunja-triage", "zammad-triage")
 OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {
@@ -167,12 +167,14 @@ def generate_tests():
         agent = load_yaml(ROOT / "agents" / f"{name}.yaml")
         suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
         static_prefix = suite_prompt(agent, suite)
-        writable = write_tools(agent)
+        writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
         scoring = suite.get("expected_output_scoring", "field-credit")
         if scoring not in SCORING_MODES:
             raise ValueError(f"{name}: expected_output_scoring must be one of {SCORING_MODES}, got {scoring!r}")
         parse_system = parse_prompt() if any("expected_parse" in case for case in suite["cases"]) else None
         for case in suite["cases"]:
+            if case.get("skip"):
+                continue  # the skipped case stays in the suite with its reason
             if "expected_parse" in case:
                 tests.append(parse_test(name, case, parse_system))
             case_data = load_fixture_contents({
@@ -213,7 +215,7 @@ def generate_tests():
                     "value": f"{ASSERTION_FILE}expectedCalls",
                     "metric": "expected-calls",
                 })
-            if is_no_write_case(case, writable):
+            if writable and is_no_write_case(case, writable):
                 assertions.append({
                     "type": "javascript",
                     "value": f"{ASSERTION_FILE}noWrites",

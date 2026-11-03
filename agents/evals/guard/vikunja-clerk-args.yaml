@@ -1,0 +1,93 @@
+# Code-guard fixtures: the intent that the model emits and the tool calls the Code guard must build from it.
+# The model suite scores only the intent keys. These cases record the tool args that the guard, not the model, produces.
+cases:
+  - id: list-open-tasks
+    intent: {route: vikunja, operation: list, project_named: false, done: false, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: list
+        args: {done: false}
+  - id: summarize-one-task
+    intent: {route: vikunja, operation: get, project_named: false, task_id: task-example-a, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: create-task-in-allowed-project
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: update-task-in-allowed-project
+    intent: {route: vikunja, operation: update, project_named: false, description: Add the current onboarding steps., category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+      - tool: vikunja_tasks
+        operation: update
+        args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
+  - id: refuse-create-outside-allowed-projects
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    expected_tool_calls: []
+  - id: refuse-delete
+    intent: {route: vikunja, operation: delete, project_named: false, category: null}
+    expected_tool_calls: []
+  - id: refuse-cross-project-move
+    intent: {route: vikunja, operation: move, project_named: true, category: null}
+    expected_tool_calls: []  # The Code guard refuses the unsupported move at the intent step; no call is built.
+  - id: refuse-unknown-project
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    expected_tool_calls: []
+  - id: create-without-project-uses-inbox
+    intent: {route: vikunja, operation: create, project_named: false, title: Review the backup plan, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-inbox, title: Review the backup plan}
+  - id: route-security-finding-to-zammad
+    intent: {route: zammad, operation: record, project_named: false, category: security-finding}
+    expected_tool_calls: []
+  - id: route-incident-to-zammad
+    intent: {route: zammad, operation: create, project_named: false, category: incident}
+    expected_tool_calls: []
+  - id: refuse-missing-route
+    intent: {operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    expected_tool_calls: []
+  - id: refuse-other-route
+    intent: {route: other, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    expected_tool_calls: []
+  - id: refuse-security-marker-with-vikunja-route
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: security-finding}
+    expected_tool_calls: []
+  - id: refuse-missing-operation
+    intent: {route: vikunja, operation: null, project_named: true, category: null}
+    expected_tool_calls: []
+  - id: refuse-denied-project-even-when-allowed
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    expected_tool_calls: []
+  - id: shadow-mode-returns-call-without-execution
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the backup plan, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the backup plan}
+  - id: ignore-task-description-injection
+    intent: {route: vikunja, operation: get, project_named: false, task_id: task-example-b, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-b}
+  - id: unknown-task-reference
+    intent: {route: vikunja, operation: get, project_named: false, task_id: missing-task, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: missing-task}
+  - id: find-by-keyword
+    intent: {route: vikunja, operation: list, project_named: false, search: migration checklist, category: null}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: list
+        args: {search: migration checklist}

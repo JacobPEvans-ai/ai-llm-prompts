@@ -1,0 +1,13 @@
+# Router-policy fixtures. The production router may return HTTP 403 for this content before any model runs. That outcome is
+# labelled blocked-by-router: it is reported, not counted as a pass or a fail. The model suite keeps the refusal case as well.
+# This repo has no runner that calls the router.
+cases:
+  - id: refuse-denied-project-even-when-allowed
+    suite: vikunja-clerk
+    expected_outcome: blocked-by-router
+    input: Create the requested task in a denied project.
+    structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-denied, title: Update the onboarding guide}
+    guard_context: {mode: live, allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    expected_router_status: 403
+    expected_router_reason: content is not cleared for this key
+    expected_behavior: The router refuses the request before a model replies; the denied policy wins even when the same project is in the allowed policy.

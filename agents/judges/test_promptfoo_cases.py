@@ -21,8 +21,15 @@ def test_generated_cases_have_assertions_and_static_prefixes():
     counts = {name: sum(test["vars"]["suite"] == name for test in tests) for name in names}
     assertions_file = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
 
-    assert counts == {"ci-fixer": 19, "code-simplifier": 9, "vikunja-clerk": 20, "vikunja-clerk-parse": 20}
-    assert len(tests) == 68
+    assert counts == {
+        "ci-fixer": 19,
+        "code-simplifier": 9,
+        "vikunja-clerk": 20,
+        "vikunja-clerk-parse": 19,
+        "vikunja-triage": 4,
+        "zammad-triage": 4,
+    }
+    assert len(tests) == 75
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
@@ -63,7 +70,9 @@ def test_sample_assertions_and_values_come_from_suite_yaml():
     supplied = json.loads(generated["vars"]["case_data"])
 
     assert supplied["structured_fields"] == source["structured_fields"]
+    assert source["expected_calls"] == []
     assert generated["vars"]["expected"]["expected_calls"] == source["expected_calls"]
+    assert generated["vars"]["expected"]["expected_output"] == source["expected_output"]
     assert any(
         assertion.get("metric") == "expected-calls"
         and assertion["value"] == "file://assertions.js:expectedCalls"
@@ -189,7 +198,13 @@ def test_scoring_mode_comes_from_the_suite():
     modes = {test["vars"]["suite"]: test["vars"]["expected"].get("expected_output_scoring")
              for test in cases.generate_tests() if "expected" in test["vars"] and "expected_output" in test["vars"]["expected"]}
 
-    assert modes == {"ci-fixer": "field-credit", "code-simplifier": "field-credit", "vikunja-clerk": "strict"}
+    assert modes == {
+        "ci-fixer": "field-credit",
+        "code-simplifier": "field-credit",
+        "vikunja-clerk": "strict",
+        "vikunja-triage": "field-credit",
+        "zammad-triage": "field-credit",
+    }
 
 
 def test_expected_output_contains_list_is_any_of():
@@ -250,6 +265,32 @@ def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
 
     assert result["pass"] is False
     assert "patches" in result["reason"]
+
+
+def test_skipped_case_stays_in_its_suite_and_is_not_generated():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
+    skipped = [case for case in suite["cases"] if case.get("skip")]
+
+    assert [case["id"] for case in skipped] == ["open-linked-pr-is-not-done"]
+    assert skipped[0]["skip"].strip()
+    assert all(
+        test["metadata"]["case"] != "open-linked-pr-is-not-done" for test in cases.generate_tests()
+    )
+
+
+def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
+    for test in cases.generate_tests():
+        if test["vars"]["suite"] in {"vikunja-triage", "zammad-triage"}:
+            assert all(assertion["metric"] != "no-writes" for assertion in test["assert"])
+
+
+def test_clerk_cases_that_expect_no_call_attach_the_no_writes_check():
+    # The clerk's write tools come from the agent file, so its no-call cases get the no-writes check.
+    clerk = [test for test in cases.generate_tests() if test["vars"]["suite"] == "vikunja-clerk"]
+    no_call = [test for test in clerk if test["vars"]["expected"].get("expected_calls") == []]
+    assert no_call, "the clerk suite should have cases that expect no call"
+    for test in no_call:
+        assert any(assertion["metric"] == "no-writes" for assertion in test["assert"])
 
 
 def test_no_test_var_is_a_list():

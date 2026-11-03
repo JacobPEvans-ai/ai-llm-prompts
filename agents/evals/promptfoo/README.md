@@ -1,6 +1,6 @@
 # Promptfoo agent evaluation matrix
 
-The test generator loads the three source suites directly; the other suites, such as `agents/evals/docs-updater.yaml`,
+The test generator loads the five source suites directly; the other suites, such as `agents/evals/docs-updater.yaml`,
 are not part of this matrix. Run it from the repository root to check its case and
 assertion counts:
 
