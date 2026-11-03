@@ -134,6 +134,7 @@ def test_memory_bank_names_appear_only_in_their_own_definition():
             file.relative_to(_ROOT).as_posix()
             for file in sorted(_AGENTS.rglob("*"))
             if file.is_file() and file.suffix in {".yaml", ".yml", ".md", ".py", ".tmpl", ".json"}
+            and file.resolve() != Path(__file__).resolve()
             and scope in file.read_text(errors="ignore")
         ]
         assert mentions == [path.relative_to(_ROOT).as_posix()], (
