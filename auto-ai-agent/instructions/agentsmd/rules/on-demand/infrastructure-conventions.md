@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T12:18:06-04:00"
+timestamp: "2026-11-03T12:00:00-05:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -57,6 +57,17 @@ record, then configuration management converges it by FQDN.
 Needing a manual touch is a gap in the automation. Fix the gap; do not perform
 the touch and move on. If you do intervene by hand, record the automation gap
 before you continue — not later.
+
+## Privileged configuration runs
+
+- **Select the narrowest scope.** Use the selector the tool offers that names only the objects the change touches.
+  A run that changes one object does not run the full set.
+- **Run full reconciles only in a maintenance window.** A full reconcile sets every object to the declared set.
+  Review its removals before the window opens.
+- **Plan before apply.** Run the check or diff mode first. Read every line that would remove, rename or reset an
+  object. Stop when a removal is not in the plan you expected.
+- **One owner per privileged chain.** Each chain has one owner. Its instructions are final for every run. Other
+  sessions and agents do not run that chain or change its state.
 
 ## Unrecoverable resources
 
