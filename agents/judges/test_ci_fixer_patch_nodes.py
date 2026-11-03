@@ -1,7 +1,8 @@
 """Runs the write-path Code nodes of the ci-fixer workflow against fixtures.
 
 guard_context, validate_patch, prepare_context, guard_ref_update and the three write guards. The helpers come from
-test_ci_fixer_nodes.py. The workflow is fail-closed: log redaction is unavailable, so live writes stay refused.
+test_ci_fixer_nodes.py. The workflow is fail-closed: log redaction is unavailable, so live ref updates and pushes stay
+refused. Tests that need the flag on set it explicitly on the exec'd node. The write guards allow a matching live target.
 """
 
 import json
@@ -58,11 +59,16 @@ def test_guard_context_keeps_model_input_closed_in_live():
         ({"check_run_body": "not json"}, 0, "GitHub context could not be read"),
         ({"annotations_body": json.dumps({"message": "Forbidden"})}, 0,
          "bounded context or secret scan did not authorize model input"),
-        ({"payload_head_ref": "main"}, 0, "bounded context or secret scan did not authorize model input"),
+        # Only the protected-branch clause may fire: the payload, PR head and check run all name main.
+        ({
+            "payload_head_ref": "main",
+            "current_pr_body": _pr(head={"ref": "main", "sha": _SHA, "repo": {"full_name": _REPO}}),
+            "check_run_body": _check(head_branch="main"),
+        }, 0, "bounded context or secret scan did not authorize model input"),
         ({"files_body": json.dumps([{"filename": "docs/a.md", "additions": 200, "deletions": 0}])}, 0,
          "bounded context or secret scan did not authorize model input"),
     ],
-    ids=["missing field", "error payload", "protected head branch", "over the line limit"],
+    ids=["malformed", "error payload", "protected head branch", "over the line limit"],
 )
 def test_guard_context_refuses_what_it_cannot_bound(overrides, eligible, reason):
     out = _guard_context(**overrides)
@@ -83,11 +89,13 @@ _GOOD_PATCH = {"decision": "commit", "patches": [{"path": "docs/a.md", "content"
                                                  "diff": "@@ -1 +1 @@\n-old\n+new\n"}]}
 
 
-def _patch(model_text, files=None, mode="shadow", eligible=1):
-    return _main("validate_patch")(
+def _patch(model_text, files=None, mode="shadow", eligible=1, log_available=False, enable_push="true"):
+    node = _main("validate_patch")
+    node.__globals__["LOG_REDACTION_AVAILABLE"] = log_available
+    return node(
         model_text,
         json.dumps(_FILES if files is None else files),
-        "true",
+        enable_push,
         eligible,
         _REPO,
         _PR_NUMBER,
@@ -112,6 +120,11 @@ def test_validate_patch_proposes_in_shadow_and_never_pushes():
     assert out["status"] == "proposed" and out["reason"] == ""
     assert out["path"] == "docs/a.md" and json.loads(out["content_json"]) == "hello\n"
     assert out["push_allowed"] == 0
+
+
+def test_validate_patch_allows_a_live_push_when_every_gate_is_open():
+    out = _patch(json.dumps(_GOOD_PATCH), mode="live", log_available=True)
+    assert out["push_allowed"] == 1
 
 
 @pytest.mark.parametrize(
@@ -160,9 +173,11 @@ def test_prepare_context_passes_an_empty_check_run_through():
 
 # guard_ref_update: the ref update. Log redaction is unavailable, so it is never eligible.
 
-def _ref_update(pr_body=None, head=_SHA, mode="live", enable_push="true"):
-    return _main("guard_ref_update")(
-        pr_body or _pr(), head, _REF, enable_push, json.dumps({"sha": _COMMIT}), _REPO, _PR_NUMBER, "[]", mode,
+def _ref_update(pr_body=None, head=_SHA, mode="live", enable_push="true", mandate_ref=_REF, log_available=False):
+    node = _main("guard_ref_update")
+    node.__globals__["LOG_REDACTION_AVAILABLE"] = log_available
+    return node(
+        pr_body or _pr(), head, mandate_ref, enable_push, json.dumps({"sha": _COMMIT}), _REPO, _PR_NUMBER, "[]", mode,
     )
 
 
@@ -170,18 +185,23 @@ def test_guard_ref_update_stays_closed_while_log_redaction_is_unavailable():
     assert _ref_update() == {"eligible": 0, "ref_encoded": ""}
 
 
+def test_guard_ref_update_allows_the_ref_when_every_gate_is_open():
+    assert _ref_update(log_available=True) == {"eligible": 1, "ref_encoded": _REF}
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
         {"pr_body": "not json"},
         {"head": _OTHER_SHA},
+        {"mandate_ref": "other-branch"},
         {"mode": "shadow"},
         {"enable_push": "false"},
     ],
-    ids=["missing field", "head mismatch", "shadow mode", "push disabled"],
+    ids=["malformed", "head mismatch", "ref mismatch", "shadow mode", "push disabled"],
 )
-def test_guard_ref_update_refuses(kwargs):
-    assert _ref_update(**kwargs) == {"eligible": 0, "ref_encoded": ""}
+def test_guard_ref_update_refuses_each_clause_with_the_flag_on(kwargs):
+    assert _ref_update(log_available=True, **kwargs) == {"eligible": 0, "ref_encoded": ""}
 
 
 # The three write guards share one body. Each runs the same cases on its own copy.
