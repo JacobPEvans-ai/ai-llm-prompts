@@ -104,3 +104,28 @@ def test_unsafe_paths_are_not_candidate_pages():
     result = build(["../escape.md", "/a/../b.md", "/a/ok.md"], pages, [])
 
     assert _paths(result["changed_pages"]) == ["/a/ok.md"]
+
+
+def test_a_dropped_changed_page_is_not_listed_as_related():
+    pages = {"/a/x.md": "x" * 40000, "/a/y.md": "y" * 30000}
+
+    result = build(["/a/x.md", "/a/y.md"], pages, [])
+
+    assert _paths(result["changed_pages"]) == ["/a/x.md"]
+    assert result["dropped"]["changed_pages"] == ["/a/y.md"]
+    assert result["related_pages"] == "[]"
+
+
+def test_a_double_slash_path_terminates():
+    result = build(["//x.md"], {"//x.md": "t"}, [])
+
+    assert _paths(result["changed_pages"]) == ["//x.md"]
+    assert result["related_pages"] == "[]"
+
+
+def test_non_list_and_non_dict_inputs_are_ignored():
+    result = build(None, None, None)
+
+    assert result["changed_pages"] == "[]"
+    assert result["related_pages"] == "[]"
+    assert result["known_open_fingerprints"] == "[]"

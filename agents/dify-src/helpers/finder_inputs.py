@@ -39,9 +39,10 @@ def _nearest_index(page, pages):
         candidate = posixpath.join(directory, "index.md")
         if candidate != page and candidate in pages:
             return candidate
-        if directory in ("", "/"):
+        parent = posixpath.dirname(directory)
+        if parent == directory:
             return None
-        directory = posixpath.dirname(directory)
+        directory = parent
 
 
 def related_paths(changed, pages):
@@ -82,7 +83,7 @@ def build_finder_inputs(pr_files, page_texts, fingerprints):
     changed = _fit([{"page_path": path, "text": pages[path]} for path in changed_paths], CHANGED_CAP, changed_dropped)
 
     related_dropped = []
-    related_items = [{"page_path": path, "text": pages[path]} for path in related_paths([item["page_path"] for item in changed], pages)]
+    related_items = [{"page_path": path, "text": pages[path]} for path in related_paths(changed_paths, pages)]
     related = _fit(related_items, RELATED_CAP, related_dropped)
 
     fingerprint_dropped = []
