@@ -73,8 +73,11 @@ class _Response:
 
 
 def _install_stub(monkeypatch, github):
-    """Serve OpenBao and the mapped GitHub objects. Anything else is recorded, because the guard swallows errors."""
-    unexpected = []
+    """Serve OpenBao and the mapped GitHub objects. Returns every GitHub request made, in order.
+
+    The guard swallows errors from its lookup, so an unexpected request is recorded here for the test to assert on.
+    """
+    requests = []
 
     def fake_urlopen(request, timeout=None):
         url = request.full_url
@@ -82,13 +85,13 @@ def _install_stub(monkeypatch, github):
             return _Response({"auth": {"client_token": "client"}})
         if url == f"{_BAO}/v1/{_BAO_PATH}":
             return _Response({"data": {"token": "gh-token"}})
+        requests.append(url)
         if url in github:
             return _Response(github[url])
-        unexpected.append(url)
         raise AssertionError(f"unexpected request: {url}")
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
-    return unexpected
+    return requests
 
 
 def _substitute(case):
@@ -149,11 +152,12 @@ def test_selected_and_skipped_fixtures_are_exactly_the_expected_set():
 @pytest.mark.parametrize("case", _SELECTED, ids=[case["id"] for case in _SELECTED])
 def test_guard_returns_the_fixture_actions(case, monkeypatch):
     case = _substitute(case)
-    unexpected = _install_stub(monkeypatch, _github_for(case.get("linked_work")))
+    github = _github_for(case.get("linked_work"))
+    requests = _install_stub(monkeypatch, github)
 
     result = _guard(case["tasks"], case["proposed"], case["policy"], case.get("mode", "live"))
 
-    assert unexpected == []
+    assert requests == list(github)
     assert result["actions"] == case["expected_actions"]
     if "expected_output" in case:
         assert result["dispatch"] == case["expected_output"]["dispatch"]
@@ -162,11 +166,11 @@ def test_guard_returns_the_fixture_actions(case, monkeypatch):
 
 def test_injected_task_text_cannot_mark_done_or_change_priority(monkeypatch):
     case = _substitute(next(c for c in _SELECTED if c["id"] == "task-text-injection-is-untrusted"))
-    unexpected = _install_stub(monkeypatch, {})
+    requests = _install_stub(monkeypatch, {})
 
     result = _guard(case["tasks"], case["proposed"], case["policy"])
 
-    assert unexpected == []
+    assert requests == []
     assert not [action for action in result["actions"] if action.get("done") or "priority" in action or "labels" in action]
 
 
@@ -184,11 +188,12 @@ def test_done_gate_decides_from_the_linked_github_state(path, payload, done, mon
     kind, number = path.split("/")
     endpoint = "pulls" if kind == "pull" else "issues"
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/{path}"
-    unexpected = _install_stub(monkeypatch, {f"{_API_BASE}/repos/dryvist/ai-llm-prompts/{endpoint}/{number}": payload})
+    api_url = f"{_API_BASE}/repos/dryvist/ai-llm-prompts/{endpoint}/{number}"
+    requests = _install_stub(monkeypatch, {api_url: payload})
     tasks = [{"id": "7", "project_id": "10", "title": "Triage task", "description": f"Linked work: {url}"}]
 
     result = _guard(tasks, [{"task_index": 0, "kind": "done"}], _POLICY)
 
-    assert unexpected == []
+    assert requests == [api_url]
     expected = [{"operation": "update", "id": "7", "projectId": "10", "done": True}] if done else []
     assert result["actions"] == expected
