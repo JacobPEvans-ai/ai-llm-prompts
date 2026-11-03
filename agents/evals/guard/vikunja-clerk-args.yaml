@@ -1,5 +1,10 @@
-# Code-guard fixtures: the intent that the model emits and the tool calls the Code guard must build from it.
-# The model suite scores only the intent keys. These cases record the tool args that the guard, not the model, produces.
+# Code-guard fixtures for the clerk's first Code guard node: the intent that the model emits and the calls the guard builds.
+# The model suite scores only the intent keys. These cases show what the guard, not the model, produces.
+# Keys: intent is what the guard receives. mandates (project_id, task_id) and context (mode, allowed_projects,
+# denied_projects, inbox, allowed_projects_raw) override the model suite's values when set.
+# refusal is a fragment of the reason a refused case must return. offends lists the input paths that cause the refusal.
+# Each refusal has a "<id>-control" case that changes only its offends paths and must pass.
+# Scope, policy and update cases are in vikunja-clerk-args-scope.yaml.
 cases:
   - id: list-open-tasks
     intent: {route: vikunja, operation: list, project_named: false, done: false, category: null}
@@ -28,47 +33,16 @@ cases:
       - tool: vikunja_tasks
         operation: update
         args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
-  - id: refuse-create-outside-allowed-projects
-    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
-    expected_tool_calls: []
-  - id: refuse-delete
-    intent: {route: vikunja, operation: delete, project_named: false, category: null}
-    expected_tool_calls: []
-  - id: refuse-cross-project-move
-    intent: {route: vikunja, operation: move, project_named: true, category: null}
-    expected_tool_calls: []  # The Code guard refuses the unsupported move at the intent step; no call is built.
-  - id: refuse-unknown-project
-    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
-    expected_tool_calls: []
   - id: create-without-project-uses-inbox
     intent: {route: vikunja, operation: create, project_named: false, title: Review the backup plan, category: null}
     expected_tool_calls:
       - tool: vikunja_tasks
         operation: create
         args: {projectId: project-inbox, title: Review the backup plan}
-  - id: route-security-finding-to-zammad
-    intent: {route: zammad, operation: record, project_named: false, category: security-finding}
-    expected_tool_calls: []
-  - id: route-incident-to-zammad
-    intent: {route: zammad, operation: create, project_named: false, category: incident}
-    expected_tool_calls: []
-  - id: refuse-missing-route
-    intent: {operation: create, project_named: true, title: Review the onboarding guide, category: null}
-    expected_tool_calls: []
-  - id: refuse-other-route
-    intent: {route: other, operation: create, project_named: true, title: Review the onboarding guide, category: null}
-    expected_tool_calls: []
-  - id: refuse-security-marker-with-vikunja-route
-    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: security-finding}
-    expected_tool_calls: []
-  - id: refuse-missing-operation
-    intent: {route: vikunja, operation: null, project_named: true, category: null}
-    expected_tool_calls: []
-  - id: refuse-denied-project-even-when-allowed
-    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
-    expected_tool_calls: []
   - id: shadow-mode-returns-call-without-execution
     intent: {route: vikunja, operation: create, project_named: true, title: Review the backup plan, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {mode: shadow}
     expected_tool_calls:
       - tool: vikunja_tasks
         operation: create
@@ -91,3 +65,224 @@ cases:
       - tool: vikunja_tasks
         operation: list
         args: {search: migration checklist}
+  - id: route-zammad-refused
+    intent: {route: zammad, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.route]
+    expected_tool_calls: []
+  - id: route-zammad-refused-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: refuse-other-route
+    intent: {route: other, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.route]
+    expected_tool_calls: []
+  - id: refuse-other-route-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: refuse-missing-route
+    intent: {operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.route]
+    expected_tool_calls: []
+  - id: refuse-missing-route-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: refuse-security-marker-with-vikunja-route
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: security-finding}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.category]
+    expected_tool_calls: []
+  - id: refuse-security-marker-with-vikunja-route-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: marker-title
+    intent: {route: vikunja, operation: create, project_named: true, title: Report the outage in billing, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.title]
+    expected_tool_calls: []
+  - id: marker-title-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the billing notes, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the billing notes}
+  - id: marker-description
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the billing notes, description: Check the credentials rotation, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.description]
+    expected_tool_calls: []
+  - id: marker-description-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the billing notes, description: Check the rotation schedule., category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the billing notes, description: Check the rotation schedule.}
+  - id: marker-categories
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the billing notes, categories: [incident review], category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Refused; file this in Zammad
+    offends: [intent.categories]
+    expected_tool_calls: []
+  - id: marker-categories-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the billing notes, categories: [planning], category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the billing notes}
+  - id: refuse-delete
+    intent: {route: vikunja, operation: delete, project_named: false, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    refusal: The operation is missing or unsupported.
+    offends: [intent.operation]
+    expected_tool_calls: []
+  - id: refuse-delete-control
+    intent: {route: vikunja, operation: list, project_named: false, category: null}
+    mandates: {project_id: "", task_id: task-example-a}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: list
+        args: {}
+  - id: refuse-missing-operation
+    intent: {route: vikunja, operation: null, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: The operation is missing or unsupported.
+    offends: [intent.operation]
+    expected_tool_calls: []
+  - id: refuse-missing-operation-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: mode-invalid-create
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {mode: preview}
+    refusal: Write mode is missing or invalid
+    offends: [context.mode]
+    expected_tool_calls: []
+  - id: mode-invalid-create-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    context: {mode: live}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: priority-not-number
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, priority: high, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Priority must be a number.
+    offends: [intent.priority]
+    expected_tool_calls: []
+  - id: priority-not-number-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, priority: 3, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide, priority: 3}
+  - id: done-not-bool
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, done: "yes", category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: Done must be a boolean.
+    offends: [intent.done]
+    expected_tool_calls: []
+  - id: done-not-bool-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, done: false, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide, done: false}
+  - id: get-without-task-id
+    intent: {route: vikunja, operation: get, project_named: false, task_id: "", category: null}
+    mandates: {project_id: "", task_id: ""}
+    refusal: A task reference is required for get.
+    offends: [intent.task_id]
+    expected_tool_calls: []
+  - id: get-without-task-id-control
+    intent: {route: vikunja, operation: get, project_named: false, task_id: task-example-a, category: null}
+    mandates: {project_id: "", task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: get
+        args: {id: task-example-a}
+  - id: create-empty-title
+    intent: {route: vikunja, operation: create, project_named: true, title: "", category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: A task title is required for create.
+    offends: [intent.title]
+    expected_tool_calls: []
+  - id: create-empty-title-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: intent-not-json
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: not json
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: could not be parsed safely
+    offends: [intent_raw]
+    expected_tool_calls: []
+  - id: intent-not-json-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: '{"route": "vikunja", "operation": "create", "project_named": true, "title": "Review the onboarding guide", "category": null}'
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: intent-fenced-json
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: |
+      ```json
+      {"route": "vikunja", "operation": "create", "project_named": true, "title": "Review the onboarding guide", "category": null}
+      ```
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: intent-bare-fence
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: |
+      ```
+      {"route": "vikunja", "operation": "create", "project_named": true, "title": "Review the onboarding guide", "category": null}
+      ```
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
