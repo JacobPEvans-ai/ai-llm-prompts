@@ -117,6 +117,11 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
             assert raw not in serialized
 
 
+def test_long_colon_run_in_page_text_does_not_crash_the_validator():
+    texts = {**_TEXTS, "/services/import.md": _TEXTS["/services/import.md"] + "\n" + ":" * 5000}
+    assert len(_findings(_run(_model(_FINDING), texts=texts))) == 1
+
+
 def test_two_label_file_name_is_not_a_hostname():
     quote = "The import is described in README.md."
     texts = {**_TEXTS, "/services/import.md": "# Import\n" + quote}
