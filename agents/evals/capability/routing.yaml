@@ -19,7 +19,7 @@ cases:
     input: Track a follow-up cleanup item for the eval project.
     structured_fields: {operation: file, category: task, tracker: vikunja, project: eval-project}
     expected_calls:
-      - {tool: vikunja_task_crud, operation: create, required_fields: [projectId, title]}
+      - {tool: vikunja_tasks, operation: create, required_fields: [projectId, title]}
     expected_output: {tracker: vikunja}
     observe: [vikunja_state]
     expected_behavior: Create one task in the eval project. Do not create a GitHub issue.

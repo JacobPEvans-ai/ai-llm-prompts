@@ -5,10 +5,10 @@ prompt: agents/prompts/vikunja-clerk.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools:
   # The upstream tool supports list/get/create/update; writes remain guarded before dispatch.
-  - vikunja_task_crud.list
-  - vikunja_task_crud.get
-  - vikunja_task_crud.create
-  - vikunja_task_crud.update
+  - vikunja_tasks.list
+  - vikunja_tasks.get
+  - vikunja_tasks.create
+  - vikunja_tasks.update
 mcp_servers: [vikunja]
 privacy_class: internal
 # LiteLLM router role, not a model ID.
@@ -17,7 +17,7 @@ trigger:
   kind: call
 mode: shadow # shadow or live
 mandate_binding:
-  write_tools: [vikunja_task_crud.create, vikunja_task_crud.update]
+  write_tools: [vikunja_tasks.create, vikunja_tasks.update]
   from_fields: [caller, operation, project_id, task_id, title, description, due_date, priority]
   source: structured_fields_only
   immutable: true
@@ -30,10 +30,10 @@ identity: agent-vikunja-clerk
 api_key_ref: openbao://agent-key/vikunja-clerk
 guards:
   vikunja:
-    tool_allowlist: [vikunja_task_crud]
+    tool_allowlist: [vikunja_tasks]
     tool_allowlist_enforced_in_code: true
     operation_allowlist:
-      vikunja_task_crud: [list, get, create, update]
+      vikunja_tasks: [list, get, create, update]
     operation_allowlist_enforced_in_code: true
     deny_operations:
       - delete

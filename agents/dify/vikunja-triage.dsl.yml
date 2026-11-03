@@ -114,10 +114,10 @@ workflow:
           title: List Vikunja tasks
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: vikunja_tasks
+          tool_name: vikunja_tasks
           tool_parameters:
-            operation: {type: mixed, value: list}
+            subcommand: {type: mixed, value: list}
             projectId: {type: variable, value: [project_loop, item]}
         height: 80
         id: list_tasks
@@ -457,10 +457,10 @@ workflow:
           title: Apply guarded update or comment
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: vikunja_tasks
+          tool_name: vikunja_tasks
           tool_parameters:
-            operation: {type: variable, value: [bind_action, operation]}
+            subcommand: {type: variable, value: [bind_action, operation]}
             id: {type: variable, value: [bind_action, id]}
             projectId: {type: variable, value: [bind_action, project_id]}
             priority: {type: variable, value: [bind_action, priority]}

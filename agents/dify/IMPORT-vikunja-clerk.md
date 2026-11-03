@@ -24,7 +24,7 @@ difference. Never copy or paste a prompt by hand.
 2. Configure the `vikunja` MCP provider. Replace `VIKUNJA_MCP_PROVIDER_ID` in [vikunja-clerk.dsl.yml](./vikunja-clerk.dsl.yml)
    with that provider's Dify workspace identifier.
 3. Import [vikunja-clerk.dsl.yml](./vikunja-clerk.dsl.yml) as an Advanced Chat app. The model has no MCP tools; every
-   `vikunja_task_crud` workflow tool node is downstream of an in-app Code guard. Pass `project_id` and, for updates,
+   `vikunja_tasks` workflow tool node is downstream of an in-app Code guard. Pass `project_id` and, for updates,
    `task_id` through the structured Start inputs; never populate these write mandates from model-produced intent.
 4. Resolve these policy refs in the platform's protected environment settings. Store project IDs only in Dify's
    environment values, never in this public repository:

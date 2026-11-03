@@ -223,7 +223,7 @@ workflow:
                 incident tracker; all other follow-up work belongs in the task tracker. When unsure, propose nothing rather than
                 guessing.
 
-                Handle Vikunja task requests with `vikunja_task_crud` operations `list`, `get`, `create`, and `update`. Include task IDs
+                Handle Vikunja task requests with `vikunja_tasks` operations `list`, `get`, `create`, and `update`. Include task IDs
                 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
                 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.
 
@@ -270,7 +270,7 @@ workflow:
 
                 ## Mode and access
 
-                In `shadow` mode, return the exact intended `vikunja_task_crud` call to the caller without dispatching a write. In
+                In `shadow` mode, return the exact intended `vikunja_tasks` call to the caller without dispatching a write. In
                 `live` mode, dispatch only after the in-app Code guard approves the immutable mandate and project checks. If a required
                 structured field is missing, a project is not allowed, or a guard check fails, make no write and explain what is needed.
             - id: user-prompt
@@ -340,7 +340,7 @@ workflow:
 
             def preview_call(operation, **args):
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
-                return json.dumps({"tool": "vikunja_task_crud", "args": {"operation": operation, **args}}, separators=(",", ":"))
+                return json.dumps({"tool": "vikunja_tasks", "args": {"subcommand": operation, **args}}, separators=(",", ":"))
 
             def main(intent_text: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, inbox_project_id: str, mode_raw: str) -> dict:
                 try:
@@ -519,13 +519,13 @@ workflow:
           provider_name: vikunja
           provider_type: mcp
           selected: false
-          title: vikunja_task_crud
+          title: vikunja_tasks
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: vikunja_tasks
+          tool_name: vikunja_tasks
           tool_parameters:
-            operation: {type: variable, value: [guard, operation]}
+            subcommand: {type: variable, value: [guard, operation]}
             id: {type: variable, value: [guard, task_id]}
             projectId: {type: variable, value: [guard, project_id]}
             title: {type: variable, value: [guard, title]}
@@ -588,7 +588,7 @@ workflow:
 
             def preview_call(**args):
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
-                return json.dumps({"tool": "vikunja_task_crud", "args": {"operation": "update", **args}}, separators=(",", ":"))
+                return json.dumps({"tool": "vikunja_tasks", "args": {"subcommand": "update", **args}}, separators=(",", ":"))
 
             def main(intent_text: str, task_result: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, mode_raw: str) -> dict:
                 try:
@@ -741,13 +741,13 @@ workflow:
           provider_name: vikunja
           provider_type: mcp
           selected: false
-          title: vikunja_task_crud update
+          title: vikunja_tasks update
           type: tool
           tool_configurations: {}
-          tool_label: vikunja_task_crud
-          tool_name: vikunja_task_crud
+          tool_label: vikunja_tasks
+          tool_name: vikunja_tasks
           tool_parameters:
-            operation: {type: constant, value: update}
+            subcommand: {type: constant, value: update}
             id: {type: variable, value: [update-guard, task_id]}
             projectId: {type: variable, value: [update-guard, project_id]}
             title: {type: variable, value: [update-guard, title]}

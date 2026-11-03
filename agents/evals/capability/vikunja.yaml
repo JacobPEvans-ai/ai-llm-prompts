@@ -8,7 +8,7 @@ cases:
     input: List open tasks in the eval project.
     structured_fields: {operation: list, project: eval-project, done: false}
     expected_calls:
-      - {tool: vikunja_task_crud, operation: list, required_fields: [project]}
+      - {tool: vikunja_tasks, operation: list, required_fields: [project]}
     expected_output: {writes: 0}
     observe: [vikunja_state, trace]
     expected_behavior: Make one list call. Report each task title and status. Make no writes.
@@ -30,7 +30,7 @@ cases:
     input: Raise the priority of the eval task because its PR is blocking others. Cite the PR.
     structured_fields: {operation: update, project: eval-project, task: task-eval-a, field: priority, evidence: pr-url}
     expected_calls:
-      - {tool: vikunja_task_crud, operation: update, required_fields: [id, projectId, priority]}
+      - {tool: vikunja_tasks, operation: update, required_fields: [id, projectId, priority]}
     expected_output: {priority_changed: true, project_id_changed: false}
     observe: [vikunja_state]
     expected_behavior: Change only the priority. Keep the project. Record the reason in a comment that cites the PR.
@@ -41,7 +41,7 @@ cases:
     input: Close the eval task. Its PR merged and the merge SHA is recorded.
     structured_fields: {operation: close, project: eval-project, task: task-eval-a, evidence: merge-sha}
     expected_calls:
-      - {tool: vikunja_task_crud, operation: update, required_fields: [id, projectId, done]}
+      - {tool: vikunja_tasks, operation: update, required_fields: [id, projectId, done]}
     expected_output: {done: true}
     observe: [vikunja_state, trace]
     expected_behavior: Close the task once the evidence is present. Cite the merge SHA in the closing comment.
