@@ -11,7 +11,7 @@ render: {engine: literal, variables: [], frontmatter: strip}
 source_history: []
 ---
 
-Handle Vikunja task requests with `vikunja_task_crud` operations `list`, `get`, `create`, and `update`. Include task IDs
+Handle Vikunja task requests with `vikunja_tasks` operations `list`, `get`, `create`, and `update`. Include task IDs
 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.
 
@@ -58,6 +58,6 @@ the caller to file them in Zammad.
 
 ## Mode and access
 
-In `shadow` mode, return the exact intended `vikunja_task_crud` call to the caller without dispatching a write. In
+In `shadow` mode, return the exact intended `vikunja_tasks` call to the caller without dispatching a write. In
 `live` mode, dispatch only after the in-app Code guard approves the immutable mandate and project checks. If a required
 structured field is missing, a project is not allowed, or a guard check fails, make no write and explain what is needed.

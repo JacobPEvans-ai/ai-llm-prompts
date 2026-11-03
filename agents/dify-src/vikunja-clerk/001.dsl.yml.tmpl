@@ -30,7 +30,7 @@
 
             def preview_call(operation, **args):
                 args = {key: value for key, value in args.items() if value is not None and value != ""}
-                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"operation": operation, **args}}, separators=(",", ":"))
+                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"subcommand": operation, **args}}, separators=(",", ":"))
 
             def main(intent_text: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, inbox_project_id: str, mode_raw: str) -> dict:
                 try:

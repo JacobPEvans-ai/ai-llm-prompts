@@ -4,9 +4,9 @@ home_platform: dify
 prompt: agents/prompts/vikunja-triage.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools:
-  - vikunja_task_crud.list
-  - vikunja_task_crud.update
-  - vikunja_task_crud.comment
+  - vikunja_tasks.list
+  - vikunja_tasks.update
+  - vikunja_tasks.comment
 mcp_servers: [vikunja]
 privacy_class: internal
 litellm_role: medium
