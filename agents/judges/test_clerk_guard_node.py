@@ -40,7 +40,7 @@ def _call(operation, args):
 
 
 def _run(case):
-    model = _MODEL.get(case["id"], {})
+    model = _MODEL[case["id"]]
     fields = model.get("structured_fields", {})
     context = {**_DEFAULT_CONTEXT, **model.get("guard_context", {})}
     result = _MAIN(

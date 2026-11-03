@@ -29,7 +29,7 @@ cases:
         operation: update
         args: {id: task-example-a, projectId: project-allowed, description: Add the current onboarding steps.}
   - id: refuse-create-outside-allowed-projects
-    intent: {route: vikunja, operation: create, project_named: true, category: null}
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
     expected_tool_calls: []
   - id: refuse-delete
     intent: {route: vikunja, operation: delete, project_named: false, category: null}
@@ -38,7 +38,7 @@ cases:
     intent: {route: vikunja, operation: move, project_named: true, category: null}
     expected_tool_calls: []  # The Code guard refuses the unsupported move at the intent step; no call is built.
   - id: refuse-unknown-project
-    intent: {route: vikunja, operation: create, project_named: true, category: null}
+    intent: {route: vikunja, operation: create, project_named: true, title: Update the onboarding guide, category: null}
     expected_tool_calls: []
   - id: create-without-project-uses-inbox
     intent: {route: vikunja, operation: create, project_named: false, title: Review the backup plan, category: null}
@@ -53,10 +53,10 @@ cases:
     intent: {route: zammad, operation: create, project_named: false, category: incident}
     expected_tool_calls: []
   - id: refuse-missing-route
-    intent: {route: vikunja, operation: create, project_named: true, category: null}
+    intent: {operation: create, project_named: true, title: Review the onboarding guide, category: null}
     expected_tool_calls: []
   - id: refuse-other-route
-    intent: {route: vikunja, operation: create, project_named: true, category: null}
+    intent: {route: other, operation: create, project_named: true, title: Review the onboarding guide, category: null}
     expected_tool_calls: []
   - id: refuse-security-marker-with-vikunja-route
     intent: {route: zammad, operation: create, project_named: true, category: security-finding}
