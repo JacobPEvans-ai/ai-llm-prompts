@@ -56,8 +56,6 @@ def write_tools(agent):
 
 
 def is_no_write_case(case, writable):
-    if case.get("expected_write_proposal"):  # the correct reply may propose a write, such as an authorized create or a shadow call
-        return False
     if "expected_calls" in case:
         return not any(
             call.get("tool") in writable
