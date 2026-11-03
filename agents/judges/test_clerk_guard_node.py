@@ -178,11 +178,22 @@ def test_each_update_refusal_has_a_control_that_changes_only_what_it_offends(cas
     assert _changed_paths(_inputs(case), _inputs(control)) == set(case["offends"])
 
 
-_MODEL_REFUSALS = [case for case in _MODEL.values() if case["expected_output"].get("refused") and case["id"] in _BY_ID]
+_MODEL_REFUSALS = [case for case in _MODEL.values() if case["expected_output"].get("refused")]
+_MODEL_REFUSALS_WITH_FIXTURE = [case for case in _MODEL_REFUSALS if case["id"] in _BY_ID]
+# Model refusals with no same-id fixture. The list is explicit so a renamed fixture fails the test instead of dropping out.
+_MODEL_REFUSALS_WITHOUT_FIXTURE = {"route-security-finding-to-zammad", "route-incident-to-zammad", "refuse-cross-project-move"}
 
 
-@pytest.mark.parametrize("model_case", _MODEL_REFUSALS, ids=[case["id"] for case in _MODEL_REFUSALS])
+def test_model_refusals_without_a_fixture_are_the_known_set():
+    assert {case["id"] for case in _MODEL_REFUSALS if case["id"] not in _BY_ID} == _MODEL_REFUSALS_WITHOUT_FIXTURE
+
+
+@pytest.mark.parametrize(
+    "model_case", _MODEL_REFUSALS_WITH_FIXTURE, ids=[case["id"] for case in _MODEL_REFUSALS_WITH_FIXTURE]
+)
 def test_model_suite_reason_names_the_guard_refusal(model_case):
+    fragments = model_case["expected_output"]["reason_contains"]
+    assert isinstance(fragments, list) and all(fragment for fragment in fragments)
     _, _, result = _run(_BY_ID[model_case["id"]])
     assert result["allowed"] is False, result["reason"]
-    assert any(fragment in result["reason"] for fragment in model_case["expected_output"]["reason_contains"])
+    assert any(fragment in result["reason"] for fragment in fragments)
