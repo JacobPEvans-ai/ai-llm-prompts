@@ -2,8 +2,10 @@
                     owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
                     gh=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(gh,timeout=10) as r: obj=json.loads(r.read())
-                    value='merged' if obj.get('merged') is True else str(obj.get('state','')).lower()
-                    if kind=='pull' and value=='closed': value='closed-unmerged'
+                    pr=obj.get('pull_request') if isinstance(obj.get('pull_request'),dict) else None
+                    merged=obj.get('merged') is True or bool(pr and pr.get('merged_at'))
+                    value='merged' if merged else str(obj.get('state','')).lower()
+                    if (kind=='pull' or pr is not None) and value=='closed': value='closed-unmerged'
                     cache[url]=value if value in ('merged','closed','closed-unmerged','open') else None
                     return cache[url]
                 except Exception: return None
