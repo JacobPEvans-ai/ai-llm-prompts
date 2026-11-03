@@ -1327,9 +1327,11 @@ workflow:
                     },
                 }
 
-            def main(pages: list, select_eligible: int) -> dict:
+            def main(pages: list, selected: list, select_eligible: int) -> dict:
                 failed = {"eligible": 0, "changed_pages": "[]", "related_pages": "[]", "known_open_fingerprints": "[]", "dropped_json": "{}"}
-                if select_eligible != 1 or not isinstance(pages, list):
+                if select_eligible != 1 or not isinstance(pages, list) or not isinstance(selected, list):
+                    return failed
+                if len(pages) != len(selected):
                     return failed
                 if any(not isinstance(page, dict) or page.get("ok") != 1 for page in pages):
                     return failed
@@ -1351,6 +1353,7 @@ workflow:
           type: code
           variables:
             - {variable: pages, value_selector: [page_loop, output]}
+            - {variable: selected, value_selector: [select_pages, pages]}
             - {variable: select_eligible, value_selector: [select_pages, eligible]}
         height: 54
         id: build_inputs

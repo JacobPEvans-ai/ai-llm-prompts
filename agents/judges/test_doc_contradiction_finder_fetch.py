@@ -54,7 +54,7 @@ def _run(files, pr=_PR, repo=_REPO, responses=None):
         # The mock stands in for the fetch_page HTTP node, which reads the page at the merged commit.
         status, body = responses.get(page["page_path"], (200, f"# {page['page_path']}\nBody."))
         pages.append(_main("page_text")(status, body, page)["page"])
-    build = _main("build_inputs")(pages, select["eligible"])
+    build = _main("build_inputs")(pages, select["pages"], select["eligible"])
     prepared = _main("prepare_context")(
         repo,
         pr["number"],
@@ -118,6 +118,28 @@ def test_changed_page_over_the_size_cap_makes_the_run_ineligible_not_a_zero_resu
 def test_two_changed_pages_that_exceed_the_cap_together_make_the_run_ineligible():
     responses = {"docs/a.md": (200, "a" * 40000), "docs/b.md": (200, "b" * 30000)}
     _, build, prepared = _run(_files("docs/a.md", "docs/b.md"), responses=responses)
+
+    assert build["eligible"] == 0
+    assert prepared["eligible"] == 0
+
+
+def test_loop_returning_fewer_items_than_selected_makes_the_run_ineligible():
+    # A loop that returns [] for a non-empty selection must not read as "no pages".
+    select = _main("select_pages")(_REPO, _files("docs/a.md", "docs/b.md"), json.dumps(_PR))
+    assert len(select["pages"]) == 2
+
+    build = _main("build_inputs")([], select["pages"], select["eligible"])
+    prepared = _main("prepare_context")(
+        _REPO,
+        _PR["number"],
+        json.dumps({"full_name": _REPO}),
+        json.dumps(_PR),
+        _files("docs/a.md", "docs/b.md"),
+        build["changed_pages"],
+        build["related_pages"],
+        build["known_open_fingerprints"],
+        build["eligible"],
+    )
 
     assert build["eligible"] == 0
     assert prepared["eligible"] == 0
