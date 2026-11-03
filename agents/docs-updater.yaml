@@ -23,6 +23,10 @@ trigger:
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request
+  alternate_shapes:
+    - required_fields: [repo, finding_ref, operator_decision]
+      live: false
+      decision_values: [A, B, neither]
 channels:
   shadow: run_record_only
   live: docs_private.pull_request # Requires a docs-private write grant, which agent-docs-updater lacks today; its GitHub set is read-only on public repos, so live stays off until the grant exists.
