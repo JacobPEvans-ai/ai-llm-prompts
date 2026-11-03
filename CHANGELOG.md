@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.51.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.51.0...v1.51.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **agents:** propose done only for merged linked work ([#231](https://github.com/dryvist/ai-llm-prompts/issues/231)) ([86d4c40](https://github.com/dryvist/ai-llm-prompts/commit/86d4c4097843e900ec20de137070c44eb05e2ae3))
+
 ## [1.51.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.2...v1.51.0) (2026-11-03)
 
 
