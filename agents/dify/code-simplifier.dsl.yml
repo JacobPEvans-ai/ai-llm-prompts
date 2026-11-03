@@ -904,7 +904,7 @@ workflow:
                         rules = rules.get("rules", []) if isinstance(rules, dict) else None
                 except (TypeError, ValueError):
                     return {"safe": 0, "fallback_json": fallback, "changed_files_json": "[]", "review_context": "", "trace_json": trace, "status": "handback"}
-                if not isinstance(files, list) or not isinstance(rules, list) or len(rules) != 0 or len(files) > 40 or len(files) >= 100:
+                if not isinstance(files, list) or not isinstance(rules, list) or len(rules) != 0 or len(files) > 40:
                     return {"safe": 0, "fallback_json": fallback, "changed_files_json": "[]", "review_context": "", "trace_json": trace, "status": "handback"}
                 if not isinstance(requested_action, str) or SECRET_RE.search(requested_action):
                     return {"safe": 0, "fallback_json": fallback, "changed_files_json": "[]", "review_context": "", "trace_json": trace, "status": "handback"}
@@ -1201,7 +1201,9 @@ workflow:
                 comments = result.get("comments", []) if isinstance(result, dict) else []
                 decision = result.get("decision") if isinstance(result, dict) else None
                 body = result.get("review_body", "") if isinstance(result, dict) else ""
+                status = "proposed"
                 if decision == "refuse" or not isinstance(body, str) or not body or SECRET_RE.search(body):
+                    status = "refused" if decision == "refuse" or SECRET_RE.search(str(body)) else "handback"
                     body, comments = generic, []
                 valid_comments = []
                 if isinstance(comments, list) and len(comments) <= 5:
@@ -1225,7 +1227,7 @@ workflow:
                     valid_comments = []
                 request = {"commit_id": head_sha, "event": "COMMENT", "body": body, "comments": valid_comments}
                 trace = {"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}
-                return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": "proposed"}
+                return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": status}
           code_language: python3
           desc: Forces COMMENT and accepts only changed-line suggestions of at most
             20 lines.
@@ -1479,10 +1481,12 @@ workflow:
                     reason = "required mandate fields are missing"
                 elif REPO_RE.fullmatch(repo) is None:
                     reason = "repository owner must be dryvist and repository name must be valid"
-                elif REF_RE.fullmatch(ref) is None or ".." in ref or "@{" in ref:
+                elif REF_RE.fullmatch(ref) is None or ".." in ref or "@{" in ref or ref.startswith("refs/"):
                     reason = "mandated ref is invalid"
                 elif SHA_RE.fullmatch(head_sha) is None:
                     reason = "mandated head_sha is invalid"
+                elif event != "pull_request":
+                    reason = "event must be pull_request"
                 elif mode not in {"shadow", "live"}:
                     reason = "mode must be shadow or live"
                 elif not isinstance(pr_number, int) or isinstance(pr_number, bool) or pr_number <= 0:

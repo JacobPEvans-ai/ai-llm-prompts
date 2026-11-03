@@ -2,8 +2,9 @@
 
 Each node runs from its copy in agents/dify/code-simplifier.dsl.yml. The two token parse nodes are covered by
 test_token_nodes.py. No node here receives a token value, so the token-placement rule applies only there.
-Refused cases must return the node's refusal. validate_review has no handback branch: it always returns status
-proposed and falls back to a generic body. guard_review_write decides whether the review is written.
+Refused cases must return the node's refusal. validate_review falls back to a generic body, with status refused when
+the model refused or the body held a secret, and handback when the reply could not be read. guard_review_write decides
+whether the review is written.
 """
 
 import json
@@ -72,8 +73,9 @@ def _review(model_text, changed=_CHANGED, mode="shadow"):
                                     "pull_request", "explicit", mode)
 
 
-def _mandate(repo=_REPO, ref=_REF, head_sha=_SHA, actor="ci-bot", mode="shadow", pr_number=_PR_NUMBER):
-    return _main("validate_mandate")(repo, ref, head_sha, actor, "pull_request", "explicit", mode, pr_number)
+def _mandate(repo=_REPO, ref=_REF, head_sha=_SHA, actor="ci-bot", mode="shadow", pr_number=_PR_NUMBER,
+             event="pull_request"):
+    return _main("validate_mandate")(repo, ref, head_sha, actor, event, "explicit", mode, pr_number)
 
 
 def _token(repo=_REPO, mode="shadow", read_set="contents-read", write_set="contents-write"):
@@ -164,19 +166,20 @@ def test_validate_review_keeps_a_suggestion_on_a_changed_line():
 
 
 @pytest.mark.parametrize(
-    "model_text",
+    "model_text, status",
     [
-        _model([_SUGGESTION], decision="refuse"),
-        "not json",
-        json.dumps({"error": "rate limited"}),
-        _model([], body=f"key {_SECRET}"),
+        (_model([_SUGGESTION], decision="refuse"), "refused"),
+        ("not json", "handback"),
+        (json.dumps({"error": "rate limited"}), "handback"),
+        (_model([], body=f"key {_SECRET}"), "refused"),
     ],
     ids=["refused decision", "malformed", "error payload", "secret in body"],
 )
-def test_validate_review_falls_back_to_the_generic_review(model_text):
+def test_validate_review_falls_back_to_the_generic_review(model_text, status):
     out = _review(model_text)
     request = json.loads(out["request_json"])
     assert request["body"] == _GENERIC and request["comments"] == []
+    assert out["status"] == status
     assert _SECRET not in out["request_json"]
 
 
@@ -218,7 +221,7 @@ def test_validate_review_reads_a_fenced_reply():
     assert len(json.loads(out["request_json"])["comments"]) == 1
 
 
-# validate_mandate: the mandate fields and their formats. It has no event check.
+# validate_mandate: the mandate fields and their formats. Only the pull_request event is accepted.
 
 @pytest.mark.parametrize(
     "kwargs, expected",
@@ -229,13 +232,15 @@ def test_validate_review_reads_a_fenced_reply():
          _refused("repository owner must be dryvist and repository name must be valid")),
         ({"ref": "feature branch"}, _refused("mandated ref is invalid")),
         ({"ref": "feature/../x"}, _refused("mandated ref is invalid")),
+        ({"ref": "refs/heads/feature/simplify"}, _refused("mandated ref is invalid")),
         ({"head_sha": "XYZ"}, _refused("mandated head_sha is invalid")),
         ({"mode": "preview"}, _refused("mode must be shadow or live")),
         ({"pr_number": 0}, _refused("pr_number must be a positive integer")),
         ({"pr_number": True}, _refused("pr_number must be a positive integer")),
+        ({"event": "check_run"}, _refused("event must be pull_request")),
     ],
-    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "bad sha", "mode mismatch",
-         "bad pr number", "bool pr number"],
+    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "refs prefix", "bad sha",
+         "mode mismatch", "bad pr number", "bool pr number", "check_run event"],
 )
 def test_validate_mandate(kwargs, expected):
     assert _mandate(**kwargs) == expected
