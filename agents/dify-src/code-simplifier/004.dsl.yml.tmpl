@@ -1,5 +1,7 @@
                 body = result.get("review_body", "") if isinstance(result, dict) else ""
+                status = "proposed"
                 if decision == "refuse" or not isinstance(body, str) or not body or SECRET_RE.search(body):
+                    status = "refused" if decision == "refuse" or SECRET_RE.search(str(body)) else "handback"
                     body, comments = generic, []
                 valid_comments = []
                 if isinstance(comments, list) and len(comments) <= 5:
@@ -23,7 +25,7 @@
                     valid_comments = []
                 request = {"commit_id": head_sha, "event": "COMMENT", "body": body, "comments": valid_comments}
                 trace = {"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}
-                return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": "proposed"}
+                return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": status}
           code_language: python3
           desc: Forces COMMENT and accepts only changed-line suggestions of at most
             20 lines.

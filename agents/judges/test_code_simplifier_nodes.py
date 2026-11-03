@@ -2,8 +2,9 @@
 
 Each node runs from its copy in agents/dify/code-simplifier.dsl.yml. The two token parse nodes are covered by
 test_token_nodes.py. No node here receives a token value, so the token-placement rule applies only there.
-Refused cases must return the node's refusal. validate_review has no handback branch: it always returns status
-proposed and falls back to a generic body. guard_review_write decides whether the review is written.
+Refused cases must return the node's refusal. validate_review falls back to a generic body, with status refused when
+the model refused or the body held a secret, and handback when the reply could not be read. guard_review_write decides
+whether the review is written.
 """
 
 import json
@@ -165,19 +166,20 @@ def test_validate_review_keeps_a_suggestion_on_a_changed_line():
 
 
 @pytest.mark.parametrize(
-    "model_text",
+    "model_text, status",
     [
-        _model([_SUGGESTION], decision="refuse"),
-        "not json",
-        json.dumps({"error": "rate limited"}),
-        _model([], body=f"key {_SECRET}"),
+        (_model([_SUGGESTION], decision="refuse"), "refused"),
+        ("not json", "handback"),
+        (json.dumps({"error": "rate limited"}), "handback"),
+        (_model([], body=f"key {_SECRET}"), "refused"),
     ],
     ids=["refused decision", "malformed", "error payload", "secret in body"],
 )
-def test_validate_review_falls_back_to_the_generic_review(model_text):
+def test_validate_review_falls_back_to_the_generic_review(model_text, status):
     out = _review(model_text)
     request = json.loads(out["request_json"])
     assert request["body"] == _GENERIC and request["comments"] == []
+    assert out["status"] == status
     assert _SECRET not in out["request_json"]
 
 
