@@ -139,8 +139,8 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide, description: A COMPROMISED credential needs attention, category: security-finding}
     expected_calls: []
-    expected_output: {route: vikunja, operation: create, project_named: false, category: null, refused: true, reason_contains: [Zammad, zammad]}
-    expected_behavior: Refuse because the deterministic classifier finds a security marker.
+    expected_output: {route: zammad, operation: create, project_named: false, category: null, refused: true, reason_contains: [Zammad, zammad]}
+    expected_behavior: Route the security finding to Zammad and make no Vikunja write, because the deterministic classifier finds a security marker.
 
   - id: refuse-missing-operation
     input: Create a task but leave the requested operation unspecified.
