@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.58.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.3...v1.58.0) (2026-11-03)
+
+
+### Features
+
+* **instructions:** add rules for privileged runs, minted tokens, and approvals ([#268](https://github.com/dryvist/ai-llm-prompts/issues/268)) ([a681d6f](https://github.com/dryvist/ai-llm-prompts/commit/a681d6f5fe8cc400981d1a07965d6366a1a6a82f))
+
 ## [1.57.3](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.2...v1.57.3) (2026-11-03)
 
 
