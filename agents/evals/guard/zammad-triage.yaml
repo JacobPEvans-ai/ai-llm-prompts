@@ -1,5 +1,5 @@
 agent: zammad-triage
-# Live writes are hard-disabled in the DSL guard. Each case states its own expected mode and writes.
+# Live writes are hard-disabled in the DSL guard. Each case states its expected writes.
 cases:
   - id: rank-stale-ticket
     policy: {allowed: ["<ALLOWED_GROUP_ID>"], readonly: [], denied: [], tag_vocabulary: []}

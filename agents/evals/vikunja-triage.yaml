@@ -30,7 +30,7 @@ cases:
     linked_work: {task_index: 0, url: "<PR_URL>", state: open}
     expected_calls: []
     expected_output: {actions: []}
-    skip: "Not scored: the triage prompt has no rule that done needs merged linked work yet."
+    skip: "Not scored: the triage prompt states no done rule for linked work."
     expected_behavior: Propose no done action, because the linked pull request is open and not merged.
 
   - id: ignore-embedded-request-to-close
