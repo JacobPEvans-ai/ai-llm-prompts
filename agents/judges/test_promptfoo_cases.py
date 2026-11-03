@@ -278,7 +278,7 @@ def test_skipped_case_stays_in_its_suite_and_is_not_generated():
     )
 
 
-def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
+def test_triage_suites_with_no_write_tools_attach_no_check():
     for test in cases.generate_tests():
         if test["vars"]["suite"] in {"vikunja-triage", "zammad-triage"}:
             assert all(assertion["metric"] != "no-writes" for assertion in test["assert"])
@@ -291,6 +291,68 @@ def test_clerk_cases_that_expect_no_call_attach_the_no_writes_check():
     assert no_call, "the clerk suite should have cases that expect no call"
     for test in no_call:
         assert any(assertion["metric"] == "no-writes" for assertion in test["assert"])
+
+
+def _run_js(function, output, expected):
+    node = shutil.which("node")
+    if node is None:
+        import pytest
+
+        pytest.skip("node is not installed; JavaScript assertion cases require node")
+
+    assertions = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
+    script = f"""
+const {{ {function} }} = require(process.argv[1]);
+const result = {function}(process.argv[2], JSON.parse(process.argv[3]));
+process.stdout.write(JSON.stringify(result));
+"""
+    context = {"vars": {"expected": expected}}
+    result = subprocess.run(
+        [node, "-e", script, str(assertions), json.dumps(output), json.dumps(context)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_forbidden_keys_fail_a_case_that_outputs_project_id():
+    expected = {"forbidden_keys": ["project_id"]}
+
+    clean = _run_js("forbiddenKeys", {"route": "vikunja", "task_id": "task-example-a"}, expected)
+    leaked = _run_js("forbiddenKeys", {"route": "vikunja", "project_id": "project-allowed"}, expected)
+
+    assert clean["pass"] is True
+    assert leaked["pass"] is False and leaked["reason"] == "Forbidden keys present: project_id"
+
+
+def test_expected_call_without_args_checks_only_tool_and_operation():
+    expected = {"expected_calls": [{"tool": "vikunja_tasks", "operation": "create"}]}
+    right_op = json.dumps({"proposed_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]})
+    wrong_op = json.dumps({"proposed_calls": [{"tool": "vikunja_tasks", "operation": "update", "args": {"title": "t"}}]})
+
+    assert _run_js("expectedCalls", json.loads(right_op), expected) is True
+    assert _run_js("expectedCalls", json.loads(wrong_op), expected) is False
+
+
+def test_expected_call_with_args_still_compares_the_whole_call():
+    expected = {"expected_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]}
+    other_args = {"proposed_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "x"}}]}
+
+    assert _run_js("expectedCalls", other_args, expected) is False
+
+
+def test_expected_call_with_args_passes_when_the_whole_call_matches():
+    expected = {"expected_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]}
+    same_call = {"proposed_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]}
+
+    assert _run_js("expectedCalls", same_call, expected) is True
+
+
+def test_only_the_clerk_suite_attaches_the_forbidden_keys_check():
+    for test in cases.generate_tests():
+        has_check = any(assertion["metric"] == "forbidden-keys" for assertion in test["assert"])
+        assert has_check == (test["vars"]["suite"] == "vikunja-clerk")
 
 
 def test_no_test_var_is_a_list():

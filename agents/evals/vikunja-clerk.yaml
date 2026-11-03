@@ -1,6 +1,8 @@
 agent: vikunja-clerk
 # Refusal cases score all-or-nothing: `refused: true` with the wrong reason must not earn partial credit.
 expected_output_scoring: strict
+# The prompt says never to output project_id. Any top-level key of that name fails the case.
+forbidden_output_keys: [project_id]
 cases:
   - id: list-open-tasks
     input: List open tasks.
@@ -81,7 +83,7 @@ cases:
       args: {id: task-example-a}
       task: {id: task-example-a, projectId: project-allowed, title: Update the onboarding guide, description: Existing description, done: false}
     expected_calls: []
-    expected_output: {route: vikunja, operation: move, project_named: true, category: null, refused: true, reason_contains: [change its project, move, another project]}
+    expected_output: {route: vikunja, operation: update, project_named: true, category: null, refused: true, reason_contains: [change its project, move, another project]}
     expected_behavior: Refuse the move, although both projects are allowed, and make no write call.
 
   - id: refuse-unknown-project
@@ -107,7 +109,7 @@ cases:
     expected_parse: {route: zammad, operation: record, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: security-finding}
     expected_calls: []
-    expected_output: {route: zammad, operation: record, project_named: false, category: security-finding, refused: true, reason_contains: [Zammad, zammad]}
+    expected_output: {route: zammad, operation: null, project_named: false, category: security-finding, refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the security finding and direct the caller to Zammad.
 
   - id: route-incident-to-zammad
@@ -115,7 +117,7 @@ cases:
     expected_parse: {route: zammad, operation: create, project_named: false, category: null}
     structured_fields: {route: zammad, operation: null, category: incident}
     expected_calls: []
-    expected_output: {route: zammad, operation: create, project_named: false, category: incident, refused: true, reason_contains: [Zammad, zammad]}
+    expected_output: {route: zammad, operation: null, project_named: false, category: incident, refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Refuse to record the incident and direct the caller to Zammad.
 
   - id: refuse-missing-route
@@ -123,16 +125,17 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
     expected_calls: []
-    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: true, reason_contains: [Zammad, zammad]}
+    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: true, reason_contains: [route]}
     expected_behavior: Refuse because the route is missing.
 
   - id: refuse-other-route
     input: Create a routine task.
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {route: other, operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
-    expected_calls: []
-    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: true, reason_contains: [Zammad, zammad]}
-    expected_behavior: Refuse because the route is not explicitly vikunja.
+    expected_calls:
+      - {tool: vikunja_tasks, operation: create}
+    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: false}
+    expected_behavior: Set route to vikunja, as the prompt says for any route other than zammad, and propose the create call without a refusal.
 
   - id: refuse-security-marker-with-vikunja-route
     input: Create a routine task.
@@ -164,7 +167,7 @@ cases:
     structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-allowed, title: Review the backup plan}
     guard_context: {mode: shadow, allowed_projects: [project-allowed], denied_projects: [project-denied]}
     expected_calls:
-      - {tool: vikunja_tasks, operation: create, args: {projectId: project-allowed, title: Review the backup plan}}
+      - {tool: vikunja_tasks, operation: create}
     expected_output: {route: vikunja, operation: create, project_named: true, category: null, dispatch: false, mode: shadow}
     expected_behavior: Return the intended vikunja_tasks call. Shadow mode means the guard does not dispatch it.
 

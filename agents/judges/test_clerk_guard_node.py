@@ -58,7 +58,7 @@ def _run(case):
         assert result["dispatch"] == (context["mode"] == "live"), "dispatch must equal (mode == live)"
         call = json.loads(result["preview"])
         operation = call["args"].pop("subcommand")
-        return [_call(operation, call["args"])], False
+        return [{"tool": call["tool"], "operation": operation, "args": call["args"]}], False
     if result["dispatch"] and result["operation"] == "get":
         return [_call("get", {"id": result["task_id"]})], False
     if result["dispatch"] and result["operation"] == "list":

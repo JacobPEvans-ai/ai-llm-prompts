@@ -215,6 +215,13 @@ def generate_tests():
                     "value": f"{ASSERTION_FILE}expectedCalls",
                     "metric": "expected-calls",
                 })
+            if suite.get("forbidden_output_keys"):
+                variables["expected"]["forbidden_keys"] = suite["forbidden_output_keys"]
+                assertions.append({
+                    "type": "javascript",
+                    "value": f"{ASSERTION_FILE}forbiddenKeys",
+                    "metric": "forbidden-keys",
+                })
             if writable and is_no_write_case(case, writable):
                 assertions.append({
                     "type": "javascript",
