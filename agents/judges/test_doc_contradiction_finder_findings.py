@@ -94,6 +94,7 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
     ipv6_colon_quote = "Peer 2001:db8::1: is down."
     ipv6_double_colon_quote = "Gateway 2001:db8::: is down."
     ipv6_leading_colon_quote = "Peer:2001:db8::7 is down."
+    ipv6_glued_quote = "Peer ab2001:db8::9 is down."
     cctld_host_quote = "Backups go to backup.example.md nightly."
     quotes = (
         secret_quote,
@@ -101,6 +102,7 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
         ipv6_colon_quote,
         ipv6_double_colon_quote,
         ipv6_leading_colon_quote,
+        ipv6_glued_quote,
         cctld_host_quote,
     )
     texts = {**_TEXTS, "/services/import.md": "# Import\n" + "\n".join(quotes)}

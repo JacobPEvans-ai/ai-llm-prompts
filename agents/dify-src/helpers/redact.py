@@ -29,15 +29,18 @@ def _redact_ipv6(match):
     candidate = match.group(0)
     if ":" not in candidate:
         return candidate
-    # Prose colons can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down"); peel them one at a
-    # time, since the address itself may end in "::", and keep the peeled colons outside the redaction.
-    leading = len(candidate) - len(candidate.lstrip(":"))
-    shortest_end = len(candidate.rstrip(":"))
-    for start in range(leading + 1):
-        for end in range(len(candidate), shortest_end - 1, -1):
-            if start < end and _is_address(candidate[start:end]):
-                return candidate[:start] + REDACTED + candidate[end:]
+    # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); try every
+    # span, longest first from the leftmost start, and keep what surrounds the address outside the redaction.
+    for start in range(len(candidate)):
+        for end in range(len(candidate), start + 1, -1):
+            span = candidate[start:end]
+            if ":" in span and _is_address(span):
+                return candidate[:start] + REDACTED + _redact_ipv6_text(candidate[end:])
     return candidate
+
+
+def _redact_ipv6_text(text):
+    return IPV6_RE.sub(_redact_ipv6, text) if text else text
 
 
 def _redact_host(match):
