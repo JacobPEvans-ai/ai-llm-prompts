@@ -80,8 +80,9 @@ def _token(repo=_REPO, mode="shadow", read_set="contents-read", write_set="conte
     return _main("token_request")(repo, mode, read_set, write_set)
 
 
-def _review_write(pr_body=None, rules_body="[]", review_json=_REVIEW_JSON, head_sha=_SHA, pr_number=_PR_NUMBER):
-    return _main("guard_review_write")(_REPO, pr_number, _REF, head_sha, pr_body or _pr(), rules_body, review_json)
+def _review_write(pr_body=None, rules_body="[]", review_json=_REVIEW_JSON, head_sha=_SHA, pr_number=_PR_NUMBER,
+                  ref=_REF):
+    return _main("guard_review_write")(_REPO, pr_number, ref, head_sha, pr_body or _pr(), rules_body, review_json)
 
 
 def _refused(reason):
@@ -105,9 +106,12 @@ def _refused(reason):
         ({"ref": "main", "pr_body": _pr(head={"ref": "main", "sha": _SHA, "repo": {"full_name": _REPO}})}, 0),
         ({"pr_body": _pr(base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}})}, 0),
         ({"pr_body": _pr(head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}})}, 0),
+        ({"ref": "other-branch"}, 0),
+        ({"ref": "develop", "pr_body": _pr(head={"ref": "develop", "sha": _SHA, "repo": {"full_name": _REPO}})}, 0),
     ],
     ids=["success", "rules object", "malformed", "error payload", "rules present", "closed PR",
-         "PR number mismatch", "head sha mismatch", "protected head branch", "base repo mismatch", "fork head"],
+         "PR number mismatch", "head sha mismatch", "protected head branch", "base repo mismatch", "fork head",
+         "mandate ref mismatch", "protected develop branch"],
 )
 def test_guard_pull_request(kwargs, eligible):
     assert _pull_request(**kwargs) == {"eligible": eligible}
@@ -197,6 +201,23 @@ def test_validate_review_drops_every_comment_above_the_limit():
     assert request["comments"] == [] and request["body"] == "Looks good."
 
 
+def test_validate_review_drops_a_range_with_an_unchanged_line_inside():
+    changed = [{"path": "docs/a.md", "lines": [2, 4]}]
+    request = json.loads(_review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)["request_json"])
+    assert request["comments"] == [] and request["body"] == "Looks good."
+
+
+def test_validate_review_keeps_the_same_range_when_every_line_changed():
+    changed = [{"path": "docs/a.md", "lines": [2, 3, 4]}]
+    request = json.loads(_review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)["request_json"])
+    assert [comment["start_line"] for comment in request["comments"]] == [2]
+
+
+def test_validate_review_reads_a_fenced_reply():
+    out = _review("```json\n" + _model([_SUGGESTION]) + "\n```")
+    assert len(json.loads(out["request_json"])["comments"]) == 1
+
+
 # validate_mandate: the mandate fields and their formats. It has no event check.
 
 @pytest.mark.parametrize(
@@ -204,13 +225,17 @@ def test_validate_review_drops_every_comment_above_the_limit():
     [
         ({}, {"valid": 1, "status": "ready", "reason": ""}),
         ({"actor": ""}, _refused("required mandate fields are missing")),
-        ({"repo": "other/ai-llm-prompts"}, _refused("repository owner must be dryvist and repository name must be valid")),
+        ({"repo": "other/ai-llm-prompts"},
+         _refused("repository owner must be dryvist and repository name must be valid")),
         ({"ref": "feature branch"}, _refused("mandated ref is invalid")),
+        ({"ref": "feature/../x"}, _refused("mandated ref is invalid")),
         ({"head_sha": "XYZ"}, _refused("mandated head_sha is invalid")),
         ({"mode": "preview"}, _refused("mode must be shadow or live")),
         ({"pr_number": 0}, _refused("pr_number must be a positive integer")),
+        ({"pr_number": True}, _refused("pr_number must be a positive integer")),
     ],
-    ids=["success", "missing field", "error owner", "bad ref", "bad sha", "mode mismatch", "bad pr number"],
+    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "bad sha", "mode mismatch",
+         "bad pr number", "bool pr number"],
 )
 def test_validate_mandate(kwargs, expected):
     assert _mandate(**kwargs) == expected
@@ -257,14 +282,19 @@ def test_guard_review_write_allows_a_matching_target():
         ({"pr_body": json.dumps({"message": "Not Found"})}, _REVIEW_REFUSAL),
         ({"rules_body": json.dumps([{"id": 1}])}, _REVIEW_REFUSAL),
         ({"pr_number": 8}, _REVIEW_REFUSAL),
-        ({"head_sha": _OTHER_SHA}, _REVIEW_REFUSAL),
+        # Only the PR head clause may fire: the review commit follows the mandate, so the PR head is the mismatch.
+        ({"head_sha": _OTHER_SHA, "review_json": json.dumps({"event": "COMMENT", "commit_id": _OTHER_SHA})},
+         _REVIEW_REFUSAL),
         ({"pr_body": _pr(state="closed")}, _REVIEW_REFUSAL),
         ({"pr_body": _pr(head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}})}, _REVIEW_REFUSAL),
         ({"review_json": json.dumps({"event": "APPROVE", "commit_id": _SHA})}, _REVIEW_REFUSAL),
         ({"review_json": json.dumps({"event": "COMMENT", "commit_id": _OTHER_SHA})}, _REVIEW_REFUSAL),
+        ({"ref": "other-branch"}, _REVIEW_REFUSAL),
+        ({"pr_body": _pr(base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}})}, _REVIEW_REFUSAL),
     ],
     ids=["malformed PR", "malformed review", "error payload", "rules present", "PR number mismatch",
-         "head sha mismatch", "closed PR", "fork head", "approve event", "review commit mismatch"],
+         "head sha mismatch", "closed PR", "fork head", "approve event", "review commit mismatch", "ref mismatch",
+         "base repo mismatch"],
 )
 def test_guard_review_write_refuses(kwargs, reason):
     assert _review_write(**kwargs) == {"allowed": 0, "status": "handback", "reason": reason}
