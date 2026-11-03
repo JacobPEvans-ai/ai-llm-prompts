@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.50.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.0...v1.50.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **agents:** call the Vikunja entity tool with its subcommand argument ([6ecb99f](https://github.com/dryvist/ai-llm-prompts/commit/6ecb99fe1e4791716989cc979093762f978adf9d))
+* **agents:** use the vikunja_tasks entity tool with subcommand ([#223](https://github.com/dryvist/ai-llm-prompts/issues/223)) ([6ecb99f](https://github.com/dryvist/ai-llm-prompts/commit/6ecb99fe1e4791716989cc979093762f978adf9d))
+
 ## [1.50.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.49.1...v1.50.0) (2026-11-03)
 
 
