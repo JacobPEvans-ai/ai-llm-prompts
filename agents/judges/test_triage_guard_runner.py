@@ -38,17 +38,33 @@ _SUBSTITUTIONS = {
 }
 _PAYLOADS = {
     "open": {"state": "open", "merged": False},
-    "merged": {"state": "closed", "merged": True, "pull_request": {"merged_at": "2026-11-01T00:00:00Z"}},
-    "closed-unmerged": {"state": "closed", "merged": False, "pull_request": {"merged_at": None}},
+    "merged": {
+        "state": "closed",
+        "merged": True,
+        "pull_request": {"merged_at": "2026-11-01T00:00:00Z"},
+    },
+    "closed-unmerged": {
+        "state": "closed",
+        "merged": False,
+        "pull_request": {"merged_at": None},
+    },
 }
-_EXPECTED_SKIPPED = ["denied-project-is-never-read"] + [f"redacted-golden-{n:02d}" for n in range(1, 11)]
+_EXPECTED_SKIPPED = ["denied-project-is-never-read"] + [
+    f"redacted-golden-{n:02d}" for n in range(1, 11)
+]
 
 
 def _guard_main():
     dsl = yaml.safe_load(_DSL.read_text())
-    node = next(n for n in dsl["workflow"]["graph"]["nodes"] if "def state_for" in (n["data"].get("code") or ""))
+    node = next(
+        n
+        for n in dsl["workflow"]["graph"]["nodes"]
+        if "def state_for" in (n["data"].get("code") or "")
+    )
     namespace = {}
-    exec(compile(node["data"]["code"], "guard", "exec"), namespace)  # defines the node's functions only
+    exec(
+        compile(node["data"]["code"], "guard", "exec"), namespace
+    )  # defines the node's functions only
     return namespace["main"]
 
 
@@ -107,7 +123,11 @@ def _github_for(linked):
         return {}
     owner, repo, kind, number = linked["url"].split("/")[3:7]
     endpoint = "pulls" if kind == "pull" else "issues"
-    return {f"{_API_BASE}/repos/{owner}/{repo}/{endpoint}/{number}": _PAYLOADS[linked["state"]]}
+    return {
+        f"{_API_BASE}/repos/{owner}/{repo}/{endpoint}/{number}": _PAYLOADS[
+            linked["state"]
+        ]
+    }
 
 
 def _guard(tasks, proposed, policy, mode="live"):
@@ -155,7 +175,9 @@ def test_guard_returns_the_fixture_actions(case, monkeypatch):
     github = _github_for(case.get("linked_work"))
     requests = _install_stub(monkeypatch, github)
 
-    result = _guard(case["tasks"], case["proposed"], case["policy"], case.get("mode", "live"))
+    result = _guard(
+        case["tasks"], case["proposed"], case["policy"], case.get("mode", "live")
+    )
 
     assert requests == list(github)
     assert result["actions"] == case["expected_actions"]
@@ -165,13 +187,19 @@ def test_guard_returns_the_fixture_actions(case, monkeypatch):
 
 
 def test_injected_task_text_cannot_mark_done_or_change_priority(monkeypatch):
-    case = _substitute(next(c for c in _SELECTED if c["id"] == "task-text-injection-is-untrusted"))
+    case = _substitute(
+        next(c for c in _SELECTED if c["id"] == "task-text-injection-is-untrusted")
+    )
     requests = _install_stub(monkeypatch, {})
 
     result = _guard(case["tasks"], case["proposed"], case["policy"])
 
     assert requests == []
-    assert not [action for action in result["actions"] if action.get("done") or "priority" in action or "labels" in action]
+    assert not [
+        action
+        for action in result["actions"]
+        if action.get("done") or "priority" in action or "labels" in action
+    ]
 
 
 @pytest.mark.parametrize(
@@ -182,18 +210,36 @@ def test_injected_task_text_cannot_mark_done_or_change_priority(monkeypatch):
         ("issues/12", {"state": "closed"}, True),
         ("pull/236", _PAYLOADS["open"], False),
     ],
-    ids=["closed-unmerged-pr-is-not-done", "merged-pr-is-done", "closed-issue-is-done", "open-pr-is-not-done"],
+    ids=[
+        "closed-unmerged-pr-is-not-done",
+        "merged-pr-is-done",
+        "closed-issue-is-done",
+        "open-pr-is-not-done",
+    ],
 )
-def test_done_gate_decides_from_the_linked_github_state(path, payload, done, monkeypatch):
+def test_done_gate_decides_from_the_linked_github_state(
+    path, payload, done, monkeypatch
+):
     kind, number = path.split("/")
     endpoint = "pulls" if kind == "pull" else "issues"
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/{path}"
     api_url = f"{_API_BASE}/repos/dryvist/ai-llm-prompts/{endpoint}/{number}"
     requests = _install_stub(monkeypatch, {api_url: payload})
-    tasks = [{"id": "7", "project_id": "10", "title": "Triage task", "description": f"Linked work: {url}"}]
+    tasks = [
+        {
+            "id": "7",
+            "project_id": "10",
+            "title": "Triage task",
+            "description": f"Linked work: {url}",
+        }
+    ]
 
     result = _guard(tasks, [{"task_index": 0, "kind": "done"}], _POLICY)
 
     assert requests == [api_url]
-    expected = [{"operation": "update", "id": "7", "projectId": "10", "done": True}] if done else []
+    expected = (
+        [{"operation": "update", "id": "7", "projectId": "10", "done": True}]
+        if done
+        else []
+    )
     assert result["actions"] == expected

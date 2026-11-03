@@ -13,31 +13,43 @@ from pathlib import Path
 import pytest
 import yaml
 
+from dify_nodes import (
+    OTHER_SHA as _OTHER_SHA,
+    PR_NUMBER as _PR_NUMBER,
+    REPO as _REPO,
+    SECRET as _SECRET,
+    SHA as _SHA,
+)
+from dify_nodes import node_main
 
-_DSL = Path(__file__).resolve().parents[2] / "agents" / "dify" / "code-simplifier.dsl.yml"
-_NODES = {node["id"]: node["data"] for node in yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]}
-
-_REPO = "dryvist/ai-llm-prompts"
-_REF = "feature/simplify"
-_SHA = "a" * 40
-_OTHER_SHA = "e" * 40
-_PR_NUMBER = 7
-_GENERIC = "No concrete behavior-preserving simplification was established."
-_HANDBACK = "OpenBao, token, or pull request eligibility checks did not authorize this mandate."
-# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match it.
-_SECRET = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
-# The hunk starts at line 1. The context line is line 1 and the added line is line 2.
-_PATCH = "@@ -1 +1,2 @@\n old\n+new line\n"
-_FILES = [{"filename": "docs/a.md", "status": "modified", "changes": 2, "patch": _PATCH}]
-_CHANGED = [{"path": "docs/a.md", "lines": [2]}]
-_SUGGESTION = {"path": "docs/a.md", "line": 2, "body": "Tighten this.\n```suggestion\nnew line\n```"}
-_REVIEW_JSON = json.dumps({"event": "COMMENT", "commit_id": _SHA, "body": _GENERIC, "comments": []})
+_DSL = (
+    Path(__file__).resolve().parents[2] / "agents" / "dify" / "code-simplifier.dsl.yml"
+)
 
 
 def _main(node_id):
-    namespace = {}
-    exec(compile(_NODES[node_id]["code"], f"code-simplifier:{node_id}", "exec"), namespace)  # defines functions only
-    return namespace["main"]
+    return node_main("code-simplifier", node_id)
+
+
+_REF = "feature/simplify"
+_GENERIC = "No concrete behavior-preserving simplification was established."
+_HANDBACK = (
+    "OpenBao, token, or pull request eligibility checks did not authorize this mandate."
+)
+# The hunk starts at line 1. The context line is line 1 and the added line is line 2.
+_PATCH = "@@ -1 +1,2 @@\n old\n+new line\n"
+_FILES = [
+    {"filename": "docs/a.md", "status": "modified", "changes": 2, "patch": _PATCH}
+]
+_CHANGED = [{"path": "docs/a.md", "lines": [2]}]
+_SUGGESTION = {
+    "path": "docs/a.md",
+    "line": 2,
+    "body": "Tighten this.\n```suggestion\nnew line\n```",
+}
+_REVIEW_JSON = json.dumps(
+    {"event": "COMMENT", "commit_id": _SHA, "body": _GENERIC, "comments": []}
+)
 
 
 def _pr(**overrides):
@@ -53,38 +65,89 @@ def _pr(**overrides):
     return json.dumps(pr)
 
 
-def _pull_request(pr_body=None, rules_body="[]", ref=_REF, head_sha=_SHA, pr_number=_PR_NUMBER):
-    return _main("guard_pull_request")(ref, head_sha, _REPO, pr_number, pr_body or _pr(), rules_body)
+def _pull_request(
+    pr_body=None, rules_body="[]", ref=_REF, head_sha=_SHA, pr_number=_PR_NUMBER
+):
+    return _main("guard_pull_request")(
+        ref, head_sha, _REPO, pr_number, pr_body or _pr(), rules_body
+    )
 
 
 def _review_context(**overrides):
-    args = {"files_body": json.dumps(_FILES), "rules_body": "[]", "pr_body": _pr(), "requested_action": "simplify"}
+    args = {
+        "files_body": json.dumps(_FILES),
+        "rules_body": "[]",
+        "pr_body": _pr(),
+        "requested_action": "simplify",
+    }
     args.update(overrides)
-    return _main("prepare_review")(args["files_body"], "pull_request", "explicit", _REPO, _PR_NUMBER, _REF, _SHA,
-                                   "ci-bot", args["pr_body"], args["rules_body"], args["requested_action"])
+    return _main("prepare_review")(
+        args["files_body"],
+        "pull_request",
+        "explicit",
+        _REPO,
+        _PR_NUMBER,
+        _REF,
+        _SHA,
+        "ci-bot",
+        args["pr_body"],
+        args["rules_body"],
+        args["requested_action"],
+    )
 
 
 def _model(comments=(), body="Looks good.", decision="comment"):
-    return json.dumps({"decision": decision, "review_body": body, "comments": list(comments)})
+    return json.dumps(
+        {"decision": decision, "review_body": body, "comments": list(comments)}
+    )
 
 
 def _review(model_text, changed=_CHANGED, mode="shadow"):
-    return _main("validate_review")(model_text, json.dumps(changed), _REPO, _PR_NUMBER, _REF, _SHA, "ci-bot",
-                                    "pull_request", "explicit", mode)
+    return _main("validate_review")(
+        model_text,
+        json.dumps(changed),
+        _REPO,
+        _PR_NUMBER,
+        _REF,
+        _SHA,
+        "ci-bot",
+        "pull_request",
+        "explicit",
+        mode,
+    )
 
 
-def _mandate(repo=_REPO, ref=_REF, head_sha=_SHA, actor="ci-bot", mode="shadow", pr_number=_PR_NUMBER,
-             event="pull_request"):
-    return _main("validate_mandate")(repo, ref, head_sha, actor, event, "explicit", mode, pr_number)
+def _mandate(
+    repo=_REPO,
+    ref=_REF,
+    head_sha=_SHA,
+    actor="ci-bot",
+    mode="shadow",
+    pr_number=_PR_NUMBER,
+    event="pull_request",
+):
+    return _main("validate_mandate")(
+        repo, ref, head_sha, actor, event, "explicit", mode, pr_number
+    )
 
 
-def _token(repo=_REPO, mode="shadow", read_set="contents-read", write_set="contents-write"):
+def _token(
+    repo=_REPO, mode="shadow", read_set="contents-read", write_set="contents-write"
+):
     return _main("token_request")(repo, mode, read_set, write_set)
 
 
-def _review_write(pr_body=None, rules_body="[]", review_json=_REVIEW_JSON, head_sha=_SHA, pr_number=_PR_NUMBER,
-                  ref=_REF):
-    return _main("guard_review_write")(_REPO, pr_number, ref, head_sha, pr_body or _pr(), rules_body, review_json)
+def _review_write(
+    pr_body=None,
+    rules_body="[]",
+    review_json=_REVIEW_JSON,
+    head_sha=_SHA,
+    pr_number=_PR_NUMBER,
+    ref=_REF,
+):
+    return _main("guard_review_write")(
+        _REPO, pr_number, ref, head_sha, pr_body or _pr(), rules_body, review_json
+    )
 
 
 def _refused(reason):
@@ -92,6 +155,7 @@ def _refused(reason):
 
 
 # guard_pull_request: the PR must be open, unruled, on the mandated head, and not a protected branch.
+
 
 @pytest.mark.parametrize(
     "kwargs, eligible",
@@ -105,15 +169,57 @@ def _refused(reason):
         ({"pr_number": 8}, 0),
         ({"head_sha": _OTHER_SHA}, 0),
         # Only the protected-branch clause may fire: the mandate and the PR head both name main.
-        ({"ref": "main", "pr_body": _pr(head={"ref": "main", "sha": _SHA, "repo": {"full_name": _REPO}})}, 0),
-        ({"pr_body": _pr(base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}})}, 0),
-        ({"pr_body": _pr(head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}})}, 0),
+        (
+            {
+                "ref": "main",
+                "pr_body": _pr(
+                    head={"ref": "main", "sha": _SHA, "repo": {"full_name": _REPO}}
+                ),
+            },
+            0,
+        ),
+        (
+            {
+                "pr_body": _pr(
+                    base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}}
+                )
+            },
+            0,
+        ),
+        (
+            {
+                "pr_body": _pr(
+                    head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}}
+                )
+            },
+            0,
+        ),
         ({"ref": "other-branch"}, 0),
-        ({"ref": "develop", "pr_body": _pr(head={"ref": "develop", "sha": _SHA, "repo": {"full_name": _REPO}})}, 0),
+        (
+            {
+                "ref": "develop",
+                "pr_body": _pr(
+                    head={"ref": "develop", "sha": _SHA, "repo": {"full_name": _REPO}}
+                ),
+            },
+            0,
+        ),
     ],
-    ids=["success", "rules object", "malformed", "error payload", "rules present", "closed PR",
-         "PR number mismatch", "head sha mismatch", "protected head branch", "base repo mismatch", "fork head",
-         "mandate ref mismatch", "protected develop branch"],
+    ids=[
+        "success",
+        "rules object",
+        "malformed",
+        "error payload",
+        "rules present",
+        "closed PR",
+        "PR number mismatch",
+        "head sha mismatch",
+        "protected head branch",
+        "base repo mismatch",
+        "fork head",
+        "mandate ref mismatch",
+        "protected develop branch",
+    ],
 )
 def test_guard_pull_request(kwargs, eligible):
     assert _pull_request(**kwargs) == {"eligible": eligible}
@@ -121,13 +227,16 @@ def test_guard_pull_request(kwargs, eligible):
 
 # prepare_review: the bounded review context. Every refusal returns no context.
 
+
 def test_prepare_review_builds_context_from_the_changed_lines():
     out = _review_context()
     assert out["safe"] == 1 and out["status"] == "proposed"
     assert json.loads(out["changed_files_json"]) == _CHANGED
     context = json.loads(out["review_context"])
     assert context["repository"] == _REPO and context["pull_number"] == _PR_NUMBER
-    assert context["files"] == [{"path": "docs/a.md", "status": "modified", "patch": _PATCH}]
+    assert context["files"] == [
+        {"path": "docs/a.md", "status": "modified", "patch": _PATCH}
+    ]
 
 
 @pytest.mark.parametrize(
@@ -143,16 +252,28 @@ def test_prepare_review_builds_context_from_the_changed_lines():
         {"rules_body": json.dumps([{"id": 1}])},
         {"requested_action": f"key {_SECRET}"},
     ],
-    ids=["malformed", "not a list", "non-object file", "no file path", "over the change limit", "too many files",
-         "secret in patch", "rules present", "secret in request"],
+    ids=[
+        "malformed",
+        "not a list",
+        "non-object file",
+        "no file path",
+        "over the change limit",
+        "too many files",
+        "secret in patch",
+        "rules present",
+        "secret in request",
+    ],
 )
 def test_prepare_review_refuses(overrides):
     out = _review_context(**overrides)
-    assert out["safe"] == 0 and out["status"] == "handback" and out["review_context"] == ""
+    assert (
+        out["safe"] == 0 and out["status"] == "handback" and out["review_context"] == ""
+    )
     assert _SECRET not in json.dumps(out)
 
 
 # validate_review: the model's review. A comment is kept only on lines it changed; otherwise the body stands alone.
+
 
 def test_validate_review_keeps_a_suggestion_on_a_changed_line():
     out = _review(_model([_SUGGESTION]))
@@ -161,7 +282,15 @@ def test_validate_review_keeps_a_suggestion_on_a_changed_line():
         "commit_id": _SHA,
         "event": "COMMENT",
         "body": "Looks good.",
-        "comments": [{"path": "docs/a.md", "start_line": 2, "line": 2, "side": "RIGHT", "body": _SUGGESTION["body"]}],
+        "comments": [
+            {
+                "path": "docs/a.md",
+                "start_line": 2,
+                "line": 2,
+                "side": "RIGHT",
+                "body": _SUGGESTION["body"],
+            }
+        ],
     }
 
 
@@ -192,7 +321,13 @@ def test_validate_review_falls_back_to_the_generic_review(model_text, status):
         dict(_SUGGESTION, body="Plain text, no suggestion."),
         dict(_SUGGESTION, body=f"Key {_SECRET}\n```suggestion\nx\n```"),
     ],
-    ids=["unchanged line", "unchanged start line", "two suggestion blocks", "no suggestion block", "secret in comment"],
+    ids=[
+        "unchanged line",
+        "unchanged start line",
+        "two suggestion blocks",
+        "no suggestion block",
+        "secret in comment",
+    ],
 )
 def test_validate_review_drops_a_comment_it_cannot_place(comment):
     request = json.loads(_review(_model([comment]))["request_json"])
@@ -206,14 +341,24 @@ def test_validate_review_drops_every_comment_above_the_limit():
 
 def test_validate_review_drops_a_range_with_an_unchanged_line_inside():
     changed = [{"path": "docs/a.md", "lines": [2, 4]}]
-    request = json.loads(_review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)["request_json"])
+    request = json.loads(
+        _review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)[
+            "request_json"
+        ]
+    )
     assert request["comments"] == [] and request["body"] == "Looks good."
 
 
 def test_validate_review_keeps_the_same_range_when_every_line_changed():
     changed = [{"path": "docs/a.md", "lines": [2, 3, 4]}]
-    request = json.loads(_review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)["request_json"])
-    assert [(comment["start_line"], comment["line"]) for comment in request["comments"]] == [(2, 4)]
+    request = json.loads(
+        _review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)[
+            "request_json"
+        ]
+    )
+    assert [
+        (comment["start_line"], comment["line"]) for comment in request["comments"]
+    ] == [(2, 4)]
 
 
 def test_validate_review_reads_a_fenced_reply():
@@ -223,13 +368,18 @@ def test_validate_review_reads_a_fenced_reply():
 
 # validate_mandate: the mandate fields and their formats. Only the pull_request event is accepted.
 
+
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
         ({}, {"valid": 1, "status": "ready", "reason": ""}),
         ({"actor": ""}, _refused("required mandate fields are missing")),
-        ({"repo": "other/ai-llm-prompts"},
-         _refused("repository owner must be dryvist and repository name must be valid")),
+        (
+            {"repo": "other/ai-llm-prompts"},
+            _refused(
+                "repository owner must be dryvist and repository name must be valid"
+            ),
+        ),
         ({"ref": "feature branch"}, _refused("mandated ref is invalid")),
         ({"ref": "feature/../x"}, _refused("mandated ref is invalid")),
         ({"ref": "refs/heads/feature/simplify"}, _refused("mandated ref is invalid")),
@@ -239,14 +389,26 @@ def test_validate_review_reads_a_fenced_reply():
         ({"pr_number": True}, _refused("pr_number must be a positive integer")),
         ({"event": "check_run"}, _refused("event must be pull_request")),
     ],
-    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "refs prefix", "bad sha",
-         "mode mismatch", "bad pr number", "bool pr number", "check_run event"],
+    ids=[
+        "success",
+        "missing field",
+        "error owner",
+        "bad ref",
+        "ref with dot-dot",
+        "refs prefix",
+        "bad sha",
+        "mode mismatch",
+        "bad pr number",
+        "bool pr number",
+        "check_run event",
+    ],
 )
 def test_validate_mandate(kwargs, expected):
     assert _mandate(**kwargs) == expected
 
 
 # token_request (Select token permission set): the read set in shadow, the write set in live, nothing else.
+
 
 @pytest.mark.parametrize(
     "kwargs, ready, token_set",
@@ -258,7 +420,14 @@ def test_validate_mandate(kwargs, expected):
         ({"mode": "shadow", "read_set": ""}, 0, None),
         ({"mode": "live", "write_set": None}, 0, None),
     ],
-    ids=["shadow reads", "live writes", "missing repository", "mode mismatch", "empty read set", "unset write set"],
+    ids=[
+        "shadow reads",
+        "live writes",
+        "missing repository",
+        "mode mismatch",
+        "empty read set",
+        "unset write set",
+    ],
 )
 def test_select_token_permission_set(kwargs, ready, token_set):
     out = _token(**kwargs)
@@ -266,7 +435,10 @@ def test_select_token_permission_set(kwargs, ready, token_set):
     if token_set is None:
         assert out == {"ready": 0, "request_json": "{}"}
     else:
-        assert json.loads(out["request_json"]) == {"repositories": [_REPO], "token_set": token_set}
+        assert json.loads(out["request_json"]) == {
+            "repositories": [_REPO],
+            "token_set": token_set,
+        }
 
 
 # guard_review_write: the review is written only to the mandated open PR, on its head, as a comment.
@@ -288,35 +460,87 @@ def test_guard_review_write_allows_a_matching_target():
         ({"rules_body": json.dumps([{"id": 1}])}, _REVIEW_REFUSAL),
         ({"pr_number": 8}, _REVIEW_REFUSAL),
         # Only the PR head clause may fire: the review commit follows the mandate, so the PR head is the mismatch.
-        ({"head_sha": _OTHER_SHA, "review_json": json.dumps({"event": "COMMENT", "commit_id": _OTHER_SHA})},
-         _REVIEW_REFUSAL),
+        (
+            {
+                "head_sha": _OTHER_SHA,
+                "review_json": json.dumps(
+                    {"event": "COMMENT", "commit_id": _OTHER_SHA}
+                ),
+            },
+            _REVIEW_REFUSAL,
+        ),
         ({"pr_body": _pr(state="closed")}, _REVIEW_REFUSAL),
-        ({"pr_body": _pr(head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}})}, _REVIEW_REFUSAL),
-        ({"review_json": json.dumps({"event": "APPROVE", "commit_id": _SHA})}, _REVIEW_REFUSAL),
-        ({"review_json": json.dumps({"event": "COMMENT", "commit_id": _OTHER_SHA})}, _REVIEW_REFUSAL),
+        (
+            {
+                "pr_body": _pr(
+                    head={"ref": _REF, "sha": _SHA, "repo": {"full_name": "other/fork"}}
+                )
+            },
+            _REVIEW_REFUSAL,
+        ),
+        (
+            {"review_json": json.dumps({"event": "APPROVE", "commit_id": _SHA})},
+            _REVIEW_REFUSAL,
+        ),
+        (
+            {"review_json": json.dumps({"event": "COMMENT", "commit_id": _OTHER_SHA})},
+            _REVIEW_REFUSAL,
+        ),
         ({"ref": "other-branch"}, _REVIEW_REFUSAL),
-        ({"pr_body": _pr(base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}})}, _REVIEW_REFUSAL),
+        (
+            {
+                "pr_body": _pr(
+                    base={"ref": "main", "repo": {"full_name": "other/ai-llm-prompts"}}
+                )
+            },
+            _REVIEW_REFUSAL,
+        ),
     ],
-    ids=["malformed PR", "malformed review", "error payload", "rules present", "PR number mismatch",
-         "head sha mismatch", "closed PR", "fork head", "approve event", "review commit mismatch", "ref mismatch",
-         "base repo mismatch"],
+    ids=[
+        "malformed PR",
+        "malformed review",
+        "error payload",
+        "rules present",
+        "PR number mismatch",
+        "head sha mismatch",
+        "closed PR",
+        "fork head",
+        "approve event",
+        "review commit mismatch",
+        "ref mismatch",
+        "base repo mismatch",
+    ],
 )
 def test_guard_review_write_refuses(kwargs, reason):
-    assert _review_write(**kwargs) == {"allowed": 0, "status": "handback", "reason": reason}
+    assert _review_write(**kwargs) == {
+        "allowed": 0,
+        "status": "handback",
+        "reason": reason,
+    }
 
 
 # prepare_handback: no inputs change the handback.
 
-@pytest.mark.parametrize("args", [(_REPO, "shadow"), ("", "live")], ids=["shadow", "live with no repository"])
+
+@pytest.mark.parametrize(
+    "args", [(_REPO, "shadow"), ("", "live")], ids=["shadow", "live with no repository"]
+)
 def test_prepare_handback_always_hands_back(args):
-    assert _main("prepare_handback")(*args) == {"status": "handback", "reason": _HANDBACK}
+    assert _main("prepare_handback")(*args) == {
+        "status": "handback",
+        "reason": _HANDBACK,
+    }
 
 
 # Routing: only a proposed review reaches the target guard and the post. Refused and handback reviews end unposted.
 
+
 def _edges():
     dsl = yaml.safe_load(_DSL.read_text())
-    return {(edge["source"], edge["sourceHandle"], edge["target"]) for edge in dsl["workflow"]["graph"]["edges"]}
+    return {
+        (edge["source"], edge["sourceHandle"], edge["target"])
+        for edge in dsl["workflow"]["graph"]["edges"]
+    }
 
 
 def test_only_a_proposed_review_reaches_the_guard_and_the_post():
@@ -335,4 +559,6 @@ def test_only_a_proposed_review_reaches_the_guard_and_the_post():
         ("review_refusal_gate", "eligible", "end_review_refused"),
         ("review_refusal_gate", "false", "prepare_handback"),
     }
-    assert {edge for edge in edges if edge[2] == "post_review"} == {("review_mode_gate", "eligible", "post_review")}
+    assert {edge for edge in edges if edge[2] == "post_review"} == {
+        ("review_mode_gate", "eligible", "post_review")
+    }

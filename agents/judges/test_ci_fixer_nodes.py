@@ -8,35 +8,31 @@ A node with no refusal branch is checked on its output shape, and the test says 
 """
 
 import json
-from pathlib import Path
 
 import pytest
-import yaml
 
-
-_DSL = Path(__file__).resolve().parents[2] / "agents" / "dify" / "ci-fixer.dsl.yml"
-_NODES = {node["id"]: node["data"] for node in yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]}
-
-_REPO = "dryvist/ai-llm-prompts"
-_REF = "feature/fix-ci"
-_SHA = "a" * 40
-_OTHER_SHA = "e" * 40
-_TREE = "b" * 40
-_COMMIT = "c" * 40
-_BLOB = "d" * 40
-_PR_NUMBER = 7
-_CHECK_RUN = 99
-_FILES = [{"filename": "docs/a.md", "additions": 2, "deletions": 1}]
-# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match these.
-_SECRET = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
-_SECRET_CONTEXT = "token" + ": " + "abcdefghijklmnopqrstuvwxyz0123"
-_ZERO = {"sha": "", "ready": 0}
+from dify_nodes import (
+    OTHER_SHA as _OTHER_SHA,
+    PR_NUMBER as _PR_NUMBER,
+    REPO as _REPO,
+    SHA as _SHA,
+)
+from dify_nodes import node_main
 
 
 def _main(node_id):
-    namespace = {}
-    exec(compile(_NODES[node_id]["code"], f"ci-fixer:{node_id}", "exec"), namespace)  # defines the node's functions only
-    return namespace["main"]
+    return node_main("ci-fixer", node_id)
+
+
+_REF = "feature/fix-ci"
+_TREE = "b" * 40
+_COMMIT = "c" * 40
+_BLOB = "d" * 40
+_CHECK_RUN = 99
+_FILES = [{"filename": "docs/a.md", "additions": 2, "deletions": 1}]
+# Built from parts so no credential-shaped literal is written to the file. The node's secret scan must match this.
+_SECRET_CONTEXT = "token" + ": " + "abcdefghijklmnopqrstuvwxyz0123"
+_ZERO = {"sha": "", "ready": 0}
 
 
 def _pr(**overrides):
@@ -70,6 +66,7 @@ def _head_commit():
 
 # parse_blob: the blob sha or nothing.
 
+
 @pytest.mark.parametrize(
     "body, expected",
     [
@@ -85,6 +82,7 @@ def test_parse_blob(body, expected):
 
 
 # build_tree_request: no refusal branch. It builds the tree from its inputs; guard_tree_write refuses downstream.
+
 
 def test_build_tree_request_builds_one_blob_entry():
     out = _main("build_tree_request")(_TREE, "docs/a.md", _BLOB)
@@ -107,24 +105,82 @@ def _refused(reason):
     "args, expected",
     [
         (_MANDATE, {"valid": 1, "encoded_ref": _REF, "status": "ready", "reason": ""}),
-        ((_REPO, _REF, _SHA, "", "check_run", "explicit", "shadow", _CHECK_RUN),
-         _refused("required mandate fields are missing")),
-        (("other/ai-llm-prompts", _REF, _SHA, "ci-bot", "check_run", "explicit", "shadow", _CHECK_RUN),
-         _refused("repository owner must be dryvist and repository name must be valid")),
-        ((_REPO, "refs/heads/main", _SHA, "ci-bot", "check_run", "explicit", "shadow", _CHECK_RUN),
-         _refused("mandated ref is invalid")),
-        ((_REPO, _REF, "XYZ", "ci-bot", "check_run", "explicit", "shadow", _CHECK_RUN),
-         _refused("mandated head_sha is invalid")),
-        ((_REPO, _REF, _SHA, "ci-bot", "push", "explicit", "shadow", _CHECK_RUN),
-         _refused("event must be check_run")),
-        ((_REPO, _REF, _SHA, "ci-bot", "check_run", "explicit", "preview", _CHECK_RUN),
-         _refused("mode must be shadow or live")),
-        ((_REPO, _REF, _SHA, "ci-bot", "check_run", "explicit", "shadow", 0),
-         _refused("check_run_id must be a positive integer")),
+        (
+            (_REPO, _REF, _SHA, "", "check_run", "explicit", "shadow", _CHECK_RUN),
+            _refused("required mandate fields are missing"),
+        ),
+        (
+            (
+                "other/ai-llm-prompts",
+                _REF,
+                _SHA,
+                "ci-bot",
+                "check_run",
+                "explicit",
+                "shadow",
+                _CHECK_RUN,
+            ),
+            _refused(
+                "repository owner must be dryvist and repository name must be valid"
+            ),
+        ),
+        (
+            (
+                _REPO,
+                "refs/heads/main",
+                _SHA,
+                "ci-bot",
+                "check_run",
+                "explicit",
+                "shadow",
+                _CHECK_RUN,
+            ),
+            _refused("mandated ref is invalid"),
+        ),
+        (
+            (
+                _REPO,
+                _REF,
+                "XYZ",
+                "ci-bot",
+                "check_run",
+                "explicit",
+                "shadow",
+                _CHECK_RUN,
+            ),
+            _refused("mandated head_sha is invalid"),
+        ),
+        (
+            (_REPO, _REF, _SHA, "ci-bot", "push", "explicit", "shadow", _CHECK_RUN),
+            _refused("event must be check_run"),
+        ),
+        (
+            (
+                _REPO,
+                _REF,
+                _SHA,
+                "ci-bot",
+                "check_run",
+                "explicit",
+                "preview",
+                _CHECK_RUN,
+            ),
+            _refused("mode must be shadow or live"),
+        ),
+        (
+            (_REPO, _REF, _SHA, "ci-bot", "check_run", "explicit", "shadow", 0),
+            _refused("check_run_id must be a positive integer"),
+        ),
     ],
     ids=[
-        "success", "missing field", "error owner", "bad ref", "bad sha", "wrong event",
-        "token-set mode mismatch", "bad check run id",
+        "success",
+        "missing field",
+        "error owner",
+        "bad ref",
+        "bad sha",
+        "wrong event",
+        "token-set mode mismatch",
+        "bad check run id",
     ],
 )
 def test_validate_mandate(args, expected):
@@ -146,11 +202,23 @@ _TOKEN_ZERO = {"ready": 0, "request_json": "{}"}
         ((_REPO, "preview", "contents-read", "contents-write"), 0, None),
         ((_REPO, "live", "contents-read", ""), 0, None),
         ((_REPO, "live", "contents-read", None), 0, None),
-        (("other/ai-llm-prompts", "shadow", "contents-read", "contents-write"), 0, None),
+        (
+            ("other/ai-llm-prompts", "shadow", "contents-read", "contents-write"),
+            0,
+            None,
+        ),
         ((None, "shadow", "contents-read", "contents-write"), 0, None),
     ],
-    ids=["shadow reads", "live writes", "missing repository", "mode mismatch", "empty write set", "unset write set",
-         "non-dryvist owner", "non-string repository"],
+    ids=[
+        "shadow reads",
+        "live writes",
+        "missing repository",
+        "mode mismatch",
+        "empty write set",
+        "unset write set",
+        "non-dryvist owner",
+        "non-string repository",
+    ],
 )
 def test_select_token_permission_set(args, ready, token_set):
     out = _main("token_request")(*args)
@@ -159,7 +227,10 @@ def test_select_token_permission_set(args, ready, token_set):
     if token_set is None:
         assert out == _TOKEN_ZERO
     else:
-        assert json.loads(out["request_json"]) == {"repositories": [_REPO], "token_set": token_set}
+        assert json.loads(out["request_json"]) == {
+            "repositories": [_REPO],
+            "token_set": token_set,
+        }
 
 
 # extract_check_target: a failed check run with exactly one linked PR, on the mandated head.
@@ -182,10 +253,22 @@ def _check_without_prs():
         ("not json", 0, 0, "check run response is invalid"),
         (_check(head_sha=_OTHER_SHA), 0, 0, _CHECK_HANDBACK),
         (_check(conclusion="success"), 0, 0, _CHECK_HANDBACK),
-        (_check(pull_requests=[{"number": _PR_NUMBER}, {"number": 8}]), 0, 0, _CHECK_HANDBACK),
+        (
+            _check(pull_requests=[{"number": _PR_NUMBER}, {"number": 8}]),
+            0,
+            0,
+            _CHECK_HANDBACK,
+        ),
     ],
-    ids=["success", "missing field", "error payload", "malformed", "head mismatch", "conclusion mismatch",
-         "two linked PRs"],
+    ids=[
+        "success",
+        "missing field",
+        "error payload",
+        "malformed",
+        "head mismatch",
+        "conclusion mismatch",
+        "two linked PRs",
+    ],
 )
 def test_extract_check_target(body, eligible, pr_number, reason):
     out = _main("extract_check_target")(body, _REPO, _CHECK_RUN, _REF, _SHA)
@@ -197,7 +280,10 @@ def test_extract_check_target(body, eligible, pr_number, reason):
 
 # prepare_handback: no inputs change the handback.
 
-@pytest.mark.parametrize("args", [(_REPO, "shadow"), ("", "live")], ids=["shadow", "live with no repository"])
+
+@pytest.mark.parametrize(
+    "args", [(_REPO, "shadow"), ("", "live")], ids=["shadow", "live with no repository"]
+)
 def test_prepare_handback_always_hands_back(args):
     assert _main("prepare_handback")(*args) == {
         "status": "handback",
@@ -207,13 +293,20 @@ def test_prepare_handback_always_hands_back(args):
 
 # prepare_comment: the comment-only reply. It writes nothing and hands back.
 
+
 def test_prepare_comment_hands_back_with_a_comment_and_trace():
-    out = _main("prepare_comment")(_REPO, _PR_NUMBER, _REF, _SHA, "ci-bot", "check_run", "explicit", "shadow")
+    out = _main("prepare_comment")(
+        _REPO, _PR_NUMBER, _REF, _SHA, "ci-bot", "check_run", "explicit", "shadow"
+    )
     assert out["status"] == "handback"
     assert out["body"].startswith("No automated source changes were made.")
     assert json.loads(out["request_json"]) == {"body": out["body"]}
     trace = json.loads(out["trace_json"])
-    assert trace["repo"] == _REPO and trace["pr_number"] == _PR_NUMBER and trace["mode"] == "shadow"
+    assert (
+        trace["repo"] == _REPO
+        and trace["pr_number"] == _PR_NUMBER
+        and trace["mode"] == "shadow"
+    )
 
 
 def test_prepare_comment_passes_missing_fields_through_to_the_trace():

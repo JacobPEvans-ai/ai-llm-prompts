@@ -11,7 +11,9 @@ from pathlib import Path
 import yaml
 
 
-_DSL = Path(__file__).resolve().parents[2] / "agents" / "dify" / "vikunja-triage.dsl.yml"
+_DSL = (
+    Path(__file__).resolve().parents[2] / "agents" / "dify" / "vikunja-triage.dsl.yml"
+)
 _WEB_HOST = "github.com"
 _API_BASE = "https://api.github.com"
 _ADDR = "https://bao.example"
@@ -25,7 +27,9 @@ def _code_with(marker):
         code = node["data"].get("code")
         if code and marker in code:
             namespace = {}
-            exec(compile(code, marker, "exec"), namespace)  # defines the node's functions only
+            exec(
+                compile(code, marker, "exec"), namespace
+            )  # defines the node's functions only
             return namespace
     raise AssertionError(f"no rendered node defines {marker}")
 
@@ -61,17 +65,23 @@ def _stub_github(monkeypatch, objects):
 
 def _state_for(monkeypatch, url, objects):
     _stub_github(monkeypatch, objects)
-    return _code_with("def state_for")["state_for"](url, _WEB_HOST, _API_BASE, _ADDR, "role", "secret", _PATH, {})
+    return _code_with("def state_for")["state_for"](
+        url, _WEB_HOST, _API_BASE, _ADDR, "role", "secret", _PATH, {}
+    )
 
 
 def _link_state(monkeypatch, url, objects):
     _stub_github(monkeypatch, objects)
-    return _code_with("def link_state")["link_state"](url, _WEB_HOST, _API_BASE, _ADDR, "role", "secret", _PATH, [])
+    return _code_with("def link_state")["link_state"](
+        url, _WEB_HOST, _API_BASE, _ADDR, "role", "secret", _PATH, []
+    )
 
 
 def test_issues_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
-    objects = {f"{_REPO}/issues/236": {"state": "closed", "pull_request": {"merged_at": None}}}
+    objects = {
+        f"{_REPO}/issues/236": {"state": "closed", "pull_request": {"merged_at": None}}
+    }
 
     assert _state_for(monkeypatch, url, objects) == "closed-unmerged"
     assert _link_state(monkeypatch, url, objects) == "closed-unmerged"
@@ -79,7 +89,12 @@ def test_issues_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
 
 def test_issues_url_for_a_merged_pr_is_merged(monkeypatch):
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
-    objects = {f"{_REPO}/issues/236": {"state": "closed", "pull_request": {"merged_at": "2026-11-01T00:00:00Z"}}}
+    objects = {
+        f"{_REPO}/issues/236": {
+            "state": "closed",
+            "pull_request": {"merged_at": "2026-11-01T00:00:00Z"},
+        }
+    }
 
     assert _state_for(monkeypatch, url, objects) == "merged"
     assert _link_state(monkeypatch, url, objects) == "merged"
@@ -102,7 +117,9 @@ def test_pull_url_for_a_merged_pr_is_merged(monkeypatch):
 
 def test_issues_url_with_a_malformed_pull_request_field_is_not_done(monkeypatch):
     url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
-    objects = {f"{_REPO}/issues/236": {"state": "closed", "pull_request": "not-an-object"}}
+    objects = {
+        f"{_REPO}/issues/236": {"state": "closed", "pull_request": "not-an-object"}
+    }
 
     assert _state_for(monkeypatch, url, objects) == "closed-unmerged"
     assert _link_state(monkeypatch, url, objects) == "closed-unmerged"

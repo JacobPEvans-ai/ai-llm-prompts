@@ -20,7 +20,9 @@ import yaml
 _ROOT = Path(__file__).resolve().parents[2]
 _DSL = yaml.safe_load((_ROOT / "agents" / "dify" / "zammad-triage.dsl.yml").read_text())
 _NODES = {node["id"]: node["data"] for node in _DSL["workflow"]["graph"]["nodes"]}
-_CASES = yaml.safe_load((_ROOT / "agents" / "evals" / "guard" / "zammad-triage.yaml").read_text())["cases"]
+_CASES = yaml.safe_load(
+    (_ROOT / "agents" / "evals" / "guard" / "zammad-triage.yaml").read_text()
+)["cases"]
 _BASE = "https://ticket-api.example.test"
 _ADDR = "https://bao.example.test"
 _ROLE = "role"
@@ -45,7 +47,9 @@ _SUBSTITUTIONS = {
 
 def _node(node_id):
     namespace = {}
-    exec(compile(_NODES[node_id]["code"], node_id, "exec"), namespace)  # defines the node's functions only
+    exec(
+        compile(_NODES[node_id]["code"], node_id, "exec"), namespace
+    )  # defines the node's functions only
     return namespace
 
 
@@ -79,8 +83,16 @@ def _run_fetch(case):
     namespace = _node("fetch")
     namespace["req"] = req
     out = namespace["main"](
-        _env(policy["allowed"]), _env(policy["readonly"]), _env(policy["denied"]), _env(policy["tag_vocabulary"]),
-        _BASE, _ADDR, _ROLE, _SECRET, _PATH, _STAMP,
+        _env(policy["allowed"]),
+        _env(policy["readonly"]),
+        _env(policy["denied"]),
+        _env(policy["tag_vocabulary"]),
+        _BASE,
+        _ADDR,
+        _ROLE,
+        _SECRET,
+        _PATH,
+        _STAMP,
     )
     return out, requests
 
@@ -88,7 +100,9 @@ def _run_fetch(case):
 def _read_groups(policy):
     if not isinstance(policy["allowed"], list):
         return []
-    return sorted((set(policy["allowed"]) | set(policy["readonly"])) - set(policy["denied"]))
+    return sorted(
+        (set(policy["allowed"]) | set(policy["readonly"])) - set(policy["denied"])
+    )
 
 
 def _expected_requests(policy):
@@ -96,7 +110,8 @@ def _expected_requests(policy):
     if not read:
         return []
     searches = [
-        f"{_BASE}/api/v1/tickets/search?" + urlencode({"query": "group_id:" + group, "limit": "50", "expand": "true"})
+        f"{_BASE}/api/v1/tickets/search?"
+        + urlencode({"query": "group_id:" + group, "limit": "50", "expand": "true"})
         for group in read
     ]
     return [f"{_ADDR}/v1/auth/approle/login", f"{_ADDR}/v1/{_PATH}", *searches]
@@ -120,8 +135,16 @@ def _run_guard(case, fetched, proposed):
 
     namespace["bind"] = bind_spy
     result = namespace["main"](
-        json.dumps({"actions": proposed}), fetched["refs"], fetched["pol"], fetched["ok"],
-        case.get("mode", "live"), _BASE, _ADDR, _ROLE, _SECRET, _PATH,
+        json.dumps({"actions": proposed}),
+        fetched["refs"],
+        fetched["pol"],
+        fetched["ok"],
+        case.get("mode", "live"),
+        _BASE,
+        _ADDR,
+        _ROLE,
+        _SECRET,
+        _PATH,
     )
     assert requests == []
     return {
@@ -134,7 +157,9 @@ def _run_guard(case, fetched, proposed):
 
 def _pipeline(case, proposed=None):
     fetched, requests = _run_fetch(case)
-    result = _run_guard(case, fetched, case["proposed"] if proposed is None else proposed)
+    result = _run_guard(
+        case, fetched, case["proposed"] if proposed is None else proposed
+    )
     return fetched, requests, result
 
 
@@ -175,7 +200,9 @@ def test_unknown_tag_is_dropped_because_the_tag_is_outside_the_vocabulary():
     assert accepted["actions"] == [{"ticket_index": 0, "kind": "tag", "tag": "stale"}]
 
 
-@pytest.mark.parametrize("case_id", ["empty-policy-refuses-search", "malformed-policy-denies-all"])
+@pytest.mark.parametrize(
+    "case_id", ["empty-policy-refuses-search", "malformed-policy-denies-all"]
+)
 def test_a_policy_without_a_usable_group_is_refused_before_any_search(case_id):
     case = _case(case_id)
 
@@ -187,7 +214,9 @@ def test_a_policy_without_a_usable_group_is_refused_before_any_search(case_id):
     assert _run_guard(case, fetched, case["proposed"])["actions"] == []
 
 
-@pytest.mark.parametrize("case_id", ["empty-policy-refuses-search", "malformed-policy-denies-all"])
+@pytest.mark.parametrize(
+    "case_id", ["empty-policy-refuses-search", "malformed-policy-denies-all"]
+)
 def test_a_usable_group_turns_the_same_policy_case_into_an_action(case_id):
     control = _case(case_id)
     control["policy"]["allowed"] = ["1"]
@@ -195,22 +224,30 @@ def test_a_usable_group_turns_the_same_policy_case_into_an_action(case_id):
     fetched, _, result = _pipeline(control)
 
     assert fetched["ok"] is True
-    assert result["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert result["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]
 
 
 def test_a_note_with_the_incident_reason_is_refused_and_a_blocked_note_is_kept():
     case = _case("note-with-incident-reason-refused")
     control = copy.deepcopy(case)
-    control["proposed"] = [{"ticket_index": 0, "kind": "note", "priority": "high", "reason": "blocked"}]
+    control["proposed"] = [
+        {"ticket_index": 0, "kind": "note", "priority": "high", "reason": "blocked"}
+    ]
 
     _, _, refused = _pipeline(case)
     _, _, accepted = _pipeline(control)
 
     assert refused["actions"] == []
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "note", "priority": "high", "reason": "blocked"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "note", "priority": "high", "reason": "blocked"}
+    ]
 
 
-@pytest.mark.parametrize("case_id", ["close-or-state-change-refused", "customer-visible-reply-refused"])
+@pytest.mark.parametrize(
+    "case_id", ["close-or-state-change-refused", "customer-visible-reply-refused"]
+)
 def test_an_action_kind_outside_the_contract_is_refused_and_a_rank_is_kept(case_id):
     case = _case(case_id)
     control = copy.deepcopy(case)
@@ -221,7 +258,9 @@ def test_an_action_kind_outside_the_contract_is_refused_and_a_rank_is_kept(case_
 
     assert refused["actions"] == []
     assert refused["bind_calls"] == []
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]
 
 
 def test_action_cap_drops_twenty_one_proposals_and_keeps_twenty():
@@ -241,7 +280,12 @@ def test_action_cap_drops_twenty_one_proposals_and_keeps_twenty():
 def test_readonly_group_ticket_is_refused_and_the_same_ticket_is_kept_in_an_allowed_group():
     case = _case("readonly-group-refuses-write")
     control = copy.deepcopy(case)
-    control["policy"] = {"allowed": ["2"], "readonly": [], "denied": [], "tag_vocabulary": []}
+    control["policy"] = {
+        "allowed": ["2"],
+        "readonly": [],
+        "denied": [],
+        "tag_vocabulary": [],
+    }
 
     fetched, _, refused = _pipeline(case)
     control_fetched, _, accepted = _pipeline(control)
@@ -250,13 +294,20 @@ def test_readonly_group_ticket_is_refused_and_the_same_ticket_is_kept_in_an_allo
     assert refused["actions"] == []
     assert refused["bind_calls"] == []
     assert control_fetched["ok"] is True
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]
 
 
 def test_a_group_both_allowed_and_readonly_is_refused_by_the_readonly_rule():
     case = _case("readonly-group-refuses-write")
     overlap = copy.deepcopy(case)
-    overlap["policy"] = {"allowed": ["2"], "readonly": ["2"], "denied": [], "tag_vocabulary": []}
+    overlap["policy"] = {
+        "allowed": ["2"],
+        "readonly": ["2"],
+        "denied": [],
+        "tag_vocabulary": [],
+    }
 
     fetched, _, refused = _pipeline(overlap)
 
@@ -278,7 +329,9 @@ def test_ticket_from_a_denied_group_is_dropped_by_the_fetch_and_kept_in_an_allow
     assert refused["actions"] == []
     assert refused["bind_calls"] == []
     assert control_fetched["ok"] is True
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]
 
 
 def test_ticket_from_an_unscoped_group_is_dropped_by_the_fetch_and_kept_in_an_allowed_group():
@@ -294,7 +347,9 @@ def test_ticket_from_an_unscoped_group_is_dropped_by_the_fetch_and_kept_in_an_al
     assert refused["actions"] == []
     assert refused["bind_calls"] == []
     assert control_fetched["ok"] is True
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]
 
 
 def test_injected_ticket_title_does_not_block_a_valid_proposal():
@@ -308,4 +363,6 @@ def test_injected_ticket_title_does_not_block_a_valid_proposal():
 
     assert fetched["ok"] is True
     assert refused["actions"] == []
-    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+    assert accepted["actions"] == [
+        {"ticket_index": 0, "kind": "rank", "priority": "high"}
+    ]

@@ -18,8 +18,16 @@ _FINDING = {
     "severity": "S2",
     "fingerprint": _FINGERPRINT,
     "statements": [
-        {"page_path": "/services/import.md", "line": 2, "quote": "The import uses App DSL 0.7.0."},
-        {"page_path": "/services/requirements.md", "line": 2, "quote": "App DSL 0.6.0 is required."},
+        {
+            "page_path": "/services/import.md",
+            "line": 2,
+            "quote": "The import uses App DSL 0.7.0.",
+        },
+        {
+            "page_path": "/services/requirements.md",
+            "line": 2,
+            "quote": "App DSL 0.6.0 is required.",
+        },
     ],
     "question": "Which is right? A: the import uses 0.7.0 B: 0.6.0 is required Neither: take no action.",
     "ask": True,
@@ -28,10 +36,16 @@ _FINDING = {
 
 def _load_namespace():
     nodes = yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]
-    codes = [node["data"]["code"] for node in nodes if node.get("data", {}).get("title") == _TITLE]
+    codes = [
+        node["data"]["code"]
+        for node in nodes
+        if node.get("data", {}).get("title") == _TITLE
+    ]
     assert len(codes) == 1, f"expected one node titled {_TITLE!r}"
     namespace = {}
-    exec(compile(codes[0], _TITLE, "exec"), namespace)  # defines the node's functions only
+    exec(
+        compile(codes[0], _TITLE, "exec"), namespace
+    )  # defines the node's functions only
     return namespace
 
 
@@ -62,7 +76,9 @@ def _findings(output):
 
 
 def test_valid_proposal_passes_and_zero_findings_is_the_exact_empty_object():
-    assert [(f["severity"], f["ask"]) for f in _findings(_run(_model(_FINDING)))] == [("S2", True)]
+    assert [(f["severity"], f["ask"]) for f in _findings(_run(_model(_FINDING)))] == [
+        ("S2", True)
+    ]
     assert _run('{"findings": []}') == {"findings_json": '{"findings": []}'}
 
 
@@ -93,7 +109,9 @@ def test_leading_zero_dotted_address_is_redacted():
 def test_redacted_quote_verifies_against_unredacted_page_text():
     # The page still holds the raw value; the quote holds the redacted form that the prompt asks for.
     quote = "The import uses App DSL 0.7.0 with token = [REDACTED] for CI."
-    page = "# Import\nThe import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
+    page = (
+        "# Import\nThe import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
+    )
     texts = {**_TEXTS, "/services/import.md": page}
     kept = _findings(_run(_model(_finding_with_quote(0, quote)), texts=texts))
     assert [f["statements"][0]["quote"] for f in kept] == [quote]
@@ -129,7 +147,10 @@ def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
 
 
 def test_long_colon_run_in_page_text_does_not_crash_the_validator():
-    texts = {**_TEXTS, "/services/import.md": _TEXTS["/services/import.md"] + "\n" + ":" * 5000}
+    texts = {
+        **_TEXTS,
+        "/services/import.md": _TEXTS["/services/import.md"] + "\n" + ":" * 5000,
+    }
     assert len(_findings(_run(_model(_FINDING), texts=texts))) == 1
 
 
