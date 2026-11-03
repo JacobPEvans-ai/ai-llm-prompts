@@ -153,6 +153,12 @@ def render_agent(definition_path):
 def render_all():
     outputs = []
     for definition_path in sorted(AGENTS.glob("*.yaml")):
+        agent = load_yaml(definition_path)
+        if not isinstance(agent, dict) or "home_platform" not in agent:
+            raise ValueError(f"{definition_path.relative_to(ROOT)} must declare home_platform")
+        # Dify workflows are rendered only for agents homed on Dify.
+        if agent["home_platform"] != "dify":
+            continue
         outputs.append(render_agent(definition_path))
     if not outputs:
         raise ValueError("no agent definitions found")
