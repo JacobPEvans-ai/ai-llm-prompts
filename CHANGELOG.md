@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.0...v1.57.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* ci-fixer shadow eligibility, push status, and token owner ([#261](https://github.com/dryvist/ai-llm-prompts/issues/261)) ([27a2299](https://github.com/dryvist/ai-llm-prompts/commit/27a229920b7faaa574e4b4dfc78845bd48c69afc))
+
 ## [1.57.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.56.0...v1.57.0) (2026-11-03)
 
 
