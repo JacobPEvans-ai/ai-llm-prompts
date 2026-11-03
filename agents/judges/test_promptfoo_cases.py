@@ -29,7 +29,7 @@ def test_generated_cases_have_assertions_and_static_prefixes():
         "vikunja-triage": 5,
         "zammad-triage": 4,
     }
-    assert len(tests) == 75
+    assert len(tests) == 76
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
