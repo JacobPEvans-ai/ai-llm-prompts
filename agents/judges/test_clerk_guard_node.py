@@ -1,5 +1,6 @@
 """Runs the clerk's first Code guard node over the guard fixtures: intent in, tool calls out.
 
+A case gives its intent as a mapping. A case with intent_raw gives the exact text the guard receives.
 A case takes its mandates and context from the case itself. A case that sets neither takes them
 from the matching model-suite case. A refused case must return allowed false and the reason
 fragment the case names. Every other case must return allowed true. Each refusal has a control
@@ -57,6 +58,7 @@ def _inputs(case):
     context = {**_DEFAULT_CONTEXT, **model.get("guard_context", {}), **case.get("context", {})}
     return {
         "intent": case["intent"],
+        "intent_raw": case.get("intent_raw"),
         "mandates": {key: str(value or "") for key, value in mandates.items()},
         "context": context,
     }
@@ -65,8 +67,9 @@ def _inputs(case):
 def _run(case):
     inputs = _inputs(case)
     context = inputs["context"]
+    intent_text = inputs["intent_raw"] if inputs["intent_raw"] is not None else json.dumps(inputs["intent"])
     result = _MAIN(
-        json.dumps(inputs["intent"]),
+        intent_text,
         inputs["mandates"]["project_id"],
         inputs["mandates"]["task_id"],
         context.get("allowed_projects_raw", json.dumps(context["allowed_projects"])),

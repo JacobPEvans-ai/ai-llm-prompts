@@ -247,3 +247,29 @@ cases:
       - tool: vikunja_tasks
         operation: create
         args: {projectId: project-allowed, title: Update the onboarding guide}
+  - id: intent-not-json
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: not json
+    mandates: {project_id: project-allowed, task_id: ""}
+    refusal: could not be parsed safely
+    offends: [intent_raw]
+    expected_tool_calls: []
+  - id: intent-not-json-control
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: '{"route": "vikunja", "operation": "create", "project_named": true, "title": "Review the onboarding guide", "category": null}'
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
+  - id: intent-fenced-json
+    intent: {route: vikunja, operation: create, project_named: true, title: Review the onboarding guide, category: null}
+    intent_raw: |
+      ```json
+      {"route": "vikunja", "operation": "create", "project_named": true, "title": "Review the onboarding guide", "category": null}
+      ```
+    mandates: {project_id: project-allowed, task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: create
+        args: {projectId: project-allowed, title: Review the onboarding guide}
