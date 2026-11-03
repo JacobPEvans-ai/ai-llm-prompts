@@ -342,6 +342,13 @@ def test_expected_call_with_args_still_compares_the_whole_call():
     assert _run_js("expectedCalls", other_args, expected) is False
 
 
+def test_expected_call_with_args_passes_when_the_whole_call_matches():
+    expected = {"expected_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]}
+    same_call = {"proposed_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"title": "t"}}]}
+
+    assert _run_js("expectedCalls", same_call, expected) is True
+
+
 def test_only_the_clerk_suite_attaches_the_forbidden_keys_check():
     for test in cases.generate_tests():
         has_check = any(assertion["metric"] == "forbidden-keys" for assertion in test["assert"])
