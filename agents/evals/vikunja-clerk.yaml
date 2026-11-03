@@ -142,6 +142,14 @@ cases:
     expected_output: {route: zammad, operation: create, project_named: true, category: security-finding, refused: true, reason_contains: [Zammad, zammad]}
     expected_behavior: Route the security finding to Zammad and make no Vikunja write, because the deterministic classifier finds a security marker.
 
+  - id: refuse-denied-project-even-when-allowed
+    input: Create the requested task in a denied project.
+    structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-denied, title: Update the onboarding guide}
+    guard_context: {mode: live, allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    expected_calls: []
+    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: true, reason_contains: [denied, deny, not allowed]}
+    expected_behavior: Refuse because the named project is denied, even when the same project is in the allowed policy.
+
   - id: refuse-missing-operation
     input: Create a task but leave the requested operation unspecified.
     expected_parse: {route: vikunja, operation: null, project_named: false, category: null}

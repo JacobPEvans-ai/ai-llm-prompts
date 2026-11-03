@@ -24,12 +24,12 @@ def test_generated_cases_have_assertions_and_static_prefixes():
     assert counts == {
         "ci-fixer": 19,
         "code-simplifier": 9,
-        "vikunja-clerk": 19,
+        "vikunja-clerk": 20,
         "vikunja-clerk-parse": 19,
         "vikunja-triage": 4,
         "zammad-triage": 4,
     }
-    assert len(tests) == 74
+    assert len(tests) == 75
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
