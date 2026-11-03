@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.50.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.1...v1.50.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **agents:** render Dify workflows only for Dify-homed agents ([#228](https://github.com/dryvist/ai-llm-prompts/issues/228)) ([7899e1d](https://github.com/dryvist/ai-llm-prompts/commit/7899e1d535aa8e841e445c73853c622d5d6fa145))
+
 ## [1.50.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.0...v1.50.1) (2026-11-03)
 
 
