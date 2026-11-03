@@ -98,15 +98,6 @@ cases:
     expected_output: {refused: true, reason_contains: [change its project, move, another project]}
     expected_behavior: Read the task, then refuse the move even though both projects are allowed.
 
-  - id: refuse-denied-project-even-when-allowed
-    input: Create the requested task in a denied project.
-    expected_parse: {route: vikunja, operation: create, project_named: true, category: null}
-    structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-denied, title: Update the onboarding guide}
-    guard_context: {mode: live, allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
-    expected_calls: []
-    expected_output: {refused: true, reason_contains: [denied, deny]}
-    expected_behavior: Refuse because the denied policy wins even when the same project is in the allowed policy.
-
   - id: refuse-unknown-project
     input: Create the requested task in a named but unscoped project.
     expected_parse: {route: vikunja, operation: create, project_named: true, category: null}

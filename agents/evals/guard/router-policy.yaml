@@ -1,0 +1,11 @@
+# Router-policy fixtures. The model suites cannot score these cases: the router refuses the content with HTTP 403
+# before any model output exists. The expected outcome is that refusal, asserted by agents/judges/test_guard_fixtures.py.
+cases:
+  - id: refuse-denied-project-even-when-allowed
+    suite: vikunja-clerk
+    input: Create the requested task in a denied project.
+    structured_fields: {route: vikunja, operation: create, project_named: true, project_id: project-denied, title: Update the onboarding guide}
+    guard_context: {mode: live, allowed_projects: [project-allowed, project-denied], denied_projects: [project-denied]}
+    expected_router_status: 403
+    expected_router_reason: content is not cleared for this key
+    expected_behavior: The router refuses the request before a model replies; the denied policy wins even when the same project is in the allowed policy.
