@@ -26,10 +26,10 @@ def test_generated_cases_have_assertions_and_static_prefixes():
         "code-simplifier": 9,
         "vikunja-clerk": 20,
         "vikunja-clerk-parse": 19,
-        "vikunja-triage": 4,
+        "vikunja-triage": 5,
         "zammad-triage": 4,
     }
-    assert len(tests) == 75
+    assert len(tests) == 76
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
@@ -267,15 +267,31 @@ def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
     assert "patches" in result["reason"]
 
 
-def test_skipped_case_stays_in_its_suite_and_is_not_generated():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
-    skipped = [case for case in suite["cases"] if case.get("skip")]
+def test_skip_key_drops_a_case_from_generation(monkeypatch):
+    real_load = cases.load_yaml
+    first_id = real_load(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")["cases"][0]["id"]
 
-    assert [case["id"] for case in skipped] == ["open-linked-pr-is-not-done"]
-    assert skipped[0]["skip"].strip()
-    assert all(
-        test["metadata"]["case"] != "open-linked-pr-is-not-done" for test in cases.generate_tests()
-    )
+    def load_with_skip(path):
+        data = real_load(path)
+        if path.parent.name == "evals" and path.name == "vikunja-triage.yaml":
+            data["cases"][0]["skip"] = "covered by the generator test"
+        return data
+
+    monkeypatch.setattr(cases, "load_yaml", load_with_skip)
+    monkeypatch.setattr(cases, "SUITES", ("vikunja-triage",))
+    generated = [test["metadata"]["case"] for test in cases.generate_tests()]
+
+    assert first_id not in generated
+    assert len(generated) == 4
+
+
+def test_open_linked_pr_case_is_scored_and_not_skipped():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
+
+    assert not [case["id"] for case in suite["cases"] if case.get("skip")]
+    generated = [test for test in cases.generate_tests() if test["metadata"]["case"] == "open-linked-pr-is-not-done"]
+    assert len(generated) == 1
+    assert generated[0]["vars"]["expected"]["expected_output"] == {"actions": []}
 
 
 def test_triage_suites_with_no_write_tools_attach_no_check():
