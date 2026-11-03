@@ -79,13 +79,14 @@ def strip_json_fence(text: str) -> str:
 
     The hosted evaluator cannot import repository files. agents/judges/test_json_fence.py keeps the two in step.
     """
-    stripped = str(text).strip()
+    value = str(text)
+    stripped = value.strip(" \t\r\n")
     if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
-        body = stripped[3:-3].strip()
+        body = stripped[3:-3].strip(" \t\r\n")
         if body[:4].lower() == "json":
-            body = body[4:].strip()
+            body = body[4:].strip(" \t\r\n")
         return body
-    return stripped
+    return value
 
 
 def check_reply(value: Any) -> str | None:

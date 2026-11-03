@@ -34,6 +34,10 @@ _CASES = [
     (f"```json{_OBJECT}```", _OBJECT),
     (f"Here you go:\n```json\n{_OBJECT}\n```", f"Here you go:\n```json\n{_OBJECT}\n```"),
     ("```unterminated", "```unterminated"),
+    ("null", "null"),
+    ("  " + _OBJECT + "  ", "  " + _OBJECT + "  "),
+    ("﻿```json\n" + _OBJECT + "\n```", "﻿```json\n" + _OBJECT + "\n```"),
+    ("\x1c" + _OBJECT, "\x1c" + _OBJECT),
 ]
 
 

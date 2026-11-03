@@ -1180,14 +1180,17 @@ workflow:
             SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
 
             def strip_json_fence(text):
-                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Other text is returned trimmed.
-                stripped = str(text).strip()
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
+                # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
+                # fence is returned unchanged.
+                value = str(text)
+                stripped = value.strip(" \t\r\n")
                 if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
-                    body = stripped[3:-3].strip()
+                    body = stripped[3:-3].strip(" \t\r\n")
                     if body[:4].lower() == "json":
-                        body = body[4:].strip()
+                        body = body[4:].strip(" \t\r\n")
                     return body
-                return stripped
+                return value
             def main(model_text: str, changed_files_json: str, repo: str, pr_number: int, ref: str, head_sha: str, actor: str, event: str, strength: str, mode: str) -> dict:
                 generic = "No concrete behavior-preserving simplification was established."
                 try:

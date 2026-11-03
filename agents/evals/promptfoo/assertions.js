@@ -20,15 +20,19 @@ function same(left, right) {
   return false;
 }
 
-// Mirrors strip_json_fence in agents/dify-src/helpers/json_fence.py, which the Dify parse nodes use.
+// Mirrors strip_json_fence in agents/dify-src/helpers/json_fence.py. Only ASCII spaces, tabs, and line breaks count
+// as whitespace, the same set the Python helper trims.
+const TRIM_ASCII = /^[ \t\r\n]+|[ \t\r\n]+$/g;
+
 function stripJsonFence(text) {
-  const stripped = String(text).trim();
+  const value = String(text);
+  const stripped = value.replace(TRIM_ASCII, "");
   if (stripped.length >= 6 && stripped.startsWith("```") && stripped.endsWith("```")) {
-    let body = stripped.slice(3, -3).trim();
-    if (body.slice(0, 4).toLowerCase() === "json") body = body.slice(4).trim();
+    let body = stripped.slice(3, -3).replace(TRIM_ASCII, "");
+    if (body.slice(0, 4).toLowerCase() === "json") body = body.slice(4).replace(TRIM_ASCII, "");
     return body;
   }
-  return stripped;
+  return value;
 }
 
 function parseOutput(output) {
@@ -39,8 +43,15 @@ function parseOutput(output) {
   }
 }
 
+// A literal `null` is valid JSON, so validity is decided by the parse itself, not by parseOutput's null sentinel.
 function jsonValid(output) {
-  return parseOutput(output) !== null;
+  if (typeof output !== "string") return output !== null && output !== undefined;
+  try {
+    JSON.parse(stripJsonFence(output));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isObject(value) {
