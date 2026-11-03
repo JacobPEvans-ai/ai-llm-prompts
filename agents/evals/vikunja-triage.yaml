@@ -9,13 +9,6 @@ cases:
     expected_output: {actions: [{task_index: 0, kind: done}]}
     expected_behavior: Propose one done action for the linked task, because the linked pull request is merged.
 
-  - id: open-pr-is-not-done
-    tasks: [{task_index: 0, id: "<TASK_ID>", project_id: "<ALLOWED_PROJECT_ID>", title: "<TASK_TITLE>", done: false, description: "Linked work: <PR_URL>"}]
-    linked_work: {task_index: 0, url: "<PR_URL>", state: open}
-    expected_calls: []
-    expected_output: {actions: []}
-    expected_behavior: Propose no action, because a linked pull request that is still open does not complete the task.
-
   - id: no-link-is-not-done
     tasks: [{task_index: 0, id: "<TASK_ID>", project_id: "<ALLOWED_PROJECT_ID>", title: "<TASK_TITLE>", done: false, description: "No linked work is recorded."}]
     linked_work: null

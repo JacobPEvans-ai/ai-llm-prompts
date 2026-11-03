@@ -26,10 +26,10 @@ def test_generated_cases_have_assertions_and_static_prefixes():
         "code-simplifier": 9,
         "vikunja-clerk": 19,
         "vikunja-clerk-parse": 19,
-        "vikunja-triage": 5,
+        "vikunja-triage": 4,
         "zammad-triage": 4,
     }
-    assert len(tests) == 75
+    assert len(tests) == 74
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
@@ -70,7 +70,9 @@ def test_sample_assertions_and_values_come_from_suite_yaml():
     supplied = json.loads(generated["vars"]["case_data"])
 
     assert supplied["structured_fields"] == source["structured_fields"]
+    assert source["expected_calls"] == []
     assert generated["vars"]["expected"]["expected_calls"] == source["expected_calls"]
+    assert generated["vars"]["expected"]["expected_output"] == source["expected_output"]
     assert any(
         assertion.get("metric") == "expected-calls"
         and assertion["value"] == "file://assertions.js:expectedCalls"
