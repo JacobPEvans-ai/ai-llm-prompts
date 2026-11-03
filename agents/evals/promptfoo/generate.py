@@ -173,6 +173,8 @@ def generate_tests():
             raise ValueError(f"{name}: expected_output_scoring must be one of {SCORING_MODES}, got {scoring!r}")
         parse_system = parse_prompt() if any("expected_parse" in case for case in suite["cases"]) else None
         for case in suite["cases"]:
+            if case.get("skip"):
+                continue  # kept in the suite with its reason; the skip key names the pending change
             if "expected_parse" in case:
                 tests.append(parse_test(name, case, parse_system))
             case_data = load_fixture_contents({

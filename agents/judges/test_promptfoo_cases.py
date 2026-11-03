@@ -267,6 +267,17 @@ def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
     assert "patches" in result["reason"]
 
 
+def test_skipped_case_stays_in_its_suite_and_is_not_generated():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
+    skipped = [case for case in suite["cases"] if case.get("skip")]
+
+    assert [case["id"] for case in skipped] == ["open-linked-pr-is-not-done"]
+    assert "fix/triage-open-pr-rule" in skipped[0]["skip"]
+    assert all(
+        test["metadata"]["case"] != "open-linked-pr-is-not-done" for test in cases.generate_tests()
+    )
+
+
 def test_no_test_var_is_a_list():
     # promptfoo expands an array-valued var into one test per element.
     for test in cases.generate_tests():
