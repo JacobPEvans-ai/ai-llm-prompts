@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.51.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.2...v1.51.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** add hatchet-eval definition ([c9cf157](https://github.com/dryvist/ai-llm-prompts/commit/c9cf157c9cfed424a5d1fb7dbb1ba78a9e1be89e))
+* **agents:** tolerate one Markdown fence around model JSON ([#226](https://github.com/dryvist/ai-llm-prompts/issues/226)) ([d54c1d7](https://github.com/dryvist/ai-llm-prompts/commit/d54c1d766b8d9e22ab54ddcb52d6e97648f55020))
+* **agent:** zcode run j-58adb97b4e1f8205 ([c9cf157](https://github.com/dryvist/ai-llm-prompts/commit/c9cf157c9cfed424a5d1fb7dbb1ba78a9e1be89e))
+
+
+### Bug Fixes
+
+* **agents:** send an optional bearer key from the rubric grader ([#227](https://github.com/dryvist/ai-llm-prompts/issues/227)) ([e0641f0](https://github.com/dryvist/ai-llm-prompts/commit/e0641f0de6abb36d1153d80fa00203d1647fc68e))
+
 ## [1.50.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.50.1...v1.50.2) (2026-11-03)
 
 
