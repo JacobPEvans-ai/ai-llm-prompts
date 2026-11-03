@@ -26,13 +26,17 @@ _FINDING = {
 }
 
 
-def _load_main():
+def _load_namespace():
     nodes = yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["nodes"]
     codes = [node["data"]["code"] for node in nodes if node.get("data", {}).get("title") == _TITLE]
     assert len(codes) == 1, f"expected one node titled {_TITLE!r}"
     namespace = {}
     exec(compile(codes[0], _TITLE, "exec"), namespace)  # defines the node's functions only
-    return namespace["main"]
+    return namespace
+
+
+def _load_main():
+    return _load_namespace()["main"]
 
 
 _MAIN = _load_main()
@@ -77,6 +81,13 @@ def test_quote_absent_from_the_cited_page_drops_only_that_finding():
 def test_quote_must_appear_in_the_page_it_cites_not_in_another_page():
     wrong_page = _finding_with_quote(0, "App DSL 0.6.0 is required.")
     assert _findings(_run(_model(wrong_page))) == []
+
+
+def test_leading_zero_dotted_address_is_redacted():
+    redact = _load_namespace()["redact"]
+
+    assert redact("The host 010.000.000.001 is down.") == "The host [REDACTED] is down."
+    assert redact("Version 1.2.3 is out.") == "Version 1.2.3 is out."
 
 
 def test_redacted_quote_verifies_against_unredacted_page_text():
