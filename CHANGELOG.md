@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.53.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.52.0...v1.53.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** add doc-contradiction-finder ([#232](https://github.com/dryvist/ai-llm-prompts/issues/232)) ([28cc628](https://github.com/dryvist/ai-llm-prompts/commit/28cc628bae3846f2cea9510a81ee3307de0ec434))
+
 ## [1.52.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.51.1...v1.52.0) (2026-11-03)
 
 
