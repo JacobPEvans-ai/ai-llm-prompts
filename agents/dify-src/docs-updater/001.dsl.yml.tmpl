@@ -4,6 +4,7 @@
             - {variable: pr_number, label: pr_number, type: number, required: false}
             - {variable: finding_ref, label: finding_ref, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Finding reference for the operator-decision shape.', placeholder: ''}
             - {variable: operator_decision, label: operator_decision, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Operator decision for the operator-decision shape: A, B, or neither.', placeholder: ''}
+            - {variable: finding_statements, label: finding_statements, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of the two cited statements, each with page_path, line, and quote, for the operator-decision shape.', placeholder: ''}
             - {variable: private_documentation_context, label: private_documentation_context, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of available private pages with page_path and text fields.', placeholder: ''}
           selected: false
           title: Start

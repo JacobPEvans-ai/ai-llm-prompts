@@ -71,3 +71,54 @@ def test_shape_b_rejects_a_malformed_finding_reference():
 def test_shape_a_rejects_a_pull_request_outside_the_dryvist_org():
     result = _run_gate(**{**_PR_EVENT, "org": "other-org"})
     assert result["accepted"] == 0 and result["eligible"] == 0
+
+
+_EDGES = yaml.safe_load(_DSL.read_text())["workflow"]["graph"]["edges"]
+_PULL_REQUEST_PATH = [
+    "start", "validate_event", "event_gate", "openbao_login", "parse_openbao", "login_gate", "token_request",
+    "token_request_gate", "mint_github_token", "parse_github_token", "token_gate", "get_repo", "get_pull_request",
+    "get_pull_files", "prepare_context", "context_gate", "docs_updater_llm", "validate_proposal", "end_proposal",
+]
+_PULL_REQUEST_READS = {"openbao_login", "mint_github_token", "get_repo", "get_pull_request", "get_pull_files"}
+
+
+def _walk(start, handles):
+    """Follow one rendered edge per handle from start. Each hop must have exactly one matching edge."""
+    node, visited = start, [start]
+    for handle in handles:
+        targets = [edge["target"] for edge in _EDGES if edge["source"] == node and edge.get("sourceHandle") == handle]
+        assert len(targets) == 1, f"{node} has {len(targets)} edges on handle {handle!r}"
+        node = targets[0]
+        visited.append(node)
+    return visited
+
+
+def test_every_rendered_edge_joins_two_declared_nodes():
+    ids = {node["id"] for node in _NODES}
+    assert all(edge["source"] in ids and edge["target"] in ids for edge in _EDGES)
+
+
+def test_operator_decision_edges_reach_the_model_without_pull_request_reads():
+    visited = _walk("start", ["source", "source", "false", "accepted", "source", "eligible"])
+    assert visited == ["start", "validate_event", "event_gate", "decision_gate", "prepare_context", "context_gate",
+                       "docs_updater_llm"]
+    assert not _PULL_REQUEST_READS & set(visited)
+
+
+def test_pull_request_edges_still_route_through_the_reads_to_the_model():
+    handles = ["source", "source", "eligible", "source", "source", "ready", "source", "eligible", "source", "source",
+               "ready", "source", "source", "source", "source", "eligible", "source", "source"]
+    visited = _walk("start", handles)
+    assert visited == _PULL_REQUEST_PATH
+    assert "decision_gate" not in visited
+
+
+def test_every_start_selector_names_a_declared_start_variable():
+    declared = {variable["variable"] for variable in _START["variables"]}
+    selectors = [
+        binding["value_selector"]
+        for node in _NODES
+        for binding in node.get("data", {}).get("variables", [])
+        if binding.get("value_selector", [""])[0] == "start"
+    ]
+    assert selectors and all(selector[1] in declared for selector in selectors)

@@ -89,9 +89,25 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
-        id: event-ignored
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: event-not-eligible
         source: event_gate
+        sourceHandle: 'false'
+        target: decision_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: decision-accepted
+        source: decision_gate
+        sourceHandle: accepted
+        target: prepare_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: decision-rejected
+        source: decision_gate
         sourceHandle: 'false'
         target: end_empty
         targetHandle: target
@@ -261,6 +277,7 @@ workflow:
             - {variable: pr_number, label: pr_number, type: number, required: false}
             - {variable: finding_ref, label: finding_ref, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Finding reference for the operator-decision shape.', placeholder: ''}
             - {variable: operator_decision, label: operator_decision, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Operator decision for the operator-decision shape: A, B, or neither.', placeholder: ''}
+            - {variable: finding_statements, label: finding_statements, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of the two cited statements, each with page_path, line, and quote, for the operator-decision shape.', placeholder: ''}
             - {variable: private_documentation_context, label: private_documentation_context, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of available private pages with page_path and text fields.', placeholder: ''}
           selected: false
           title: Start
@@ -638,8 +655,53 @@ workflow:
 
             SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
             REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            FINDING_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+            DECISIONS = ("A", "B", "neither")
 
-            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, docs_context: str) -> dict:
+            def decision_context(repo, decision, finding_ref, statements_json, docs_context):
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]"}
+                try:
+                    pages = json.loads(docs_context) if isinstance(docs_context, str) and docs_context.strip() else []
+                    statements = json.loads(statements_json) if isinstance(statements_json, str) and statements_json.strip() else []
+                except (TypeError, ValueError):
+                    return empty
+                if (not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None
+                    or decision not in DECISIONS
+                    or not isinstance(finding_ref, str) or FINDING_RE.fullmatch(finding_ref) is None
+                    or not isinstance(pages, list) or not pages or len(pages) > 25
+                    or not isinstance(statements, list) or len(statements) != 2):
+                    return empty
+                page_paths = []
+                for page in pages:
+                    if (not isinstance(page, dict) or not isinstance(page.get("page_path"), str)
+                        or not page["page_path"] or not isinstance(page.get("text"), str)):
+                        return empty
+                    page_paths.append(page["page_path"])
+                safe_statements = []
+                for statement in statements:
+                    if (not isinstance(statement, dict) or set(statement) != {"page_path", "line", "quote"}
+                        or statement["page_path"] not in page_paths
+                        or not isinstance(statement["line"], int) or isinstance(statement["line"], bool) or statement["line"] < 1
+                        or not isinstance(statement["quote"], str) or not statement["quote"].strip() or len(statement["quote"]) > 300
+                        or SECRET_RE.search(statement["quote"])):
+                        return empty
+                    safe_statements.append({"page_path": statement["page_path"], "line": statement["line"], "quote": statement["quote"]})
+                context = {
+                    "repository": repo,
+                    "operator_decision": decision,
+                    "finding_ref": finding_ref,
+                    "finding_statements": safe_statements,
+                    "private_documentation_context": pages,
+                }
+                return {
+                    "eligible": 1,
+                    "context_json": json.dumps(context, ensure_ascii=False),
+                    "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
+                }
+
+            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, docs_context: str, decision: str, finding_ref: str, finding_statements: str) -> dict:
+                if isinstance(decision, str) and decision:
+                    return decision_context(repo, decision, finding_ref, finding_statements, docs_context)
                 empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]"}
                 try:
                     repo_data = json.loads(repo_body)
@@ -719,6 +781,9 @@ workflow:
             - {variable: pr_body, value_selector: [get_pull_request, body]}
             - {variable: files_body, value_selector: [get_pull_files, body]}
             - {variable: docs_context, value_selector: [start, private_documentation_context]}
+            - {variable: decision, value_selector: [validate_event, decision]}
+            - {variable: finding_ref, value_selector: [validate_event, finding_ref]}
+            - {variable: finding_statements, value_selector: [start, finding_statements]}
         height: 54
         id: prepare_context
         position: {x: 3982, y: 300}
@@ -947,6 +1012,26 @@ workflow:
         id: end_proposal
         position: {x: 5198, y: 200}
         positionAbsolute: {x: 5198, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: accepted
+              id: accepted
+              logical_operator: and
+              conditions:
+                - {comparison_operator: '=', id: decision-accepted-check, value: '1', varType: number, variable_selector: [validate_event, accepted]}
+          desc: Routes an accepted operator decision to the context builder. Anything else ends empty.
+          selected: false
+          title: Operator decision gate
+          type: if-else
+        height: 126
+        id: decision_gate
+        position: {x: 638, y: 700}
+        positionAbsolute: {x: 638, y: 700}
         selected: false
         sourcePosition: right
         targetPosition: left
