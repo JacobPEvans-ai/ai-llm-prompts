@@ -51,6 +51,6 @@ DSL by hand.
 
 - The iteration output key (check 6a) and the empty-list behavior (check 6b) were not confirmed from Dify source. The Python
   workflow engine is not in this repository at the checked tags. The iteration error mode, terminated, is confirmed from the
-  web editor's enum.
+  Dify 1.18.0 web enum. Re-confirm it against the deployed version at import.
 - The provider setup, workflow environment editor, event-router field mapping, publish flow, and Workflow Run API
   call were not exercised in a live Dify workspace.
