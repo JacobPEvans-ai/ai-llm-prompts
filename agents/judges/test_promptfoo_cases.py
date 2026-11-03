@@ -267,6 +267,24 @@ def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
     assert "patches" in result["reason"]
 
 
+def test_skip_key_drops_a_case_from_generation(monkeypatch):
+    real_load = cases.load_yaml
+    first_id = real_load(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")["cases"][0]["id"]
+
+    def load_with_skip(path):
+        data = real_load(path)
+        if path.parent.name == "evals" and path.name == "vikunja-triage.yaml":
+            data["cases"][0]["skip"] = "covered by the generator test"
+        return data
+
+    monkeypatch.setattr(cases, "load_yaml", load_with_skip)
+    monkeypatch.setattr(cases, "SUITES", ("vikunja-triage",))
+    generated = [test["metadata"]["case"] for test in cases.generate_tests()]
+
+    assert first_id not in generated
+    assert len(generated) == 4
+
+
 def test_open_linked_pr_case_is_scored_and_not_skipped():
     suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
 
