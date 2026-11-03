@@ -65,10 +65,10 @@ Do this before step 6, so the live checks produce traces.
    `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
    Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
 3. Save. The status on the same page must read started.
-4. Acceptance check, after the step 6a run: the Langfuse trace is named `doc-contradiction-finder`, and the
-   router log has a line for that run under the key `agent-key/doc-contradiction-finder` from
-   `agents/doc-contradiction-finder.yaml`. If the router line shows another key, stop and fix the key binding
-   before enabling the trigger.
+4. Acceptance check, after the step 6a run: a Langfuse trace named `workflow_<workflow id>` exists, where
+   `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a line for that
+   run under the key `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`. If the
+   router line shows another key, stop and fix the key binding before enabling the trigger.
 
 ## Unverified until the step 6 checks pass
 

@@ -59,10 +59,10 @@ Do this before the first published run.
    `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
    Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
 3. Save. The status on the same page must read started.
-4. Acceptance check, after one test run of the published app: the Langfuse trace is named `zammad-triage`, and
-   the router log has a line for that run under the key `openbao://agent-key/zammad-triage` from
-   `agents/zammad-triage.yaml`. If the router line shows another key, stop and fix the key binding before any
-   promotion.
+4. Acceptance check, after one test run of the published app: a Langfuse trace named `workflow_<workflow id>`
+   exists, where `<workflow id>` is this app's Dify workflow id, recorded at import time. The router log has a
+   line for that run under the key `openbao://agent-key/zammad-triage` from `agents/zammad-triage.yaml`. If the
+   router line shows another key, stop and fix the key binding before any promotion.
 
 ## Shadow trace and promotion
 
