@@ -1,11 +1,10 @@
-"""Builds the doc-contradiction finder's start inputs from pages the fetcher has read.
+"""Builds the doc-contradiction finder's start inputs from the pages the finder has read.
 
-Pure: no network and no tokens. The fetcher sub-workflow calls it in a later change. Caps are measured on the exact JSON
+Pure: no network and no tokens. The finder's build step calls it. Caps are measured on the exact JSON
 strings returned, so each value fits its start variable.
 """
 
 import json
-import posixpath
 
 CHANGED_CAP = 60000
 RELATED_CAP = 60000
@@ -32,14 +31,25 @@ def _usable(path):
     return isinstance(path, str) and path != "" and ".." not in path.split("/")
 
 
+def _dirname(path):
+    # Matches posixpath.dirname for paths with no empty segment, which the workflow guarantees. Avoids importing posixpath.
+    if "/" not in path:
+        return ""
+    return path.rsplit("/", 1)[0] or "/"
+
+
+def _index_in(directory):
+    return "index.md" if directory == "" else directory.rstrip("/") + "/index.md"
+
+
 def _nearest_index(page, pages):
     # The nearest index.md in the page's directory or an ancestor. A page that is itself an index is never its own index.
-    directory = posixpath.dirname(page)
+    directory = _dirname(page)
     while True:
-        candidate = posixpath.join(directory, "index.md")
+        candidate = _index_in(directory)
         if candidate != page and candidate in pages:
             return candidate
-        parent = posixpath.dirname(directory)
+        parent = _dirname(directory)
         if parent == directory:
             return None
         directory = parent
@@ -49,8 +59,8 @@ def related_paths(changed, pages):
     # Same-directory siblings of each changed page, plus its nearest index.md. Deduped, changed pages excluded, sorted.
     found = set()
     for page in changed:
-        directory = posixpath.dirname(page)
-        found.update(path for path in pages if path != page and posixpath.dirname(path) == directory)
+        directory = _dirname(page)
+        found.update(path for path in pages if path != page and _dirname(path) == directory)
         index = _nearest_index(page, pages)
         if index is not None:
             found.add(index)

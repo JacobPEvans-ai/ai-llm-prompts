@@ -23,6 +23,7 @@ GITHUB_TOKEN_REF_MARKER = "__DIFY_GITHUB_TOKEN_REF__"
 HELPER_MARKERS = {
     "__DIFY_HELPER_REDACT__": SOURCE_ROOT / "helpers" / "redact.py",
     "__DIFY_HELPER_JSON_FENCE__": SOURCE_ROOT / "helpers" / "json_fence.py",
+    "__DIFY_HELPER_FINDER_INPUTS__": SOURCE_ROOT / "helpers" / "finder_inputs.py",
 }
 
 sys.path.insert(0, str(AGENTS / "evals" / "promptfoo"))

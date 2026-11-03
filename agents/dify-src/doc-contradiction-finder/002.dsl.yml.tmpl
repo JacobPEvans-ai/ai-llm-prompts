@@ -150,8 +150,8 @@
                         raise ValueError("page entry is malformed")
                 return value
 
-            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str) -> dict:
-                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}"}
+            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str, build_eligible: int) -> dict:
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}", "findings_json": ""}
                 try:
                     repo_data = json.loads(repo_body)
                     pr = json.loads(pr_body)
@@ -173,10 +173,12 @@
                     or not isinstance(pr["base"]["repo"].get("full_name"), str)
                     or pr["base"]["repo"]["full_name"].lower() != repo.lower()
                     or not isinstance(files, list) or len(files) > 40
-                    or not changed
+                    or build_eligible != 1
                     or not isinstance(known, list) or len(known) > 200
                     or not all(isinstance(item, str) and item for item in known)):
                     return empty
+                if not changed:
+                    return {"eligible": 2, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}", "findings_json": json.dumps({"findings": []}, ensure_ascii=False)}
                 changed_files, total_changes = [], 0
                 for item in files:
                     if not isinstance(item, dict) or not isinstance(item.get("filename"), str):
@@ -220,5 +222,6 @@
                     "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
                     "known_fingerprints_json": json.dumps(known, ensure_ascii=False),
                     "page_texts_json": json.dumps(page_texts, ensure_ascii=False),
+                    "findings_json": "",
                 }
           code_language: python3

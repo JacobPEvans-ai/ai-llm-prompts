@@ -211,7 +211,7 @@ workflow:
         id: files-read
         source: get_pull_files
         sourceHandle: source
-        target: prepare_context
+        target: select_pages
         targetHandle: target
         type: custom
         zIndex: 0
@@ -255,9 +255,14 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
+      - {data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: iteration}, id: pages-selected, source: select_pages, sourceHandle: source, target: page_loop, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: true, iteration_id: page_loop, sourceType: http-request, targetType: code}, id: page-fetched, source: fetch_page, sourceHandle: source, target: page_text, targetHandle: target, type: custom, zIndex: 1002}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: iteration, targetType: code}, id: pages-read, source: page_loop, sourceHandle: source, target: build_inputs, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}, id: inputs-built, source: build_inputs, sourceHandle: source, target: prepare_context, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}, id: context-no-pages, source: context_gate, sourceHandle: no_pages, target: end_no_pages, targetHandle: target, type: custom, zIndex: 0}
     nodes:
       - data:
-          desc: Immutable event and mandate fields plus the changed pages, related pages, and known open fingerprints.
+          desc: Immutable event and mandate fields. Changed documentation pages are read from the pull request.
           variables:
             - {variable: event, label: event, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
             - {variable: action, label: action, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
@@ -638,8 +643,8 @@ workflow:
                         raise ValueError("page entry is malformed")
                 return value
 
-            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str) -> dict:
-                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}"}
+            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, changed_pages: str, related_pages: str, known_open_fingerprints: str, build_eligible: int) -> dict:
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}", "findings_json": ""}
                 try:
                     repo_data = json.loads(repo_body)
                     pr = json.loads(pr_body)
@@ -661,10 +666,12 @@ workflow:
                     or not isinstance(pr["base"]["repo"].get("full_name"), str)
                     or pr["base"]["repo"]["full_name"].lower() != repo.lower()
                     or not isinstance(files, list) or len(files) > 40
-                    or not changed
+                    or build_eligible != 1
                     or not isinstance(known, list) or len(known) > 200
                     or not all(isinstance(item, str) and item for item in known)):
                     return empty
+                if not changed:
+                    return {"eligible": 2, "context_json": "{}", "page_paths_json": "[]", "known_fingerprints_json": "[]", "page_texts_json": "{}", "findings_json": json.dumps({"findings": []}, ensure_ascii=False)}
                 changed_files, total_changes = [], 0
                 for item in files:
                     if not isinstance(item, dict) or not isinstance(item.get("filename"), str):
@@ -708,6 +715,7 @@ workflow:
                     "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
                     "known_fingerprints_json": json.dumps(known, ensure_ascii=False),
                     "page_texts_json": json.dumps(page_texts, ensure_ascii=False),
+                    "findings_json": "",
                 }
           code_language: python3
           desc: Checks the merged PR target, bounds its changed files, and prepares the documentation pages to compare.
@@ -717,6 +725,7 @@ workflow:
             page_paths_json: {type: string, children: null}
             known_fingerprints_json: {type: string, children: null}
             page_texts_json: {type: string, children: null}
+            findings_json: {type: string, children: null}
           selected: false
           title: Prepare contradiction context
           type: code
@@ -726,9 +735,10 @@ workflow:
             - {variable: repo_body, value_selector: [get_repo, body]}
             - {variable: pr_body, value_selector: [get_pull_request, body]}
             - {variable: files_body, value_selector: [get_pull_files, body]}
-            - {variable: changed_pages, value_selector: [start, changed_pages]}
-            - {variable: related_pages, value_selector: [start, related_pages]}
-            - {variable: known_open_fingerprints, value_selector: [start, known_open_fingerprints]}
+            - {variable: changed_pages, value_selector: [build_inputs, changed_pages]}
+            - {variable: related_pages, value_selector: [build_inputs, related_pages]}
+            - {variable: known_open_fingerprints, value_selector: [build_inputs, known_open_fingerprints]}
+            - {variable: build_eligible, value_selector: [build_inputs, eligible]}
         height: 54
         id: prepare_context
         position: {x: 3982, y: 300}
@@ -745,6 +755,11 @@ workflow:
               logical_operator: and
               conditions:
                 - {comparison_operator: '=', id: context-eligible, value: '1', varType: number, variable_selector: [prepare_context, eligible]}
+            - case_id: no_pages
+              id: no_pages
+              logical_operator: and
+              conditions:
+                - {comparison_operator: '=', id: context-no-pages, value: '2', varType: number, variable_selector: [prepare_context, eligible]}
           desc: Sends only a bounded, verified merged pull request with its documentation pages to the model.
           selected: false
           title: Safe context gate
@@ -1053,6 +1068,313 @@ workflow:
         id: end_proposal
         position: {x: 5198, y: 200}
         positionAbsolute: {x: 5198, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            import re
+            from urllib.parse import quote
+
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            MAX_PAGES = 25
+            MAX_FILES = 40
+
+            def main(repo: str, files_body: str, pr_body: str) -> dict:
+                empty = {"eligible": 0, "pages": []}
+                if not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None:
+                    return empty
+                try:
+                    files = json.loads(files_body)
+                    pr = json.loads(pr_body)
+                except (TypeError, ValueError):
+                    return empty
+                ref = pr.get("merge_commit_sha") if isinstance(pr, dict) else None
+                if not isinstance(files, list) or len(files) > MAX_FILES:
+                    return empty
+                if not isinstance(ref, str) or SHA_RE.fullmatch(ref) is None:
+                    return empty
+                paths = []
+                for item in files:
+                    if not isinstance(item, dict) or not isinstance(item.get("filename"), str):
+                        return empty
+                    if item.get("status") == "removed" or not item["filename"].endswith(".md"):
+                        continue
+                    path = item["filename"]
+                    if path.startswith("/") or not path.strip() or ".." in path.split("/") or "" in path.split("/"):
+                        return empty
+                    paths.append(path)
+                if len(paths) > MAX_PAGES:
+                    return empty
+                pages = [{"page_path": path, "api_path": quote(path, safe="/"), "ref": ref} for path in dict.fromkeys(paths)]
+                return {"eligible": 1, "pages": pages}
+          code_language: python3
+          desc: Lists the changed documentation pages of the pull request. Removed files are skipped. More than 25 pages, a path outside the repository, or a missing merge commit makes the run ineligible.
+          outputs:
+            eligible: {type: number, children: null}
+            pages: {type: 'array[object]', children: null}
+          selected: false
+          title: Select changed documentation pages
+          type: code
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: files_body, value_selector: [get_pull_files, body]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+        height: 54
+        id: select_pages
+        position: {x: 3982, y: 640}
+        positionAbsolute: {x: 3982, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Reads each changed documentation page as raw text from the merged commit with one read-only GET.
+          iterator_selector: [select_pages, pages]
+          output_selector: [page_text, page]
+          output_type: 'array[object]'
+          error_handle_mode: terminated
+          selected: false
+          startNodeType: http-request
+          start_node_id: fetch_page
+          title: Read changed documentation pages
+          type: iteration
+        height: 280
+        id: page_loop
+        position: {x: 4286, y: 640}
+        positionAbsolute: {x: 4286, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 540
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: "{{#parse_github_token.token#}}", header: Authorization}
+          body: {type: none, data: []}
+          desc: Reads one changed page as raw text. The token is the read-only installation token minted earlier.
+          headers: 'Accept: application/vnd.github.raw+json'
+          isInIteration: true
+          isIterationStart: true
+          iteration_id: page_loop
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read changed page
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/contents/{{#page_loop.item.api_path#}}?ref={{#page_loop.item.ref#}}"
+        height: 90
+        id: fetch_page
+        parentId: page_loop
+        extent: parent
+        position: {x: 60, y: 60}
+        positionAbsolute: {x: 4346, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            def main(status_code: int, body: str, item: dict) -> dict:
+                ok = 1 if status_code == 200 and isinstance(body, str) else 0
+                return {"page": {"page_path": item["page_path"], "text": body if ok else "", "ok": ok}}
+          code_language: python3
+          desc: Keeps the page text only for a 200 response. Any other response marks the page not ok.
+          isInIteration: true
+          iteration_id: page_loop
+          outputs:
+            page: {type: object, children: null}
+          selected: false
+          title: Keep changed page
+          type: code
+          variables:
+            - {variable: status_code, value_selector: [fetch_page, status_code]}
+            - {variable: body, value_selector: [fetch_page, body]}
+            - {variable: item, value_selector: [page_loop, item]}
+        height: 54
+        id: page_text
+        parentId: page_loop
+        extent: parent
+        position: {x: 360, y: 60}
+        positionAbsolute: {x: 4646, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            """Builds the doc-contradiction finder's start inputs from the pages the finder has read.
+
+            Pure: no network and no tokens. The finder's build step calls it. Caps are measured on the exact JSON
+            strings returned, so each value fits its start variable.
+            """
+
+            import json
+
+            CHANGED_CAP = 60000
+            RELATED_CAP = 60000
+            FINGERPRINT_CAP = 8000
+
+
+            def _dump(value):
+                return json.dumps(value, ensure_ascii=False)
+
+
+            def _fit(items, cap, dropped):
+                # Keep items in order while the serialized list fits. An item that does not fit is recorded and skipped.
+                kept = []
+                for item in items:
+                    candidate = kept + [item]
+                    if len(_dump(candidate)) <= cap:
+                        kept = candidate
+                    else:
+                        dropped.append(item)
+                return kept
+
+
+            def _usable(path):
+                return isinstance(path, str) and path != "" and ".." not in path.split("/")
+
+
+            def _dirname(path):
+                # Matches posixpath.dirname for paths with no empty segment, which the workflow guarantees. Avoids importing posixpath.
+                if "/" not in path:
+                    return ""
+                return path.rsplit("/", 1)[0] or "/"
+
+
+            def _index_in(directory):
+                return "index.md" if directory == "" else directory.rstrip("/") + "/index.md"
+
+
+            def _nearest_index(page, pages):
+                # The nearest index.md in the page's directory or an ancestor. A page that is itself an index is never its own index.
+                directory = _dirname(page)
+                while True:
+                    candidate = _index_in(directory)
+                    if candidate != page and candidate in pages:
+                        return candidate
+                    parent = _dirname(directory)
+                    if parent == directory:
+                        return None
+                    directory = parent
+
+
+            def related_paths(changed, pages):
+                # Same-directory siblings of each changed page, plus its nearest index.md. Deduped, changed pages excluded, sorted.
+                found = set()
+                for page in changed:
+                    directory = _dirname(page)
+                    found.update(path for path in pages if path != page and _dirname(path) == directory)
+                    index = _nearest_index(page, pages)
+                    if index is not None:
+                        found.add(index)
+                return sorted(found - set(changed))
+
+
+            def _fingerprint_list(values, dropped):
+                if not isinstance(values, list):
+                    return []
+                unique = []
+                for value in values:
+                    if isinstance(value, str) and value.strip() and value not in unique:
+                        unique.append(value)
+                return _fit(unique, FINGERPRINT_CAP, dropped)
+
+
+            def build_finder_inputs(pr_files, page_texts, fingerprints):
+                """Return the three start inputs as JSON strings, plus the paths and fingerprints dropped for size.
+
+                pr_files: file paths the PR changed.
+                page_texts: {page_path: text} for every candidate page the fetcher could read.
+                fingerprints: open fingerprint strings from the operator's store.
+                """
+                pages = {}
+                if isinstance(page_texts, dict):
+                    pages = {path: text for path, text in page_texts.items() if _usable(path) and isinstance(text, str)}
+                changed_paths = sorted({path for path in pr_files if _usable(path) and path in pages}) if isinstance(pr_files, list) else []
+
+                changed_dropped = []
+                changed = _fit([{"page_path": path, "text": pages[path]} for path in changed_paths], CHANGED_CAP, changed_dropped)
+
+                related_dropped = []
+                related_items = [{"page_path": path, "text": pages[path]} for path in related_paths(changed_paths, pages)]
+                related = _fit(related_items, RELATED_CAP, related_dropped)
+
+                fingerprint_dropped = []
+                known = _fingerprint_list(fingerprints, fingerprint_dropped)
+
+                return {
+                    "changed_pages": _dump(changed),
+                    "related_pages": _dump(related),
+                    "known_open_fingerprints": _dump(known),
+                    "dropped": {
+                        "changed_pages": [item["page_path"] for item in changed_dropped],
+                        "related_pages": [item["page_path"] for item in related_dropped],
+                        "known_open_fingerprints": fingerprint_dropped,
+                    },
+                }
+
+            def main(pages: list, selected: list, select_eligible: int) -> dict:
+                failed = {"eligible": 0, "changed_pages": "[]", "related_pages": "[]", "known_open_fingerprints": "[]", "dropped_json": "{}"}
+                if select_eligible != 1 or not isinstance(pages, list) or not isinstance(selected, list):
+                    return failed
+                if len(pages) != len(selected):
+                    return failed
+                if any(not isinstance(page, dict) or page.get("ok") != 1 for page in pages):
+                    return failed
+                texts = {page["page_path"]: page["text"] for page in pages}
+                built = build_finder_inputs([page["page_path"] for page in pages], texts, [])
+                if built["dropped"]["changed_pages"]:
+                    return failed
+                return {"eligible": 1, "changed_pages": built["changed_pages"], "related_pages": built["related_pages"], "known_open_fingerprints": built["known_open_fingerprints"], "dropped_json": json.dumps(built["dropped"], ensure_ascii=False)}
+          code_language: python3
+          desc: Builds the three finder inputs with the shared helper. The known fingerprints stay empty until the store reader is bound. A failed page read, or a changed page dropped for size, makes the run ineligible.
+          outputs:
+            eligible: {type: number, children: null}
+            changed_pages: {type: string, children: null}
+            related_pages: {type: string, children: null}
+            known_open_fingerprints: {type: string, children: null}
+            dropped_json: {type: string, children: null}
+          selected: false
+          title: Build finder inputs
+          type: code
+          variables:
+            - {variable: pages, value_selector: [page_loop, output]}
+            - {variable: selected, value_selector: [select_pages, pages]}
+            - {variable: select_eligible, value_selector: [select_pages, eligible]}
+        height: 54
+        id: build_inputs
+        position: {x: 4900, y: 640}
+        positionAbsolute: {x: 4900, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Zero findings for a verified merged pull request that changed no documentation pages.
+          outputs:
+            - {variable: findings_json, value_selector: [prepare_context, findings_json]}
+          selected: false
+          title: End with no findings
+          type: end
+        height: 90
+        id: end_no_pages
+        position: {x: 4900, y: 780}
+        positionAbsolute: {x: 4900, y: 780}
         selected: false
         sourcePosition: right
         targetPosition: left

@@ -5,6 +5,7 @@
             page_paths_json: {type: string, children: null}
             known_fingerprints_json: {type: string, children: null}
             page_texts_json: {type: string, children: null}
+            findings_json: {type: string, children: null}
           selected: false
           title: Prepare contradiction context
           type: code
@@ -14,9 +15,10 @@
             - {variable: repo_body, value_selector: [get_repo, body]}
             - {variable: pr_body, value_selector: [get_pull_request, body]}
             - {variable: files_body, value_selector: [get_pull_files, body]}
-            - {variable: changed_pages, value_selector: [start, changed_pages]}
-            - {variable: related_pages, value_selector: [start, related_pages]}
-            - {variable: known_open_fingerprints, value_selector: [start, known_open_fingerprints]}
+            - {variable: changed_pages, value_selector: [build_inputs, changed_pages]}
+            - {variable: related_pages, value_selector: [build_inputs, related_pages]}
+            - {variable: known_open_fingerprints, value_selector: [build_inputs, known_open_fingerprints]}
+            - {variable: build_eligible, value_selector: [build_inputs, eligible]}
         height: 54
         id: prepare_context
         position: {x: 3982, y: 300}
@@ -33,6 +35,11 @@
               logical_operator: and
               conditions:
                 - {comparison_operator: '=', id: context-eligible, value: '1', varType: number, variable_selector: [prepare_context, eligible]}
+            - case_id: no_pages
+              id: no_pages
+              logical_operator: and
+              conditions:
+                - {comparison_operator: '=', id: context-no-pages, value: '2', varType: number, variable_selector: [prepare_context, eligible]}
           desc: Sends only a bounded, verified merged pull request with its documentation pages to the model.
           selected: false
           title: Safe context gate
@@ -199,4 +206,3 @@
         targetPosition: left
         type: custom
         width: 244
-    viewport: {x: 0, y: 0, zoom: 0.65}
