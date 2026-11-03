@@ -31,7 +31,9 @@ share of expected keys that match, and `strict` is 1 only when every key matches
 
 Only the four `code-simplifier` behavior-rubric cases use two graders: `behavior-rubric-judge-a` reads
 `EVAL_JUDGE_A_BASE_URL` and `EVAL_JUDGE_A_MODEL`, and `behavior-rubric-judge-b` reads
-`EVAL_JUDGE_B_BASE_URL` and `EVAL_JUDGE_B_MODEL`. Both judges must be models outside the candidate set. Rubric scores
+`EVAL_JUDGE_B_BASE_URL` and `EVAL_JUDGE_B_MODEL`. A judge that needs a key sets `EVAL_JUDGE_A_API_KEY` or
+`EVAL_JUDGE_B_API_KEY`; the grader sends it as a bearer header and never puts it on a command line. Keys come from the
+runtime secret store, never from this repository. Both judges must be models outside the candidate set. Rubric scores
 count only for cases where `not-truncated` passes.
 
 ## Installation
