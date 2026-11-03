@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.56.0...v1.57.0) (2026-11-03)
+
+
+### Features
+
+* **evals:** tag promptfoo requests with fill and priority-100 metadata ([#253](https://github.com/dryvist/ai-llm-prompts/issues/253)) ([dc28631](https://github.com/dryvist/ai-llm-prompts/commit/dc28631e62e902de65c0bbbfaf80703678ec8c88))
+
 ## [1.56.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.55.0...v1.56.0) (2026-11-03)
 
 
