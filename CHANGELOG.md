@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.53.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.53.0...v1.53.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **agents:** mark a closed unmerged PR as not done in the triage guard ([#236](https://github.com/dryvist/ai-llm-prompts/issues/236)) ([834cc6c](https://github.com/dryvist/ai-llm-prompts/commit/834cc6cb0d4deb727259b1821749ff1645355f85))
+* **agents:** redact dotted addresses with leading zeros ([#239](https://github.com/dryvist/ai-llm-prompts/issues/239)) ([31eed96](https://github.com/dryvist/ai-llm-prompts/commit/31eed962c4d692bd44cb00ed340031752f48d224))
+
 ## [1.53.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.52.0...v1.53.0) (2026-11-03)
 
 
