@@ -285,7 +285,7 @@ def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
 
 
 def test_clerk_cases_that_expect_no_call_attach_the_no_writes_check():
-    # The clerk declares its write tools from the agent file, so its no-call and refusal cases must carry the check.
+    # The clerk's write tools come from the agent file, so its no-call cases get the no-writes check.
     clerk = [test for test in cases.generate_tests() if test["vars"]["suite"] == "vikunja-clerk"]
     no_call = [test for test in clerk if test["vars"]["expected"].get("expected_calls") == []]
     assert no_call, "the clerk suite should have cases that expect no call"
