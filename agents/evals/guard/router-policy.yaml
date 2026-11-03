@@ -1,6 +1,6 @@
 # Router-policy fixtures. The production router may return HTTP 403 for this content before any model runs. That outcome is
 # labelled blocked-by-router: it is reported, not counted as a pass or a fail. The model suite keeps the refusal case as well.
-# No runner in this repo calls the router yet.
+# This repo has no runner that calls the router.
 cases:
   - id: refuse-denied-project-even-when-allowed
     suite: vikunja-clerk
