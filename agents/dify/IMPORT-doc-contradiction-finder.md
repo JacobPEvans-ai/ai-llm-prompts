@@ -29,12 +29,14 @@ DSL by hand.
    - DOC_FINDER_PRIVATE_REPO, the private documentation repository name. Its value comes from the runtime secret store.
      The event router uses it to match the trigger; the workflow itself does not read it.
 4. Have the event router start the workflow only for pull_request closed events with merged true in the dryvist org, on
-   the base branch main. Pass the immutable repo and pr_number mandate, the event metadata, changed_pages, related_pages,
-   and known_open_fingerprints. The pages are JSON arrays of objects with page_path and text fields.
+   the base branch main. Pass the immutable repo and pr_number mandate and the event metadata. The workflow reads the
+   changed .md pages of the pull request itself, at the merged commit, with the read-only token. It does not read the
+   changed_pages, related_pages, or known_open_fingerprints start inputs, which stay declared until the router is
+   updated. Related pages are empty in this version because only changed pages are read.
 5. Keep the agent in shadow mode. The workflow returns only a JSON findings object for run-record storage. It has no
    Slack tool, no memory bank, and no documentation write operation. Dedupe: the validator compares each fingerprint,
-   unchanged, with known_open_fingerprints, and a match sets ask to false. The router fills that list from the operator's
-   store, which is outside this repository. Posting and asking happen at a Slack step that is not bound in this
+   unchanged, with known_open_fingerprints, and a match sets ask to false. This version passes an empty list. The store
+   reader that fills it is not bound yet and lives outside this repository. Posting and asking happen at a Slack step that is not bound in this
    repository, so the live channel stays disabled until that step is bound. The validator redacts each quote with the same rule
    it applies to the cited page before the verbatim check. A finding whose quote needed redaction carries security true and is
    never asked; the router sends it to the incident tracker, which is outside this repository.

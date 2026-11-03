@@ -210,7 +210,7 @@ workflow:
         id: files-read
         source: get_pull_files
         sourceHandle: source
-        target: prepare_context
+        target: select_pages
         targetHandle: target
         type: custom
         zIndex: 0
@@ -254,9 +254,14 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
+      - {data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: iteration}, id: pages-selected, source: select_pages, sourceHandle: source, target: page_loop, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: true, iteration_id: page_loop, sourceType: http-request, targetType: code}, id: page-fetched, source: fetch_page, sourceHandle: source, target: page_text, targetHandle: target, type: custom, zIndex: 1002}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: iteration, targetType: code}, id: pages-read, source: page_loop, sourceHandle: source, target: build_inputs, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}, id: inputs-built, source: build_inputs, sourceHandle: source, target: prepare_context, targetHandle: target, type: custom, zIndex: 0}
+      - {data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}, id: context-no-pages, source: context_gate, sourceHandle: no_pages, target: end_no_pages, targetHandle: target, type: custom, zIndex: 0}
     nodes:
       - data:
-          desc: Immutable event and mandate fields plus the changed pages, related pages, and known open fingerprints.
+          desc: Immutable event and mandate fields. Changed documentation pages are read from the pull request.
           variables:
             - {variable: event, label: event, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
             - {variable: action, label: action, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}

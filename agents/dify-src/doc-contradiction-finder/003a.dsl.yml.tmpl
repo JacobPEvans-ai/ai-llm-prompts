@@ -1,0 +1,192 @@
+      - data:
+          code: |-
+            import json
+            import re
+            from urllib.parse import quote
+
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            MAX_PAGES = 25
+            MAX_FILES = 40
+
+            def main(repo: str, files_body: str, pr_body: str) -> dict:
+                empty = {"eligible": 0, "pages": []}
+                if not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None:
+                    return empty
+                try:
+                    files = json.loads(files_body)
+                    pr = json.loads(pr_body)
+                except (TypeError, ValueError):
+                    return empty
+                ref = pr.get("merge_commit_sha") if isinstance(pr, dict) else None
+                if not isinstance(files, list) or len(files) > MAX_FILES:
+                    return empty
+                if not isinstance(ref, str) or SHA_RE.fullmatch(ref) is None:
+                    return empty
+                paths = []
+                for item in files:
+                    if not isinstance(item, dict) or not isinstance(item.get("filename"), str):
+                        return empty
+                    if item.get("status") == "removed" or not item["filename"].endswith(".md"):
+                        continue
+                    path = item["filename"]
+                    if path.startswith("/") or not path.strip() or ".." in path.split("/"):
+                        return empty
+                    paths.append(path)
+                if len(paths) > MAX_PAGES:
+                    return empty
+                pages = [{"page_path": path, "api_path": quote(path, safe="/"), "ref": ref} for path in dict.fromkeys(paths)]
+                return {"eligible": 1, "pages": pages}
+          code_language: python3
+          desc: Lists the changed documentation pages of the pull request. Removed files are skipped. More than 25 pages, a path outside the repository, or a missing merge commit makes the run ineligible.
+          outputs:
+            eligible: {type: number, children: null}
+            pages: {type: 'array[object]', children: null}
+          selected: false
+          title: Select changed documentation pages
+          type: code
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: files_body, value_selector: [get_pull_files, body]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+        height: 54
+        id: select_pages
+        position: {x: 3982, y: 640}
+        positionAbsolute: {x: 3982, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Reads each changed documentation page as raw text from the merged commit with one read-only GET.
+          iterator_selector: [select_pages, pages]
+          output_selector: [page_text, page]
+          output_type: 'array[object]'
+          selected: false
+          startNodeType: http-request
+          start_node_id: fetch_page
+          title: Read changed documentation pages
+          type: iteration
+        height: 280
+        id: page_loop
+        position: {x: 4286, y: 640}
+        positionAbsolute: {x: 4286, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 540
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: "{{#parse_github_token.token#}}", header: Authorization}
+          body: {type: none, data: []}
+          desc: Reads one changed page as raw text. The token is the read-only installation token minted earlier.
+          headers: 'Accept: application/vnd.github.raw+json'
+          isInIteration: true
+          isIterationStart: true
+          iteration_id: page_loop
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read changed page
+          type: http-request
+          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/contents/{{#page_loop.item.api_path#}}?ref={{#page_loop.item.ref#}}"
+        height: 90
+        id: fetch_page
+        parentId: page_loop
+        extent: parent
+        position: {x: 60, y: 60}
+        positionAbsolute: {x: 4346, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            def main(status_code: int, body: str, item: dict) -> dict:
+                ok = 1 if status_code == 200 and isinstance(body, str) else 0
+                return {"page": {"page_path": item["page_path"], "text": body if ok else "", "ok": ok}}
+          code_language: python3
+          desc: Keeps the page text only for a 200 response. Any other response marks the page not ok.
+          isInIteration: true
+          iteration_id: page_loop
+          outputs:
+            page: {type: object, children: null}
+          selected: false
+          title: Keep changed page
+          type: code
+          variables:
+            - {variable: status_code, value_selector: [fetch_page, status_code]}
+            - {variable: body, value_selector: [fetch_page, body]}
+            - {variable: item, value_selector: [page_loop, item]}
+        height: 54
+        id: page_text
+        parentId: page_loop
+        extent: parent
+        position: {x: 360, y: 60}
+        positionAbsolute: {x: 4646, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            __DIFY_HELPER_FINDER_INPUTS__
+
+            def main(pages: list, select_eligible: int) -> dict:
+                failed = {"eligible": 0, "changed_pages": "[]", "related_pages": "[]", "known_open_fingerprints": "[]", "dropped_json": "{}"}
+                if select_eligible != 1 or not isinstance(pages, list):
+                    return failed
+                if any(not isinstance(page, dict) or page.get("ok") != 1 for page in pages):
+                    return failed
+                texts = {page["page_path"]: page["text"] for page in pages}
+                built = build_finder_inputs([page["page_path"] for page in pages], texts, [])
+                return {"eligible": 1, "changed_pages": built["changed_pages"], "related_pages": built["related_pages"], "known_open_fingerprints": built["known_open_fingerprints"], "dropped_json": json.dumps(built["dropped"], ensure_ascii=False)}
+          code_language: python3
+          desc: Builds the three finder inputs with the shared helper. The known fingerprints stay empty until the store reader is bound. A failed page read makes the run ineligible.
+          outputs:
+            eligible: {type: number, children: null}
+            changed_pages: {type: string, children: null}
+            related_pages: {type: string, children: null}
+            known_open_fingerprints: {type: string, children: null}
+            dropped_json: {type: string, children: null}
+          selected: false
+          title: Build finder inputs
+          type: code
+          variables:
+            - {variable: pages, value_selector: [page_loop, output]}
+            - {variable: select_eligible, value_selector: [select_pages, eligible]}
+        height: 54
+        id: build_inputs
+        position: {x: 4900, y: 640}
+        positionAbsolute: {x: 4900, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Zero findings for a verified merged pull request that changed no documentation pages.
+          outputs:
+            - {variable: findings_json, value_selector: [prepare_context, findings_json]}
+          selected: false
+          title: End with no findings
+          type: end
+        height: 90
+        id: end_no_pages
+        position: {x: 4900, y: 780}
+        positionAbsolute: {x: 4900, y: 780}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport: {x: 0, y: 0, zoom: 0.65}
