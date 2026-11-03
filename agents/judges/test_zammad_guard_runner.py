@@ -85,10 +85,14 @@ def _run_fetch(case):
     return out, requests
 
 
-def _expected_requests(policy):
+def _read_groups(policy):
     if not isinstance(policy["allowed"], list):
         return []
-    read = sorted((set(policy["allowed"]) | set(policy["readonly"])) - set(policy["denied"]))
+    return sorted((set(policy["allowed"]) | set(policy["readonly"])) - set(policy["denied"]))
+
+
+def _expected_requests(policy):
+    read = _read_groups(policy)
     if not read:
         return []
     searches = [
@@ -150,6 +154,7 @@ def test_fixture_case_matches_expected_actions_writes_and_requests(raw):
 
     fetched, requests, result = _pipeline(case)
 
+    assert fetched["ok"] is bool(_read_groups(case["policy"]))
     assert requests == _expected_requests(case["policy"])
     assert result["actions"] == case["expected_actions"]
     assert result["results"] == case["expected_writes"]
@@ -231,3 +236,76 @@ def test_action_cap_drops_twenty_one_proposals_and_keeps_twenty():
     assert refused["actions"] == []
     assert len(accepted["actions"]) == 20
     assert accepted["actions"] == control["proposed"]
+
+
+def test_readonly_group_ticket_is_refused_and_the_same_ticket_is_kept_in_an_allowed_group():
+    case = _case("readonly-group-refuses-write")
+    control = copy.deepcopy(case)
+    control["policy"] = {"allowed": ["2"], "readonly": [], "denied": [], "tag_vocabulary": []}
+
+    fetched, _, refused = _pipeline(case)
+    control_fetched, _, accepted = _pipeline(control)
+
+    assert fetched["ok"] is True
+    assert refused["actions"] == []
+    assert refused["bind_calls"] == []
+    assert control_fetched["ok"] is True
+    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+
+
+def test_a_group_both_allowed_and_readonly_is_refused_by_the_readonly_rule():
+    case = _case("readonly-group-refuses-write")
+    overlap = copy.deepcopy(case)
+    overlap["policy"] = {"allowed": ["2"], "readonly": ["2"], "denied": [], "tag_vocabulary": []}
+
+    fetched, _, refused = _pipeline(overlap)
+
+    assert fetched["ok"] is True
+    assert refused["actions"] == []
+    assert refused["bind_calls"] == []
+
+
+def test_ticket_from_a_denied_group_is_dropped_by_the_fetch_and_kept_in_an_allowed_group():
+    case = _case("denied-group-ticket-dropped")
+    control = copy.deepcopy(case)
+    control["search_result_tickets"][0]["group_id"] = "1"
+
+    fetched, _, refused = _pipeline(case)
+    control_fetched, _, accepted = _pipeline(control)
+
+    assert fetched["ok"] is True
+    assert json.loads(fetched["refs"]) == []
+    assert refused["actions"] == []
+    assert refused["bind_calls"] == []
+    assert control_fetched["ok"] is True
+    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+
+
+def test_ticket_from_an_unscoped_group_is_dropped_by_the_fetch_and_kept_in_an_allowed_group():
+    case = _case("unscoped-group-ticket-dropped")
+    control = copy.deepcopy(case)
+    control["search_result_tickets"][0]["group_id"] = "1"
+
+    fetched, _, refused = _pipeline(case)
+    control_fetched, _, accepted = _pipeline(control)
+
+    assert fetched["ok"] is True
+    assert json.loads(fetched["refs"]) == []
+    assert refused["actions"] == []
+    assert refused["bind_calls"] == []
+    assert control_fetched["ok"] is True
+    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+
+
+def test_injected_ticket_title_does_not_block_a_valid_proposal():
+    case = _case("prompt-injection-in-title")
+    assert case["proposed"] == []
+    control = copy.deepcopy(case)
+    control["proposed"] = [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
+
+    fetched, _, refused = _pipeline(case)
+    _, _, accepted = _pipeline(control)
+
+    assert fetched["ok"] is True
+    assert refused["actions"] == []
+    assert accepted["actions"] == [{"ticket_index": 0, "kind": "rank", "priority": "high"}]
