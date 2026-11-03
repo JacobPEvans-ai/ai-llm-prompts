@@ -19,6 +19,9 @@ MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
 
 
 def _is_address(candidate):
+    if IPV4_RE.fullmatch(candidate):
+        # ipaddress rejects leading zeros, so read each octet as decimal first.
+        candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
     try:
         ipaddress.ip_address(candidate)
         return True
