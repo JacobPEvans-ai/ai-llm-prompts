@@ -19,6 +19,9 @@ providers:
         priority: 100
         chat_template_kwargs:
           enable_thinking: false
+        # LiteLLM copies metadata.tags into the spend log request_tags column, marking medium-batch fill traffic.
+        metadata:
+          tags: [fill, priority-100]
   - id: exec:../../../scripts/promptfoo/luna.sh
     label: luna
   - id: exec:../../../scripts/promptfoo/go-kimi.sh
