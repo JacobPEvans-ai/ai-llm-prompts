@@ -7,7 +7,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk")
+SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk", "vikunja-triage", "zammad-triage")
 OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {

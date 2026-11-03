@@ -21,8 +21,15 @@ def test_generated_cases_have_assertions_and_static_prefixes():
     counts = {name: sum(test["vars"]["suite"] == name for test in tests) for name in names}
     assertions_file = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
 
-    assert counts == {"ci-fixer": 19, "code-simplifier": 9, "vikunja-clerk": 20, "vikunja-clerk-parse": 20}
-    assert len(tests) == 68
+    assert counts == {
+        "ci-fixer": 19,
+        "code-simplifier": 9,
+        "vikunja-clerk": 20,
+        "vikunja-clerk-parse": 20,
+        "vikunja-triage": 5,
+        "zammad-triage": 4,
+    }
+    assert len(tests) == 77
     assert all(test["assert"] for test in tests)
     assert all(any(assertion.get("metric") == "not-truncated" for assertion in test["assert"]) for test in tests)
     assert assertions_file.is_file()
@@ -189,7 +196,13 @@ def test_scoring_mode_comes_from_the_suite():
     modes = {test["vars"]["suite"]: test["vars"]["expected"].get("expected_output_scoring")
              for test in cases.generate_tests() if "expected" in test["vars"] and "expected_output" in test["vars"]["expected"]}
 
-    assert modes == {"ci-fixer": "field-credit", "code-simplifier": "field-credit", "vikunja-clerk": "strict"}
+    assert modes == {
+        "ci-fixer": "field-credit",
+        "code-simplifier": "field-credit",
+        "vikunja-clerk": "strict",
+        "vikunja-triage": "field-credit",
+        "zammad-triage": "field-credit",
+    }
 
 
 def test_expected_output_contains_list_is_any_of():
