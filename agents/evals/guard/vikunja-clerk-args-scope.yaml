@@ -102,8 +102,8 @@ cases:
       - tool: vikunja_tasks
         operation: create
         args: {projectId: project-allowed, title: Update the onboarding guide}
-  # Node 1 cannot read the task's current project, so it fetches the task. The move refusal is in the Update project guard fixtures.
-  - id: refuse-cross-project-move
+  # Node 1 cannot read the task's current project, so it fetches the task. The move refusal is tested by the Update project guard runner.
+  - id: update-named-other-project-fetches-task
     intent: {route: vikunja, operation: update, project_named: true, title: Update the onboarding guide, category: null}
     mandates: {project_id: project-other-allowed, task_id: task-example-a}
     context: {allowed_projects: [project-allowed, project-other-allowed]}
