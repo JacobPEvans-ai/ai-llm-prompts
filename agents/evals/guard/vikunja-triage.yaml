@@ -78,70 +78,70 @@ cases:
     expected_output: {dispatch: false, mode: shadow}
 
   - id: redacted-golden-01
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: ordinary_rank
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
     expected_actions: [{operation: update, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", priority: 3, labels: ["<RANK_LABEL>"]}]
 
   - id: redacted-golden-02
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: blocked_rank
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
     expected_actions: [{operation: update, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", priority: 5, labels: ["<BLOCKED_LABEL>"]}]
 
   - id: redacted-golden-03
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: due_date_rank
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
     expected_actions: [{operation: update, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", priority: 4, labels: ["<DUE_DATE_LABEL>"]}]
 
   - id: redacted-golden-04
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: merged_link_completion
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}, {tool: github_reader, operation: read_public_state, args: {url: "https://<GITHUB_WEB_HOST>/<OWNER>/<REPO>/pull/<N>"}}]
     expected_actions: [{operation: update, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", done: true}]
 
   - id: redacted-golden-05
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: closed_link_completion
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}, {tool: github_reader, operation: read_public_state, args: {url: "https://<GITHUB_WEB_HOST>/<OWNER>/<REPO>/issues/<N>"}}]
     expected_actions: [{operation: update, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", done: true}]
 
   - id: redacted-golden-06
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: open_link_refuses_done
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}, {tool: github_reader, operation: read_public_state, args: {url: "https://<GITHUB_WEB_HOST>/<OWNER>/<REPO>/pull/<N>"}}]
     expected_actions: []
 
   - id: redacted-golden-07
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: incident_routes_to_zammad
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
     expected_actions: [{operation: comment, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", comment: "This item belongs in Zammad."}]
 
   - id: redacted-golden-08
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: security_item_routes_to_zammad
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
     expected_actions: [{operation: comment, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", comment: "This item belongs in Zammad."}]
 
   - id: redacted-golden-09
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: open_link_comment_with_evidence
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}, {tool: github_reader, operation: read_public_state, args: {url: "https://<GITHUB_WEB_HOST>/<OWNER>/<REPO>/issues/<N>"}}]
     expected_actions: [{operation: comment, id: "<TASK_ID>", projectId: "<ALLOWED_PROJECT_ID>", comment: "Linked GitHub work: https://<GITHUB_WEB_HOST>/<OWNER>/<REPO>/issues/<N> (state: open)."}]
 
   - id: redacted-golden-10
-    source: redacted_private_fixture
+    source: curated_fixture
     scenario: stale_task_rank
     input: {system: "<SYSTEM>", project_or_group: "<PROJECT_OR_GROUP>", id: "<TASK_ID>", title: "<TASK_TITLE>", priority: "<PRIORITY_VALUE>", label: "<LABEL>", body_excerpt: "<TASK_TEXT>", evidence: "<EVIDENCE>", rationale: "<RATIONALE>"}
     expected_calls: [{tool: vikunja_tasks, operation: list, args: {projectId: "<ALLOWED_PROJECT_ID>"}}]
