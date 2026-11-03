@@ -88,9 +88,25 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
-        id: event-ignored
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: event-not-eligible
         source: event_gate
+        sourceHandle: 'false'
+        target: decision_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: decision-accepted
+        source: decision_gate
+        sourceHandle: accepted
+        target: prepare_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: decision-rejected
+        source: decision_gate
         sourceHandle: 'false'
         target: end_empty
         targetHandle: target
@@ -252,5 +268,5 @@ workflow:
       - data:
           desc: Immutable event and mandate fields plus the available private documentation page context.
           variables:
-            - {variable: event, label: event, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: action, label: action, type: text-input, required: true, max_length: 64, options: [], default: '', hint: '', placeholder: ''}
+            - {variable: event, label: event, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
+            - {variable: action, label: action, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}

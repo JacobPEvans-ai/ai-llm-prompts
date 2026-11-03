@@ -13,6 +13,9 @@
             - {variable: pr_body, value_selector: [get_pull_request, body]}
             - {variable: files_body, value_selector: [get_pull_files, body]}
             - {variable: docs_context, value_selector: [start, private_documentation_context]}
+            - {variable: decision, value_selector: [validate_event, decision]}
+            - {variable: finding_ref, value_selector: [validate_event, finding_ref]}
+            - {variable: finding_statements, value_selector: [start, finding_statements]}
         height: 54
         id: prepare_context
         position: {x: 3982, y: 300}
@@ -178,6 +181,26 @@
         id: end_proposal
         position: {x: 5198, y: 200}
         positionAbsolute: {x: 5198, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: accepted
+              id: accepted
+              logical_operator: and
+              conditions:
+                - {comparison_operator: '=', id: decision-accepted-check, value: '1', varType: number, variable_selector: [validate_event, accepted]}
+          desc: Routes an accepted operator decision to the context builder. Anything else ends empty.
+          selected: false
+          title: Operator decision gate
+          type: if-else
+        height: 126
+        id: decision_gate
+        position: {x: 638, y: 700}
+        positionAbsolute: {x: 638, y: 700}
         selected: false
         sourcePosition: right
         targetPosition: left

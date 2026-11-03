@@ -136,8 +136,53 @@
 
             SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
             REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            FINDING_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+            DECISIONS = ("A", "B", "neither")
 
-            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, docs_context: str) -> dict:
+            def decision_context(repo, decision, finding_ref, statements_json, docs_context):
+                empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]"}
+                try:
+                    pages = json.loads(docs_context) if isinstance(docs_context, str) and docs_context.strip() else []
+                    statements = json.loads(statements_json) if isinstance(statements_json, str) and statements_json.strip() else []
+                except (TypeError, ValueError):
+                    return empty
+                if (not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None
+                    or decision not in DECISIONS
+                    or not isinstance(finding_ref, str) or FINDING_RE.fullmatch(finding_ref) is None
+                    or not isinstance(pages, list) or not pages or len(pages) > 25
+                    or not isinstance(statements, list) or len(statements) != 2):
+                    return empty
+                page_paths = []
+                for page in pages:
+                    if (not isinstance(page, dict) or not isinstance(page.get("page_path"), str)
+                        or not page["page_path"] or not isinstance(page.get("text"), str)):
+                        return empty
+                    page_paths.append(page["page_path"])
+                safe_statements = []
+                for statement in statements:
+                    if (not isinstance(statement, dict) or set(statement) != {"page_path", "line", "quote"}
+                        or statement["page_path"] not in page_paths
+                        or not isinstance(statement["line"], int) or isinstance(statement["line"], bool) or statement["line"] < 1
+                        or not isinstance(statement["quote"], str) or not statement["quote"].strip() or len(statement["quote"]) > 300
+                        or SECRET_RE.search(statement["quote"])):
+                        return empty
+                    safe_statements.append({"page_path": statement["page_path"], "line": statement["line"], "quote": statement["quote"]})
+                context = {
+                    "repository": repo,
+                    "operator_decision": decision,
+                    "finding_ref": finding_ref,
+                    "finding_statements": safe_statements,
+                    "private_documentation_context": pages,
+                }
+                return {
+                    "eligible": 1,
+                    "context_json": json.dumps(context, ensure_ascii=False),
+                    "page_paths_json": json.dumps(page_paths, ensure_ascii=False),
+                }
+
+            def main(repo: str, pr_number: int, repo_body: str, pr_body: str, files_body: str, docs_context: str, decision: str, finding_ref: str, finding_statements: str) -> dict:
+                if isinstance(decision, str) and decision:
+                    return decision_context(repo, decision, finding_ref, finding_statements, docs_context)
                 empty = {"eligible": 0, "context_json": "{}", "page_paths_json": "[]"}
                 try:
                     repo_data = json.loads(repo_body)
