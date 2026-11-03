@@ -1441,9 +1441,21 @@ workflow:
             LOG_REDACTION_AVAILABLE = False
             DENIED_PARTS = {".github", "vendor", "generated", "node_modules"}
 
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
+                # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
+                # fence is returned unchanged.
+                value = str(text)
+                stripped = value.strip(" \t\r\n")
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip(" \t\r\n")
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip(" \t\r\n")
+                    return body
+                return value
             def main(model_text: str, files_body: str, enable_push: str, eligible: int, repo: str, pr_number: int, ref: str, head_sha: str, mode: str, actor: str, event: str, strength: str, current_pr_body: str, rules_body: str) -> dict:
                 try:
-                    result, files = json.loads(model_text), json.loads(files_body)
+                    result, files = json.loads(strip_json_fence(model_text)), json.loads(files_body)
                     pr, rules = json.loads(current_pr_body), json.loads(rules_body)
                     if not isinstance(rules, list):
                         rules = rules.get("rules", []) if isinstance(rules, dict) else None

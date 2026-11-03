@@ -200,10 +200,11 @@
 
             SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
 
+            __DIFY_HELPER_JSON_FENCE__
             def main(model_text: str, changed_files_json: str, repo: str, pr_number: int, ref: str, head_sha: str, actor: str, event: str, strength: str, mode: str) -> dict:
                 generic = "No concrete behavior-preserving simplification was established."
                 try:
-                    result = json.loads(model_text)
+                    result = json.loads(strip_json_fence(model_text))
                     changed = {item["path"]: set(item["lines"]) for item in json.loads(changed_files_json)}
                 except (TypeError, ValueError, KeyError):
                     result, changed = {}, {}

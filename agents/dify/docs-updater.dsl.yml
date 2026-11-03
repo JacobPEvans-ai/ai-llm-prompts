@@ -832,11 +832,23 @@ workflow:
                         return True
                 return False
 
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
+                # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
+                # fence is returned unchanged.
+                value = str(text)
+                stripped = value.strip(" \t\r\n")
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip(" \t\r\n")
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip(" \t\r\n")
+                    return body
+                return value
             def main(model_text: str, page_paths_json: str) -> dict:
                 if not isinstance(model_text, str) or not model_text.strip():
                     return {"proposal_json": ""}
                 try:
-                    result = json.loads(model_text)
+                    result = json.loads(strip_json_fence(model_text))
                     page_paths = set(json.loads(page_paths_json))
                 except (TypeError, ValueError):
                     return {"proposal_json": ""}

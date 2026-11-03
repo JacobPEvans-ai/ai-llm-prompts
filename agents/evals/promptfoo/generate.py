@@ -153,7 +153,7 @@ def parse_test(name, case, system):
             "expected": {"expected_parse": case["expected_parse"]},
         },
         "assert": [
-            {"type": "is-json", "metric": "json-valid"},
+            {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},
             {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
             {"type": "javascript", "value": f"{ASSERTION_FILE}expectedFieldsMatch", "metric": "expected-fields-match"},
             {"type": "python", "value": PARSE_SCHEMA_ASSERTION, "metric": "parse-json-schema-valid"},
@@ -179,7 +179,7 @@ def generate_tests():
                 key: value for key, value in case.items() if key != "id" and not key.startswith("expected_")
             })
             assertions = [
-                {"type": "is-json", "metric": "json-valid"},
+                {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},
                 {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
             ]
             variables = {

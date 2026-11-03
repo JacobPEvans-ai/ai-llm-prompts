@@ -152,10 +152,22 @@ workflow:
                 if k=='tag': return 'POST','/api/v1/tags/add',{'object':'Ticket','o_id':int(i),'item':a['tag']}
                 body='Triage (automated): proposed priority '+a['priority']+'; reason '+a['reason']+'.'
                 return 'POST','/api/v1/ticket_articles',{'ticket_id':int(i),'type':'note','internal':True,'content_type':'text/plain','body':body}
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
+                # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
+                # fence is returned unchanged.
+                value = str(text)
+                stripped = value.strip(" \t\r\n")
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip(" \t\r\n")
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip(" \t\r\n")
+                    return body
+                return value
             def main(text,refs,pol,ok,mode,base,addr,role,secret,path):
                 mode='live' if LIVE and mode=='live' else 'shadow'; empty={'actions':'[]','results':'[]','mode':mode}
                 try:
-                    p=json.loads(pol); by={r[I]:r for r in json.loads(refs)}; obj=json.loads(text)
+                    p=json.loads(pol); by={r[I]:r for r in json.loads(refs)}; obj=json.loads(strip_json_fence(text))
                     if not ok or not p.get('ok') or not isinstance(obj,dict) or set(obj)!={'actions'} or not isinstance(obj['actions'],list) or len(obj['actions'])>20: return empty
                     for a in obj['actions']:
                         if not isinstance(a,dict) or a.get(K) not in SH or set(a)!=SH[a[K]] or type(a[I]) is not int or a[I] not in by: return empty

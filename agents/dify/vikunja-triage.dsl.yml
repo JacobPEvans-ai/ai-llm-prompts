@@ -310,6 +310,18 @@ workflow:
                     cache[url]=value if value in ('merged','closed','open') else None
                     return cache[url]
                 except Exception: return None
+            def strip_json_fence(text):
+                # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
+                # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
+                # fence is returned unchanged.
+                value = str(text)
+                stripped = value.strip(" \t\r\n")
+                if len(stripped) >= 6 and stripped.startswith("```") and stripped.endswith("```"):
+                    body = stripped[3:-3].strip(" \t\r\n")
+                    if body[:4].lower() == "json":
+                        body = body[4:].strip(" \t\r\n")
+                    return body
+                return value
             def main(model_text:str,refs_text:str,allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str,web_host:str,api_base:str,bao_addr:str,role_id:str,secret_id:str,token_path:str)->dict:
                 actions=[]; seen=set(); mode=str(mode_raw or '').strip().lower()
                 try:
@@ -318,7 +330,7 @@ workflow:
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
                 except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid'}
                 try:
-                    intent=json.loads(model_text); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
+                    intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
                 except Exception: proposed=[]
                 cache={}
                 allowed_operations={'comment', 'list', 'update'}

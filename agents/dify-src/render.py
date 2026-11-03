@@ -19,6 +19,8 @@ MCP_SERVER_MARKER = "__DIFY_MCP_SERVER__"
 TOOL_NAME_MARKER = "__DIFY_TOOL_NAME__"
 TOOL_OPERATIONS_MARKER = "__DIFY_TOOL_OPERATIONS__"
 GITHUB_TOKEN_REF_MARKER = "__DIFY_GITHUB_TOKEN_REF__"
+# Shared code-node helpers: each marker line is replaced by the helper source at the marker's indent.
+HELPER_MARKERS = {"__DIFY_HELPER_JSON_FENCE__": SOURCE_ROOT / "helpers" / "json_fence.py"}
 
 sys.path.insert(0, str(AGENTS / "evals" / "promptfoo"))
 sys.dont_write_bytecode = True
@@ -80,13 +82,25 @@ def _tool_contract(agent):
     return replacements
 
 
+def _expand_helpers(template):
+    """Replace each helper marker line with the helper source, indented to the marker's indent."""
+    for marker, source in HELPER_MARKERS.items():
+        body = source.read_text().rstrip("\n").splitlines()
+        pattern = re.compile(r"(?m)^([ \t]*)" + re.escape(marker) + r"$")
+        template = pattern.sub(
+            lambda match: "\n".join(f"{match.group(1)}{line}" if line else "" for line in body),
+            template,
+        )
+    return template
+
+
 def render_agent(definition_path):
     name = definition_path.stem
     agent = load_yaml(definition_path)
     if not isinstance(agent, dict) or agent.get("name") != name:
         raise ValueError(f"{definition_path.relative_to(ROOT)} must define name: {name}")
 
-    template = _template(name)
+    template = _expand_helpers(_template(name))
     prompt, prompt_sources = _system_prompt(agent)
 
     replacements = {
