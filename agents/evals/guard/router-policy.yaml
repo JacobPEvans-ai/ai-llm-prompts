@@ -1,5 +1,5 @@
 # Router-policy fixtures. The model suites cannot score these cases: the router refuses the content with HTTP 403
-# before any model output exists. The expected outcome is that refusal, asserted by agents/judges/test_guard_fixtures.py.
+# before any model output exists. The file records the expected refusal status only; no runner in this repo sends the case to a router.
 cases:
   - id: refuse-denied-project-even-when-allowed
     suite: vikunja-clerk

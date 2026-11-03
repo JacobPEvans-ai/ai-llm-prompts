@@ -15,7 +15,7 @@ def test_every_guard_fixture_file_parses_and_has_cases():
         assert isinstance(data, dict) and data.get("cases"), f"{path.name} has no cases"
 
 
-def test_router_policy_refusal_is_asserted_as_a_guard_fixture():
+def test_router_policy_refusal_status_is_recorded():
     data = yaml.safe_load((_EVALS / "guard" / "router-policy.yaml").read_text())
     matches = [case for case in data["cases"] if case["id"] == _ROUTER_CASE]
     assert len(matches) == 1
