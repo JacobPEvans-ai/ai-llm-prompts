@@ -1479,7 +1479,7 @@ workflow:
                     reason = "required mandate fields are missing"
                 elif REPO_RE.fullmatch(repo) is None:
                     reason = "repository owner must be dryvist and repository name must be valid"
-                elif REF_RE.fullmatch(ref) is None or ".." in ref or "@{" in ref:
+                elif REF_RE.fullmatch(ref) is None or ".." in ref or "@{" in ref or ref.startswith("refs/"):
                     reason = "mandated ref is invalid"
                 elif SHA_RE.fullmatch(head_sha) is None:
                     reason = "mandated head_sha is invalid"

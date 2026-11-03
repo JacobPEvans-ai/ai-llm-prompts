@@ -230,14 +230,15 @@ def test_validate_review_reads_a_fenced_reply():
          _refused("repository owner must be dryvist and repository name must be valid")),
         ({"ref": "feature branch"}, _refused("mandated ref is invalid")),
         ({"ref": "feature/../x"}, _refused("mandated ref is invalid")),
+        ({"ref": "refs/heads/feature/simplify"}, _refused("mandated ref is invalid")),
         ({"head_sha": "XYZ"}, _refused("mandated head_sha is invalid")),
         ({"mode": "preview"}, _refused("mode must be shadow or live")),
         ({"pr_number": 0}, _refused("pr_number must be a positive integer")),
         ({"pr_number": True}, _refused("pr_number must be a positive integer")),
         ({"event": "check_run"}, _refused("event must be pull_request")),
     ],
-    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "bad sha", "mode mismatch",
-         "bad pr number", "bool pr number", "check_run event"],
+    ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "refs prefix", "bad sha",
+         "mode mismatch", "bad pr number", "bool pr number", "check_run event"],
 )
 def test_validate_mandate(kwargs, expected):
     assert _mandate(**kwargs) == expected
