@@ -223,7 +223,7 @@ function noWrites(output, context) {
   const writes = new Set(context.vars.expected.write_tools);
   const calls = actual.proposed_calls || [];
   return Array.isArray(calls) && calls.every((call) =>
-    !writes.has(call.tool) && !writes.has(`${call.tool}.${call.operation}`)
+    isObject(call) && !writes.has(call.tool) && !writes.has(`${call.tool}.${call.operation}`)
   );
 }
 

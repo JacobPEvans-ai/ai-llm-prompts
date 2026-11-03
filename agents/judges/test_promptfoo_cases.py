@@ -364,6 +364,11 @@ def test_forbidden_keys_find_a_key_nested_in_a_proposed_call():
     assert result["pass"] is False and result["reason"] == "Forbidden keys present: project_id"
 
 
+def test_no_writes_scores_a_null_call_as_a_failure():
+    # A null entry must score as a failure, not throw and abort the run.
+    assert _run_js("noWrites", {"proposed_calls": [None]}, {"write_tools": ["vikunja_tasks"]}) is False
+
+
 def test_no_test_var_is_a_list():
     # promptfoo expands an array-valued var into one test per element.
     for test in cases.generate_tests():
