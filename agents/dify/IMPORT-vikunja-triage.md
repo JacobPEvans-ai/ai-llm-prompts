@@ -64,8 +64,8 @@ Do this before the first published run.
 4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
    blocking response of that run's Workflow Run API call, documented at
    <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist.
-   The router log has a line for that run, and its key is the one recorded at import for this app (the workspace
-   key, or the agent key if a per-agent node is used). If the key differs, stop before any promotion.
+   The router log line for this run's request shows the key alias that request used. Take the alias from that line.
+   If the alias is not the one this app uses, stop before any promotion.
 
 ## Shadow trace and promotion
 

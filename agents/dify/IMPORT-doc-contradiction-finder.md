@@ -49,10 +49,8 @@ DSL by hand.
 
 ## Provider credential scope
 
-1. The agent's router key is `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`. Dify
-   sets model-provider credentials per workspace, so this app uses the workspace key from step 1 unless you add a
-   per-agent workspace or an HTTP-request node that calls the router with that key. Record the key this app uses at
-   import time.
+1. The agent's router key is `agent-key/doc-contradiction-finder` from `agents/doc-contradiction-finder.yaml`.
+   Dify sets model-provider credentials per workspace. This app uses the workspace key from step 1 unless the per-agent design question changes it.
 
 ## Enable Langfuse tracing
 
@@ -68,9 +66,9 @@ Do this before step 6, so the live checks produce traces.
 3. Save. The status on the same page must read started.
 4. Acceptance check, after the step 6a run: take the top-level `workflow_run_id` from the blocking response of that
    run's Workflow Run API call, documented at <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A
-   Langfuse trace with that id must exist. The router log has a line for that run, and its key is the one recorded
-   at import for this app (the workspace key, or the agent key if a per-agent node is used). If the key differs,
-   stop before enabling the trigger.
+   Langfuse trace with that id must exist.
+   The router log line for this run's request shows the key alias that request used. Take the alias from that line.
+   If the alias is not the one this app uses, stop before enabling the trigger.
 
 ## Unverified until the step 6 checks pass
 

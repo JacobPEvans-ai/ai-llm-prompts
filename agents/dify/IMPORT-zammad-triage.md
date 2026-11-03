@@ -21,9 +21,8 @@ prompt by hand.
 1. Configure the OpenAI-compatible provider and the `litellm_role` declared in `agents/zammad-triage.yaml` (`medium`).
    Its router key must be scoped to local-only models; cloud fallback is forbidden.
 2. Import [zammad-triage.dsl.yml](./zammad-triage.dsl.yml) as a **Workflow** app, not a Chatflow. The agent's router
-   key is `openbao://agent-key/zammad-triage` from `agents/zammad-triage.yaml`. Dify sets model-provider credentials
-   per workspace, so this app uses the workspace key from step 1 unless you add a per-agent workspace or an
-   HTTP-request node that calls the router with that key. Record the key this app uses at import time.
+   key is `openbao://agent-key/zammad-triage` from `agents/zammad-triage.yaml`.
+   Dify sets model-provider credentials per workspace. This app uses the workspace key from step 1 unless the per-agent design question changes it.
 3. Set the native Schedule Trigger from `trigger.cron` in `agents/zammad-triage.yaml` (`*/10 * * * *`, ten minutes,
    minute resolution). Scheduled inputs are {}; the workflow uses sys.timestamp. Publish with ZAMMAD_TRIAGE_MODE=shadow.
 
@@ -64,8 +63,8 @@ Do this before the first published run.
 4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
    blocking response of that run's Workflow Run API call, documented at
    <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist.
-   The router log has a line for that run, and its key is the one recorded at import for this app (the workspace
-   key, or the agent key if a per-agent node is used). If the key differs, stop before any promotion.
+   The router log line for this run's request shows the key alias that request used. Take the alias from that line.
+   If the alias is not the one this app uses, stop before any promotion.
 
 ## Shadow trace and promotion
 
