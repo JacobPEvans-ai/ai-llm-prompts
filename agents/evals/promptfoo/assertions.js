@@ -200,7 +200,7 @@ function expectedCalls(output, context) {
 function forbiddenKeys(output, context) {
   const actual = parseOutput(output);
   if (!isObject(actual)) return { pass: false, score: 0, reason: "Output is not one JSON object." };
-  const present = (context.vars.expected.forbidden_keys || []).filter((key) => key in actual);
+  const present = (context.vars.expected.forbidden_keys || []).filter((key) => Object.prototype.hasOwnProperty.call(actual, key));
   return present.length
     ? { pass: false, score: 0, reason: `Forbidden keys present: ${present.join(", ")}` }
     : { pass: true, score: 1, reason: "No forbidden keys." };
