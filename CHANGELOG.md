@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.55.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.54.0...v1.55.0) (2026-11-03)
+
+
+### Features
+
+* **agents:** read changed doc pages inside the doc finder ([#244](https://github.com/dryvist/ai-llm-prompts/issues/244)) ([1d2388a](https://github.com/dryvist/ai-llm-prompts/commit/1d2388aace1c670f1a83e12162148848eba1ad19))
+
 ## [1.54.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.53.1...v1.54.0) (2026-11-03)
 
 
