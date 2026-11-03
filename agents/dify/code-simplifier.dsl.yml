@@ -1483,6 +1483,8 @@ workflow:
                     reason = "mandated ref is invalid"
                 elif SHA_RE.fullmatch(head_sha) is None:
                     reason = "mandated head_sha is invalid"
+                elif event != "pull_request":
+                    reason = "event must be pull_request"
                 elif mode not in {"shadow", "live"}:
                     reason = "mode must be shadow or live"
                 elif not isinstance(pr_number, int) or isinstance(pr_number, bool) or pr_number <= 0:

@@ -72,8 +72,9 @@ def _review(model_text, changed=_CHANGED, mode="shadow"):
                                     "pull_request", "explicit", mode)
 
 
-def _mandate(repo=_REPO, ref=_REF, head_sha=_SHA, actor="ci-bot", mode="shadow", pr_number=_PR_NUMBER):
-    return _main("validate_mandate")(repo, ref, head_sha, actor, "pull_request", "explicit", mode, pr_number)
+def _mandate(repo=_REPO, ref=_REF, head_sha=_SHA, actor="ci-bot", mode="shadow", pr_number=_PR_NUMBER,
+             event="pull_request"):
+    return _main("validate_mandate")(repo, ref, head_sha, actor, event, "explicit", mode, pr_number)
 
 
 def _token(repo=_REPO, mode="shadow", read_set="contents-read", write_set="contents-write"):
@@ -218,7 +219,7 @@ def test_validate_review_reads_a_fenced_reply():
     assert len(json.loads(out["request_json"])["comments"]) == 1
 
 
-# validate_mandate: the mandate fields and their formats. It has no event check.
+# validate_mandate: the mandate fields and their formats. Only the pull_request event is accepted.
 
 @pytest.mark.parametrize(
     "kwargs, expected",
@@ -233,9 +234,10 @@ def test_validate_review_reads_a_fenced_reply():
         ({"mode": "preview"}, _refused("mode must be shadow or live")),
         ({"pr_number": 0}, _refused("pr_number must be a positive integer")),
         ({"pr_number": True}, _refused("pr_number must be a positive integer")),
+        ({"event": "check_run"}, _refused("event must be pull_request")),
     ],
     ids=["success", "missing field", "error owner", "bad ref", "ref with dot-dot", "bad sha", "mode mismatch",
-         "bad pr number", "bool pr number"],
+         "bad pr number", "bool pr number", "check_run event"],
 )
 def test_validate_mandate(kwargs, expected):
     assert _mandate(**kwargs) == expected
