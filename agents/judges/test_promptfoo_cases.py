@@ -26,7 +26,7 @@ def test_generated_cases_have_assertions_and_static_prefixes():
         "code-simplifier": 9,
         "vikunja-clerk": 20,
         "vikunja-clerk-parse": 19,
-        "vikunja-triage": 4,
+        "vikunja-triage": 5,
         "zammad-triage": 4,
     }
     assert len(tests) == 75
@@ -267,15 +267,13 @@ def test_expected_output_patch_check_fails_when_applied_patch_leaves_bug():
     assert "patches" in result["reason"]
 
 
-def test_skipped_case_stays_in_its_suite_and_is_not_generated():
+def test_open_linked_pr_case_is_scored_and_not_skipped():
     suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
-    skipped = [case for case in suite["cases"] if case.get("skip")]
 
-    assert [case["id"] for case in skipped] == ["open-linked-pr-is-not-done"]
-    assert skipped[0]["skip"].strip()
-    assert all(
-        test["metadata"]["case"] != "open-linked-pr-is-not-done" for test in cases.generate_tests()
-    )
+    assert not [case["id"] for case in suite["cases"] if case.get("skip")]
+    generated = [test for test in cases.generate_tests() if test["metadata"]["case"] == "open-linked-pr-is-not-done"]
+    assert len(generated) == 1
+    assert generated[0]["vars"]["expected"]["expected_output"] == {"actions": []}
 
 
 def test_triage_suites_with_no_write_tools_attach_no_check():
