@@ -23,6 +23,9 @@ esac
 # The bearer header lives in a private temp file, so the key never appears in a process argument list.
 auth_header=$(mktemp)
 trap 'rm -f "$auth_header"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 if [ -n "$key" ]; then
   printf 'Authorization: Bearer %s\n' "$key" > "$auth_header"
 fi
