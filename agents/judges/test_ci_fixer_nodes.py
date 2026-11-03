@@ -1,8 +1,9 @@
 """Runs the Code nodes of the ci-fixer workflow against fixtures.
 
 Each node runs from its copy in agents/dify/ci-fixer.dsl.yml. Refused cases must return the node's refusal.
-The workflow is fail-closed: log redaction is unavailable, so live writes stay refused, and no case may return
-a write-ready result in live mode. The two token parse nodes are covered by test_token_nodes.py.
+The workflow is fail-closed: log redaction is unavailable, so live ref updates and pushes stay refused. The write
+guards allow a matching live target, and their tests check that case. The two token parse nodes are covered by
+test_token_nodes.py.
 A node with no refusal branch is checked on its output shape, and the test says so.
 """
 
@@ -131,6 +132,8 @@ def test_validate_mandate(args, expected):
 
 
 # token_request (Select token permission set): the read set in shadow, the write set in live, nothing else.
+# Behavior gap, not asserted: this node checks no owner. validate_mandate enforces the dryvist owner before it runs.
+# test_token_nodes.py checks the non-dryvist owner on the read-set workflows only.
 
 _TOKEN_ZERO = {"ready": 0, "request_json": "{}"}
 
