@@ -182,7 +182,8 @@ workflow:
                     req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(req,timeout=10) as r: obj=json.loads(r.read())
                     state='merged' if obj.get('merged') is True else str(obj.get('state','')).lower()
-                    return state if state in ('merged','closed','open') else None
+                    if kind=='pull' and state=='closed': state='closed-unmerged'
+                    return state if state in ('merged','closed','closed-unmerged','open') else None
                 except Exception:return None
             def main(results:list, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
                 refs=[]; visible=[]
