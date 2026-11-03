@@ -49,6 +49,23 @@ The guard refuses malformed policy, an unfiltered list, and every project absent
 `allowed ∪ readonly`, subtracting denied IDs; deny wins even when an ID appears on another list. `rank-only` must be a
 subset of `allowed` and permits only priority/label updates. Readonly projects permit reads only.
 
+## Enable Langfuse tracing
+
+Do this before the first published run.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after one test run of the published app: the Langfuse trace is named `vikunja-triage`, and
+   the router log has a line for that run under the key `openbao://agent-key/vikunja-triage` from
+   `agents/vikunja-triage.yaml`. If the router line shows another key, stop and fix the key binding before any
+   promotion.
+
 ## Shadow trace and promotion
 
 Check the Langfuse trace for the scheduled Workflow run. Confirm its output contains the intended action JSON,

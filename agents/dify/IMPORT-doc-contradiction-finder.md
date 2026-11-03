@@ -47,6 +47,23 @@ DSL by hand.
    - b. Run on a merged pull request with no Markdown changes. The run must return {"findings": []}. This confirms the
      empty-list path.
 
+## Enable Langfuse tracing
+
+Do this before step 6, so the live checks produce traces.
+
+1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
+   **configure**. Dify documents this at
+   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
+2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
+   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
+   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
+   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
+3. Save. The status on the same page must read started.
+4. Acceptance check, after the step 6a run: the Langfuse trace is named `doc-contradiction-finder`, and the
+   router log has a line for that run under the key `agent-key/doc-contradiction-finder` from
+   `agents/doc-contradiction-finder.yaml`. If the router line shows another key, stop and fix the key binding
+   before enabling the trigger.
+
 ## Unverified until the step 6 checks pass
 
 - The iteration output key (check 6a) and the empty-list behavior (check 6b) were not confirmed from Dify source. The Python
