@@ -24,6 +24,7 @@ _OPENBAO = {
     "error payload": ('{"errors": ["permission denied"], "debug": {"client_token": "tok-example-2"}}',
                       {"client_token": "", "ready": 0}, ["tok-example-2"]),
     "malformed": ("not json", {"client_token": "", "ready": 0}, []),
+    "non-object body": ("[]", {"client_token": "", "ready": 0}, []),
 }
 
 _GITHUB = {
@@ -34,6 +35,9 @@ _GITHUB = {
     "error payload": ('{"message": "Bad credentials", "token_hint": "ghs-example-3"}',
                       {"token": "", "ready": 0}, ["ghs-example-3"]),
     "malformed": ("{", {"token": "", "ready": 0}, []),
+    "non-object body": ("[]", {"token": "", "ready": 0}, []),
+    "both fields": ('{"token": "ghs-example-4", "installation_token": "ghs-example-5"}',
+                    {"token": "ghs-example-4", "ready": 1}, ["ghs-example-5"]),
 }
 
 
@@ -82,6 +86,7 @@ _REQUESTS = {
     "token-set empty": (("dryvist/ai-llm-prompts", ""), 0, None),
     "token-set blank": (("dryvist/ai-llm-prompts", "   "), 0, None),
     "token-set unset": (("dryvist/ai-llm-prompts", None), 0, None),
+    "non-dryvist owner": (("other/repo", "contents-read"), 0, None),
 }
 
 
