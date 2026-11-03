@@ -9,6 +9,9 @@ SECRET_RE = re.compile(
 )
 HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
 FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+# md and py are also country-code TLDs, so only a two-label name such as README.md stays a file reference.
+# shortcut: a two-label host under .md or .py (corp.md) stays unredacted; upgrade to a page-path allowlist if one appears.
+CCTLD_EXTENSIONS = {"md", "py"}
 IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
 IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
 REDACTED = "[REDACTED]"
@@ -22,11 +25,30 @@ def _is_address(candidate):
         return False
 
 
+def _redact_ipv6(match):
+    candidate = match.group(0)
+    if ":" not in candidate:
+        return candidate
+    if _is_address(candidate):
+        return REDACTED
+    # Prose can put a colon right after an address ("2001:db8::1: is down"); keep that colon outside the redaction.
+    trimmed = candidate.rstrip(":")
+    return REDACTED + candidate[len(trimmed):] if _is_address(trimmed) else candidate
+
+
+def _redact_host(match):
+    name = match.group(0)
+    labels = name.lower().split(".")
+    if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+        return name
+    return REDACTED
+
+
 def redact(text):
     text = SECRET_RE.sub(lambda match: (match.group("label") or "") + REDACTED, text)
     text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
-    text = IPV6_RE.sub(lambda match: REDACTED if ":" in match.group(0) and _is_address(match.group(0)) else match.group(0), text)
-    return HOST_RE.sub(lambda match: match.group(0) if match.group(0).rsplit(".", 1)[-1].lower() in FILE_EXTENSIONS else REDACTED, text)
+    text = IPV6_RE.sub(_redact_ipv6, text)
+    return HOST_RE.sub(_redact_host, text)
 
 
 def needs_redaction(text):

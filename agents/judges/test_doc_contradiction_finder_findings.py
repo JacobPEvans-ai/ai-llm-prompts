@@ -91,15 +91,26 @@ def test_redacted_quote_verifies_against_unredacted_page_text():
 def test_quote_that_needed_redaction_is_a_security_finding_and_is_never_asked():
     secret_quote = "The import uses App DSL 0.7.0 with token = " + "A" * 24 + " for CI."
     address_quote = "The import runs on 192.0.2.10."
-    texts = {**_TEXTS, "/services/import.md": "# Import\n" + secret_quote + "\n" + address_quote}
+    ipv6_colon_quote = "Peer 2001:db8::1: is down."
+    cctld_host_quote = "Backups go to backup.example.md nightly."
+    quotes = (secret_quote, address_quote, ipv6_colon_quote, cctld_host_quote)
+    texts = {**_TEXTS, "/services/import.md": "# Import\n" + "\n".join(quotes)}
     assert _findings(_run(_model(_FINDING)))[0]["security"] is False
-    for quote in (secret_quote, address_quote):
+    for quote in quotes:
         (finding,) = _findings(_run(_model(_finding_with_quote(0, quote)), texts=texts))
         assert finding["security"] is True
         assert finding["ask"] is False
         assert "[REDACTED]" in finding["statements"][0]["quote"]
         serialized = json.dumps(finding)
-        assert "A" * 24 not in serialized and "192.0.2.10" not in serialized
+        for raw in ("A" * 24, "192.0.2.10", "2001:db8::1", "backup.example.md"):
+            assert raw not in serialized
+
+
+def test_two_label_file_name_is_not_a_hostname():
+    quote = "The import is described in README.md."
+    texts = {**_TEXTS, "/services/import.md": "# Import\n" + quote}
+    (finding,) = _findings(_run(_model(_finding_with_quote(0, quote)), texts=texts))
+    assert finding["security"] is False and finding["statements"][0]["quote"] == quote
 
 
 def test_unknown_top_level_key_fails_closed():
