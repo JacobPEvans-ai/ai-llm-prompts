@@ -1,0 +1,212 @@
+          desc: Checks the merged PR target, bounds its changed files, and prepares the documentation pages to compare.
+          outputs:
+            eligible: {type: number, children: null}
+            context_json: {type: string, children: null}
+            page_paths_json: {type: string, children: null}
+            known_fingerprints_json: {type: string, children: null}
+          selected: false
+          title: Prepare contradiction context
+          type: code
+          variables:
+            - {variable: repo, value_selector: [start, repo]}
+            - {variable: pr_number, value_selector: [start, pr_number]}
+            - {variable: repo_body, value_selector: [get_repo, body]}
+            - {variable: pr_body, value_selector: [get_pull_request, body]}
+            - {variable: files_body, value_selector: [get_pull_files, body]}
+            - {variable: changed_pages, value_selector: [start, changed_pages]}
+            - {variable: related_pages, value_selector: [start, related_pages]}
+            - {variable: known_open_fingerprints, value_selector: [start, known_open_fingerprints]}
+        height: 54
+        id: prepare_context
+        position: {x: 3982, y: 300}
+        positionAbsolute: {x: 3982, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: eligible
+              id: eligible
+              logical_operator: and
+              conditions:
+                - {comparison_operator: '=', id: context-eligible, value: '1', varType: number, variable_selector: [prepare_context, eligible]}
+          desc: Sends only a bounded, verified merged pull request with its documentation pages to the model.
+          selected: false
+          title: Safe context gate
+          type: if-else
+        height: 126
+        id: context_gate
+        position: {x: 4286, y: 300}
+        positionAbsolute: {x: 4286, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: Compares the changed pages with the related pages and reports contradictions as JSON findings.
+          memory: {enabled: false, window: {enabled: false, size: 10}}
+          model:
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+            name: __DIFY_LITELLM_ROLE__
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_config: {jinja2_variables: []}
+          prompt_template:
+            - role: system
+              text: |
+                __DIFY_SYSTEM_PROMPT__
+            - role: user
+              text: "{{#prepare_context.context_json#}}"
+          selected: false
+          title: Contradiction finder model
+          type: llm
+          vision: {enabled: false, configs: {variable_selector: []}}
+        height: 90
+        id: docs_updater_llm
+        position: {x: 4590, y: 200}
+        positionAbsolute: {x: 4590, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import ipaddress
+            import json
+            import re
+
+            SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            SEVERITIES = {"S1", "S2", "S3", "S4"}
+            FINDING_KEYS = {"severity", "fingerprint", "statements", "question", "ask"}
+            STATEMENT_KEYS = {"page_path", "line", "quote"}
+            FINGERPRINT_RE = re.compile(r"^[a-z0-9][a-z0-9:/._-]{0,190}$")
+
+            def has_private_address(text):
+                for candidate in IPV4_RE.findall(text):
+                    try:
+                        ipaddress.ip_address(candidate)
+                        return True
+                    except ValueError:
+                        pass
+                for candidate in IPV6_RE.findall(text):
+                    if ":" not in candidate:
+                        continue
+                    try:
+                        ipaddress.ip_address(candidate)
+                        return True
+                    except ValueError:
+                        pass
+                for candidate in HOST_RE.findall(text):
+                    if candidate.rsplit(".", 1)[-1].lower() not in FILE_EXTENSIONS:
+                        return True
+                return False
+
+            __DIFY_HELPER_JSON_FENCE__
+            def main(model_text: str, page_paths_json: str, known_fingerprints_json: str) -> dict:
+                if not isinstance(model_text, str) or not model_text.strip():
+                    return {"findings_json": ""}
+                try:
+                    result = json.loads(strip_json_fence(model_text))
+                    page_paths = set(json.loads(page_paths_json))
+                    known = set(json.loads(known_fingerprints_json))
+                except (TypeError, ValueError):
+                    return {"findings_json": ""}
+                if not isinstance(result, dict) or set(result) != {"findings"} or not isinstance(result["findings"], list):
+                    return {"findings_json": ""}
+                findings = []
+                for finding in result["findings"]:
+                    if not isinstance(finding, dict) or set(finding) != FINDING_KEYS:
+                        return {"findings_json": ""}
+                    severity, fingerprint, statements = finding["severity"], finding["fingerprint"], finding["statements"]
+                    question, ask = finding["question"], finding["ask"]
+                    if (severity not in SEVERITIES or not isinstance(fingerprint, str)
+                        or FINGERPRINT_RE.fullmatch(fingerprint) is None
+                        or not isinstance(statements, list) or not 1 <= len(statements) <= 6
+                        or not isinstance(question, str) or not question.startswith("Which is right?")
+                        or not all(marker in question for marker in ("A:", "B:", "Neither:"))
+                        or not isinstance(ask, bool)):
+                        return {"findings_json": ""}
+                    safe_statements = []
+                    for statement in statements:
+                        if not isinstance(statement, dict) or set(statement) != STATEMENT_KEYS:
+                            return {"findings_json": ""}
+                        path, line, quote = statement["page_path"], statement["line"], statement["quote"]
+                        if (not isinstance(path, str) or path not in page_paths or "://" in path
+                            or ".." in path.split("/")
+                            or not isinstance(line, int) or isinstance(line, bool) or line < 1
+                            or not isinstance(quote, str) or not quote.strip() or len(quote) > 300):
+                            return {"findings_json": ""}
+                        safe_statements.append({"page_path": path, "line": line, "quote": quote})
+                    text = "\n".join([fingerprint, question] + [s["page_path"] + "\n" + s["quote"] for s in safe_statements])
+                    if SECRET_RE.search(text) or has_private_address(text):
+                        return {"findings_json": ""}
+                    findings.append({
+                        "severity": severity,
+                        "fingerprint": fingerprint,
+                        "statements": safe_statements,
+                        "question": question,
+                        # Dedupe is enforced here as well as in the prompt: a tracked fingerprint is never asked again.
+                        "ask": ask and fingerprint not in known,
+                    })
+                return {"findings_json": json.dumps({"findings": findings}, ensure_ascii=False)}
+          code_language: python3
+          desc: Accepts only schema-valid findings whose pages were supplied and whose text omits likely secrets and private addresses.
+          outputs:
+            findings_json: {type: string, children: null}
+          selected: false
+          title: Validate contradiction findings
+          type: code
+          variables:
+            - {variable: model_text, value_selector: [docs_updater_llm, text]}
+            - {variable: page_paths_json, value_selector: [prepare_context, page_paths_json]}
+            - {variable: known_fingerprints_json, value_selector: [prepare_context, known_fingerprints_json]}
+        height: 54
+        id: validate_proposal
+        position: {x: 4894, y: 200}
+        positionAbsolute: {x: 4894, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Empty result means the model output was missing, invalid, or unsafe; nothing is recorded.
+          outputs: []
+          selected: false
+          title: End without findings
+          type: end
+        height: 90
+        id: end_empty
+        position: {x: 4590, y: 500}
+        positionAbsolute: {x: 4590, y: 500}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Returns the validated findings JSON. An empty findings list is a valid result.
+          outputs:
+            - {variable: findings_json, value_selector: [validate_proposal, findings_json]}
+          selected: false
+          title: End findings
+          type: end
+        height: 90
+        id: end_proposal
+        position: {x: 5198, y: 200}
+        positionAbsolute: {x: 5198, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport: {x: 0, y: 0, zoom: 0.65}

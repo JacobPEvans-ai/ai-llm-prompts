@@ -78,6 +78,7 @@ def test_every_model_output_parse_node_routes_through_the_helper():
     assert names == {
         ("ci-fixer.dsl.yml", "Validate patch and write guards"),
         ("code-simplifier.dsl.yml", "Validate and force comment review"),
+        ("doc-contradiction-finder.dsl.yml", "Validate contradiction findings"),
         ("docs-updater.dsl.yml", "Validate safe page proposals"),
         ("vikunja-clerk.dsl.yml", "Code guard"),
         ("vikunja-clerk.dsl.yml", "Update project guard"),
