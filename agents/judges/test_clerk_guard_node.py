@@ -1,4 +1,7 @@
-"""Runs the clerk's first Code guard node over the guard fixtures: intent in, tool calls out.
+"""Runs the clerk's Code guard nodes over the guard fixtures: intent in, tool calls out.
+
+The first node, "Code guard", takes the intent and builds the first call. The second node,
+"Update project guard", takes the fetched task and builds the update.
 
 A case gives its intent as a mapping. A case with intent_raw gives the exact text the guard receives.
 A case takes its mandates and context from the case itself. A case that sets neither takes them
@@ -28,22 +31,24 @@ _DEFAULT_CONTEXT = {
 _ABSENT = object()
 
 
-def _code_guard():
+def _code_guard(title):
     dsl = yaml.safe_load(_DSL.read_text())
-    node = next(item for item in dsl["workflow"]["graph"]["nodes"] if item["data"].get("title") == "Code guard")
+    node = next(item for item in dsl["workflow"]["graph"]["nodes"] if item["data"].get("title") == title)
     namespace = {}
-    exec(compile(node["data"]["code"], "Code guard", "exec"), namespace)  # defines the node's functions only
+    exec(compile(node["data"]["code"], title, "exec"), namespace)  # defines the node's functions only
     return namespace["main"]
 
 
-def _load_cases():
-    names = ("vikunja-clerk-args.yaml", "vikunja-clerk-args-scope.yaml")
+def _load_cases(*names):
     return [case for name in names for case in yaml.safe_load((_EVALS / "guard" / name).read_text())["cases"]]
 
 
-_MAIN = _code_guard()
-_FIXTURES = _load_cases()
+_MAIN = _code_guard("Code guard")
+_UPDATE_MAIN = _code_guard("Update project guard")
+_FIXTURES = _load_cases("vikunja-clerk-args.yaml", "vikunja-clerk-args-scope.yaml")
+_UPDATE_FIXTURES = _load_cases("vikunja-clerk-update.yaml", "vikunja-clerk-update-gaps.yaml")
 _BY_ID = {case["id"]: case for case in _FIXTURES}
+_UPDATE_BY_ID = {case["id"]: case for case in _UPDATE_FIXTURES}
 _MODEL = {case["id"]: case for case in yaml.safe_load((_EVALS / "vikunja-clerk.yaml").read_text())["cases"]}
 
 
@@ -59,6 +64,7 @@ def _inputs(case):
     return {
         "intent": case["intent"],
         "intent_raw": case.get("intent_raw"),
+        "task_result": case.get("task_result"),
         "mandates": {key: str(value or "") for key, value in mandates.items()},
         "context": context,
     }
@@ -90,6 +96,26 @@ def _run(case):
         args = {key: result[key] for key in ("done", "filter", "search") if result[key] not in (None, "")}
         return [_call("list", args)], False, result
     return [], False, result
+
+
+def _run_update(case):
+    inputs = _inputs(case)
+    context = inputs["context"]
+    result = _UPDATE_MAIN(
+        json.dumps(inputs["intent"]),
+        json.dumps(inputs["task_result"]),
+        inputs["mandates"]["project_id"],
+        inputs["mandates"]["task_id"],
+        context.get("allowed_projects_raw", json.dumps(context["allowed_projects"])),
+        context.get("denied_projects_raw", json.dumps(context["denied_projects"])),
+        context["mode"],
+    )
+    if result["preview"]:
+        assert result["dispatch"] == (context["mode"] == "live"), "dispatch must equal (mode == live)"
+        call = json.loads(result["preview"])
+        operation = call["args"].pop("subcommand")
+        return [{"tool": call["tool"], "operation": operation, "args": call["args"]}], result
+    return [], result
 
 
 def _flatten(value, prefix=""):
@@ -127,5 +153,26 @@ _REFUSALS = [case for case in _FIXTURES if case.get("refusal")]
 @pytest.mark.parametrize("case", _REFUSALS, ids=[case["id"] for case in _REFUSALS])
 def test_each_refusal_has_a_control_that_changes_only_what_it_offends(case):
     control = _BY_ID[case["id"] + "-control"]
+    assert "refusal" not in control
+    assert _changed_paths(_inputs(case), _inputs(control)) == set(case["offends"])
+
+
+@pytest.mark.parametrize("case", _UPDATE_FIXTURES, ids=[case["id"] for case in _UPDATE_FIXTURES])
+def test_update_guard_builds_the_fixture_calls(case):
+    calls, result = _run_update(case)
+    if case.get("refusal"):
+        assert result["allowed"] is False, result["reason"]
+        assert case["refusal"] in result["reason"]
+    else:
+        assert result["allowed"] is True, result["reason"]
+    assert calls == case["expected_tool_calls"]
+
+
+_UPDATE_REFUSALS = [case for case in _UPDATE_FIXTURES if case.get("refusal")]
+
+
+@pytest.mark.parametrize("case", _UPDATE_REFUSALS, ids=[case["id"] for case in _UPDATE_REFUSALS])
+def test_each_update_refusal_has_a_control_that_changes_only_what_it_offends(case):
+    control = _UPDATE_BY_ID[case["id"] + "-control"]
     assert "refusal" not in control
     assert _changed_paths(_inputs(case), _inputs(control)) == set(case["offends"])
