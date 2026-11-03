@@ -4,6 +4,8 @@
 
 * **Fix (agents)**: Vikunja triage proposes a done action only for a merged linked PR or a closed linked issue; an open
   linked PR or issue is not done.
+* **Add (agents)**: Add the shadow-only doc-contradiction-finder for documentation pages after merged pull requests. It
+  reads changed and related pages, returns a JSON findings object, and has no write, Slack, or memory tools.
 * **Update (agents)**: Give docs-updater a second mandate shape, {repo, finding_ref, operator_decision}, for an operator
   decision on a reported contradiction. The Dify gate admits it without pull request reads and keeps live writes off.
 * **Add (agents)**: Add the shadow-only docs-updater for merged pull requests, with safe private-documentation proposals
