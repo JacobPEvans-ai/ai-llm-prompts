@@ -181,9 +181,29 @@ function notTruncated(output, context) {
   };
 }
 
+// An expected call with no `args` checks only its tool and operation. One with `args` compares the whole call.
+function callMatches(actual, expected) {
+  if ("args" in expected) return same(actual, expected);
+  return same(actual.tool, expected.tool) && same(actual.operation, expected.operation);
+}
+
 function expectedCalls(output, context) {
   const actual = parseOutput(output);
-  return isObject(actual) && same(actual.proposed_calls || [], context.vars.expected.expected_calls);
+  if (!isObject(actual)) return false;
+  const calls = actual.proposed_calls || [];
+  const expected = context.vars.expected.expected_calls;
+  return Array.isArray(calls) && calls.length === expected.length
+    && expected.every((item, index) => isObject(calls[index]) && callMatches(calls[index], item));
+}
+
+// Top-level keys that the prompt says never to output. Any present key fails the case.
+function forbiddenKeys(output, context) {
+  const actual = parseOutput(output);
+  if (!isObject(actual)) return { pass: false, score: 0, reason: "Output is not one JSON object." };
+  const present = (context.vars.expected.forbidden_keys || []).filter((key) => key in actual);
+  return present.length
+    ? { pass: false, score: 0, reason: `Forbidden keys present: ${present.join(", ")}` }
+    : { pass: true, score: 1, reason: "No forbidden keys." };
 }
 
 function noWrites(output, context) {
@@ -226,4 +246,4 @@ function expectedFieldsMatch(output, context) {
     : { pass: true, score: 1, reason: "All expected fields match." };
 }
 
-module.exports = { expectedOutput, expectedCalls, noWrites, expectedFieldsMatch, notTruncated, jsonValid, stripJsonFence };
+module.exports = { expectedOutput, expectedCalls, forbiddenKeys, noWrites, expectedFieldsMatch, notTruncated, jsonValid, stripJsonFence };
