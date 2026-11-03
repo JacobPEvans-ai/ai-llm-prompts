@@ -27,7 +27,7 @@ mandate_binding:
 capabilities:
   rank: [priority, labels]
   comment: verified_link_url_and_github_state
-  done: linked_github_pr_or_issue_state_in [merged, closed]
+  done: linked_github_pr_merged_or_issue_closed
   forbidden: [delete, create, project_move, reassign]
 policies:
   allowed_projects_ref: policy://vikunja-triage/allowed-projects

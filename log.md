@@ -2,6 +2,8 @@
 
 ## 2026-11-02
 
+* **Fix (agents)**: The Vikunja triage guard accepts a done action only for a merged linked PR or a closed linked issue;
+  a closed PR that was never merged is not done.
 * **Fix (agents)**: Vikunja triage proposes a done action only for a merged linked PR or a closed linked issue; an open
   linked PR or issue is not done.
 * **Fix (agents)**: Redact finder quotes with one shared rule before the verbatim check, and mark a finding whose quote needed

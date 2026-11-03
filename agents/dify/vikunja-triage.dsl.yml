@@ -181,8 +181,11 @@ workflow:
                     owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
                     req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(req,timeout=10) as r: obj=json.loads(r.read())
-                    state='merged' if obj.get('merged') is True else str(obj.get('state','')).lower()
-                    return state if state in ('merged','closed','open') else None
+                    pr=obj.get('pull_request')
+                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                    state='merged' if merged else str(obj.get('state','')).lower()
+                    if (kind=='pull' or 'pull_request' in obj) and state=='closed': state='closed-unmerged'
+                    return state if state in ('merged','closed','closed-unmerged','open') else None
                 except Exception:return None
             def main(results:list, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
                 refs=[]; visible=[]
@@ -307,8 +310,11 @@ workflow:
                     owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
                     gh=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(gh,timeout=10) as r: obj=json.loads(r.read())
-                    value='merged' if obj.get('merged') is True else str(obj.get('state','')).lower()
-                    cache[url]=value if value in ('merged','closed','open') else None
+                    pr=obj.get('pull_request')
+                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                    value='merged' if merged else str(obj.get('state','')).lower()
+                    if (kind=='pull' or 'pull_request' in obj) and value=='closed': value='closed-unmerged'
+                    cache[url]=value if value in ('merged','closed','closed-unmerged','open') else None
                     return cache[url]
                 except Exception: return None
             def strip_json_fence(text):
