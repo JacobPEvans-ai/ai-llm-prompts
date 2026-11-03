@@ -284,6 +284,15 @@ def test_triage_suites_attach_no_writes_check_only_when_they_declare_writes():
             assert all(assertion["metric"] != "no-writes" for assertion in test["assert"])
 
 
+def test_clerk_cases_that_expect_no_call_attach_the_no_writes_check():
+    # The clerk declares its write tools from the agent file, so its no-call and refusal cases must carry the check.
+    clerk = [test for test in cases.generate_tests() if test["vars"]["suite"] == "vikunja-clerk"]
+    no_call = [test for test in clerk if test["vars"]["expected"].get("expected_calls") == []]
+    assert no_call, "the clerk suite should have cases that expect no call"
+    for test in no_call:
+        assert any(assertion["metric"] == "no-writes" for assertion in test["assert"])
+
+
 def test_no_test_var_is_a_list():
     # promptfoo expands an array-valued var into one test per element.
     for test in cases.generate_tests():
