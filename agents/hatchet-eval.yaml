@@ -1,0 +1,37 @@
+name: hatchet-eval
+owner: agent-platform
+home_platform: hatchet
+mode: shadow
+# Credential model: one trusted-tier roster key referenced from the secret manager; the worker holds no provider keys.
+prompt: agents/prompts/hatchet-eval.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools:
+  - github.repos.get_content
+  - eval_scores.create
+  - github.repos.create_commit_status
+mcp_servers: []
+privacy_class: private # Scores held-out comparison text, so every backend behind the router is local.
+# LiteLLM router role, not a model ID. Routes to the local MLX 27B backend or the local GPU vLLM backend only.
+litellm_role: local-eval
+model_policy: {locality: local_only, cloud_fallback: forbidden, router_key_ref: openbao://agent-key/hatchet-eval-trusted}
+trigger: {kind: queue, queue: eval-runs, source: hatchet, scope: any agent definition change in this repo}
+memory_scope: none
+eval_set: agents/evals/hatchet-eval.yaml
+promotion:
+  after_matching_shadow_runs: 20
+  against: agents/evals/hatchet-eval.yaml
+identity: agent-hatchet-eval
+api_key_ref: openbao://agent-key/hatchet-eval-trusted
+guards:
+  # The runner never edits an agent definition, its prompt, or its eval set.
+  # The runner never writes a secret value into a score row.
+  # The runner never marks an eval passed when any case is skipped.
+  no_definition_prompt_or_eval_set_writes: true
+  no_secrets_in_score_rows: true
+  passed_only_when_no_case_skipped: true
+  max_score_rows_per_run: 1
+  max_commit_statuses_per_run: 1
+  on_missing_eval_set: stop_and_report
+  on_missing_eval_set_field: stop_and_report
+  on_router_role_unavailable: stop_and_report
+  on_error: stop_and_report
