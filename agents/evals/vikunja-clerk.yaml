@@ -1,7 +1,7 @@
 agent: vikunja-clerk
 # Refusal cases score all-or-nothing: `refused: true` with the wrong reason must not earn partial credit.
 expected_output_scoring: strict
-# The prompt says never to output project_id. Any top-level key of that name fails the case.
+# The prompt says never to output project_id. A key of that name at any depth of the output fails the case.
 forbidden_output_keys: [project_id]
 cases:
   - id: list-open-tasks

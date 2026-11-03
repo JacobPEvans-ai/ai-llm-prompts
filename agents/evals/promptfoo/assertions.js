@@ -196,11 +196,22 @@ function expectedCalls(output, context) {
     && expected.every((item, index) => isObject(calls[index]) && callMatches(calls[index], item));
 }
 
-// Top-level keys that the prompt says never to output. Any present key fails the case.
+// Keys that the prompt says never to output, at any depth. Object.keys reads own keys only.
+function forbiddenKeysIn(value, keys, found) {
+  if (Array.isArray(value)) value.forEach((item) => forbiddenKeysIn(item, keys, found));
+  else if (isObject(value)) {
+    for (const key of Object.keys(value)) {
+      if (keys.includes(key)) found.add(key);
+      forbiddenKeysIn(value[key], keys, found);
+    }
+  }
+  return found;
+}
+
 function forbiddenKeys(output, context) {
   const actual = parseOutput(output);
   if (!isObject(actual)) return { pass: false, score: 0, reason: "Output is not one JSON object." };
-  const present = (context.vars.expected.forbidden_keys || []).filter((key) => Object.prototype.hasOwnProperty.call(actual, key));
+  const present = [...forbiddenKeysIn(actual, context.vars.expected.forbidden_keys || [], new Set())];
   return present.length
     ? { pass: false, score: 0, reason: `Forbidden keys present: ${present.join(", ")}` }
     : { pass: true, score: 1, reason: "No forbidden keys." };
@@ -212,7 +223,7 @@ function noWrites(output, context) {
   const writes = new Set(context.vars.expected.write_tools);
   const calls = actual.proposed_calls || [];
   return Array.isArray(calls) && calls.every((call) =>
-    !writes.has(call.tool) && !writes.has(`${call.tool}.${call.operation}`)
+    isObject(call) && !writes.has(call.tool) && !writes.has(`${call.tool}.${call.operation}`)
   );
 }
 
