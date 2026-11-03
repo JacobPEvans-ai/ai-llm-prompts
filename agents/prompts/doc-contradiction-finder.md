@@ -4,7 +4,7 @@ title: Doc Contradiction Finder
 description: Report contradictions between documentation pages after a merged pull request. Read-only and shadow-only.
 resource: prompt://dryvist/agents/prompts/doc-contradiction-finder
 tags: [github, agent, documentation, shadow]
-timestamp: "2026-11-03T03:47:24Z"
+timestamp: "2026-11-03T04:10:40Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -47,7 +47,7 @@ Use exactly these labels:
 - Give exactly one question in this form: "Which is right? A: <first statement, paraphrased in one line> B: <second
   statement, paraphrased in one line> Neither: take no action."
 - Give a fingerprint: a lowercase slug of the topic and the page paths, for example `merge-rules:/a.md:/b.md`. The
-  workflow hashes it for dedupe.
+  workflow compares it, unchanged, with known_open_fingerprints, the fingerprints already tracked in the operator's store.
 - Set "ask" to false when the fingerprint is in known_open_fingerprints. Otherwise set "ask" to true.
 
 ## Scope

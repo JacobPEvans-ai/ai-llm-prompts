@@ -3,7 +3,7 @@ type: Dify agent import guide
 title: doc-contradiction-finder
 description: Import and configure the shadow-only contradiction finder for documentation pages after merged pull requests.
 tags: [dify, agent, github, documentation, import]
-timestamp: "2026-11-03T03:08:21Z"
+timestamp: "2026-11-03T04:10:40Z"
 ---
 
 ## Import steps
@@ -32,9 +32,10 @@ DSL by hand.
    the base branch main. Pass the immutable repo and pr_number mandate, the event metadata, changed_pages, related_pages,
    and known_open_fingerprints. The pages are JSON arrays of objects with page_path and text fields.
 5. Keep the agent in shadow mode. The workflow returns only a JSON findings object for run-record storage. It has no
-   Slack tool, no memory bank, and no documentation write operation. Posting, asking, and dedupe happen outside this
-   workflow, at a Slack step that is not bound in this repository. The live channel stays disabled until that step is
-   bound.
+   Slack tool, no memory bank, and no documentation write operation. Dedupe: the validator compares each fingerprint,
+   unchanged, with known_open_fingerprints, and a match sets ask to false. The router fills that list from the operator's
+   store, which is outside this repository. Posting and asking happen at a Slack step that is not bound in this
+   repository, so the live channel stays disabled until that step is bound.
 
 ## Unverified for Dify 1.16.1
 

@@ -808,7 +808,7 @@ workflow:
                 - Give exactly one question in this form: "Which is right? A: <first statement, paraphrased in one line> B: <second
                   statement, paraphrased in one line> Neither: take no action."
                 - Give a fingerprint: a lowercase slug of the topic and the page paths, for example `merge-rules:/a.md:/b.md`. The
-                  workflow hashes it for dedupe.
+                  workflow compares it, unchanged, with known_open_fingerprints, the fingerprints already tracked in the operator's store.
                 - Set "ask" to false when the fingerprint is in known_open_fingerprints. Otherwise set "ask" to true.
 
                 ## Scope
