@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.56.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.55.0...v1.56.0) (2026-11-03)
+
+
+### Features
+
+* **evals:** send low vLLM priority on eval requests ([#246](https://github.com/dryvist/ai-llm-prompts/issues/246)) ([5c4039b](https://github.com/dryvist/ai-llm-prompts/commit/5c4039b97f53b0b26b31f8b3ca10a5d750babcdd))
+
 ## [1.55.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.54.0...v1.55.0) (2026-11-03)
 
 
