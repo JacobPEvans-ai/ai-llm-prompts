@@ -1334,9 +1334,11 @@ workflow:
                     return failed
                 texts = {page["page_path"]: page["text"] for page in pages}
                 built = build_finder_inputs([page["page_path"] for page in pages], texts, [])
+                if built["dropped"]["changed_pages"]:
+                    return failed
                 return {"eligible": 1, "changed_pages": built["changed_pages"], "related_pages": built["related_pages"], "known_open_fingerprints": built["known_open_fingerprints"], "dropped_json": json.dumps(built["dropped"], ensure_ascii=False)}
           code_language: python3
-          desc: Builds the three finder inputs with the shared helper. The known fingerprints stay empty until the store reader is bound. A failed page read makes the run ineligible.
+          desc: Builds the three finder inputs with the shared helper. The known fingerprints stay empty until the store reader is bound. A failed page read, or a changed page dropped for size, makes the run ineligible.
           outputs:
             eligible: {type: number, children: null}
             changed_pages: {type: string, children: null}

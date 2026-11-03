@@ -107,6 +107,22 @@ def test_failed_page_read_makes_the_run_ineligible():
     assert prepared["eligible"] == 0
 
 
+def test_changed_page_over_the_size_cap_makes_the_run_ineligible_not_a_zero_result():
+    big = "x" * 70000
+    _, build, prepared = _run(_files("docs/big.md"), responses={"docs/big.md": (200, big)})
+
+    assert build["eligible"] == 0
+    assert prepared["eligible"] == 0
+
+
+def test_two_changed_pages_that_exceed_the_cap_together_make_the_run_ineligible():
+    responses = {"docs/a.md": (200, "a" * 40000), "docs/b.md": (200, "b" * 30000)}
+    _, build, prepared = _run(_files("docs/a.md", "docs/b.md"), responses=responses)
+
+    assert build["eligible"] == 0
+    assert prepared["eligible"] == 0
+
+
 def test_removed_markdown_files_are_not_read():
     select, _, _ = _run(_files(("docs/gone.md", "removed"), "docs/a.md"))
 
