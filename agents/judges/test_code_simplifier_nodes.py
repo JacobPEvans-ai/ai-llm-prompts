@@ -210,7 +210,7 @@ def test_validate_review_drops_a_range_with_an_unchanged_line_inside():
 def test_validate_review_keeps_the_same_range_when_every_line_changed():
     changed = [{"path": "docs/a.md", "lines": [2, 3, 4]}]
     request = json.loads(_review(_model([dict(_SUGGESTION, start_line=2, line=4)]), changed=changed)["request_json"])
-    assert [comment["start_line"] for comment in request["comments"]] == [2]
+    assert [(comment["start_line"], comment["line"]) for comment in request["comments"]] == [(2, 4)]
 
 
 def test_validate_review_reads_a_fenced_reply():
