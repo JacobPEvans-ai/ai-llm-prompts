@@ -140,7 +140,17 @@ def parse_prompt():
     raise ValueError("Parse request system prompt not found in the vikunja-clerk DSL")
 
 
-def parse_test(name, case, system):
+def parse_test(name, case, system, forbidden=()):
+    expected = {"expected_parse": case["expected_parse"]}
+    assertions = [
+        {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},
+        {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
+        {"type": "javascript", "value": f"{ASSERTION_FILE}expectedFieldsMatch", "metric": "expected-fields-match"},
+        {"type": "python", "value": PARSE_SCHEMA_ASSERTION, "metric": "parse-json-schema-valid"},
+    ]
+    if forbidden:
+        expected["forbidden_keys"] = list(forbidden)
+        assertions.append({"type": "javascript", "value": f"{ASSERTION_FILE}forbiddenKeys", "metric": "forbidden-keys"})
     return {
         "description": f"{name}-parse / {case['id']}",
         "metadata": {"suite": f"{name}-parse", "case": case["id"]},
@@ -150,14 +160,9 @@ def parse_test(name, case, system):
             "static_prefix_json": json.dumps(system, ensure_ascii=False),
             "case_data": case["input"],
             "case_content_json": json.dumps(case["input"], ensure_ascii=False),
-            "expected": {"expected_parse": case["expected_parse"]},
+            "expected": expected,
         },
-        "assert": [
-            {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},
-            {"type": "javascript", "value": f"{ASSERTION_FILE}notTruncated", "metric": "not-truncated"},
-            {"type": "javascript", "value": f"{ASSERTION_FILE}expectedFieldsMatch", "metric": "expected-fields-match"},
-            {"type": "python", "value": PARSE_SCHEMA_ASSERTION, "metric": "parse-json-schema-valid"},
-        ],
+        "assert": assertions,
     }
 
 
@@ -176,7 +181,7 @@ def generate_tests():
             if case.get("skip"):
                 continue  # the skipped case stays in the suite with its reason
             if "expected_parse" in case:
-                tests.append(parse_test(name, case, parse_system))
+                tests.append(parse_test(name, case, parse_system, suite.get("forbidden_output_keys", [])))
             case_data = load_fixture_contents({
                 key: value for key, value in case.items() if key != "id" and not key.startswith("expected_")
             })

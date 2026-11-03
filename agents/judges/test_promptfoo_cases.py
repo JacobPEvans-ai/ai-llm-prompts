@@ -93,7 +93,7 @@ def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
     assert generated["vars"]["static_prefix"] == cases.parse_prompt()
     assert "Use keys: route, operation" in generated["vars"]["static_prefix"]
     assert {a["metric"] for a in generated["assert"]} == {
-        "json-valid", "not-truncated", "expected-fields-match", "parse-json-schema-valid"
+        "json-valid", "not-truncated", "expected-fields-match", "parse-json-schema-valid", "forbidden-keys"
     }
 
 
@@ -349,10 +349,19 @@ def test_expected_call_with_args_passes_when_the_whole_call_matches():
     assert _run_js("expectedCalls", same_call, expected) is True
 
 
-def test_only_the_clerk_suite_attaches_the_forbidden_keys_check():
+def test_only_the_clerk_suites_attach_the_forbidden_keys_check():
     for test in cases.generate_tests():
         has_check = any(assertion["metric"] == "forbidden-keys" for assertion in test["assert"])
-        assert has_check == (test["vars"]["suite"] == "vikunja-clerk")
+        assert has_check == (test["vars"]["suite"] in {"vikunja-clerk", "vikunja-clerk-parse"})
+
+
+def test_forbidden_keys_find_a_key_nested_in_a_proposed_call():
+    expected = {"forbidden_keys": ["project_id"]}
+    nested = {"proposed_calls": [{"tool": "vikunja_tasks", "operation": "create", "args": {"project_id": "project-allowed"}}]}
+
+    result = _run_js("forbiddenKeys", nested, expected)
+
+    assert result["pass"] is False and result["reason"] == "Forbidden keys present: project_id"
 
 
 def test_no_test_var_is_a_list():
