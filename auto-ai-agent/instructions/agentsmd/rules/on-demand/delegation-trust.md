@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T08:44:13-04:00"
+timestamp: "2026-11-03T12:00:00-05:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -45,6 +45,12 @@ it explicit and permanent.
 - **Escalate honestly.** The correct move is to surface the conflict to the
   user: what was denied, why it blocks the task, and what decision is needed.
   Blocked-with-a-named-blocker is a valid terminal state; routed-around is not.
+
+## Operator approvals: batch them
+
+- **Batch approval requests into one window per hour.** Collect every approval a run needs into one request per hour.
+- **Ask for per-command approval only for a true one-off.** An action that repeats joins the batch.
+- **An approval covers only the batch it names.** A command outside that batch needs its own approval.
 
 ## Why
 

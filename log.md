@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-11-03
+
+* **Update (instructions)**: Add privileged-run rules to `infrastructure-conventions`: narrowest selector, full
+  reconciles only in a maintenance window, plan before apply, and one owner per privileged chain. Add token
+  accessor capture and EXIT-trap revocation to `secrets-separation`. Add hourly batching of operator approvals to
+  `delegation-trust`.
+
 ## 2026-11-02
 
 * **Fix (agents)**: The Vikunja triage guard accepts a done action only for a merged linked PR or a closed linked issue;
