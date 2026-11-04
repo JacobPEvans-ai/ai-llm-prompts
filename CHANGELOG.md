@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.0...v1.61.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **index:** add README.md, CHANGELOG.md, and log-archive.md entries ([6987690](https://github.com/dryvist/ai-llm-prompts/commit/698769044b91859d703f1bb03f0bd864dd34dc1c))
+
 ## [1.61.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.60.0...v1.61.0) (2026-11-04)
 
 
