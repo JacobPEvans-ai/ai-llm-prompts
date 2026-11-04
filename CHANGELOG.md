@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.58.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.58.0...v1.58.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **instructions:** align delegation routing with the Luna-only ladder ([#271](https://github.com/dryvist/ai-llm-prompts/issues/271)) ([7e49c8a](https://github.com/dryvist/ai-llm-prompts/commit/7e49c8a6ce02c78f4b21baa3ceb650b03282d78a))
+
 ## [1.58.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.57.3...v1.58.0) (2026-11-03)
 
 
