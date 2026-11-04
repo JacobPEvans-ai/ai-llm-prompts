@@ -69,18 +69,16 @@ skills, agents, hooks).
 **Delegation routing (binding, the only routing statement).** Route each delegated task to the first rung that qualifies.
 Check `codex-quota` first.
 
-1. **Codex**, while `codex-quota` exits 0. Pick the model by class:
-   - bulk, reads and triage: Luna `xhigh`.
-   - bulk work that is still somewhat complicated: Luna `max`.
+1. **Codex**, while `codex-quota` exits 0. Luna only; pick the effort by class:
+   - bulk, reads, triage and standard implementation: Luna `xhigh`.
+   - bulk work that is still somewhat complicated, complex work, plan, and design or architecture review: Luna `max`.
    - auth, secrets, router, memory and cluster work: Luna `max`. Name `[class: bulk-complex]` in the description.
-   - standard implementation: Terra `medium`.
-   - complex work, plan, and design or architecture review: Terra `high`.
-   Never Terra above `high`, never Luna above `max`.
-2. **zcode-job sandbox**, while Codex is capped. Coding tasks only. Public repos qualify. A private repo qualifies only when
-   it has the repo property `ai-untrusted-ok=true` and its payload passes classification before dispatch. The output is a
-   ready PR labelled `human:review`. Leak-scan it before merge. Never auto-merge it.
-3. **Z.ai GLM**, then **OpenCode Go**, while Codex is capped.
-4. **Haiku `xhigh`**, the last resort, only when rungs 1 to 3 do not qualify.
+   Never Terra, never Luna above `max`.
+2. **zcode-job sandbox**, while Codex is capped. Coding tasks in public repos only; private work never goes to the
+   sandbox. The output is a ready PR labelled `human:review`. Leak-scan it before merge. Never auto-merge it.
+3. **OpenCode Go**, while Codex is capped. Public-repo coding tasks only.
+4. **Haiku `xhigh`**, the last resort, only when rungs 1 to 3 do not qualify. Private and non-code work goes from Codex
+   straight to this rung.
 
 Never Sonnet, Opus, or Fable subagents. Never send secrets, credentials, inventory, or incident content to any executor.
 Antigravity (`agy`, Gemini 3.8 Flash) is a second-opinion reviewer, not an executor. Use it on high-risk diffs in public or
