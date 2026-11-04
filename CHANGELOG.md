@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.60.0...v1.61.0) (2026-11-04)
+
+
+### Features
+
+* **agent:** autonomous zcode run j-81fbbd2bb30f813b ([#278](https://github.com/dryvist/ai-llm-prompts/issues/278)) ([819efac](https://github.com/dryvist/ai-llm-prompts/commit/819efac4a9338d3cc4c84fda64de115c3a729b13))
+
 ## [1.60.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.59.0...v1.60.0) (2026-11-04)
 
 
