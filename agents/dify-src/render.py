@@ -6,7 +6,9 @@ import re
 import sys
 
 
-ROOT = Path(__file__).resolve().parents[2]
+# Helper paths and the shared prompt loader bind to this checkout at import; --root moves only agent sources and outputs.
+SCRIPT_ROOT = Path(__file__).resolve().parents[2]
+ROOT = SCRIPT_ROOT
 AGENTS = ROOT / "agents"
 SOURCE_ROOT = AGENTS / "dify-src"
 OUTPUT_ROOT = AGENTS / "dify"
@@ -29,6 +31,15 @@ HELPER_MARKERS = {
 sys.path.insert(0, str(AGENTS / "evals" / "promptfoo"))
 sys.dont_write_bytecode = True
 from generate import load_yaml, prompt_body  # noqa: E402
+
+
+def use_root(root):
+    """Point agent sources and rendered outputs at another checkout that holds its own agents/ tree."""
+    global ROOT, AGENTS, SOURCE_ROOT, OUTPUT_ROOT
+    ROOT = Path(root).resolve()
+    AGENTS = ROOT / "agents"
+    SOURCE_ROOT = AGENTS / "dify-src"
+    OUTPUT_ROOT = AGENTS / "dify"
 
 
 def _repo_file(value, field):
@@ -186,7 +197,17 @@ def render_all():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="fail if any committed DSL differs from rendered output")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=SCRIPT_ROOT,
+        help="checkout whose agents/ definitions, prompts, and dify-src/ templates are rendered (default: this repository)",
+    )
     args = parser.parse_args()
+    if not args.root.is_dir():
+        print(f"Dify renderer error: --root is not a directory: {args.root}", file=sys.stderr)
+        return 2
+    use_root(args.root)
 
     try:
         outputs = render_all()
