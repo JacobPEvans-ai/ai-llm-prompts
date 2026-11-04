@@ -122,7 +122,7 @@ signal. This check applies to git-flow repos only; a trunk repo has no `develop`
 6. **Every change to `develop` goes through a PR** — the org ruleset enforces
    it, so a direct push is rejected (`GH013: Repository rule violations`).
    Never plan a "quick direct commit" to `develop`; branch and open a PR.
-7. **Merging**: The org `pr-automerge` workflow arms eligible PRs, never a
+7. **Merging**: The org `pr-automerge` workflow arms non-draft PRs, never a
    `develop` to `main` promotion. Agents never arm auto-merge; a draft
    holds a PR.
 

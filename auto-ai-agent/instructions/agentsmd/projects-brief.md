@@ -80,7 +80,7 @@ system, privileged rebuilds, and every infrastructure converge or apply. When a 
   characters after `cse_` in `CLAUDE_CODE_REMOTE_SESSION_ID`, or of the local session ID.
 - Open a PR at your first commit; it is your claim on the work. If it must wait, keep it as a draft.
   Check for an open PR on the same change before you start.
-- The org `pr-automerge` workflow arms eligible PRs; agents never arm auto-merge.
+- The org `pr-automerge` workflow arms non-draft PRs; agents never arm auto-merge.
 - A PR under 15 changed lines and under 5 files gets `--label fast-path` at `gh pr create`. The gate then skips
   the heavy test jobs and still runs the secret scan and commit checks. Add it at creation; a later label does not
   rerun the gate.

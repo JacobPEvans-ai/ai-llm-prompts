@@ -41,7 +41,7 @@ a sleep loop, and stop any single wait at 30 minutes.
 4. Feedback: run `/resolve-pr-threads`. Every comment, review body (including Request changes), inline comment and
    PR-agent finding gets a fix or an evidence-backed answer carrying its `addressed` marker. Never dismiss a review.
    A PR-agent coverage gap (files it skipped) goes in your report as `needs-second-review: <files>`.
-5. Do not arm auto-merge. The org `pr-automerge` workflow arms eligible PRs; keep a PR draft to hold it.
+5. Do not arm auto-merge. The org `pr-automerge` workflow arms non-draft PRs; keep a PR draft to hold it.
 6. Release PRs from the release app merge themselves; confirm they merged and stop.
 7. CI waste: `gh run list --branch <head> --json name,conclusion,jobs`. A release, publish, deploy, tag or promote job
    that ran off `main` goes in your report as `ci-waste: <workflow> <job>`.
