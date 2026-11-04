@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.61.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.1...v1.61.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* make major releases human-only in the always-loaded operating core ([#273](https://github.com/dryvist/ai-llm-prompts/issues/273)) ([f26a902](https://github.com/dryvist/ai-llm-prompts/commit/f26a902055eec52f1e93ff911d509f1f052b0f66))
+* state the major-release rule as human-only without an approval path ([f26a902](https://github.com/dryvist/ai-llm-prompts/commit/f26a902055eec52f1e93ff911d509f1f052b0f66))
+
 ## [1.61.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.0...v1.61.1) (2026-11-04)
 
 
