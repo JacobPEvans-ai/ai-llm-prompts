@@ -2,6 +2,9 @@
 
 ## 2026-11-04
 
+* **Update (agents)**: Make the major-release rule human-only in the always-loaded operating core, with no operator-approval
+  path, and point the git-flow rule's major-version line at it.
+
 * **Remove (evals)**: Drop the GitHub capability case whose only subject was the hold label.
 * **Update (automation)**: The Dependabot bundler holds a waiting pull request as a draft; the hold-label option is
   removed.
