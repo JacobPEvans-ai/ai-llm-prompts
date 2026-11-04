@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.59.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.58.1...v1.59.0) (2026-11-04)
+
+
+### Features
+
+* **agents:** add --root option to the Dify renderer ([#274](https://github.com/dryvist/ai-llm-prompts/issues/274)) ([9d250dc](https://github.com/dryvist/ai-llm-prompts/commit/9d250dca31b0b22ef032eeca9c1c4ef0eaca0682))
+
 ## [1.58.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.58.0...v1.58.1) (2026-11-04)
 
 
