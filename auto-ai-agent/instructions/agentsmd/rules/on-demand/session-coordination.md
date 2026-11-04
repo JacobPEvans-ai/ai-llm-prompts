@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-25T13:24:22-04:00"
+timestamp: "2026-11-04T10:05:00-04:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -68,8 +68,8 @@ Before starting on an issue, bug, or feature:
    claim wins unless its session is dead).
 
 2. **Claim.** Self-assign the issue (when one exists) and open a PR **at first
-   commit**. Open it ready for review unless it must wait; use a draft or
-   `human:review` for a hold. The open PR is the presence signal every runtime
+   commit**. Open it ready for review unless it must wait; use a draft
+   for a hold. The open PR is the presence signal every runtime
    can read. Put the session id in the PR body. The org workflow arms eligible
    PRs; agents never arm auto-merge.
 

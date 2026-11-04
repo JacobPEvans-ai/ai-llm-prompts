@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/AGENTS"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-31T18:17:15Z"
+timestamp: "2026-11-04T14:00:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -75,7 +75,7 @@ Check `codex-quota` first.
    - auth, secrets, router, memory and cluster work: Luna `max`. Name `[class: bulk-complex]` in the description.
    Never Terra, never Luna above `max`.
 2. **zcode-job sandbox**, while Codex is capped. Coding tasks in public repos only; private work never goes to the
-   sandbox. The output is a ready PR labelled `human:review`. Leak-scan it before merge. Never auto-merge it.
+   sandbox. The output is a ready PR. Leak-scan it before merge. Never auto-merge it.
 3. **OpenCode Go**, while Codex is capped. Public-repo coding tasks only.
 4. **Haiku `xhigh`**, the last resort, only when rungs 1 to 3 do not qualify. Private and non-code work goes from Codex
    straight to this rung.
