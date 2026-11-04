@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.59.0...v1.60.0) (2026-11-04)
+
+
+### Features
+
+* **agents:** add five model-only text agents for Dify ([#276](https://github.com/dryvist/ai-llm-prompts/issues/276)) ([f57acb7](https://github.com/dryvist/ai-llm-prompts/commit/f57acb7bcef43f2ed2b270d97fb68a2b1edcbc5b))
+
 ## [1.59.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.58.1...v1.59.0) (2026-11-04)
 
 
