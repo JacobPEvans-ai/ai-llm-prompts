@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/operating-
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-24T08:56:24-04:00"
+timestamp: "2026-11-04T20:09:30Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -56,6 +56,10 @@ Behavior that applies to every task (always-loaded status: `rule-tiers.md`). Com
   human-account grant. Big architectural decisions: ask first unless already chosen. A turn ending blocked on a
   person sends a push notification naming the decision. Routing law (incidents, private docs, everything
   else): `AGENTS.md`.
+- **Major releases are human-only.** An agent never writes a `!:` subject or a `BREAKING CHANGE:` footer,
+  never sets a major `release-as`, and never plans, dispatches or tags a major release, even on request.
+  Ship compatible changes as minor or patch releases, with rename shims. If a change can't be made
+  compatible, stop and ask the operator, who makes the major release.
 - **Questions.** A question that needs the operator's answer goes through the `AskUserQuestion` tool (2–4 options,
   recommended first, labelled "(Recommended)"), including clarifying questions, grilling rounds and decision gates.
   Never leave an answer-dependent question only as reply text, and never end a turn silently blocked on a person;

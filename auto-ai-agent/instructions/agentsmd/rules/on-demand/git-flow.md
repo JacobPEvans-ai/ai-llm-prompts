@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-04T14:05:00Z"
+timestamp: "2026-11-04T20:09:30Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -72,8 +72,7 @@ complete only when:
    (flake inputs) or a `>=N,<N+1` range pick up the release with no bump PR.
    Verify the tag points at the release commit. Consumers' `flake.lock` files
    catch up in Renovate's weekend lock maintenance; nothing pushes into
-   another repo. A breaking change ships as a new major (`vN+1`), which
-   consumers adopt through their own Renovate PR.
+   another repo. A new major (`vN+1`) is human-only: see `operating-core.md`.
 
 Report a promotion as complete only with both done.
 
