@@ -1,0 +1,85 @@
+app: {description: 'Group changed paths into topical commits with caller-supplied message prefixes.', mode: workflow, name: __DIFY_AGENT_NAME__}
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  environment_variables: []
+  graph:
+    edges:
+      - {data: {sourceType: start, targetType: llm}, id: e1, source: start, sourceHandle: source, target: model, targetHandle: target, type: custom}
+      - {data: {sourceType: llm, targetType: code}, id: e2, source: model, sourceHandle: source, target: validate, targetHandle: target, type: custom}
+      - {data: {sourceType: code, targetType: end}, id: e3, source: validate, sourceHandle: source, target: done, targetHandle: target, type: custom}
+    nodes:
+      - data:
+          title: Start
+          type: start
+          variables:
+            - {variable: text, label: text, type: paragraph, required: true, max_length: 30000, options: [], hint: 'JSON object with allowed_prefixes and changes (git status --porcelain -u output)'}
+        id: start
+        position: {x: 40, y: 300}
+        type: custom
+      - data:
+          model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          prompt_template:
+            - id: system-prompt
+              role: system
+              text: |-
+                __DIFY_SYSTEM_PROMPT__
+            - {id: user-prompt, role: user, text: 'Untrusted input: {{#start.text#}}'}
+          prompt_config: {jinja2_variables: []}
+          title: Group changes
+          type: llm
+        id: model
+        position: {x: 340, y: 300}
+        type: custom
+      - data:
+          # Callers receive only an envelope that matches output_schema; anything else becomes status stop.
+          code: |-
+            import json
+            __DIFY_HELPER_JSON_FENCE__
+            __DIFY_HELPER_ENVELOPE__
+            SCHEMA = json.loads(__DIFY_OUTPUT_SCHEMA__)
+            def result_problem(result, text):
+                try:
+                    data = json.loads(text)
+                    prefixes, changes = data["allowed_prefixes"], data["changes"]
+                    lines = [line for line in changes.split("\n") if len(line) > 3]
+                except (AttributeError, TypeError, ValueError, KeyError):
+                    return "input must be a JSON object with allowed_prefixes and changes"
+                if not isinstance(prefixes, list) or not all(isinstance(prefix, str) and prefix for prefix in prefixes):
+                    return "allowed_prefixes must be a list of non-empty strings"
+                want = sorted(line[3:].split(" -> ")[-1].strip('"') for line in lines)
+                got = sorted(path for group in result["groups"] for path in group["paths"])
+                if got != want:
+                    return "reply.result.groups must hold every input path exactly once"
+                if not all(any(group["message"].startswith(prefix) for prefix in prefixes) for group in result["groups"]):
+                    return "every reply.result.groups message must start with an allowed prefix"
+                return None
+            def main(reply: str, text: str) -> dict:
+                if not str(text).strip():
+                    envelope = {"status": "stop", "reason": "input is empty", "result": None}
+                else:
+                    parsed, problem = check_envelope(reply, SCHEMA)
+                    if problem is None and parsed["status"] == "ok":
+                        problem = result_problem(parsed["result"], text)
+                    envelope = parsed if problem is None else {"status": "stop", "reason": problem, "result": None}
+                return {"status": envelope["status"], "envelope": json.dumps(envelope, ensure_ascii=False)}
+          code_language: python3
+          outputs: {status: {type: string}, envelope: {type: string}}
+          title: Validate reply
+          type: code
+          variables:
+            - {variable: reply, value_selector: [model, text]}
+            - {variable: text, value_selector: [start, text]}
+        id: validate
+        position: {x: 640, y: 300}
+        type: custom
+      - data:
+          outputs:
+            - {variable: status, value_selector: [validate, status]}
+            - {variable: envelope, value_selector: [validate, envelope]}
+          title: End
+          type: end
+        id: done
+        position: {x: 940, y: 300}
+        type: custom

@@ -1,0 +1,46 @@
+name: commit-grouper
+owner: agent-platform
+home_platform: dify
+mode: shadow
+prompt: agents/prompts/commit-grouper.md
+shared_prefix: agents/prompts/shared/homelab.md
+# Model-only agent: its one external call is the router chat completion. It has no MCP or API tools and makes no writes.
+tools: [litellm.chat_completions]
+mcp_servers: []
+privacy_class: internal
+# LiteLLM router role, not a model ID.
+litellm_role: medium
+trigger: {kind: call}
+callers: any
+channels: [caller, langfuse-trace]
+memory_scope: none
+eval_set: agents/evals/commit-grouper.yaml
+identity: agent-commit-grouper
+api_key_ref: openbao://agent-key/commit-grouper
+input: 'JSON object: {"allowed_prefixes": ["..."], "changes": "<git status --porcelain -u output>"}'
+# The Validate reply node also requires every input path in exactly one group and an allowed prefix on every message.
+output_schema:
+  type: object
+  required: [status, reason, result]
+  additionalProperties: false
+  properties:
+    status: {enum: [ok, refused, stop]}
+    reason: {type: string}
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
+          required: [groups]
+          additionalProperties: false
+          properties:
+            groups:
+              type: array
+              minItems: 1
+              maxItems: 8
+              items:
+                type: object
+                required: [message, paths]
+                additionalProperties: false
+                properties:
+                  message: {type: string, minLength: 20, maxLength: 120}
+                  paths: {type: array, minItems: 1, items: {type: string}}
