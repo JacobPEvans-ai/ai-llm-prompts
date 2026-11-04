@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-29T22:50:32Z"
+timestamp: "2026-11-04T14:05:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -122,9 +122,9 @@ signal. This check applies to git-flow repos only; a trunk repo has no `develop`
 6. **Every change to `develop` goes through a PR** — the org ruleset enforces
    it, so a direct push is rejected (`GH013: Repository rule violations`).
    Never plan a "quick direct commit" to `develop`; branch and open a PR.
-7. **Merging**: The org `pr-automerge` workflow arms non-draft PRs without
-   `human:review`, never a `develop` to `main` promotion. Agents never arm
-   auto-merge; a draft or `human:review` holds a PR.
+7. **Merging**: The org `pr-automerge` workflow arms eligible PRs, never a
+   `develop` to `main` promotion. Agents never arm auto-merge; a draft
+   holds a PR.
 
 ## Bot-owned files in rebases and merges
 

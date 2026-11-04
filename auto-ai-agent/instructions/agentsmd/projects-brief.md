@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/projects-brief"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-25T13:24:22-04:00"
+timestamp: "2026-11-04T10:00:00-04:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -78,9 +78,9 @@ system, privileged rebuilds, and every infrastructure converge or apply. When a 
 - Branch `<type>/<sid8>-<slug>` from the repository's default branch and target it. `<type>` is the
   Conventional Commits type (`feat`, `fix`, …). `<sid8>` is the first 8
   characters after `cse_` in `CLAUDE_CODE_REMOTE_SESSION_ID`, or of the local session ID.
-- Open a PR at your first commit; it is your claim on the work. If it must wait, keep it as a draft or add `human:review`.
+- Open a PR at your first commit; it is your claim on the work. If it must wait, keep it as a draft.
   Check for an open PR on the same change before you start.
-- The org `pr-automerge` workflow arms non-draft PRs without `human:review`; agents never arm auto-merge.
+- The org `pr-automerge` workflow arms eligible PRs; agents never arm auto-merge.
 - A PR under 15 changed lines and under 5 files gets `--label fast-path` at `gh pr create`. The gate then skips
   the heavy test jobs and still runs the secret scan and commit checks. Add it at creation; a later label does not
   rerun the gate.
@@ -88,7 +88,7 @@ system, privileged rebuilds, and every infrastructure converge or apply. When a 
   merge commit only.
 - Push work in progress at least every 30 minutes. The sandbox can restart from a fresh clone.
 - Make atomic commits, one change per commit.
-- Never merge a PR by hand or bypass a check. The org workflow waits for required checks; a draft or `human:review` holds a PR for a person.
+- Never merge a PR by hand or bypass a check. The org workflow waits for required checks; a draft holds a PR for a person.
 
 ## What you write
 

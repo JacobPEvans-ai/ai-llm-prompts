@@ -1,5 +1,22 @@
 # Change Log
 
+## 2026-11-04
+
+* **Remove (evals)**: Drop the GitHub capability case whose only subject was the hold label.
+* **Update (automation)**: The Dependabot bundler holds a waiting pull request as a draft; the hold-label option is
+  removed.
+* **Update (agents)**: The Hermes PR sweep treats a draft as the only agent-side hold and no longer leaves hold-label
+  PRs alone.
+* **Update (agents)**: The PR shepherd keeps a pull request draft to hold it; the automerge step no longer names a
+  hold label.
+* **Update (instructions)**: The session coordination claim step holds work with a draft alone.
+* **Update (instructions)**: The git-flow merging step says the org workflow arms eligible pull requests and a
+  draft holds one.
+* **Update (instructions)**: The projects brief holds work with a draft alone; the automerge and merge bullets no
+  longer name a hold label.
+* **Update (instructions)**: The zcode-job sandbox delegation step hands back a ready pull request with no hold
+  label; the leak-scan and no-auto-merge rules stay.
+
 ## 2026-11-03
 
 * **Update (instructions)**: Add privileged-run rules to `infrastructure-conventions`: narrowest selector, full
