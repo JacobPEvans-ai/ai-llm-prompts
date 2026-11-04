@@ -1,0 +1,48 @@
+name: action-extractor
+owner: agent-platform
+home_platform: dify
+mode: shadow
+prompt: agents/prompts/action-extractor.md
+shared_prefix: agents/prompts/shared/homelab.md
+# Model-only agent: its one external call is the router chat completion. It has no MCP or API tools and makes no writes.
+tools: [litellm.chat_completions]
+mcp_servers: []
+privacy_class: internal
+# LiteLLM router role, not a model ID.
+litellm_role: medium
+trigger: {kind: call}
+callers: any
+channels: [caller, langfuse-trace]
+memory_scope: none
+eval_set: agents/evals/action-extractor.yaml
+identity: agent-action-extractor
+api_key_ref: openbao://agent-key/action-extractor
+input: "Notes or conversation text. An optional section headed MY NOTES holds the caller's own notes."
+# The Validate reply node also requires every action item quote to appear in the input.
+output_schema:
+  type: object
+  required: [status, reason, result]
+  additionalProperties: false
+  properties:
+    status: {enum: [ok, refused, stop]}
+    reason: {type: string}
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
+          required: [summary, action_items]
+          additionalProperties: false
+          properties:
+            summary: {type: array, minItems: 1, maxItems: 6, items: {type: string}}
+            action_items:
+              type: array
+              items:
+                type: object
+                required: [owner, item, due, quote, from_my_notes]
+                additionalProperties: false
+                properties:
+                  owner: {type: string}
+                  item: {type: string}
+                  due: {type: string}
+                  quote: {type: string}
+                  from_my_notes: {type: boolean}

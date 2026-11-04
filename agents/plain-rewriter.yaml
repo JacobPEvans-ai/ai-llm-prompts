@@ -1,0 +1,37 @@
+name: plain-rewriter
+owner: agent-platform
+home_platform: dify
+mode: shadow
+prompt: agents/prompts/plain-rewriter.md
+shared_prefix: agents/prompts/shared/homelab.md
+# Model-only agent: its one external call is the router chat completion. It has no MCP or API tools and makes no writes.
+tools: [litellm.chat_completions]
+mcp_servers: []
+privacy_class: internal
+# LiteLLM router role, not a model ID.
+litellm_role: medium
+trigger: {kind: call}
+callers: any
+channels: [caller, langfuse-trace]
+memory_scope: none
+eval_set: agents/evals/plain-rewriter.yaml
+identity: agent-plain-rewriter
+api_key_ref: openbao://agent-key/plain-rewriter
+input: "One Markdown draft to rewrite."
+# The Validate reply node also requires every HTML comment in the input to appear unchanged in result.text.
+output_schema:
+  type: object
+  required: [status, reason, result]
+  additionalProperties: false
+  properties:
+    status: {enum: [ok, refused, stop]}
+    reason: {type: string}
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
+          required: [text, changes]
+          additionalProperties: false
+          properties:
+            text: {type: string, minLength: 1}
+            changes: {type: integer, minimum: 0}

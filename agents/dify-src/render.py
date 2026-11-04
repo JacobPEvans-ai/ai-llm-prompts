@@ -1,6 +1,7 @@
 """Render the committed Dify workflow DSLs from templates and agent prompts."""
 
 import argparse
+import json
 from pathlib import Path
 import re
 import sys
@@ -21,11 +22,14 @@ MCP_SERVER_MARKER = "__DIFY_MCP_SERVER__"
 TOOL_NAME_MARKER = "__DIFY_TOOL_NAME__"
 TOOL_OPERATIONS_MARKER = "__DIFY_TOOL_OPERATIONS__"
 GITHUB_TOKEN_REF_MARKER = "__DIFY_GITHUB_TOKEN_REF__"
+# Replaced by a Python string literal that holds the agent output_schema as JSON.
+OUTPUT_SCHEMA_MARKER = "__DIFY_OUTPUT_SCHEMA__"
 # Shared code-node helpers: each marker line is replaced by the helper source at the marker's indent.
 HELPER_MARKERS = {
     "__DIFY_HELPER_REDACT__": SOURCE_ROOT / "helpers" / "redact.py",
     "__DIFY_HELPER_JSON_FENCE__": SOURCE_ROOT / "helpers" / "json_fence.py",
     "__DIFY_HELPER_FINDER_INPUTS__": SOURCE_ROOT / "helpers" / "finder_inputs.py",
+    "__DIFY_HELPER_ENVELOPE__": SOURCE_ROOT / "helpers" / "envelope.py",
 }
 
 sys.path.insert(0, str(AGENTS / "evals" / "promptfoo"))
@@ -146,6 +150,11 @@ def render_agent(definition_path):
     if github_reader is not None:
         replacements[GITHUB_TOKEN_REF_MARKER] = github_reader.get("github_token_ref")
         required_markers.add(GITHUB_TOKEN_REF_MARKER)
+
+    output_schema = agent.get("output_schema")
+    if output_schema is not None:
+        replacements[OUTPUT_SCHEMA_MARKER] = repr(json.dumps(output_schema, sort_keys=True))
+        required_markers.add(OUTPUT_SCHEMA_MARKER)
 
     for marker, value in replacements.items():
         if marker not in template:
