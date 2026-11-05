@@ -2,6 +2,9 @@
 
 ## 2026-11-04
 
+* **Update (auto-ai-agent)**: The Splunk deep dive bounds its utilization pass to daily-aggregated searches over an
+  8-day window, caps each result at 20 rows, and allows 3 utilization searches and 12 Splunk searches per run.
+
 * **Update (agents)**: Make the major-release rule human-only in the always-loaded operating core, with no operator-approval
   path, and point the git-flow rule's major-version line at it.
 
