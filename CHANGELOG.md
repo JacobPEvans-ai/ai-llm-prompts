@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.3](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.2...v1.61.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* **prompts:** bound the Splunk deep dive utilization pass ([#282](https://github.com/dryvist/ai-llm-prompts/issues/282)) ([affedc2](https://github.com/dryvist/ai-llm-prompts/commit/affedc2bb2a7beae6b86fce5358f2035dd99992e))
+
 ## [1.61.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.1...v1.61.2) (2026-11-04)
 
 
