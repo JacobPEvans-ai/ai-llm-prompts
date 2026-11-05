@@ -4,7 +4,7 @@ title: Hermes Splunk deep dive
 description: Quiet Splunk index or sourcetype characterization prompt.
 resource: prompt://dryvist/auto-ai-agent/hermes-splunk-deepdive
 tags: [hermes, cron, autonomous-agent]
-timestamp: 2026-07-18T16:43:26-04:00
+timestamp: 2026-11-05T08:58:00-05:00
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -18,4 +18,11 @@ source_history:
 ---
 Pick ONE index or sourcetype you have not yet characterized well (check your wiki/memory for gaps). Using only bounded queries, learn its normal shape, volume and purpose, then write or update a page in the `splunk` area of your wiki plus a memory baseline. This is a quiet research run — no alert needed.
 
-Give utilization its turn in that rotation: network throughput per host and per link, and the other saturation signals you can reach (CPU, memory, disk space and I/O, interface errors and drops). Characterize these ACROSS TIME rather than at an instant — compare the recent window against the established baseline and against the same period in prior days or weeks, because a level that looks unremarkable now is a finding when it has been climbing. Report what changed, over what window, and against which baseline; a flat trend is a valid result and is worth one line, not a page.
+Give utilization its turn in that rotation: network throughput per host and per link, and the other saturation signals you can reach (CPU, memory, disk space and I/O, interface errors and drops). Characterize these across time, not at an instant. Compare the last 24 hours against a 7-day daily baseline, because a level that looks unremarkable now is a finding when it has been climbing. Keep the pass small:
+- Run one `stats` search per signal over `earliest=-8d latest=now`, with `eval day_ago=floor((now()-_time)/86400)`, then `stats` on the signal's value by `day_ago` (plus any split-by field, such as host). Read `day_ago` 0 as the last 24 hours and 1 to 7 as the 7-day baseline. Do not run a sub-daily series across several days.
+- Keep every result to a summary: `stats` or `timechart` output of at most 20 rows. Never table raw events in this pass.
+- Run at most 3 utilization searches per run. Choose the signals with the widest spread across hosts, and name the signals you did not reach.
+- Stop after 12 Splunk searches in a run, whatever the topic, and write up what you have.
+- Run queries only with the Splunk tools. Do not try scripts or shell commands for queries.
+
+Report what changed, over what window, and against which baseline. A flat trend is a valid result and is worth one line, not a page.
