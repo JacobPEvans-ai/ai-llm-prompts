@@ -1,0 +1,76 @@
+name: pr-keeper
+owner: agent-platform
+tier: 1
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: public
+code_work: sandbox
+mode: shadow
+prompt: agents/prompts/pr-keeper.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a]
+mcp_servers: []
+connectors: [github-clerk, vikunja-clerk, zammad-clerk]
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+memory_scope: none
+identity: agent-pr-keeper
+eval_set: agents/evals/pr-keeper.yaml
+procedure:
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/finalize-pr/SKILL.md
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/resolve-pr-threads/SKILL.md
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/gh-cli-patterns/references/pr-feedback-ledger.md
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/pr-sweep/SKILL.md
+triggers:
+  - kind: event
+    source: github.pull_request.opened
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request.reopened
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request.synchronize
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request.ready_for_review
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.check_run.completed
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.workflow_run.completed
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request_review.submitted
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request_review_comment.created
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.pull_request_review_comment.edited
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.issue_comment.created
+    cadence: null
+    skew_minutes: []
+  - kind: event
+    source: github.issue_comment.edited
+    cadence: null
+    skew_minutes: []
+  - kind: schedule
+    source: open-pr-catch-up
+    cadence: "7,22,37,52 * * * *"
+    skew_minutes: [7, 22, 37, 52]

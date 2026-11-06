@@ -7,6 +7,7 @@
 * [Doc contradiction finder](doc-contradiction-finder.md) - Report contradictions between documentation pages after a merged pull request.
 * [Docs updater](docs-updater.md) - Propose safe private-documentation edits from merged pull requests or operator-decided findings.
 * [Plain rewriter](plain-rewriter.md) - Rewrite one draft in plain language and keep every fact.
+* [PR keeper](pr-keeper.md) - Reconcile open pull requests, required checks, and current review feedback.
 * [Shared homelab context](shared/homelab.md) - Static safety and routing context composed into canonical Dify prompts
   and loaded before Promptfoo agent prompts.
 * [Style gate](style-gate.md) - Check one draft against the style rules and list every violation.
