@@ -1,25 +1,30 @@
 name: docs-updater
 owner: agent-platform
+tier: 1
 home_platform: dify
+shadows: [sim, langflow]
 mode: shadow
-# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a short-lived GitHub App installation token for the event repo.
 prompt: agents/prompts/docs-updater.md
 shared_prefix: agents/prompts/shared/homelab.md
-tools:
-  - github.pulls.get
-  - github.pulls.diff
-  - github.repos.get
+tools: [a2a.send_message]
 mcp_servers: []
 privacy_class: internal
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: pull_request
-    action: [closed]
-    merged: true
-    org: dryvist
+triggers:
+  - kind: event
+    source: github.pull_request.closed
+    cadence: merged
+    skew_minutes: 0
+  - kind: call
+    source: session-lead
+    cadence: on_demand
+    skew_minutes: 0
+connectors: [github-clerk]
+code_work: none
+procedure:
+  - repo: dryvist/claude-code-plugins
+    path: ai-cli-harness-better-practices/skills/wrap-up-docs/SKILL.md
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request
@@ -27,11 +32,10 @@ mandate_binding:
     - required_fields: [repo, finding_ref, operator_decision]
       live: false
       decision_values: [A, B, neither]
+    - required_fields: [repo, handoff_ref, documentation_targets]
 channels:
   shadow: run_record_only
-  live: docs_private.pull_request # Requires a docs-private write grant, which agent-docs-updater lacks today; its GitHub set is read-only on public repos, so live stays off until the grant exists.
+  live: documentation_handoff
 memory_scope: none
 eval_set: agents/evals/docs-updater.yaml
 identity: agent-docs-updater
-secret_ref: agent-key/docs-updater
-github_token_ref: github-token/docs-updater
