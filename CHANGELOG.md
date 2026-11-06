@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.65.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.64.0...v1.65.0) (2026-11-06)
+
+
+### Features
+
+* add Pepper project manager persona ([#303](https://github.com/dryvist/ai-llm-prompts/issues/303)) ([393d4db](https://github.com/dryvist/ai-llm-prompts/commit/393d4db92c193e6460c4b6d13571f488a6c9ccd3))
+
 ## [1.64.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.63.0...v1.64.0) (2026-11-06)
 
 
