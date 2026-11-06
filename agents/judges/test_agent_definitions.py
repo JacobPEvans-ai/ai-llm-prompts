@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from definitions import definition, definitions, resolved_records
+from test_promptfoo_cases import cases
 from test_triggers import validate_triggers
 from test_authoring_standards import (
     validate_description, validate_eval_policy, validate_eval_suite,
@@ -232,7 +233,7 @@ def test_roster_passes_profile_and_authoring_standards():
         validate_source(source, record["profile"])
         validate_description(agent)
         validate_eval_policy(agent)
-        suite = yaml.safe_load((_ROOT / agent["eval_set"]).read_text())
+        suite = cases.load_suite(_ROOT / agent["eval_set"])
         assert suite["agent"] == agent["name"]
         validate_eval_suite(suite)
     validate_unique_jobs(
