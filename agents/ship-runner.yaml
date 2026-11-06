@@ -1,0 +1,34 @@
+name: ship-runner
+owner: agent-platform
+tier: 0
+triggers:
+  - {kind: call, source: implementation-lead, cadence: null, skew_minutes: null}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: internal
+connectors: [github-clerk]
+code_work: sandbox
+mode: shadow
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/ship/SKILL.md}
+prompt: agents/prompts/ship-runner.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [agentgateway.a2a, agent-sandbox.jobs]
+mcp_servers: []
+litellm_role: medium
+callers: [implementation-lead]
+channels: [caller, langfuse-trace, phoenix-trace]
+memory_scope: none
+eval_set: agents/evals/ship-runner.yaml
+identity: agent-ship-runner
+input: Approved change set, repository, sandbox worktree, branch, base, expected head, allowed paths, and acceptance commands.
+output_schema:
+  type: object
+  required: [status, commits, pr, handoff, reason]
+  additionalProperties: false
+  properties:
+    status: {enum: [shipped, planned, refused, stop]}
+    commits: {type: array, items: {type: string}}
+    pr: {type: [string, "null"]}
+    handoff: {enum: [pr-keeper, none]}
+    reason: {type: string}
