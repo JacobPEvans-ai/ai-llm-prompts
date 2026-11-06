@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.68.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.67.0...v1.68.0) (2026-11-06)
+
+
+### Features
+
+* **agents:** add the tier-2 rotation driver ([#302](https://github.com/dryvist/ai-llm-prompts/issues/302)) ([555b513](https://github.com/dryvist/ai-llm-prompts/commit/555b513028fb43eb12303bfa2e393de45c2fb082))
+
 ## [1.67.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.66.0...v1.67.0) (2026-11-06)
 
 
