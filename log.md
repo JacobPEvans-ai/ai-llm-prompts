@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-11-06
+
+* **Add (agents)**: Define Donna, scheduled news, Slack, memory and backlog tasks, and five local scouting tasks with
+  private routing, connector proposals, dated model dossiers, and Promptfoo suites.
+
 ## 2026-11-04
 
 * **Update (auto-ai-agent)**: The Splunk deep dive bounds its utilization pass to one search per signal over an 8-day

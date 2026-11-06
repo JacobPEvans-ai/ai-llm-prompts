@@ -1,0 +1,36 @@
+name: slack-digest
+owner: agent-platform
+schema_version: 2
+home_platform: hermes
+mode: shadow
+tier: 2
+prompt: agents/prompts/slack-digest.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [litellm.chat_completions, a2a.call]
+mcp_servers: []
+privacy_class: private
+litellm_role: review-local
+trigger: &primary_trigger {kind: schedule, cron: "7 13,21 * * *", timezone: UTC}
+triggers: [*primary_trigger]
+connectors: ["slack-clerk"]
+peers: []
+code_work: none
+routing: {local_only: true, cloud_fallback: false, max_wait_seconds: 43200}
+a2a: {gateway: agentgateway, identity_check: required, allowlist_from: [connectors, peers]}
+channels: [caller, langfuse-trace, phoenix-trace]
+observability:
+  attributes: [agent, tier, privacy_class, model, accelerator]
+memory_scope: none
+identity: agent-slack-digest
+api_key_ref: openbao://agent-key/slack-digest
+eval_set: agents/evals/slack-digest.yaml
+input: >-
+  A structured task with operator-managed config, retrieved source records, UTC now, bookmarks,
+  delivery_ledger, and connector receipts. Secrets and integration credentials are never inputs.
+parameters:
+  channel_ids: {type: array, items: {type: string}, default: []}
+output_schema: {"type":"object","required":["status","reply","proposals","state_updates"],"additionalProperties":false,"properties":{"status":{"enum":["ok","silent","stop","refused"]},"reply":{"type":"string"},"proposals":{"type":"array","items":{"type":"object"}},"state_updates":{"type":"array","items":{"type":"object"}}}}
+source_replacements:
+  - path: roles/hermes_agent/defaults/main/147-donna-work-crons.yml
+    prompt: "hermes_agent_donna_slack_digest_prompt"
+    pull_request: 2042

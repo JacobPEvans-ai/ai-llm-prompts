@@ -1,0 +1,38 @@
+name: model-watch
+owner: agent-platform
+schema_version: 2
+home_platform: hermes
+mode: shadow
+tier: 2
+prompt: agents/prompts/model-watch.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [litellm.chat_completions, a2a.call, web_search, web_extract]
+mcp_servers: []
+privacy_class: private
+litellm_role: review-local
+trigger: &primary_trigger {kind: schedule, cron: "2 1 * * *", timezone: UTC}
+triggers: [*primary_trigger]
+connectors: ["github-clerk"]
+peers: ["model-benchmarker"]
+code_work: none
+routing: {local_only: true, cloud_fallback: false, max_wait_seconds: 43200}
+a2a: {gateway: agentgateway, identity_check: required, allowlist_from: [connectors, peers]}
+channels: [caller, langfuse-trace, phoenix-trace]
+observability:
+  attributes: [agent, tier, privacy_class, model, accelerator]
+memory_scope: none
+identity: agent-model-watch
+api_key_ref: openbao://agent-key/model-watch
+eval_set: agents/evals/model-watch.yaml
+input: >-
+  A structured task with operator-managed config, retrieved source records, UTC now, bookmarks,
+  delivery_ledger, and connector receipts. Secrets and integration credentials are never inputs.
+parameters:
+  llm_model_watch_orgs: {type: array, items: {type: string}, default: [Qwen, mlx-community, unsloth, nvidia, bartowski]}
+  llm_model_watch_limit_per_org: {type: integer, minimum: 1, default: 100}
+  llm_model_watch_accelerators: {type: array, items: {type: object}, default: []}
+output_schema: {"type":"object","required":["status","reply","proposals","state_updates"],"additionalProperties":false,"properties":{"status":{"enum":["ok","silent","stop","refused"]},"reply":{"type":"string"},"proposals":{"type":"array","items":{"type":"object"}},"state_updates":{"type":"array","items":{"type":"object"}}}}
+source_replacements:
+  - path: roles/llm_model_watch/defaults/main.yml
+    prompt: "roles/llm_model_watch/tasks/run.yml"
+    pull_request: 2038
