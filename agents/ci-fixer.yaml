@@ -167,3 +167,2373 @@ guards:
       permission: issues:write
       repositories: [mandate_repo_only]
       max_lifetime: 1h
+dify:
+  app: {description: Bounded CI repair for eligible same-repository pull requests; source writes stay disabled until log redaction
+      is available., icon: 🤖, icon_background: '#D5F5F6', mode: workflow, name: __DIFY_AGENT_NAME__, use_icon_as_answer_icon: false}
+  dependencies: []
+  kind: app
+  version: 0.7.0
+  workflow:
+    conversation_variables: []
+    environment_variables:
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000001
+      name: OPENBAO_ADDR
+      value: ''
+      value_type: string
+      description: OpenBao base URL supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000002
+      name: OPENBAO_ROLE_ID
+      value: ''
+      value_type: secret
+      description: OpenBao AppRole role ID supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000003
+      name: OPENBAO_SECRET_ID
+      value: ''
+      value_type: secret
+      description: OpenBao AppRole secret ID supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000004
+      name: GITHUB_API_BASE
+      value: ''
+      value_type: string
+      description: GitHub API base URL supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000005
+      name: GITHUB_TOKEN_MINT_PATH
+      value: ''
+      value_type: string
+      description: Approved installation-token mint path supplied in the Dify workspace.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000007
+      name: ENABLE_PUSH
+      value: 'false'
+      value_type: string
+      description: Source writes require the exact value true and all code guards.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000008
+      name: GITHUB_TOKEN_WRITE_SET
+      value: ''
+      value_type: string
+      description: OpenBao GitHub token set used for live comments and source writes.
+      selector: []
+    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000009
+      name: GITHUB_TOKEN_READ_SET
+      value: ''
+      value_type: string
+      description: OpenBao read-only GitHub token set used in shadow mode.
+      selector: []
+    features:
+      file_upload: {enabled: false}
+      opening_statement: ''
+      retriever_resource: {enabled: false}
+      sensitive_word_avoidance: {enabled: false}
+      speech_to_text: {enabled: false}
+      suggested_questions: []
+      suggested_questions_after_answer: {enabled: false}
+      text_to_speech: {enabled: false}
+    graph:
+      edges:
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: login-parse
+        source: openbao_login
+        sourceHandle: source
+        target: parse_openbao
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: login-branch
+        source: parse_openbao
+        sourceHandle: source
+        target: login_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: login-failed
+        source: login_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: mint-parse
+        source: mint_github_token
+        sourceHandle: source
+        target: parse_github_token
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: token-branch
+        source: parse_github_token
+        sourceHandle: source
+        target: token_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: token-ready
+        source: token_gate
+        sourceHandle: ready
+        target: get_check_run
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: token-failed
+        source: token_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+        id: pr-rules
+        source: get_pull_request
+        sourceHandle: source
+        target: get_branch_rules
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+        id: rules-files
+        source: get_branch_rules
+        sourceHandle: source
+        target: get_pull_files
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+        id: files-head-commit
+        source: get_pull_files
+        sourceHandle: source
+        target: get_head_commit
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: preflight-checks
+        source: get_head_commit
+        sourceHandle: source
+        target: guard_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}
+        id: preflight-branch
+        source: guard_context
+        sourceHandle: source
+        target: prepare_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: context-preflight
+        source: prepare_context
+        sourceHandle: source
+        target: preflight_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: preflight-eligible
+        source: preflight_gate
+        sourceHandle: eligible
+        target: safe_context_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: preflight-comment
+        source: preflight_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: llm}
+        id: safe-context-model
+        source: safe_context_gate
+        sourceHandle: safe
+        target: fixer_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: unsafe-context-comment
+        source: safe_context_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: code}
+        id: llm-validate
+        source: fixer_llm
+        sourceHandle: source
+        target: validate_patch
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: push-authorized
+        source: push_gate
+        sourceHandle: eligible
+        target: create_blob
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: blob-parse
+        source: create_blob
+        sourceHandle: source
+        target: parse_blob
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: recheck-guard
+        source: recheck_pull_request
+        sourceHandle: source
+        target: guard_ref_update
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: ref-update-branch
+        source: guard_ref_update
+        sourceHandle: source
+        target: ref_update_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: code}
+        id: mandate-start
+        source: start
+        sourceHandle: source
+        target: validate_mandate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: mandate-validate
+        source: validate_mandate
+        sourceHandle: source
+        target: mandate_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: mandate-valid
+        source: mandate_gate
+        sourceHandle: eligible
+        target: openbao_login
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: mandate-invalid
+        source: mandate_gate
+        sourceHandle: false
+        target: end_handback_mandate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: login-token-request
+        source: login_gate
+        sourceHandle: ready
+        target: token_request
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: token-request-gate
+        source: token_request
+        sourceHandle: source
+        target: token_request_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: token-request-ready
+        source: token_request_gate
+        sourceHandle: eligible
+        target: mint_github_token
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: token-request-failed
+        source: token_request_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: check-target-validate
+        source: get_check_run
+        sourceHandle: source
+        target: extract_check_target
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: check-target-gate
+        source: extract_check_target
+        sourceHandle: source
+        target: check_target_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: check-target-valid
+        source: check_target_gate
+        sourceHandle: eligible
+        target: get_annotations
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: check-target-invalid
+        source: check_target_gate
+        sourceHandle: false
+        target: prepare_handback
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: patch-mode-branch
+        source: validate_patch
+        sourceHandle: source
+        target: mode_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: patch-shadow-proposal
+        source: mode_gate
+        sourceHandle: eligible
+        target: end_proposed
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: patch-live-branch
+        source: mode_gate
+        sourceHandle: false
+        target: push_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}
+        id: blob-tree-build
+        source: parse_blob
+        sourceHandle: source
+        target: build_tree_request
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}
+        id: tree-guard
+        source: build_tree_request
+        sourceHandle: source
+        target: guard_tree_write
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: tree-guard-branch
+        source: guard_tree_write
+        sourceHandle: source
+        target: tree_write_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: tree-authorized
+        source: tree_write_gate
+        sourceHandle: eligible
+        target: create_tree
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: tree-denied
+        source: tree_write_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: tree-commit-guard
+        source: create_tree
+        sourceHandle: source
+        target: guard_commit_write
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: commit-guard-branch
+        source: guard_commit_write
+        sourceHandle: source
+        target: commit_write_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: commit-authorized
+        source: commit_write_gate
+        sourceHandle: eligible
+        target: create_commit
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: commit-denied
+        source: commit_write_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+        id: commit-pr-recheck
+        source: create_commit
+        sourceHandle: source
+        target: recheck_pull_request
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: ref-update-authorized
+        source: ref_update_gate
+        sourceHandle: eligible
+        target: update_ref
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: ref-update-stale
+        source: ref_update_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: end}
+        id: ref-updated
+        source: update_ref
+        sourceHandle: source
+        target: end_pushed
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: code}
+        id: comment-submit-guard
+        source: prepare_comment
+        sourceHandle: source
+        target: guard_comment_write
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: comment-guard-branch
+        source: guard_comment_write
+        sourceHandle: source
+        target: comment_write_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: comment-authorized
+        source: comment_write_gate
+        sourceHandle: eligible
+        target: post_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: comment-denied
+        source: comment_write_gate
+        sourceHandle: false
+        target: end_handback_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: end}
+        id: comment-end
+        source: post_comment
+        sourceHandle: source
+        target: end_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: end}
+        id: handback-end
+        source: prepare_handback
+        sourceHandle: source
+        target: end_handback_run
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - id: push-disabled-comment
+        source: push_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+        data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: push-disabled-comment
+        source: push_gate
+        sourceHandle: false
+        target: prepare_comment
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      nodes:
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'}
+          desc: Logs in through AppRole.
+          headers: 'Content-Type: application/json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: OpenBao AppRole login
+          type: http-request
+          url: '{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login'
+        height: 90
+        id: openbao_login
+        position: {x: 942, y: 350}
+        positionAbsolute: {x: 942, y: 350}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def main(response_body: str) -> dict:
+                try:
+                    token = json.loads(response_body).get("auth", {}).get("client_token", "")
+                except (TypeError, ValueError, AttributeError):
+                    token = ""
+                return {"client_token": token, "ready": 1 if token else 0}
+          code_language: python3
+          desc: Extracts the AppRole client token.
+          outputs:
+            client_token: {type: string, children: null}
+            ready: {type: number, children: null}
+          selected: false
+          title: Parse OpenBao response
+          type: code
+          variables:
+          - variable: response_body
+            value_selector: [openbao_login, body]
+        height: 54
+        id: parse_openbao
+        position: {x: 1246, y: 350}
+        positionAbsolute: {x: 1246, y: 350}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, actor: str, event: str, strength: str, check_run_body: str, annotations_body: str, files_body: str) -> dict:
+                context = {"event": event, "strength": strength, "actor": actor, "repository": repo,
+                    "pull_request_number": pr_number, "head_ref": ref, "head_sha": head_sha,
+                    "check_run": check_run_body, "annotations": annotations_body, "files": files_body,
+                    "logs": "unavailable until approved log redaction is connected"}
+                return {"review_context": json.dumps(context, ensure_ascii=False)}
+          code_language: python3
+          desc: Builds bounded, redacted context.
+          outputs:
+            review_context: {type: string, children: null}
+          selected: false
+          title: Prepare CI repair context
+          type: code
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: actor
+            value_selector: [start, actor]
+          - variable: event
+            value_selector: [start, event]
+          - variable: strength
+            value_selector: [start, strength]
+          - variable: check_run_body
+            value_selector: [get_check_run, body]
+          - variable: annotations_body
+            value_selector: [get_annotations, body]
+          - variable: files_body
+            value_selector: [get_pull_files, body]
+        height: 54
+        id: prepare_context
+        position: {x: 4742, y: 200}
+        positionAbsolute: {x: 4742, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: ready
+            id: ready
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: login-ready
+              value: '1'
+              varType: number
+              variable_selector: [parse_openbao, ready]
+          desc: Stops when AppRole login fails.
+          selected: false
+          title: OpenBao token gate
+          type: if-else
+        height: 126
+        id: login_gate
+        position: {x: 1550, y: 350}
+        positionAbsolute: {x: 1550, y: 350}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_openbao.client_token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{{#token_request.request_json#}}'}
+          desc: Mints a scoped installation token.
+          headers: 'Content-Type: application/json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Mint repository-scoped GitHub token
+          type: http-request
+          url: '{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}'
+        height: 90
+        id: mint_github_token
+        position: {x: 1854, y: 300}
+        positionAbsolute: {x: 1854, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def main(response_body: str) -> dict:
+                try:
+                    data = json.loads(response_body)
+                    token = data.get("token", data.get("installation_token", ""))
+                except (TypeError, ValueError, AttributeError):
+                    token = ""
+                return {"token": token, "ready": 1 if token else 0}
+          code_language: python3
+          desc: Extracts the scoped installation token.
+          outputs:
+            token: {type: string, children: null}
+            ready: {type: number, children: null}
+          selected: false
+          title: Parse GitHub token
+          type: code
+          variables:
+          - variable: response_body
+            value_selector: [mint_github_token, body]
+        height: 54
+        id: parse_github_token
+        position: {x: 2158, y: 300}
+        positionAbsolute: {x: 2158, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: ready
+            id: ready
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: token-ready
+              value: '1'
+              varType: number
+              variable_selector: [parse_github_token, ready]
+          desc: Stops when token minting fails.
+          selected: false
+          title: GitHub token gate
+          type: if-else
+        height: 126
+        id: token_gate
+        position: {x: 2462, y: 300}
+        positionAbsolute: {x: 2462, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads the mandated check run.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read check run
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}'
+        height: 90
+        id: get_check_run
+        position: {x: 2766, y: 200}
+        positionAbsolute: {x: 2766, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads annotations; no raw logs.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: 'per_page: 100'
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read check annotations
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}/annotations'
+        height: 90
+        id: get_annotations
+        position: {x: 3070, y: 200}
+        positionAbsolute: {x: 3070, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads the PR linked to the check run.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read pull request
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}'
+        height: 90
+        id: get_pull_request
+        position: {x: 3374, y: 200}
+        positionAbsolute: {x: 3374, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads rules before write eligibility.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read branch rules
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#validate_mandate.encoded_ref#}}'
+        height: 90
+        id: get_branch_rules
+        position: {x: 3678, y: 200}
+        positionAbsolute: {x: 3678, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads changed files and line counts.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: 'per_page: 100'
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read pull request files
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}/files'
+        height: 90
+        id: get_pull_files
+        position: {x: 3982, y: 200}
+        positionAbsolute: {x: 3982, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Reads the current head tree.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Read current head commit
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits/{{#start.head_sha#}}'
+        height: 90
+        id: get_head_commit
+        position: {x: 4286, y: 200}
+        positionAbsolute: {x: 4286, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
+            LOG_REDACTION_AVAILABLE = False
+
+            def main(payload_repo: str, payload_head_ref: str, payload_head_sha: str, payload_check_run_id: int, payload_pr_number: int, check_run_body: str, annotations_body: str, current_pr_body: str, rules_body: str, files_body: str, head_commit_body: str, mode: str) -> dict:
+                try:
+                    check, annotations, pr = json.loads(check_run_body), json.loads(annotations_body), json.loads(current_pr_body)
+                    rules, files, commit = json.loads(rules_body), json.loads(files_body), json.loads(head_commit_body)
+                except (TypeError, ValueError):
+                    return {"eligible": 0, "model_allowed": 0, "tree_sha": "", "current_head_sha": "", "reason": "GitHub context could not be read"}
+                if isinstance(rules, dict):
+                    rules = rules.get("rules")
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                tree = commit.get("tree") if isinstance(commit.get("tree"), dict) else {}
+                changed_lines, counts_valid = 0, isinstance(files, list) and len(files) <= 3
+                if counts_valid:
+                    for item in files:
+                        if not isinstance(item, dict):
+                            counts_valid = False
+                            break
+                        additions, deletions = item.get("additions"), item.get("deletions")
+                        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in (additions, deletions)):
+                            counts_valid = False
+                            break
+                        changed_lines += additions + deletions
+                context_text = json.dumps({"check": check, "annotations": annotations, "files": files}, ensure_ascii=False)
+                safe_context = not SECRET_RE.search(context_text)
+                valid = (isinstance(annotations, list) and isinstance(rules, list) and len(rules) == 0 and pr.get("state") == "open"
+                    and pr.get("number") == payload_pr_number and base_repo.get("full_name", "").lower() == payload_repo.lower()
+                    and head_repo.get("full_name", "").lower() == payload_repo.lower() and head.get("ref") == payload_head_ref
+                    and head.get("sha") == payload_head_sha and payload_head_ref not in {"main", "develop"}
+                    and SHA_RE.fullmatch(payload_head_sha) is not None and check.get("id") == payload_check_run_id
+                    and check.get("status") == "completed" and check.get("conclusion") == "failure" and check.get("head_sha") == payload_head_sha
+                    and check.get("head_branch") == payload_head_ref and counts_valid and changed_lines <= 120
+                    and SHA_RE.fullmatch(tree.get("sha", "")) is not None)
+                comment_allowed = (pr.get("number") == payload_pr_number and isinstance(payload_pr_number, int) and not isinstance(payload_pr_number, bool)
+                    and payload_pr_number > 0 and base_repo.get("full_name", "").lower() == payload_repo.lower()
+                    and head.get("ref") == payload_head_ref and head.get("sha") == payload_head_sha)
+                model_allowed = bool(valid and safe_context and (mode == "shadow" or LOG_REDACTION_AVAILABLE))
+                return {"eligible": 1 if valid else 0, "comment_allowed": 1 if comment_allowed else 0,
+                    "model_allowed": 1 if model_allowed else 0, "tree_sha": tree.get("sha", "") if valid else "",
+                    "current_head_sha": head.get("sha", ""), "changed_lines": changed_lines,
+                    "reason": "" if model_allowed else "bounded context or secret scan did not authorize model input"}
+          code_language: python3
+          desc: Rejects fork, stale, protected, and oversized PRs.
+          outputs:
+            eligible: {type: number, children: null}
+            comment_allowed: {type: number, children: null}
+            model_allowed: {type: number, children: null}
+            tree_sha: {type: string, children: null}
+            current_head_sha: {type: string, children: null}
+            changed_lines: {type: number, children: null}
+            reason: {type: string, children: null}
+          selected: false
+          title: Guard pull request and branch rules
+          type: code
+          variables:
+          - variable: payload_repo
+            value_selector: [start, repo]
+          - variable: payload_head_ref
+            value_selector: [start, ref]
+          - variable: payload_head_sha
+            value_selector: [start, head_sha]
+          - variable: payload_check_run_id
+            value_selector: [start, check_run_id]
+          - variable: payload_pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: check_run_body
+            value_selector: [get_check_run, body]
+          - variable: annotations_body
+            value_selector: [get_annotations, body]
+          - variable: current_pr_body
+            value_selector: [get_pull_request, body]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+          - variable: files_body
+            value_selector: [get_pull_files, body]
+          - variable: head_commit_body
+            value_selector: [get_head_commit, body]
+          - variable: mode
+            value_selector: [start, mode]
+        height: 54
+        id: guard_context
+        position: {x: 4590, y: 200}
+        positionAbsolute: {x: 4590, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: pr-eligible
+              value: '1'
+              varType: number
+              variable_selector: [guard_context, eligible]
+          desc: Gates model use on current eligible PRs.
+          selected: false
+          title: Pull request gate
+          type: if-else
+        height: 126
+        id: preflight_gate
+        position: {x: 4894, y: 200}
+        positionAbsolute: {x: 4894, y: 200}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: safe
+            id: safe
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: model-safe
+              value: '1'
+              varType: number
+              variable_selector: [guard_context, model_allowed]
+          desc: Gates model access on log redaction.
+          selected: false
+          title: Redaction gate
+          type: if-else
+        height: 126
+        id: safe_context_gate
+        position: {x: 5198, y: 100}
+        positionAbsolute: {x: 5198, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Applies the CI repair prompt.
+          memory:
+            enabled: false
+            window: {enabled: false, size: 10}
+          model:
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+            name: __DIFY_LITELLM_ROLE__
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_config:
+            jinja2_variables: []
+          prompt_template:
+          - role: system
+            text: |
+              __DIFY_SYSTEM_PROMPT__
+          - {role: user, text: '{{#prepare_context.review_context#}}'}
+          selected: false
+          title: CI repair model
+          type: llm
+          vision:
+            enabled: false
+            configs:
+              variable_selector: []
+        height: 90
+        id: fixer_llm
+        position: {x: 5502, y: 100}
+        positionAbsolute: {x: 5502, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SECRET_RE = re.compile(r"(?i)(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{24,})")
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            LOG_REDACTION_AVAILABLE = False
+            DENIED_PARTS = {".github", "vendor", "generated", "node_modules"}
+
+            __DIFY_HELPER_JSON_FENCE__
+            def main(model_text: str, files_body: str, enable_push: str, eligible: int, repo: str, pr_number: int, ref: str, head_sha: str, mode: str, actor: str, event: str, strength: str, current_pr_body: str, rules_body: str) -> dict:
+                try:
+                    result, files = json.loads(strip_json_fence(model_text)), json.loads(files_body)
+                    pr, rules = json.loads(current_pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                except (TypeError, ValueError, AttributeError):
+                    result, files, pr, rules = {}, [], {}, None
+                changed_paths = {item.get("filename") for item in files if isinstance(item, dict)} if isinstance(files, list) else set()
+                patches = result.get("patches", []) if isinstance(result, dict) else []
+                valid = isinstance(patches, list) and 0 < len(patches) <= 3 and result.get("decision") == "commit"
+                total_changed_lines, diffs_valid, selected = 0, True, None
+                if valid:
+                    for patch in patches:
+                        if not isinstance(patch, dict):
+                            valid = False
+                            break
+                        path, content = patch.get("path"), patch.get("content")
+                        if not isinstance(path, str) or not isinstance(content, str) or path not in changed_paths:
+                            valid = False
+                            break
+                        parts = path.split("/")
+                        if path.startswith("/") or ".." in parts or any(part in DENIED_PARTS for part in parts):
+                            valid = False
+                            break
+                        if path.endswith((".lock", ".sum", ".min.js", ".min.css")) or SECRET_RE.search(content):
+                            valid = False
+                            break
+                        diff = patch.get("diff")
+                        if not isinstance(diff, str) or not any(line.startswith("@@") for line in diff.splitlines()):
+                            diffs_valid, valid = False, False
+                            break
+                        total_changed_lines += sum(1 for line in diff.splitlines() if (line.startswith("+") and not line.startswith("+++")) or (line.startswith("-") and not line.startswith("---")))
+                        if selected is None:
+                            selected = (path, content)
+                line_limit_ok = isinstance(patches, list) and diffs_valid and total_changed_lines <= 120
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                target_ok = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules)
+                push_allowed = bool(valid and line_limit_ok and eligible == 1 and target_ok and strength == "explicit"
+                    and mode == "live" and enable_push == "true" and LOG_REDACTION_AVAILABLE and len(patches) == 1)
+                path, content = selected if selected else ("", "")
+                artifact = json.dumps({"decision": "commit", "patches": patches}, ensure_ascii=False) if valid and line_limit_ok else json.dumps({"decision": "comment", "patches": []})
+                trace = json.dumps({"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}, ensure_ascii=False)
+                status = "ready" if push_allowed else "proposed" if mode == "shadow" and valid and line_limit_ok and target_ok and eligible == 1 else "handback" if not target_ok or eligible != 1 else "refused"
+                reason = "" if status in {"proposed", "ready"} else "patch or target failed validation, or live writes remain fail-closed"
+                return {"push_allowed": 1 if push_allowed else 0, "path": path, "content_json": json.dumps(content, ensure_ascii=False),
+                    "commit_message": "fix: repair CI failure", "artifact_json": artifact, "trace_json": trace, "status": status, "reason": reason}
+          code_language: python3
+          desc: Checks patches and write gates.
+          outputs:
+            push_allowed: {type: number, children: null}
+            path: {type: string, children: null}
+            content_json: {type: string, children: null}
+            commit_message: {type: string, children: null}
+            artifact_json: {type: string, children: null}
+            trace_json: {type: string, children: null}
+            status: {type: string, children: null}
+            reason: {type: string, children: null}
+          selected: false
+          title: Validate patch and write guards
+          type: code
+          variables:
+          - variable: model_text
+            value_selector: [fixer_llm, text]
+          - variable: files_body
+            value_selector: [get_pull_files, body]
+          - variable: enable_push
+            value_selector: [env, ENABLE_PUSH]
+          - variable: eligible
+            value_selector: [guard_context, eligible]
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: actor
+            value_selector: [start, actor]
+          - variable: event
+            value_selector: [start, event]
+          - variable: strength
+            value_selector: [start, strength]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: current_pr_body
+            value_selector: [get_pull_request, body]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+        height: 54
+        id: validate_patch
+        position: {x: 5806, y: 100}
+        positionAbsolute: {x: 5806, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: push-authorized
+              value: '1'
+              varType: number
+              variable_selector: [validate_patch, push_allowed]
+            - comparison_operator: '='
+              id: push-live
+              value: live
+              varType: string
+              variable_selector: [start, mode]
+            - comparison_operator: '='
+              id: push-enabled
+              value: 'true'
+              varType: string
+              variable_selector: [env, ENABLE_PUSH]
+          desc: Gates Git writes on validation.
+          selected: false
+          title: Git Data write gate
+          type: if-else
+        height: 126
+        id: push_gate
+        position: {x: 6110, y: 100}
+        positionAbsolute: {x: 6110, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{"content":{{#validate_patch.content_json#}},"encoding":"utf-8"}'}
+          desc: Creates a blob behind the write gate.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Create Git blob
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/blobs'
+        height: 90
+        id: create_blob
+        position: {x: 6414, y: 0}
+        positionAbsolute: {x: 6414, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def main(response_body: str) -> dict:
+                try:
+                    sha = json.loads(response_body).get("sha", "")
+                except (TypeError, ValueError, AttributeError):
+                    sha = ""
+                return {"sha": sha, "ready": 1 if sha else 0}
+          code_language: python3
+          desc: Extracts the new blob SHA.
+          outputs:
+            sha: {type: string, children: null}
+            ready: {type: number, children: null}
+          selected: false
+          title: Parse blob response
+          type: code
+          variables:
+          - variable: response_body
+            value_selector: [create_blob, body]
+        height: 54
+        id: parse_blob
+        position: {x: 6718, y: 0}
+        positionAbsolute: {x: 6718, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            def main(base_tree_sha: str, path: str, blob_sha: str) -> dict:
+                body = {
+                    "base_tree": base_tree_sha,
+                    "tree": [{"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}],
+                }
+                return {"tree_json": json.dumps(body, ensure_ascii=False)}
+          code_language: python3
+          desc: Builds a Git tree from validated paths.
+          outputs:
+            tree_json: {type: string, children: null}
+          selected: false
+          title: Build Git tree request
+          type: code
+          variables:
+          - variable: base_tree_sha
+            value_selector: [guard_context, tree_sha]
+          - variable: path
+            value_selector: [validate_patch, path]
+          - variable: blob_sha
+            value_selector: [parse_blob, sha]
+        height: 54
+        id: build_tree_request
+        position: {x: 7022, y: 0}
+        positionAbsolute: {x: 7022, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{{#build_tree_request.tree_json#}}'}
+          desc: Creates a tree behind the write gate.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Create Git tree
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/trees'
+        height: 90
+        id: create_tree
+        position: {x: 7326, y: 0}
+        positionAbsolute: {x: 7326, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{"message":"{{#validate_patch.commit_message#}}","tree":"{{#create_tree.sha#}}","parents":["{{#start.head_sha#}}"]}'}
+          desc: Creates a commit on the mandate head.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Create Git commit
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits'
+        height: 90
+        id: create_commit
+        position: {x: 7630, y: 0}
+        positionAbsolute: {x: 7630, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: none
+            data: []
+          desc: Re-reads PR head before ref update.
+          headers: 'Accept: application/vnd.github+json'
+          method: get
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Recheck pull request head
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}'
+        height: 90
+        id: recheck_pull_request
+        position: {x: 7934, y: 0}
+        positionAbsolute: {x: 7934, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+            import urllib.parse
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+            LOG_REDACTION_AVAILABLE = False
+
+            def main(pr_body: str, expected_head_sha: str, mandate_ref: str, enable_push: str, commit_body: str, repo: str, pr_number: int, rules_body: str, mode: str) -> dict:
+                try:
+                    pr, commit, rules = json.loads(pr_body), json.loads(commit_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                except (TypeError, ValueError, AttributeError):
+                    return {"eligible": 0, "ref_encoded": ""}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                head_ref = head.get("ref", "")
+                new_sha = commit.get("sha", "")
+                ref_valid = (isinstance(mandate_ref, str) and REF_RE.fullmatch(mandate_ref) is not None
+                    and not mandate_ref.startswith("/") and not mandate_ref.startswith("refs/")
+                    and ".." not in mandate_ref and "//" not in mandate_ref)
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and isinstance(rules, list) and not rules and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head.get("sha") == expected_head_sha
+                    and ref_valid and head_ref == mandate_ref and SHA_RE.fullmatch(expected_head_sha) is not None and bool(new_sha)
+                    and mode == "live" and enable_push == "true" and LOG_REDACTION_AVAILABLE)
+                return {"eligible": 1 if valid else 0,
+                    "ref_encoded": urllib.parse.quote(mandate_ref, safe="/") if valid else ""}
+          code_language: python3
+          desc: Rechecks the mandate ref against PR head.
+          outputs:
+            eligible: {type: number, children: null}
+            ref_encoded: {type: string, children: null}
+          selected: false
+          title: Guard ref update
+          type: code
+          variables:
+          - variable: pr_body
+            value_selector: [recheck_pull_request, body]
+          - variable: expected_head_sha
+            value_selector: [start, head_sha]
+          - variable: mandate_ref
+            value_selector: [start, ref]
+          - variable: enable_push
+            value_selector: [env, ENABLE_PUSH]
+          - variable: commit_body
+            value_selector: [create_commit, body]
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+          - variable: mode
+            value_selector: [start, mode]
+        height: 54
+        id: guard_ref_update
+        position: {x: 8238, y: 0}
+        positionAbsolute: {x: 8238, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: ref-eligible
+              value: '1'
+              varType: number
+              variable_selector: [guard_ref_update, eligible]
+            - comparison_operator: '='
+              id: ref-live
+              value: live
+              varType: string
+              variable_selector: [start, mode]
+            - comparison_operator: '='
+              id: ref-push-enabled
+              value: 'true'
+              varType: string
+              variable_selector: [env, ENABLE_PUSH]
+          desc: Blocks stale ref updates.
+          selected: false
+          title: Ref update gate
+          type: if-else
+        height: 126
+        id: ref_update_gate
+        position: {x: 8542, y: 0}
+        positionAbsolute: {x: 8542, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{"sha":"{{#create_commit.sha#}}","force":false}'}
+          desc: Updates the mandate ref without force push.
+          headers: 'Accept: application/vnd.github+json'
+          method: patch
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Update Git ref
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/refs/heads/{{#guard_ref_update.ref_encoded#}}'
+        height: 90
+        id: update_ref
+        position: {x: 8846, y: 0}
+        positionAbsolute: {x: 8846, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            COMMENT = "No automated source changes were made. This workflow requires approved log redaction and all repository guards before it can write code."
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, actor: str, event: str, strength: str, mode: str) -> dict:
+                trace = json.dumps({"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}, ensure_ascii=False)
+                return {"body": COMMENT, "request_json": json.dumps({"body": COMMENT}, ensure_ascii=False), "status": "handback", "reason": "redaction or eligibility guard did not authorize a patch", "trace_json": trace}
+          code_language: python3
+          desc: Builds a neutral comment without untrusted text.
+          outputs:
+            body: {type: string, children: null}
+            request_json: {type: string, children: null}
+            status: {type: string, children: null}
+            reason: {type: string, children: null}
+            trace_json: {type: string, children: null}
+          selected: false
+          title: Prepare comment-only response
+          type: code
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: actor
+            value_selector: [start, actor]
+          - variable: event
+            value_selector: [start, event]
+          - variable: strength
+            value_selector: [start, strength]
+          - variable: mode
+            value_selector: [start, mode]
+        height: 54
+        id: prepare_comment
+        position: {x: 5502, y: 400}
+        positionAbsolute: {x: 5502, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: api-key
+            config: {type: bearer, api_key: '{{#parse_github_token.token#}}', header: Authorization}
+          body:
+            type: json
+            data:
+            - {key: '', type: text, value: '{{#prepare_comment.request_json#}}'}
+          desc: Posts a neutral comment to the matched PR.
+          headers: 'Accept: application/vnd.github+json'
+          method: post
+          params: ''
+          selected: false
+          ssl_verify: true
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Post comment-only response
+          type: http-request
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/issues/{{#extract_check_target.pr_number#}}/comments'
+        height: 90
+        id: post_comment
+        position: {x: 5806, y: 400}
+        positionAbsolute: {x: 5806, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Receives the immutable mandate.
+          variables:
+          - variable: repo
+            label: repo
+            type: text-input
+            required: true
+            max_length: 256
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: ref
+            label: ref
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: head_sha
+            label: head_sha
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: actor
+            label: actor
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: event
+            label: event
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: strength
+            label: strength
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: ''
+            hint: ''
+            placeholder: ''
+          - variable: mode
+            label: mode
+            type: text-input
+            required: true
+            max_length: 128
+            options: []
+            default: shadow
+            hint: ''
+            placeholder: ''
+          - variable: check_run_id
+            label: check_run_id
+            type: number
+            required: true
+            options: []
+          selected: false
+          title: Start
+          type: start
+        height: 90
+        id: start
+        position: {x: 30, y: 400}
+        positionAbsolute: {x: 30, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            from urllib.parse import quote
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+            REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+            def main(repo: str, mandate_ref: str, head_sha: str, actor: str, event: str, strength: str, mode: str, check_run_id: int) -> dict:
+                reason = ""
+                if not all(isinstance(value, str) and value.strip() for value in (repo, mandate_ref, head_sha, actor, event, strength, mode)):
+                    reason = "required mandate fields are missing"
+                elif REPO_RE.fullmatch(repo) is None:
+                    reason = "repository owner must be dryvist and repository name must be valid"
+                elif (REF_RE.fullmatch(mandate_ref) is None or mandate_ref.startswith("/")
+                        or mandate_ref.startswith("refs/") or ".." in mandate_ref or "//" in mandate_ref or "@{" in mandate_ref):
+                    reason = "mandated ref is invalid"
+                elif SHA_RE.fullmatch(head_sha) is None:
+                    reason = "mandated head_sha is invalid"
+                elif event != "check_run":
+                    reason = "event must be check_run"
+                elif mode not in {"shadow", "live"}:
+                    reason = "mode must be shadow or live"
+                elif not isinstance(check_run_id, int) or isinstance(check_run_id, bool) or check_run_id <= 0:
+                    reason = "check_run_id must be a positive integer"
+                return {"valid": 0 if reason else 1,
+                    "encoded_ref": quote(mandate_ref, safe="/") if not reason else "",
+                    "status": "handback" if reason else "ready", "reason": reason}
+          code_language: python3
+          desc: Rejects incomplete or widened mandates.
+          outputs:
+            valid: {type: number, children: null}
+            encoded_ref: {type: string, children: null}
+            status: {type: string, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: mandate_ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: actor
+            value_selector: [start, actor]
+          - variable: event
+            value_selector: [start, event]
+          - variable: strength
+            value_selector: [start, strength]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: check_run_id
+            value_selector: [start, check_run_id]
+          selected: false
+          title: Validate immutable mandate
+          type: code
+        height: 54
+        id: validate_mandate
+        position: {x: 334, y: 400}
+        positionAbsolute: {x: 334, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: mandate-valid
+              value: '1'
+              varType: number
+              variable_selector: [validate_mandate, valid]
+          desc: ''
+          selected: false
+          title: Mandate gate
+          type: if-else
+        height: 126
+        id: mandate_gate
+        position: {x: 638, y: 400}
+        positionAbsolute: {x: 638, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, mode: str, read_set: str, write_set: str) -> dict:
+                token_set = read_set if mode == "shadow" else write_set if mode == "live" else ""
+                if not isinstance(repo, str) or REPO_RE.fullmatch(repo) is None or not token_set:
+                    return {"ready": 0, "request_json": "{}"}
+                return {"ready": 1, "request_json": json.dumps({"repositories": [repo], "token_set": token_set}, ensure_ascii=False)}
+          code_language: python3
+          desc: Selects token scope by run mode.
+          outputs:
+            ready: {type: number, children: null}
+            request_json: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: read_set
+            value_selector: [env, GITHUB_TOKEN_READ_SET]
+          - variable: write_set
+            value_selector: [env, GITHUB_TOKEN_WRITE_SET]
+          selected: false
+          title: Select token permission set
+          type: code
+        height: 54
+        id: token_request
+        position: {x: 1700, y: 300}
+        positionAbsolute: {x: 1700, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: token-set-ready
+              value: '1'
+              varType: number
+              variable_selector: [token_request, ready]
+          desc: ''
+          selected: false
+          title: Token set gate
+          type: if-else
+        height: 126
+        id: token_request_gate
+        position: {x: 1990, y: 300}
+        positionAbsolute: {x: 1990, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(response_body: str, repo: str, check_run_id: int, ref: str, head_sha: str) -> dict:
+                try:
+                    check = json.loads(response_body)
+                except (TypeError, ValueError):
+                    return {"eligible": 0, "pr_number": 0, "status": "handback", "reason": "check run response is invalid"}
+                prs = check.get("pull_requests") if isinstance(check.get("pull_requests"), list) else []
+                linked = prs[0] if len(prs) == 1 and isinstance(prs[0], dict) else {}
+                number = linked.get("number")
+                valid = (check.get("id") == check_run_id and check.get("status") == "completed" and check.get("conclusion") == "failure"
+                    and check.get("head_sha") == head_sha and check.get("head_branch") == ref and len(prs) == 1
+                    and isinstance(number, int) and not isinstance(number, bool) and number > 0)
+                return {"eligible": 1 if valid else 0, "pr_number": number if valid else 0,
+                    "status": "ready" if valid else "handback", "reason": "" if valid else "check run does not match the mandate or has no single linked PR"}
+          code_language: python3
+          desc: Matches the mandated check to one PR.
+          outputs:
+            eligible: {type: number, children: null}
+            pr_number: {type: number, children: null}
+            status: {type: string, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: response_body
+            value_selector: [get_check_run, body]
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: check_run_id
+            value_selector: [start, check_run_id]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          selected: false
+          title: Validate check run and linked PR
+          type: code
+        height: 54
+        id: extract_check_target
+        position: {x: 3350, y: 300}
+        positionAbsolute: {x: 3350, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: check-target-valid
+              value: '1'
+              varType: number
+              variable_selector: [extract_check_target, eligible]
+          desc: ''
+          selected: false
+          title: Check run target gate
+          type: if-else
+        height: 126
+        id: check_target_gate
+        position: {x: 3640, y: 300}
+        positionAbsolute: {x: 3640, y: 300}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            def main(repo: str, mode: str) -> dict:
+                return {"status": "handback", "reason": "The check run, PR, or repository guards did not authorize this mandate."}
+          code_language: python3
+          desc: ''
+          outputs:
+            status: {type: string, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: mode
+            value_selector: [start, mode]
+          selected: false
+          title: Prepare handback
+          type: code
+        height: 54
+        id: prepare_handback
+        position: {x: 9200, y: 600}
+        positionAbsolute: {x: 9200, y: 600}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: shadow-mode
+              value: shadow
+              varType: string
+              variable_selector: [start, mode]
+          desc: Returns proposals without shadow writes.
+          selected: false
+          title: Shadow proposal gate
+          type: if-else
+        height: 126
+        id: mode_gate
+        position: {x: 6080, y: 100}
+        positionAbsolute: {x: 6080, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, pr_body: str, rules_body: str, enable_push: str, mode: str, target_body: str) -> dict:
+                try:
+                    pr, rules = json.loads(pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                    target = json.loads(target_body) if target_body else {}
+                except (TypeError, ValueError, AttributeError):
+                    return {"allowed": 0, "reason": "target could not be revalidated"}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed: {type: number, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: pr_body
+            value_selector: [get_pull_request, body]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+          - variable: enable_push
+            value_selector: [env, ENABLE_PUSH]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: target_body
+            value_selector: [build_tree_request, tree_json]
+          selected: false
+          title: Recheck tree write target
+          type: code
+        height: 54
+        id: guard_tree_write
+        position: {x: 7040, y: 0}
+        positionAbsolute: {x: 7040, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: tree-write-authorized
+              value: '1'
+              varType: number
+              variable_selector: [guard_tree_write, allowed]
+            - comparison_operator: '='
+              id: tree-live
+              value: live
+              varType: string
+              variable_selector: [start, mode]
+            - comparison_operator: '='
+              id: tree-push-enabled
+              value: 'true'
+              varType: string
+              variable_selector: [env, ENABLE_PUSH]
+          desc: ''
+          selected: false
+          title: Tree write gate
+          type: if-else
+        height: 126
+        id: tree_write_gate
+        position: {x: 7320, y: 0}
+        positionAbsolute: {x: 7320, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, pr_body: str, rules_body: str, enable_push: str, mode: str, target_body: str) -> dict:
+                try:
+                    pr, rules = json.loads(pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                    target = json.loads(target_body) if target_body else {}
+                except (TypeError, ValueError, AttributeError):
+                    return {"allowed": 0, "reason": "target could not be revalidated"}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed: {type: number, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: pr_body
+            value_selector: [get_pull_request, body]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+          - variable: enable_push
+            value_selector: [env, ENABLE_PUSH]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: target_body
+            value_selector: [create_tree, body]
+          selected: false
+          title: Recheck commit write target
+          type: code
+        height: 54
+        id: guard_commit_write
+        position: {x: 7900, y: 0}
+        positionAbsolute: {x: 7900, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: commit-write-authorized
+              value: '1'
+              varType: number
+              variable_selector: [guard_commit_write, allowed]
+            - comparison_operator: '='
+              id: commit-live
+              value: live
+              varType: string
+              variable_selector: [start, mode]
+            - comparison_operator: '='
+              id: commit-push-enabled
+              value: 'true'
+              varType: string
+              variable_selector: [env, ENABLE_PUSH]
+          desc: ''
+          selected: false
+          title: Commit write gate
+          type: if-else
+        height: 126
+        id: commit_write_gate
+        position: {x: 8180, y: 0}
+        positionAbsolute: {x: 8180, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+            REPO_RE = re.compile(r"^dryvist/[A-Za-z0-9_.-]+$")
+
+            def main(repo: str, pr_number: int, ref: str, head_sha: str, pr_body: str, rules_body: str, enable_push: str, mode: str, target_body: str) -> dict:
+                try:
+                    pr, rules = json.loads(pr_body), json.loads(rules_body)
+                    if not isinstance(rules, list):
+                        rules = rules.get("rules", []) if isinstance(rules, dict) else None
+                    target = json.loads(target_body) if target_body else {}
+                except (TypeError, ValueError, AttributeError):
+                    return {"allowed": 0, "reason": "target could not be revalidated"}
+                head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+                base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+                head_repo = head.get("repo") if isinstance(head.get("repo"), dict) else {}
+                base_repo = base.get("repo") if isinstance(base.get("repo"), dict) else {}
+                valid = (REPO_RE.fullmatch(repo) is not None and isinstance(pr_number, int) and not isinstance(pr_number, bool) and pr_number > 0
+                    and SHA_RE.fullmatch(head_sha) is not None and bool(ref) and pr.get("state") == "open" and pr.get("number") == pr_number
+                    and base_repo.get("full_name", "").lower() == repo.lower() and head_repo.get("full_name", "").lower() == repo.lower()
+                    and head.get("ref") == ref and head.get("sha") == head_sha and isinstance(rules, list) and not rules
+                    and mode == "live" and enable_push == "true" and bool(target))
+                return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
+          code_language: python3
+          desc: ''
+          outputs:
+            allowed: {type: number, children: null}
+            reason: {type: string, children: null}
+          variables:
+          - variable: repo
+            value_selector: [start, repo]
+          - variable: pr_number
+            value_selector: [extract_check_target, pr_number]
+          - variable: ref
+            value_selector: [start, ref]
+          - variable: head_sha
+            value_selector: [start, head_sha]
+          - variable: pr_body
+            value_selector: [get_pull_request, body]
+          - variable: rules_body
+            value_selector: [get_branch_rules, body]
+          - variable: enable_push
+            value_selector: [env, ENABLE_PUSH]
+          - variable: mode
+            value_selector: [start, mode]
+          - variable: target_body
+            value_selector: [prepare_comment, request_json]
+          selected: false
+          title: Recheck comment target
+          type: code
+        height: 54
+        id: guard_comment_write
+        position: {x: 6100, y: 400}
+        positionAbsolute: {x: 6100, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: eligible
+            id: eligible
+            logical_operator: and
+            conditions:
+            - comparison_operator: '='
+              id: comment-target-authorized
+              value: '1'
+              varType: number
+              variable_selector: [guard_comment_write, allowed]
+            - comparison_operator: '='
+              id: comment-live
+              value: live
+              varType: string
+              variable_selector: [start, mode]
+            - comparison_operator: '='
+              id: comment-push-enabled
+              value: 'true'
+              varType: string
+              variable_selector: [env, ENABLE_PUSH]
+          desc: ''
+          selected: false
+          title: Live comment gate
+          type: if-else
+        height: 126
+        id: comment_write_gate
+        position: {x: 6400, y: 400}
+        positionAbsolute: {x: 6400, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [validate_patch, status]
+          - variable: artifact
+            value_selector: [validate_patch, artifact_json]
+          - variable: trace
+            value_selector: [validate_patch, trace_json]
+          - variable: reason
+            value_selector: [validate_patch, reason]
+          selected: false
+          title: End proposed patch
+          type: end
+        height: 90
+        id: end_proposed
+        position: {x: 6400, y: 100}
+        positionAbsolute: {x: 6400, y: 100}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [validate_mandate, status]
+          - variable: reason
+            value_selector: [validate_mandate, reason]
+          selected: false
+          title: End mandate handback
+          type: end
+        height: 90
+        id: end_handback_mandate
+        position: {x: 900, y: 850}
+        positionAbsolute: {x: 900, y: 850}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [prepare_handback, status]
+          - variable: reason
+            value_selector: [prepare_handback, reason]
+          selected: false
+          title: End run handback
+          type: end
+        height: 90
+        id: end_handback_run
+        position: {x: 9500, y: 650}
+        positionAbsolute: {x: 9500, y: 650}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [prepare_comment, status]
+          - variable: reason
+            value_selector: [prepare_comment, reason]
+          - variable: trace
+            value_selector: [prepare_comment, trace_json]
+          selected: false
+          title: End comment handback
+          type: end
+        height: 90
+        id: end_handback_comment
+        position: {x: 6700, y: 650}
+        positionAbsolute: {x: 6700, y: 650}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [prepare_comment, status]
+          - variable: artifact
+            value_selector: [prepare_comment, request_json]
+          - variable: trace
+            value_selector: [prepare_comment, trace_json]
+          selected: false
+          title: End posted comment
+          type: end
+        height: 90
+        id: end_comment
+        position: {x: 6700, y: 400}
+        positionAbsolute: {x: 6700, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+          - variable: status
+            value_selector: [validate_patch, status]
+          - variable: artifact
+            value_selector: [validate_patch, artifact_json]
+          - variable: trace
+            value_selector: [validate_patch, trace_json]
+          selected: false
+          title: End source update
+          type: end
+        height: 90
+        id: end_pushed
+        position: {x: 9150, y: 0}
+        positionAbsolute: {x: 9150, y: 0}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      viewport: {x: 0, y: 0, zoom: 0.55}
