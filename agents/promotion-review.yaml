@@ -1,0 +1,23 @@
+name: promotion-review
+owner: agent-platform
+tier: 2
+home_platform: dify
+shadows: [sim, langflow]
+mode: shadow
+prompt: agents/prompts/promotion-review.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.send_message]
+mcp_servers: []
+privacy_class: internal
+litellm_role: promotion-review
+triggers:
+  - kind: schedule
+    source: agent-platform
+    cadence: daily
+    skew_minutes: 23
+connectors: [github-clerk, vikunja-clerk]
+code_work: sandbox
+procedure: []
+memory_scope: none
+eval_set: agents/evals/promotion-review.yaml
+identity: agent-promotion-review
