@@ -38,8 +38,9 @@ count only for cases where `not-truncated` passes.
 
 ## Installation
 
-Nothing is installed globally. The run command below takes Node.js 22, `yq` and Python 3 from nixpkgs for the one
-command, and promptfoo 0.118.14 from npm. Node.js 22 is required: promptfoo 0.118 hits a native assertion under
+Nothing is installed globally. The run command below takes Node.js 22, `yq`, gomplate, and Python 3 from nixpkgs for the one
+command, and promptfoo 0.118.14 from npm. The generator resolves profiles through `make resolve-agents`, the same
+gomplate merge used by Dify rendering and the pytest judges. Node.js 22 is required: promptfoo 0.118 hits a native assertion under
 Node.js 24. `PROMPTFOO_PYTHON` must name a Python that runs `agents/judges/parse-json-schema.py`.
 
 ## Usage
@@ -49,7 +50,7 @@ Run one provider at a time, from this directory, because the exec providers reso
 ```sh
 cd agents/evals/promptfoo
 PROMPTFOO_PYTHON=python3 nix --extra-experimental-features 'nix-command flakes' \
-  shell nixpkgs#nodejs_22 nixpkgs#yq-go nixpkgs#python3 -c \
+  shell nixpkgs#nodejs_22 nixpkgs#yq-go nixpkgs#gomplate nixpkgs#python3 -c \
   npx -y promptfoo@0.118.14 eval -c promptfooconfig.yaml --filter-providers local \
   --no-cache --no-progress-bar -o /tmp/agent-evals-local.json
 ```
