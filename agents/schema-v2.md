@@ -64,9 +64,11 @@ Each trigger declares one of these kinds:
 | `call` | `source: <caller>` | Explicit invocation through the gateway. |
 
 Raw `cron` and `cadence` fields are forbidden outside rendered Dify graph data.
-The renderer owns schedule expressions. Rotation agents expose a callable start;
-the shared driver owns their windows and live pace controls. Anchors render a native
+The renderer owns schedule expressions. Rotation agents expose a webhook entry for
+driver calls; tracker events share that entry. The shared driver owns their windows
+and live pace controls. Anchors render a native
 Dify daily schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
+Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 
 ```yaml
 triggers:

@@ -1,4 +1,4 @@
-{{- /* Render a definition with gomplate -c .=agents/<name>.yaml -f agents/dify-src/agent.tmpl. */ -}}
+{{- /* Resolve profiles with make resolve-agents; render with make render-dify. */ -}}
 {{- define "resolve" -}}
   {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
   {{- $agent := . -}}
@@ -89,6 +89,7 @@ workflow:
 {{- $anchors := coll.Slice -}}
 {{- $rotation := false -}}
 {{- $webhooks := coll.Slice -}}
+{{- $webhook := dict "type" "trigger-webhook" "title" "Rotation call" "method" "post" "content_type" "application/json" "headers" (coll.Slice) "params" (coll.Slice) "body" (coll.Slice) "async_mode" true "status_code" 200 "response_body" "" -}}
 {{- range (index . "triggers") -}}
   {{- test.Assert "invalid trigger kind" (coll.Has (coll.Slice "anchor" "rotation" "event" "call") .kind) -}}
   {{- if eq .kind "anchor" -}}
@@ -100,7 +101,7 @@ workflow:
     {{- test.Assert "invalid rotation interval" (regexp.Match `^[1-9][0-9]*[mhd]$` .every) -}}
     {{- $rotation = true -}}
   {{- else if eq .kind "event" -}}
-    {{- $webhooks = coll.Append (dict "type" "trigger-webhook" "title" (printf "%s webhook" .source) "method" "post" "content_type" "application/json" "headers" (coll.Slice) "params" (coll.Slice) "body" (coll.Slice) "async_mode" true "status_code" 200 "response_body" "") $webhooks -}}
+    {{- $webhooks = coll.Append (coll.Merge (dict "title" (printf "%s webhook" .source)) $webhook) $webhooks -}}
   {{- end -}}
 {{- end -}}
 {{- test.Assert "Dify template supports one anchor" (le (len $anchors) 1) -}}
@@ -137,13 +138,15 @@ workflow:
 {{- test.Assert "renderer owns schedules" (eq (coll.JQ `[.. | objects | keys[] | select(. == "cron" or . == "cadence")] | length` .) 0) -}}
 {{- test.Assert "renderer owns cron expressions" (eq (coll.JQ `[.. | objects | select(has("cron_expression")) | .cron_expression | select(. != "__DIFY_TRIGGER_CRON__")] | length` .) 0) -}}
 {{- if or $rotation (gt (len $anchors) 0) -}}
-  {{- $start := dict "type" "start" "title" "Rotation call" "variables" (coll.Slice) -}}
+  {{- if and $rotation (eq (len $webhooks) 0) -}}
+    {{- $webhooks = coll.Append $webhook $webhooks -}}
+  {{- end -}}
+  {{- $start := dict -}}
   {{- if gt (len $anchors) 0 -}}
     {{- $start = dict "type" "trigger-schedule" "title" "Daily anchor" "mode" "cron" "cron_expression" (index $params "__DIFY_TRIGGER_CRON__") "timezone" "UTC" -}}
-    {{- if $rotation -}}
-      {{- $webhooks = coll.Append $start $webhooks -}}
-      {{- $start = dict "type" "start" "title" "Rotation call" "variables" (coll.Slice) -}}
-    {{- end -}}
+  {{- else -}}
+    {{- $start = index $webhooks 0 -}}
+    {{- $webhooks = slice $webhooks 1 -}}
   {{- end -}}
   {{- test.Assert "timed workflow requires one entry node" (eq (coll.JQ `[.workflow.graph.nodes[] | select(.data.type == "start" or .data.type == "trigger-schedule")] | length` $dsl) 1) -}}
   {{- $dsl = dict "dsl" $dsl "start" $start "webhooks" $webhooks | coll.JQ `
@@ -161,6 +164,7 @@ workflow:
     {{- $dsl = coll.JQ `(.workflow.graph.nodes[] | select(.data.type == "llm") | .data.prompt_template[] | select(.role == "user") | .text) = "Run at {{#sys.timestamp#}}."` $dsl -}}
   {{- end -}}
 {{- end -}}
+{{- test.Assert "Start node and trigger nodes cannot coexist" (coll.JQ `(.workflow.graph.nodes // [] | map(.data.type)) as $types | (($types | index("start")) == null or ([$types[] | select(startswith("trigger-"))] | length) == 0)` $dsl) -}}
 {{- /* Substitute data values, never evaluate prompts or Code-node source as templates. */ -}}
 {{- $dsl = dict "dsl" $dsl "params" $params | coll.JQ `.params as $params | .dsl | walk(if type == "string" then reduce ($params | to_entries[]) as $p (.; split($p.key) | join($p.value)) else . end)` -}}
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}
