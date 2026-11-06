@@ -1,0 +1,26 @@
+{{- /* Shared shadow policy and definition projection for both runtime templates. */ -}}
+{{- define "shadow-metadata" -}}
+  {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
+  {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
+  {{- /* Only the router is bound. Integration reads arrive in the replay input. */ -}}
+  {{- $omitted := coll.Slice -}}
+  {{- range .tools -}}
+    {{- if ne . "litellm.chat_completions" -}}{{- $omitted = coll.Append . $omitted -}}{{- end -}}
+  {{- end -}}
+  {{- dict "agent" .name "mode" "shadow" "tier" .tier "privacy_class" .privacy_class
+      "litellm_role" .litellm_role "tools" (coll.Slice "litellm.chat_completions")
+      "omitted_tools" $omitted "triggers" .triggers "output_schema" (index . "output_schema")
+      "results" (coll.Slice "langfuse-trace" "phoenix-trace")
+      "generated_from" (coll.Slice (printf "agents/%s.yaml" .name) .shared_prefix .prompt)
+      | data.ToJSON -}}
+{{- end -}}
+{{- define "shadow-request" -}}
+  {{- $prompt := printf "%s\n\n%s" (tmpl.Exec "prompt" .shared_prefix) (tmpl.Exec "prompt" .prompt) -}}
+  {{- $request := dict "model" .litellm_role "temperature" 0 "messages" (coll.Slice
+      (dict "role" "system" "content" $prompt) (dict "role" "user" "content" "<start.input>"))
+      "metadata" (dict "agent" .name "tier" .tier "privacy_class" .privacy_class "mode" "shadow") -}}
+  {{- with (index . "output_schema") -}}
+    {{- $request = coll.Set "response_format" (dict "type" "json_schema" "json_schema" (dict "name" $.name "schema" .)) $request -}}
+  {{- end -}}
+  {{- data.ToJSON $request -}}
+{{- end -}}
