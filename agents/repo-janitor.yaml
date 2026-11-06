@@ -1,0 +1,36 @@
+name: repo-janitor
+owner: agent-platform
+tier: 0
+triggers:
+  - {kind: call, source: operator-or-session-closer, cadence: null, skew_minutes: null}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: internal
+connectors: [github-clerk]
+code_work: sandbox
+mode: shadow
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/refresh-repo/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/prune-branches/SKILL.md}
+prompt: agents/prompts/repo-janitor.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [agentgateway.a2a, agent-sandbox.jobs]
+mcp_servers: []
+litellm_role: medium
+callers: [operator, session-closer]
+channels: [caller, langfuse-trace, phoenix-trace]
+memory_scope: none
+eval_set: agents/evals/repo-janitor.yaml
+identity: agent-repo-janitor
+input: Repository, sandbox job workspace, explicit cleanup mandate, candidate refs, and permitted local and remote actions.
+output_schema:
+  type: object
+  required: [status, refreshed, removed, preserved, evidence, reason]
+  additionalProperties: false
+  properties:
+    status: {enum: [complete, planned, refused, stop]}
+    refreshed: {type: array, items: {type: string}}
+    removed: {type: array, items: {type: string}}
+    preserved: {type: array, items: {type: string}}
+    evidence: {type: array, items: {type: string}}
+    reason: {type: string}
