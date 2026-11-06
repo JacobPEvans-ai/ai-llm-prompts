@@ -1,0 +1,37 @@
+{{- $metadata := tmpl.Exec "shadow-metadata" . | data.JSON -}}
+{{- $metadata = coll.Set "name" .name $metadata -}}
+{{- $metadata = coll.Set "runtime_version" "0.9.33" $metadata -}}
+{{- $request := tmpl.Exec "shadow-request" . -}}
+{{- $key := printf "{{%s_LITELLM_API_KEY}}" (strings.ToUpper (.name | strings.ReplaceAll "-" "_")) -}}
+{
+  "version": "1.0",
+  "state": {
+    "metadata": {{ data.ToJSON $metadata }},
+    "blocks": {
+      "start": {
+        "id": "start", "type": "start_trigger", "name": "Start",
+        "position": {"x": 0, "y": 0}, "enabled": true,
+        "subBlocks": {"inputFormat": {"id": "inputFormat", "type": "input-format", "value": []}},
+        "outputs": {}, "data": {}
+      },
+      "router": {
+        "id": "router", "type": "api", "name": "LiteLLM chat",
+        "position": {"x": 350, "y": 0}, "enabled": true,
+        "subBlocks": {
+          "url": {"id": "url", "type": "short-input", "value": "{{`{{LITELLM_API_BASE}}`}}/chat/completions"},
+          "method": {"id": "method", "type": "dropdown", "value": "POST"},
+          "headers": {"id": "headers", "type": "table", "value": [
+            {"id": "auth", "cells": {"Key": "Authorization", "Value": {{ data.ToJSON (printf "Bearer %s" $key) }}}},
+            {"id": "content-type", "cells": {"Key": "Content-Type", "Value": "application/json"}}
+          ]},
+          "body": {"id": "body", "type": "code", "value": {{ data.ToJSON $request }}},
+          "sendCredentialsOnCrossOriginRedirect": {"id": "sendCredentialsOnCrossOriginRedirect", "type": "switch", "value": false}
+        },
+        "outputs": {"data": {"type": "json"}, "status": {"type": "number"}, "headers": {"type": "json"}},
+        "data": {}
+      }
+    },
+    "edges": [{"id": "start-router", "source": "start", "sourceHandle": "source", "target": "router", "targetHandle": "target"}],
+    "loops": {}, "parallels": {}, "variables": {}
+  }
+}

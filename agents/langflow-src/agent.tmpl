@@ -1,0 +1,57 @@
+{{- $metadata := tmpl.Exec "shadow-metadata" . | data.JSON -}}
+{{- $request := tmpl.Exec "shadow-request" . | data.JSON -}}
+{{- $key := printf "%s_LITELLM_API_KEY" (strings.ToUpper (.name | strings.ReplaceAll "-" "_")) -}}
+{{- $input := file.Read (printf "%s/text-input.json" (tmpl.PathDir)) | data.JSON -}}
+{{- /* Native TextInput takes replay text and stores no chat history. */ -}}
+{{- $inputFields := coll.Set "input_value" (dict "name" "input_value" "type" "str" "value" "" "input_types" (coll.Slice) "required" true "show" true) $input.template -}}
+{{- $input = coll.Set "template" $inputFields $input -}}
+{{- $kwargs := dict "metadata" $request.metadata -}}
+{{- with (index $request "response_format") -}}{{- $kwargs = coll.Set "response_format" . $kwargs -}}{{- end -}}
+{{- $template := dict "_type" "Component" -}}
+{{- range $name, $value := dict "input_value" "" "system_message" (index $request.messages 0).content
+    "model_name" .litellm_role "openai_api_base" "LITELLM_API_BASE" "api_key" $key
+    "temperature" 0 "max_tokens" 0 "max_retries" 0 "timeout" 43200 "stream" false "json_mode" false "seed" 1
+    "model_kwargs" $kwargs -}}
+  {{- $type := "str" -}}
+  {{- if test.IsKind "map" $value -}}{{- $type = "dict" -}}
+  {{- else if test.IsKind "bool" $value -}}{{- $type = "bool" -}}
+  {{- else if test.IsKind "int" $value -}}{{- $type = "int" -}}{{- end -}}
+  {{- $field := dict "name" $name "type" $type "value" $value "show" true "required" true -}}
+  {{- if or (eq $name "api_key") (eq $name "openai_api_base") -}}
+    {{- $field = coll.Set "load_from_db" true $field -}}
+  {{- end -}}
+  {{- if eq $name "api_key" -}}{{- $field = coll.Set "password" true $field -}}{{- end -}}
+  {{- if eq $name "input_value" -}}{{- $field = coll.Set "input_types" (coll.Slice "Message") $field -}}{{- end -}}
+  {{- $template = coll.Set $name $field $template -}}
+{{- end -}}
+{{- $template = coll.Set "code" (dict "type" "code" "name" "code" "value" (file.Read (printf "%s/openai.py" (tmpl.PathDir)))) $template -}}
+{
+  "name": {{ data.ToJSON .name }},
+  "description": "Shadow replay; results are recorded in traces.",
+  "last_tested_version": "1.13.0",
+  "is_component": false,
+  "data": {
+    "metadata": {{ data.ToJSON $metadata }},
+    "nodes": [
+      {"id": "TextInput-start", "type": "genericNode", "position": {"x": 0, "y": 0},
+       "data": {"id": "TextInput-start", "type": "TextInput", "node": {{ data.ToJSON $input }}}},
+      {"id": "OpenAIModel-router", "type": "genericNode", "position": {"x": 350, "y": 0},
+       "data": {"id": "OpenAIModel-router", "type": "ext:openai:OpenAIModelComponent@official", "node": {
+         "display_name": "LiteLLM chat", "base_classes": ["Message", "LanguageModel"],
+         "metadata": {"component_class_name": "OpenAIModelComponent"},
+         "template": {{ data.ToJSON $template }},
+         "outputs": [{"name": "text_output", "display_name": "Model Response", "method": "text_response", "types": ["Message"], "selected": "Message", "value": "__UNDEFINED__", "cache": true, "group_outputs": false}]
+       }}}
+    ],
+    "edges": [{
+      "id": "start-router", "source": "TextInput-start", "target": "OpenAIModel-router",
+      "sourceHandle": "{œdataTypeœ:œTextInputœ,œidœ:œTextInput-startœ,œnameœ:œtextœ,œoutput_typesœ:[œMessageœ]}",
+      "targetHandle": "{œfieldNameœ:œinput_valueœ,œidœ:œOpenAIModel-routerœ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
+      "data": {
+        "sourceHandle": {"dataType": "TextInput", "id": "TextInput-start", "name": "text", "output_types": ["Message"]},
+        "targetHandle": {"fieldName": "input_value", "id": "OpenAIModel-router", "inputTypes": ["Message"], "type": "str"}
+      }
+    }],
+    "viewport": {"x": 0, "y": 0, "zoom": 1}
+  }
+}
