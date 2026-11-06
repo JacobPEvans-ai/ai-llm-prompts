@@ -135,7 +135,7 @@ def test_anchor_renders_a_daily_utc_schedule(tmp_path):
     assert start["cron_expression"] == "07 06 * * *" and start["timezone"] == "UTC"
 
 
-def test_event_and_rotation_have_webhook_and_callable_entries(tmp_path):
+def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     path, definition = sample_checkout(tmp_path)
     definition["triggers"] = [{"kind": "event", "source": "vikunja"}, {"kind": "rotation", "every": "1d"}]
     path.write_text(yaml.safe_dump(definition))
@@ -144,13 +144,12 @@ def test_event_and_rotation_have_webhook_and_callable_entries(tmp_path):
     output = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
     graph = output["workflow"]["graph"]
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
-    assert nodes["start"]["type"] == "start" and nodes["start"]["variables"] == []
-    assert nodes["webhook-0"]["type"] == "trigger-webhook"
-    assert nodes["webhook-0"]["method"] == "post"
-    assert nodes["webhook-0"]["content_type"] == "application/json"
-    edges = [edge for edge in graph["edges"] if edge["source"] in ("start", "webhook-0")]
-    assert len(edges) == 2 and {edge["target"] for edge in edges} == {"model"}
-    assert not any(data["type"] == "trigger-schedule" for data in nodes.values())
+    assert nodes["start"]["type"] == "trigger-webhook"
+    assert nodes["start"]["method"] == "post"
+    assert nodes["start"]["content_type"] == "application/json"
+    edges = [edge for edge in graph["edges"] if edge["source"] == "start"]
+    assert len(edges) == 1 and edges[0]["target"] == "model"
+    assert not any(data["type"] in ("start", "trigger-schedule") for data in nodes.values())
 
 
 @pytest.mark.parametrize("triggers", [
@@ -237,7 +236,22 @@ def test_rotation_can_also_have_a_fixed_anchor(tmp_path):
     dsl = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
     graph = dsl["workflow"]["graph"]
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
-    assert nodes["start"]["type"] == "start"
-    assert nodes["webhook-0"]["type"] == "trigger-schedule"
-    assert graph["edges"][-1]["data"]["sourceType"] == "trigger-schedule"
+    assert nodes["start"]["type"] == "trigger-schedule"
+    assert nodes["webhook-0"]["type"] == "trigger-webhook"
+    assert graph["edges"][-1]["data"]["sourceType"] == "trigger-webhook"
     assert "{{#start.text#}}" not in str(dsl)
+
+
+def test_start_and_trigger_nodes_cannot_coexist(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["dify"] = {
+        "prompt": "__DIFY_SYSTEM_PROMPT__",
+        "workflow": {"graph": {"nodes": [
+            {"id": "start", "data": {"type": "start"}},
+            {"id": "webhook", "data": {"type": "trigger-webhook"}},
+        ]}},
+    }
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "Start node and trigger nodes cannot coexist" in result.stderr

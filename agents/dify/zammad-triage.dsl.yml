@@ -58,7 +58,7 @@ workflow:
   graph:
     edges:
       - data:
-          sourceType: start
+          sourceType: trigger-webhook
           targetType: code
         id: e1
         source: schedule
@@ -93,20 +93,18 @@ workflow:
         target: done
         targetHandle: target
         type: custom
-      - data:
-          sourceType: trigger-webhook
-          targetType: code
-        id: e1-webhook-0
-        source: webhook-0
-        sourceHandle: source
-        target: fetch
-        targetHandle: target
-        type: custom
     nodes:
       - data:
-          title: Rotation call
-          type: start
-          variables: []
+          async_mode: true
+          body: []
+          content_type: application/json
+          headers: []
+          method: post
+          params: []
+          response_body: ""
+          status_code: 200
+          title: zammad webhook
+          type: trigger-webhook
         id: schedule
         position:
           x: 40
@@ -401,21 +399,5 @@ workflow:
         id: done
         position:
           x: 1240
-          "y": 300
-        type: custom
-      - data:
-          async_mode: true
-          body: []
-          content_type: application/json
-          headers: []
-          method: post
-          params: []
-          response_body: ""
-          status_code: 200
-          title: zammad webhook
-          type: trigger-webhook
-        id: webhook-0
-        position:
-          x: 40
           "y": 300
         type: custom
