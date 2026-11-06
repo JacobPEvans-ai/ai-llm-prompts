@@ -1,18 +1,29 @@
 DIFY_OUTPUT ?= agents/dify
 AGENTS_ROOT ?= .
+PYTEST ?= python3 -m pytest
 
-.PHONY: render-dify check-dify render-sim check-sim render-langflow check-langflow test
-render-dify:
-	@mkdir -p "$(DIFY_OUTPUT)"
+.PHONY: resolve-agents render-dify check-dify render-sim check-sim render-langflow check-langflow test
+resolve-agents:
 	@set -eu; cd "$(AGENTS_ROOT)"; for definition in agents/*.yaml; do \
-		home=$$(yq -er '.home_platform' "$$definition"); \
-		[ "$$home" = dify ] || continue; \
 		name=$$(basename "$$definition" .yaml); \
 		test "$$(yq -r '.name' "$$definition")" = "$$name"; \
-		gomplate -c .="$$definition" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
-	done; \
+		gomplate -c .="$$definition" -t source="$(CURDIR)/agents/dify-src/agent.tmpl" \
+			-i '{{ tmpl.Exec "resolve" . }}{{ "\n" }}'; \
+	done
+
+render-dify:
+	@mkdir -p "$(DIFY_OUTPUT)"
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/agents.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		$(MAKE) --no-print-directory resolve-agents > "$$output/definitions.jsonl"; \
+		cd "$(AGENTS_ROOT)"; while IFS= read -r definition; do \
+			printf '%s\n' "$$definition" | yq '.agent' > "$$output/agent.json"; \
+			home=$$(yq -er '.home_platform' "$$output/agent.json"); \
+			[ "$$home" = dify ] || continue; \
+			name=$$(yq -r '.name' "$$output/agent.json"); \
+			gomplate -c .="$$output/agent.json" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
+		done < "$$output/definitions.jsonl"; \
 		gomplate -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
-		-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
+			-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
 
 check-dify:
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/dify.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
@@ -23,21 +34,23 @@ check-dify:
 
 render-sim render-langflow: render-%:
 	@mkdir -p "$(or $(SHADOW_OUTPUT),agents/$*)"
-	@set -eu; cd "$(AGENTS_ROOT)"; for definition in agents/*.yaml; do \
-		home=$$(yq -er '.home_platform' "$$definition"); \
-		[ "$$home" = dify ] || continue; \
-		shadows=$$(yq -r '(.shadows // []) | join(",")' "$$definition"); \
-		case ",$$shadows," in *,$*,*) ;; *) continue ;; esac; \
-		name=$$(basename "$$definition" .yaml); \
-		test "$$(yq -r '.name' "$$definition")" = "$$name"; \
-		reason=$$(gomplate -c .="$$definition" -t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
-			-i '{{ tmpl.Exec "shadow-eligibility" (dict "definition" . "runtime" "$*") }}'); \
-		if [ -n "$$reason" ]; then printf 'SKIP | %s | %s | %s\n' '$*' "$$name" "$$reason"; continue; fi; \
-		gomplate -c .="$$definition" -t dify="$(CURDIR)/agents/dify-src/agent.tmpl" \
-			-t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
-			-f "$(CURDIR)/agents/$*-src/agent.tmpl" \
-			-o "$(abspath $(or $(SHADOW_OUTPUT),agents/$*))/$$name.json"; \
-	done
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/agents.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		$(MAKE) --no-print-directory resolve-agents > "$$output/definitions.jsonl"; \
+		cd "$(AGENTS_ROOT)"; while IFS= read -r definition; do \
+			printf '%s\n' "$$definition" | yq '.agent' > "$$output/agent.yaml"; \
+			home=$$(yq -er '.home_platform' "$$output/agent.yaml"); \
+			[ "$$home" = dify ] || continue; \
+			shadows=$$(yq -r '(.shadows // []) | join(",")' "$$output/agent.yaml"); \
+			case ",$$shadows," in *,$*,*) ;; *) continue ;; esac; \
+			name=$$(yq -r '.name' "$$output/agent.yaml"); \
+			reason=$$(gomplate -c .="$$output/agent.yaml" -t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
+				-i '{{ tmpl.Exec "shadow-eligibility" (dict "definition" . "runtime" "$*") }}'); \
+			if [ -n "$$reason" ]; then printf 'SKIP | %s | %s | %s\n' '$*' "$$name" "$$reason"; continue; fi; \
+			gomplate -c .="$$output/agent.yaml" -t dify="$(CURDIR)/agents/dify-src/agent.tmpl" \
+				-t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
+				-f "$(CURDIR)/agents/$*-src/agent.tmpl" \
+				-o "$(abspath $(or $(SHADOW_OUTPUT),agents/$*))/$$name.json"; \
+		done < "$$output/definitions.jsonl"
 
 check-sim check-langflow: check-%:
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/$*.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
@@ -45,4 +58,4 @@ check-sim check-langflow: check-%:
 		diff -ru "$(AGENTS_ROOT)/agents/$*" "$$output/rendered"
 
 test: check-dify check-sim check-langflow
-	python3 -m pytest -q agents/judges
+	$(PYTEST) -q agents/judges

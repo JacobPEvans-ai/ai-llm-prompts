@@ -8,6 +8,8 @@ import subprocess
 import pytest
 import yaml
 
+from definitions import definitions
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -56,8 +58,8 @@ def test_committed_outputs_match_shared_template(tmp_path):
     assert result.returncode == 0, result.stderr
     expected = {
         f"{path.stem}.dsl.yml"
-        for path in (ROOT / "agents").glob("*.yaml")
-        if yaml.safe_load(path.read_text())["home_platform"] == "dify"
+        for path, agent in definitions()
+        if agent["home_platform"] == "dify"
     }
     expected.add("tier2-rotation.dsl.yml")
     assert {path.name for path in tmp_path.glob("*.dsl.yml")} == expected
@@ -89,7 +91,7 @@ def test_new_dify_agent_needs_only_definition_and_prompt(tmp_path, name):
 
 def test_non_dify_agent_is_skipped_without_fragments(tmp_path):
     sample_checkout(tmp_path)
-    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: sim\n")
+    (tmp_path / "agents" / "elsewhere.yaml").write_text("name: elsewhere\nhome_platform: sim\n")
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
     assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {

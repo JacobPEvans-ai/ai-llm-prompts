@@ -15,8 +15,8 @@ Agent-specific extension fields are preserved.
 Each definition declares `extends: <profile>`, selecting `agents/profiles/<profile>.yaml`.
 `agents/profiles/defaults.yaml` supplies shared values. Profiles contain only differences
 from defaults; definitions contain only differences from their selected profile.
-The resolver uses gomplate's native `coll.Merge` in precedence order: defaults, profile,
-definition. Mappings merge recursively; lists and scalars replace their inherited value.
+The resolver uses gomplate's native `coll.Merge` with definition values taking precedence over profile
+values, and profile values over defaults. Mappings merge recursively; lists and scalars replace their inherited value.
 Profiles are flat and cannot extend another profile. `defaults` is reserved.
 
 `make resolve-agents` materializes the merged definitions for both Dify rendering and
