@@ -1,0 +1,74 @@
+name: Langfuse Prompt Sync
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - agents/prompts/**
+      - agents/judges/test_langfuse_prompt_sync.py
+      - .github/workflows/langfuse-prompt-sync.yml
+  workflow_call:
+    inputs:
+      runner_label:
+        description: Runner label for prompt synchronization
+        type: string
+        default: self-hosted
+    secrets:
+      LANGFUSE_HOST:
+        required: false
+      LANGFUSE_PUBLIC_KEY:
+        required: false
+      LANGFUSE_SECRET_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: langfuse-prompts-${{ github.event.pull_request.number || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        with:
+          node-version: '24'
+      - name: Validate or publish prompts
+        shell: bash
+        env:
+          DRY_RUN: ${{ github.event_name != 'push' || github.ref_type != 'tag' }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          LANGFUSE_HOST: ${{ github.event_name == 'push' && secrets.LANGFUSE_HOST || '' }}
+          LANGFUSE_PUBLIC_KEY: ${{ github.event_name == 'push' && secrets.LANGFUSE_PUBLIC_KEY || '' }}
+          LANGFUSE_SECRET_KEY: ${{ github.event_name == 'push' && secrets.LANGFUSE_SECRET_KEY || '' }}
+        run: |
+          set -euo pipefail
+          if [[ "$DRY_RUN" != true ]]; then
+            : "${LANGFUSE_HOST:?Missing LANGFUSE_HOST}"
+            : "${LANGFUSE_PUBLIC_KEY:?Missing LANGFUSE_PUBLIC_KEY}"
+            : "${LANGFUSE_SECRET_KEY:?Missing LANGFUSE_SECRET_KEY}"
+          fi
+          shopt -s nullglob
+          prompts=(agents/prompts/*.md)
+          ((${#prompts[@]} > 0))
+          for file in "${prompts[@]}"; do
+            name=$(basename "$file" .md)
+            payload=$(jq -n --arg name "$name" --arg tag "$RELEASE_TAG" --rawfile prompt "$file" '
+              {name: $name, type: "text", labels: [$tag, "production"],
+               prompt: ($prompt | sub("\\A---\\r?\\n.*?\\r?\\n---\\r?\\n"; ""; "s"))}
+              | if (.prompt | test("\\S")) then . else error("Empty prompt") end')
+            if [[ "$DRY_RUN" == true ]]; then
+              printf 'Validated prompt: %s\n' "$name"
+            else
+              npx --yes @langfuse/cli@1.3.1 api prompts create --body-json "$payload" >/dev/null
+              printf 'Published prompt: %s\n' "$name"
+            fi
+          done
