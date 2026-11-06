@@ -1,6 +1,10 @@
 name: zammad-triage
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 2
+connectors: [zammad-clerk]
+code_work: none
 prompt: agents/prompts/zammad-triage.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools: [zammad_rest.search, zammad_rest.update_priority, zammad_rest.add_tag, zammad_rest.internal_note]
@@ -8,7 +12,7 @@ mcp_servers: []
 privacy_class: internal
 litellm_role: medium
 model_policy: {locality: local_only, cloud_fallback: forbidden, router_key_ref: openbao://agent-key/zammad-triage}
-trigger: {kind: schedule, cron: "*/10 * * * *"}
+triggers: [{kind: schedule, source: dify, cadence: "7,17,27,37,47,57 * * * *", skew_minutes: 7}]
 mode: shadow
 memory_scope: hindsight/zammad-triage
 eval_set: agents/evals/zammad-triage.yaml

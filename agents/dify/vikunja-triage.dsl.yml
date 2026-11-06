@@ -46,7 +46,7 @@ workflow:
       - {data: {isInIteration: true, iteration_id: project_loop, sourceType: tool, targetType: code}, id: list-bind-result, source: list_tasks, sourceHandle: source, target: scope_list_result, targetHandle: target, type: custom, zIndex: 1002}
       - {data: {isInIteration: true, iteration_id: dispatch_loop, sourceType: code, targetType: tool}, id: action-write, source: bind_action, sourceHandle: source, target: dispatch_write, targetHandle: target, type: custom, zIndex: 1002}
     nodes:
-      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '*/10 * * * *', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
+      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '2,12,22,32,42,52 * * * *', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
         height: 54
         id: schedule
         position: {x: 40, y: 320}
