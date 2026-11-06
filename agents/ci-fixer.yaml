@@ -1,6 +1,10 @@
 name: ci-fixer
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 1
+connectors: [github-clerk]
+code_work: sandbox
 mode: shadow
 # Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
 # short-lived GitHub App installation token for the event repo; Dify holds no
@@ -21,16 +25,18 @@ tools:
   - github.git.update_ref
   - github.issues.create_comment
 mcp_servers: []
-privacy_class: public-code
+privacy_class: public
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: check_run
-    action: completed
-    conclusion: failure
-    org: dryvist
+triggers:
+  - kind: event
+    source: github.check_run
+    skew_minutes: 0
+    event_filter:
+      event: check_run
+      action: completed
+      conclusion: failure
+      org: dryvist
 mandate_binding:
   required_fields: [repo, ref, head_sha, strength]
   event: check_run

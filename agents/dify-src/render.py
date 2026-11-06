@@ -128,9 +128,11 @@ def render_agent(definition_path):
     }
     required_markers = {AGENT_NAME_MARKER, LITELLM_ROLE_MARKER}
 
-    trigger = agent.get("trigger", {})
-    if trigger.get("kind") == "schedule":
-        replacements[TRIGGER_CRON_MARKER] = trigger.get("cron")
+    schedules = [trigger for trigger in agent.get("triggers", []) if trigger.get("kind") == "schedule"]
+    if len(schedules) > 1:
+        raise ValueError(f"{name} Dify template supports one schedule")
+    if schedules:
+        replacements[TRIGGER_CRON_MARKER] = schedules[0].get("cadence")
         required_markers.add(TRIGGER_CRON_MARKER)
     elif TRIGGER_CRON_MARKER in template:
         raise ValueError(f"{name} template declares a schedule but its agent does not")

@@ -1,6 +1,12 @@
 name: vikunja-clerk
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 0
+kind: connector
+owns: vikunja
+connectors: []
+code_work: none
 prompt: agents/prompts/vikunja-clerk.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools:
@@ -13,8 +19,7 @@ mcp_servers: [vikunja]
 privacy_class: internal
 # LiteLLM router role, not a model ID.
 litellm_role: small
-trigger:
-  kind: call
+triggers: [{kind: call, source: caller, skew_minutes: 0}]
 mode: shadow # shadow or live
 mandate_binding:
   write_tools: [vikunja_tasks.create, vikunja_tasks.update]
