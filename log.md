@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Update (instructions)**: Reference the canonical delegate brief rules by their cross-package prompt resource identifier.
+
 * **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.
 
 * **Update (instructions)**: Agent standards link to the canonical delegate brief rules for verification and evidence reporting.

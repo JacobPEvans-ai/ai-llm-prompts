@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T22:45:07Z"
+timestamp: "2026-11-06T23:00:00Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -68,7 +68,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 
 ## e. Coding-agent briefs
 
-Follow [Brief Delegates Completely](../../../../claude-code/rules/brief-delegates.md) for scope, authority, stops, verification, and evidence reporting.
+Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for scope, authority, stops, verification, and evidence reporting.
 
 [A4]: agent-standards-sources.md
 [A5]: agent-standards-sources.md
