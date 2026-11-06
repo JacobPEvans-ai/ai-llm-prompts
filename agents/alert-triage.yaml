@@ -1,0 +1,24 @@
+name: alert-triage
+owner: agent-platform
+tier: 1
+triggers:
+  - {kind: event, source: splunk.alert_webhook, cadence: on_event, skew_minutes: 0}
+  - {kind: event, source: grafana.alert_webhook, cadence: on_event, skew_minutes: 0}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: private
+connectors: [splunk-clerk, grafana-clerk, zammad-clerk, slack-clerk]
+code_work: none
+mode: shadow
+eval_set: agents/evals/alert-triage.yaml
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: homelab-ops/skills/monitoring-first/SKILL.md}
+prompt: agents/prompts/alert-triage.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.call]
+mcp_servers: []
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+memory_scope: hindsight/alert-triage
+identity: agent-alert-triage
+channels: [caller, langfuse-trace, phoenix-trace]
