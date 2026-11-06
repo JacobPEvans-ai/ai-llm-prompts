@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.
+
 * **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
   CI compares the generated output set, and the import guide covers Dify 1.18, difyctl, and published-version exports.
 
