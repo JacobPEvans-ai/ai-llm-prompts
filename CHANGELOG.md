@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.67.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.66.0...v1.67.0) (2026-11-06)
+
+
+### Features
+
+* **agents:** render Sim and Langflow shadow exports ([#305](https://github.com/dryvist/ai-llm-prompts/issues/305)) ([30103c7](https://github.com/dryvist/ai-llm-prompts/commit/30103c7d5077582b21a32a84d6a3c308de923a64))
+
 ## [1.66.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.65.0...v1.66.0) (2026-11-06)
 
 
