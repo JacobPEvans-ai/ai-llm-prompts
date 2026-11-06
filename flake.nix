@@ -124,6 +124,7 @@
         self.packages.${system} // {
           agent-tests = pkgs.runCommand "ai-llm-prompts-agent-tests" {
             nativeBuildInputs = [
+              pkgs.jq
               pkgs.yq
               (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
             ];
