@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-11-06
+
+* **Add (applications)**: Add the YouTrack issue specialist with sole tracker ownership, bounded issue and comment
+  operations, and verification of every write by readback.
+
 ## 2026-11-04
 
 * **Update (auto-ai-agent)**: The Splunk deep dive bounds its utilization pass to one search per signal over an 8-day
