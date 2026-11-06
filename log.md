@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.
+
 * **Update (instructions)**: Agent standards link to the canonical delegate brief rules for verification and evidence reporting.
 
 * **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
