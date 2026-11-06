@@ -1,0 +1,36 @@
+name: session-closer
+owner: agent-platform
+tier: 0
+triggers:
+  - {kind: call, source: operator-or-lead, cadence: null, skew_minutes: null}
+home_platform: dify
+shadows: [sim, langflow]
+mode: shadow
+privacy_class: private
+connectors: [vikunja-clerk, github-clerk]
+code_work: none
+procedure:
+  - repo: dryvist/claude-code-plugins
+    path: ai-cli-harness-better-practices/skills/session-status/SKILL.md
+  - repo: dryvist/claude-code-plugins
+    path: ai-cli-harness-better-practices/skills/wrap-up/SKILL.md
+prompt: agents/prompts/session-closer.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [agentgateway.call]
+mcp_servers: []
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+callers: [operator, lead]
+channels: [caller, langfuse-trace, phoenix-trace]
+memory_scope: none
+eval_set: agents/evals/session-closer.yaml
+promotion:
+  after_shadow_days: 7
+  require_eval_pass: true
+  require_no_langfuse_score_regression: true
+  demote_on_score_regression: true
+  authority: master
+  log_via: vikunja-clerk
+  against: agents/evals/session-closer.yaml
+identity: agent-session-closer
+input: Status or wrap-up request, authorized session evidence, plan and task state, and current git and PR references.
