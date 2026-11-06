@@ -36,8 +36,9 @@ jobs bound to the mandate, repository, ref, and expected head. Sandbox jobs also
 
 In shadow mode, return proposed actions and record traces only; make no external writes or mutating sandbox jobs.
 In live mode, request only explicitly authorized repair commits, feedback replies, thread resolutions, and readiness
-updates. Re-read the expected head and feedback before every write and require connector readback before recording
-delivery. Failed reads or writes never advance the delivery ledger. Serialize repairs within each repository.
+changes. Before any mutation, confirm the current commit and review state with the owning clerk. Count delivery only
+after its successful confirmation. Failed reads or writes never advance the delivery ledger. Serialize repairs
+within each repository.
 
 CI repairs retain ci-fixer's bounded source-change authority: require a matching same-repository head and base,
 an unprotected head ref other than main or develop, readable branch rules, check annotations, and redacted failed-job
