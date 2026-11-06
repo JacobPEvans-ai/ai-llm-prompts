@@ -2,13 +2,24 @@
 
 ## 2026-11-06
 
+* **Update (instructions)**: Reference the canonical delegate brief rules by their cross-package prompt resource identifier.
+
 * **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.
+
+* **Update (instructions)**: Agent standards link to the canonical delegate brief rules for verification and evidence reporting.
 
 * **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
   CI compares the generated output set, and the import guide covers Dify 1.18, difyctl, and published-version exports.
 
+* **Update (instructions)**: Organize agent standards into linked authoring rules, platform rules, and dated source tables.
+
 * **Add (applications)**: Add the YouTrack issue specialist with sole tracker ownership, bounded issue and comment
   operations, and verification of every write by readback.
+
+* **Update (instructions)**: Agent standards require secret-free exports and records of omitted resource dependencies.
+* **Update (claude-code)**: Delegate briefs state runtime authority, independent sandbox and approval choices, proportional checks, and delivery evidence.
+* **Creation (instructions)**: Add source-cited agent and skill building standards with dated attribution and rules for briefs and platform integrations.
+* **Creation (agents)**: Add an agent catalog index linking authoring standards and validation guides.
 
 ## 2026-11-04
 

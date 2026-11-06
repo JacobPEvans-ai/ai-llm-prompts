@@ -4,4 +4,4 @@ Rules delivered into every Claude Code session and loaded without a path conditi
 
 ## Prompts
 
-* [Brief Delegates Completely](brief-delegates.md) - The parent owns every subagent brief and states the seven required elements.
+* [Brief Delegates Completely](brief-delegates.md) - Required brief elements, runtime authority, verification, and evidence states.

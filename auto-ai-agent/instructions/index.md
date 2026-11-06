@@ -19,6 +19,10 @@ layout.
 * [Permissions moved to nix-claude-code](agentsmd/permissions/MOVED.md) - Shared agent instruction file.
 * [Claude Projects brief](agentsmd/projects-brief.md) - Shared agent instruction file.
 * [Agent Notifications](agentsmd/rules/agent-notifications.md) - Shared agent instruction file.
+* [Agent and skill building standards](agentsmd/rules/on-demand/agent-standards.md) - Source-cited rules for agents, skills, and platform integrations.
+* [Agent authoring standards sources](agentsmd/rules/on-demand/agent-standards-sources.md) - Dated authoring source table.
+* [Platform integration building standards](agentsmd/rules/on-demand/agent-standards-platform.md) - Dify and LiteLLM rules f–g.
+* [Platform integration standards sources](agentsmd/rules/on-demand/agent-standards-platform-sources.md) - Dated platform source table.
 * [CI Resilience](agentsmd/rules/on-demand/ci-resilience.md) - Shared agent instruction file.
 * [Claude Projects](agentsmd/rules/on-demand/claude-projects.md) - Shared agent instruction file.
 * [Cost-aware authoring](agentsmd/rules/on-demand/cost-aware-authoring.md) - Shared agent instruction file.
