@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.64.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.63.0...v1.64.0) (2026-11-06)
+
+
+### Features
+
+* **ci:** sync release prompts to Langfuse ([#288](https://github.com/dryvist/ai-llm-prompts/issues/288)) ([1e085cf](https://github.com/dryvist/ai-llm-prompts/commit/1e085cf388addc57346736d6dd802af506cb3359))
+
 ## [1.63.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.62.0...v1.63.0) (2026-11-06)
 
 
