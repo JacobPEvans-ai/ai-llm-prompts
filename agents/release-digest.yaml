@@ -1,0 +1,22 @@
+name: release-digest
+owner: agent-platform
+tier: 2
+triggers:
+  - {kind: schedule, source: dify, cadence: "17 8 * * 1", skew_minutes: 17}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: private
+connectors: [github-clerk, slack-clerk]
+code_work: none
+mode: shadow
+eval_set: agents/evals/release-digest.yaml
+procedure: []
+prompt: agents/prompts/release-digest.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.call]
+mcp_servers: []
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+memory_scope: hindsight/release-digest
+identity: agent-release-digest
+channels: [caller, langfuse-trace, phoenix-trace]
