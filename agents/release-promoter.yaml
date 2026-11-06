@@ -1,0 +1,22 @@
+name: release-promoter
+owner: agent-platform
+tier: 0
+triggers:
+  - {kind: call, source: release-lead, cadence: null, skew_minutes: null}
+home_platform: dify
+shadows: [sim, langflow]
+mode: shadow
+privacy_class: internal
+connectors: [github-clerk]
+code_work: none
+procedure:
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/promote-release/SKILL.md
+prompt: agents/prompts/release-promoter.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.github-clerk]
+mcp_servers: []
+litellm_role: medium
+memory_scope: none
+identity: agent-release-promoter
+eval_set: agents/evals/release-promoter.yaml
