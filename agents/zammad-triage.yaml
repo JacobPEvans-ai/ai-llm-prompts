@@ -12,7 +12,11 @@ mcp_servers: []
 privacy_class: internal
 litellm_role: medium
 model_policy: {locality: local_only, cloud_fallback: forbidden, router_key_ref: openbao://agent-key/zammad-triage}
-triggers: [{kind: schedule, source: dify, cadence: "7,17,27,37,47,57 * * * *", skew_minutes: 7}]
+triggers:
+  - kind: event
+    source: zammad
+  - kind: rotation
+    every: 1d
 mode: shadow
 memory_scope: hindsight/zammad-triage
 eval_set: agents/evals/zammad-triage.yaml

@@ -14,7 +14,11 @@ tools:
 mcp_servers: [vikunja]
 privacy_class: internal
 litellm_role: medium
-triggers: [{kind: schedule, source: dify, cadence: "2,12,22,32,42,52 * * * *", skew_minutes: 2}]
+triggers:
+  - kind: event
+    source: vikunja
+  - kind: rotation
+    every: 1d
 mode: shadow
 # Hindsight banks are per-agent; this scope is capped.
 memory_scope: hindsight/vikunja-triage
