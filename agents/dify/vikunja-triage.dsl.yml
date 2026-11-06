@@ -200,7 +200,7 @@ workflow:
         zIndex: 1002
     nodes:
       - data:
-          cron_expression: '*/10 * * * *'
+          cron_expression: 2,12,22,32,42,52 * * * *
           desc: Native Dify scheduled trigger; no user inputs
           mode: cron
           selected: false

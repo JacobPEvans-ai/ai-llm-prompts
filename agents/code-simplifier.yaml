@@ -1,6 +1,10 @@
 name: code-simplifier
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 1
+connectors: [github-clerk]
+code_work: none
 mode: shadow
 # Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
 # short-lived GitHub App installation token for the event repo; Dify holds no
@@ -14,15 +18,17 @@ tools:
   - github.repos.get_branch_rules
   - github.pulls.create_review
 mcp_servers: []
-privacy_class: public-code
+privacy_class: public
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: pull_request
-    action: [opened, ready_for_review]
-    org: dryvist
+triggers:
+  - kind: event
+    source: github.pull_request
+    skew_minutes: 0
+    event_filter:
+      event: pull_request
+      action: [opened, ready_for_review]
+      org: dryvist
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request

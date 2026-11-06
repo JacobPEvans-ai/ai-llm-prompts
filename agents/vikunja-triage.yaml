@@ -1,6 +1,10 @@
 name: vikunja-triage
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 2
+connectors: [vikunja-clerk, github-clerk]
+code_work: none
 prompt: agents/prompts/vikunja-triage.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools:
@@ -10,7 +14,7 @@ tools:
 mcp_servers: [vikunja]
 privacy_class: internal
 litellm_role: medium
-trigger: {kind: schedule, cron: "*/10 * * * *"}
+triggers: [{kind: schedule, source: dify, cadence: "2,12,22,32,42,52 * * * *", skew_minutes: 2}]
 mode: shadow
 # Hindsight banks are per-agent; this scope is capped.
 memory_scope: hindsight/vikunja-triage

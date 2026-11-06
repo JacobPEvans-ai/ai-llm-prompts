@@ -95,7 +95,7 @@ workflow:
         type: custom
     nodes:
       - data:
-          cron_expression: '*/10 * * * *'
+          cron_expression: 7,17,27,37,47,57 * * * *
           mode: cron
           timezone: UTC
           title: Schedule

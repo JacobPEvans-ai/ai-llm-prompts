@@ -1,6 +1,10 @@
 name: commit-grouper
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 0
+connectors: []
+code_work: none
 mode: shadow
 prompt: agents/prompts/commit-grouper.md
 shared_prefix: agents/prompts/shared/homelab.md
@@ -10,7 +14,7 @@ mcp_servers: []
 privacy_class: internal
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger: {kind: call}
+triggers: [{kind: call, source: caller, skew_minutes: 0}]
 callers: any
 channels: [caller, langfuse-trace]
 memory_scope: none

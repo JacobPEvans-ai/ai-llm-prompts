@@ -62,7 +62,12 @@ workflow:
 {{- $prompt := printf "%s\n\n%s" (tmpl.Exec "prompt" .shared_prefix) (tmpl.Exec "prompt" .prompt) -}}
 {{- $params := dict "__DIFY_AGENT_NAME__" .name "__DIFY_LITELLM_ROLE__" .litellm_role -}}
 {{- with (index . "mode") -}}{{- $params = coll.Set "__DIFY_MODE__" . $params -}}{{- end -}}
-{{- if eq .trigger.kind "schedule" -}}{{- $params = coll.Set "__DIFY_TRIGGER_CRON__" .trigger.cron $params -}}{{- end -}}
+{{- $schedules := coll.Slice -}}
+{{- range (index . "triggers") -}}
+  {{- if eq .kind "schedule" -}}{{- $schedules = coll.Append . $schedules -}}{{- end -}}
+{{- end -}}
+{{- test.Assert "Dify template supports one schedule" (le (len $schedules) 1) -}}
+{{- range $schedules -}}{{- $params = coll.Set "__DIFY_TRIGGER_CRON__" .cadence $params -}}{{- end -}}
 {{- with (index . "github_reader") -}}{{- $params = coll.Set "__DIFY_GITHUB_TOKEN_REF__" .github_token_ref $params -}}{{- end -}}
 {{- with (index . "output_schema") -}}
   {{- $schema := tmpl.Exec "json" . | strings.ReplaceAll "\\" "\\\\" | strings.ReplaceAll "'" "\\'" -}}

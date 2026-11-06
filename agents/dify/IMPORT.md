@@ -23,6 +23,7 @@ nix develop --command python3 -m pytest -q agents/judges
 the standard Start → model → End workflow without a fragment directory. A definition's optional `dify` mapping
 supplies its existing workflow graph, including node settings and Code-node source. Parameters and canonical
 prompts are inserted as data. Prompt text and Code-node source are never evaluated as gomplate templates.
+Scheduled graphs use `triggers[].cadence` directly; `skew_minutes` is already included in that cadence.
 
 Edit the YAML, canonical prompt, or shared template, and commit the generated DSL with it. Keep the generated-file
 header. `check-dify` renders into a temporary directory and compares the complete output set byte for byte,

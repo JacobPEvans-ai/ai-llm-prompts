@@ -36,7 +36,7 @@ def sample_checkout(tmp_path, name="sample"):
         "litellm_role": "medium",
         "shared_prefix": "agents/prompts/prefix.md",
         "prompt": "agents/prompts/sample.md",
-        "trigger": {"kind": "a2a"},
+        "triggers": [{"kind": "call", "source": "a2a", "skew_minutes": 0}],
     }
     path = agents / f"{name}.yaml"
     path.write_text(yaml.safe_dump(definition))
@@ -88,7 +88,7 @@ def test_new_dify_agent_needs_only_definition_and_prompt(tmp_path, name):
 
 def test_non_dify_agent_is_skipped_without_fragments(tmp_path):
     sample_checkout(tmp_path)
-    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: hatchet\n")
+    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: sim\n")
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
     assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {"sample.dsl.yml"}
@@ -116,6 +116,31 @@ def test_name_must_match_definition_filename(tmp_path):
     definition["name"] = "another-agent"
     path.write_text(yaml.safe_dump(definition))
     assert render_checkout(tmp_path).returncode != 0
+
+
+def test_v2_schedule_uses_final_cadence_without_adding_skew(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{
+        "kind": "schedule", "source": "dify", "cadence": "2/10 * * * *", "skew_minutes": 2,
+    }]
+    definition["dify"] = {"prompt": "__DIFY_SYSTEM_PROMPT__", "cron": "__DIFY_TRIGGER_CRON__"}
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
+    assert output["cron"] == "2/10 * * * *"
+
+
+def test_multiple_schedules_fail(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [
+        {"kind": "schedule", "cadence": "2 * * * *"},
+        {"kind": "schedule", "cadence": "7 * * * *"},
+    ]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "Dify template supports one schedule" in result.stderr
 
 
 @pytest.mark.parametrize("marker", ["__DIFY_SYSTEM_PROMPT__", "__DIFY_SYSTEM_PROMPT__\n"])
