@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.62.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.3...v1.62.0) (2026-11-06)
+
+
+### Features
+
+* add YouTrack specialist prompt ([#284](https://github.com/dryvist/ai-llm-prompts/issues/284)) ([6af677b](https://github.com/dryvist/ai-llm-prompts/commit/6af677b7016edded8154d19b0ffc8d0b016ad54b))
+
 ## [1.61.3](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.2...v1.61.3) (2026-11-05)
 
 
