@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from definitions import definition, definitions
+from test_triggers import validate_triggers
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -96,31 +97,6 @@ def _missing_roster_fields(agent):
     ]
 
 
-def _cron_minutes(cadence):
-    """Validate numeric five-field cron and expand every possible start minute."""
-    assert isinstance(cadence, str), "cadence must be numeric five-field cron"
-    fields = cadence.split()
-    assert len(fields) == 5, "cadence must have five fields"
-    minutes = set()
-    for index, (field, lower, upper) in enumerate(
-        zip(fields, (0, 0, 1, 1, 0), (59, 23, 31, 12, 7))
-    ):
-        for item in field.split(","):
-            assert re.fullmatch(r"(?:\*|\d+(?:-\d+)?)(?:/[1-9]\d*)?", item), "invalid cadence"
-            span, _, step = item.partition("/")
-            if span == "*":
-                start, stop = lower, upper
-            elif "-" in span:
-                start, stop = map(int, span.split("-"))
-            else:
-                start = int(span)
-                stop = upper if step else start
-            assert lower <= start <= stop <= upper, "cadence field out of range"
-            if index == 0:
-                minutes.update(range(start, stop + 1, int(step or 1)))
-    return minutes
-
-
 def _validate_v2(agent):
     """Executable v2 schema; preserve agent-specific extension fields."""
     assert isinstance(agent, dict), "definition must be a mapping"
@@ -149,18 +125,7 @@ def _validate_v2(agent):
     code_tools = {"github.git.create_blob", "github.git.create_tree", "github.git.create_commit", "github.git.update_ref"}
     if code_tools.intersection(agent["tools"]):
         assert agent["code_work"] == "sandbox", "code editing requires sandbox"
-    assert isinstance(agent["triggers"], list) and agent["triggers"], "triggers must be a non-empty list"
-    for trigger in agent["triggers"]:
-        assert isinstance(trigger, dict), "trigger must be a mapping"
-        assert trigger.get("kind") in ("event", "schedule", "call"), "invalid trigger kind"
-        assert isinstance(trigger.get("source"), str) and trigger["source"].strip(), "trigger source required"
-        skew = trigger.get("skew_minutes")
-        assert type(skew) is int and 0 <= skew < 60, "invalid skew_minutes"
-        if trigger["kind"] == "schedule":
-            assert not _cron_minutes(trigger.get("cadence")) & {0, 15, 30, 45}, "quarter-hour schedule forbidden"
-        else:
-            assert "cadence" not in trigger, "cadence is schedule-only"
-
+    validate_triggers(agent)
 
 @pytest.fixture
 def agent_v2():
@@ -223,62 +188,6 @@ def test_invalid_v2_definition_fixtures(agent_v2, updates):
     agent_v2.update(updates)
     with pytest.raises(AssertionError):
         _validate_v2(agent_v2)
-
-
-@pytest.mark.parametrize("kind", ["event", "call", "schedule"])
-def test_valid_v2_trigger_fixtures(agent_v2, kind):
-    trigger = {"kind": kind, "source": "example", "skew_minutes": 0}
-    if kind == "schedule":
-        trigger["cadence"] = "2,12,22,32,42,52 * * * *"
-    agent_v2["triggers"] = [trigger]
-    _validate_v2(agent_v2)
-
-
-@pytest.mark.parametrize("field", ["kind", "source", "skew_minutes"])
-def test_trigger_requires_its_fields(agent_v2, field):
-    del agent_v2["triggers"][0][field]
-    with pytest.raises(AssertionError):
-        _validate_v2(agent_v2)
-
-
-@pytest.mark.parametrize("updates", [
-    {"kind": "webhook"}, {"kind": None}, {"source": ""}, {"source": " "}, {"source": 1},
-    {"skew_minutes": -1}, {"skew_minutes": 60}, {"skew_minutes": True}, {"skew_minutes": 1.5},
-    {"cadence": "2 * * * *"}, {"kind": "event", "cadence": "2 * * * *"},
-])
-def test_invalid_v2_trigger_fixtures(agent_v2, updates):
-    agent_v2["triggers"][0].update(updates)
-    with pytest.raises(AssertionError):
-        _validate_v2(agent_v2)
-
-
-@pytest.mark.parametrize("cadence", [
-    "0 * * * *", "15 * * * *", "30 * * * *", "45 * * * *",
-    "2,15 * * * *", "* * * * *", "*/10 * * * *", "1-16 * * * *",
-    "5/10 * * * *", "60 * * * *", "2 24 * * *", "2 * 0 * *", "2 * * 13 *",
-    "2 * * * 8", "2 * *", "@hourly", "2/0 * * * *", "10-2 * * * *", None,
-])
-def test_invalid_schedule_fixtures(agent_v2, cadence):
-    agent_v2["triggers"] = [{"kind": "schedule", "source": "dify", "cadence": cadence, "skew_minutes": 0}]
-    with pytest.raises(AssertionError):
-        _validate_v2(agent_v2)
-
-
-@pytest.mark.parametrize("cadence", ["2 * * * *", "1-14/2 * * * *", "2-59/10 * * * *", "2/10 * * * *"])
-def test_valid_schedule_fixtures(agent_v2, cadence):
-    agent_v2["triggers"] = [{"kind": "schedule", "source": "dify", "cadence": cadence, "skew_minutes": 2}]
-    _validate_v2(agent_v2)
-
-
-def test_schedule_requires_cadence(agent_v2):
-    agent_v2["triggers"] = [{"kind": "schedule", "source": "dify", "skew_minutes": 0}]
-    with pytest.raises(AssertionError, match="cadence"):
-        _validate_v2(agent_v2)
-
-
-def test_multiple_trigger_fixtures(agent_v2):
-    agent_v2["triggers"].append({"kind": "event", "source": "example", "skew_minutes": 0})
-    _validate_v2(agent_v2)
 
 
 def test_code_editing_fixture_requires_sandbox(agent_v2):
@@ -464,10 +373,10 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
         for data in [node.get("data", {})]
         if data.get("type") == "trigger-schedule"
     ]
-    triggers = [trigger for trigger in agent["triggers"] if trigger["kind"] == "schedule"]
+    triggers = [trigger for trigger in agent["triggers"] if trigger["kind"] == "anchor"]
     if triggers:
         assert len(schedules) == 1
-        assert schedules[0]["cron_expression"] == triggers[0]["cadence"]
+        assert schedules[0]["cron_expression"] == "{} {} * * *".format(*reversed(triggers[0]["at"].split(":")))
     else:
         assert not schedules
 

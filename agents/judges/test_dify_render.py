@@ -123,29 +123,46 @@ def test_name_must_match_definition_filename(tmp_path):
     assert render_checkout(tmp_path).returncode != 0
 
 
-def test_v2_schedule_uses_final_cadence_without_adding_skew(tmp_path):
+def test_anchor_renders_a_daily_utc_schedule(tmp_path):
     path, definition = sample_checkout(tmp_path)
-    definition["triggers"] = [{
-        "kind": "schedule", "source": "dify", "cadence": "2/10 * * * *", "skew_minutes": 2,
-    }]
-    definition["dify"] = {"prompt": "__DIFY_SYSTEM_PROMPT__", "cron": "__DIFY_TRIGGER_CRON__"}
+    definition["triggers"] = [{"kind": "anchor", "at": "06:07"}]
     path.write_text(yaml.safe_dump(definition))
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
     output = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
-    assert output["cron"] == "2/10 * * * *"
+    start = output["workflow"]["graph"]["nodes"][0]["data"]
+    assert start["type"] == "trigger-schedule"
+    assert start["cron_expression"] == "07 06 * * *" and start["timezone"] == "UTC"
 
 
-def test_multiple_schedules_fail(tmp_path):
+def test_event_and_rotation_have_webhook_and_callable_entries(tmp_path):
     path, definition = sample_checkout(tmp_path)
-    definition["triggers"] = [
-        {"kind": "schedule", "cadence": "2 * * * *"},
-        {"kind": "schedule", "cadence": "7 * * * *"},
-    ]
+    definition["triggers"] = [{"kind": "event", "source": "vikunja"}, {"kind": "rotation", "every": "1d"}]
     path.write_text(yaml.safe_dump(definition))
     result = render_checkout(tmp_path)
-    assert result.returncode != 0
-    assert "Dify template supports one schedule" in result.stderr
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
+    graph = output["workflow"]["graph"]
+    nodes = {node["id"]: node["data"] for node in graph["nodes"]}
+    assert nodes["start"]["type"] == "start" and nodes["start"]["variables"] == []
+    assert nodes["webhook-0"]["type"] == "trigger-webhook"
+    assert nodes["webhook-0"]["method"] == "post"
+    assert nodes["webhook-0"]["content_type"] == "application/json"
+    edges = [edge for edge in graph["edges"] if edge["source"] in ("start", "webhook-0")]
+    assert len(edges) == 2 and {edge["target"] for edge in edges} == {"model"}
+    assert not any(data["type"] == "trigger-schedule" for data in nodes.values())
+
+
+@pytest.mark.parametrize("triggers", [
+    [{"kind": "anchor", "at": "06:07"}, {"kind": "anchor", "at": "18:17"}],
+    [{"kind": "anchor", "at": "06:15"}], [{"kind": "anchor", "at": "06:08"}],
+    [{"kind": "rotation", "every": "0d"}], [{"kind": "schedule", "cadence": "7 * * * *"}],
+])
+def test_invalid_rendered_triggers_fail(tmp_path, triggers):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = triggers
+    path.write_text(yaml.safe_dump(definition))
+    assert render_checkout(tmp_path).returncode != 0
 
 
 @pytest.mark.parametrize("marker", ["__DIFY_SYSTEM_PROMPT__", "__DIFY_SYSTEM_PROMPT__\n"])
@@ -209,3 +226,18 @@ def test_check_rejects_source_drift_and_hand_edits(tmp_path, drift):
     else:
         (output.parent / "orphan.dsl.yml").write_text(output.read_text())
     assert run_make(*args).returncode != 0
+
+
+def test_rotation_can_also_have_a_fixed_anchor(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{"kind": "rotation", "every": "1d"}, {"kind": "anchor", "at": "06:07"}]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    dsl = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
+    graph = dsl["workflow"]["graph"]
+    nodes = {node["id"]: node["data"] for node in graph["nodes"]}
+    assert nodes["start"]["type"] == "start"
+    assert nodes["webhook-0"]["type"] == "trigger-schedule"
+    assert graph["edges"][-1]["data"]["sourceType"] == "trigger-schedule"
+    assert "{{#start.text#}}" not in str(dsl)
