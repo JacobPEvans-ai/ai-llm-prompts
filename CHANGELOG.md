@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.63.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.62.0...v1.63.0) (2026-11-06)
+
+
+### Features
+
+* **agents:** enforce definition schema v2 ([#286](https://github.com/dryvist/ai-llm-prompts/issues/286)) ([0487eb2](https://github.com/dryvist/ai-llm-prompts/commit/0487eb2c7d3a495234a97a0875d2caf5538f2da9))
+
 ## [1.62.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.61.3...v1.62.0) (2026-11-06)
 
 
