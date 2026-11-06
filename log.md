@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-11-06
+
+* **Creation (instructions)**: Add source-cited agent and skill building standards with dated attribution and rules for briefs and platform integrations.
+* **Creation (agents)**: Add an agent catalog index linking authoring standards and validation guides.
+
 ## 2026-11-04
 
 * **Update (auto-ai-agent)**: The Splunk deep dive bounds its utilization pass to one search per signal over an 8-day

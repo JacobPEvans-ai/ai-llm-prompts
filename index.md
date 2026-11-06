@@ -6,6 +6,7 @@ okf_version: "0.1"
 
 ## Catalogs
 
+* [Agents](agents/index.md) - Agent authoring standards and validation guides.
 * [Continuous AI agents](auto-ai-agent/index.md) - Shared behavior and jobs for continuously running local agents.
 * [Automation](automation/index.md) - Repository, cloud, and historical workflow automation prompts.
 * [Applications](applications/index.md) - Model instructions embedded in end-user and infrastructure applications.
