@@ -126,6 +126,7 @@
             nativeBuildInputs = [
               pkgs.gnumake
               pkgs.gomplate
+              pkgs.jq
               pkgs.yq
               (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
             ];
