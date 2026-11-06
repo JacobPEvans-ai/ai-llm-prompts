@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.66.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.65.0...v1.66.0) (2026-11-06)
+
+
+### Features
+
+* **agents:** publish agent and skill building standards ([#285](https://github.com/dryvist/ai-llm-prompts/issues/285)) ([2125bf8](https://github.com/dryvist/ai-llm-prompts/commit/2125bf805016bfd2836825e5ccd6f792a5fd0d5b))
+
 ## [1.65.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.64.0...v1.65.0) (2026-11-06)
 
 
