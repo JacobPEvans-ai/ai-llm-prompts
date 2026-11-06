@@ -1,6 +1,7 @@
 agent: doc-contradiction-finder
 cases:
   - id: planted-s1-merge-rule
+    category: normal
     input_event_summary:
       mandate:
         repo: dryvist/example
@@ -31,6 +32,7 @@ cases:
       /policy/roles.md line 2 (agents never merge). The question has A, B, and Neither. "ask" is true.
 
   - id: planted-s2-version
+    category: boundary
     input_event_summary:
       mandate:
         repo: dryvist/example
@@ -61,6 +63,7 @@ cases:
       "ask" is true.
 
   - id: planted-s4-ambiguous
+    category: ambiguous
     input_event_summary:
       mandate:
         repo: dryvist/example
@@ -90,6 +93,7 @@ cases:
       /ops/checks.md line 2 and /ops/schedule.md line 2. "ask" is true.
 
   - id: clean-pair-zero-findings
+    category: boundary
     input_event_summary:
       mandate:
         repo: dryvist/example
@@ -119,6 +123,7 @@ cases:
       The two pages agree, so there are zero findings. The output is exactly {"findings":[]} with no other text.
 
   - id: planted-s2-dedupe-suppressed
+    category: boundary
     input_event_summary:
       mandate:
         repo: dryvist/example
@@ -147,3 +152,117 @@ cases:
     expected_behavior: >
       The same App DSL version conflict as planted-s2-version. Its fingerprint is already in known_open_fingerprints, so
       the finding is present with "ask": false, and no question is raised for it.
+
+  - id: coverage-malformed
+    category: malformed
+    input_event_summary:
+      event: pull_request
+      mandate: null
+      pull_request_number: not-an-integer
+    expected_output:
+      findings: []
+  - id: coverage-negative-trigger
+    category: negative-trigger
+    input_event_summary:
+      mandate:
+        repo: dryvist/example
+        pr_number: 201
+      event: pull_request
+      action: opened
+      merged: false
+      org: dryvist
+      changed_files:
+      - path: docs/policy/merge.md
+        patch: '@@ -2,1 +2,1 @@
+
+          -Agents never merge.
+
+          +Agents may merge once checks are green.
+
+          '
+      changed_pages:
+      - page_path: /policy/merge.md
+        text: '# Merge rules
+
+          Agents may merge a pull request once its checks are green.
+
+          '
+      related_pages:
+      - page_path: /policy/roles.md
+        text: '# Roles
+
+          Agents never merge. The master session merges.
+
+          '
+      known_open_fingerprints: []
+    expected_output:
+      findings: []
+  - id: coverage-oversized
+    category: oversized
+    input_event_summary:
+      mandate:
+        repo: dryvist/example
+        pr_number: 201
+      event: pull_request
+      action: closed
+      merged: true
+      org: dryvist
+      changed_files:
+      - path: docs/policy/merge.md
+        patch: '@@ -2,1 +2,1 @@
+
+          -Agents never merge.
+
+          +Agents may merge once checks are green.
+
+          '
+      changed_pages:
+      - page_path: /policy/merge.md
+        text: '# Merge rules
+
+          Agents may merge a pull request once its checks are green.
+
+          '
+      related_pages:
+      - page_path: /policy/roles.md
+        text: '# Roles
+
+          Agents never merge. The master session merges.
+
+          '
+      known_open_fingerprints: []
+      diff_fixture: agents/evals/fixtures/oversized-input.txt
+    expected_output:
+      findings: []
+  - id: coverage-unavailable-source
+    category: unavailable-source
+    input_event_summary:
+      mandate:
+        repo: dryvist/example
+        pr_number: 201
+      event: pull_request
+      action: closed
+      merged: true
+      org: dryvist
+      changed_files:
+      - path: docs/policy/merge.md
+        patch: '@@ -2,1 +2,1 @@
+
+          -Agents never merge.
+
+          +Agents may merge once checks are green.
+
+          '
+      changed_pages:
+      - page_path: /policy/merge.md
+        text: '# Merge rules
+
+          Agents may merge a pull request once its checks are green.
+
+          '
+      known_open_fingerprints: []
+      source_result:
+        available: false
+        error: source unavailable
+    expected_output:
+      findings: []

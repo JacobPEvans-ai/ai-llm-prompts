@@ -1,22 +1,15 @@
 name: doc-contradiction-finder
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 1
+extends: event-worker
+description: |
+  Use when: merged documentation changes need a contradiction check.
+  Do not use when: the request needs page edits or unrelated code analysis.
 connectors: [github-clerk]
 code_work: none
-mode: shadow
-# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a short-lived GitHub App installation token for the event repo.
-prompt: agents/prompts/doc-contradiction-finder.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - github.pulls.get
   - github.pulls.diff
   - github.repos.get
-mcp_servers: []
 privacy_class: private
-# LiteLLM router role, not a model ID.
-litellm_role: medium
 triggers:
   - kind: event
     source: github.pull_request
@@ -36,11 +29,9 @@ mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request
 channels:
-  shadow: run_record_only
   live: disabled_until_slack_handoff_bound
-memory_scope: none
-eval_set: agents/evals/doc-contradiction-finder.yaml
 identity: agent-doc-contradiction-finder
+api_key_ref: agent-key/doc-contradiction-finder
 secret_ref: agent-key/doc-contradiction-finder
 github_token_ref: github-token/doc-contradiction-finder
 dify:

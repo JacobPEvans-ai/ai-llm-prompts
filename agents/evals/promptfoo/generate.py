@@ -168,8 +168,13 @@ def parse_test(name, case, system, forbidden=()):
 
 def generate_tests():
     tests = []
+    resolved = subprocess.run(
+        ["make", "--no-print-directory", "resolve-agents"], cwd=ROOT,
+        capture_output=True, text=True, check=True,
+    )
+    agents = {record["agent"]["name"]: record["agent"] for record in map(json.loads, resolved.stdout.splitlines())}
     for name in SUITES:
-        agent = load_yaml(ROOT / "agents" / f"{name}.yaml")
+        agent = agents[name]
         suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
         static_prefix = suite_prompt(agent, suite)
         writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
@@ -183,7 +188,7 @@ def generate_tests():
             if "expected_parse" in case:
                 tests.append(parse_test(name, case, parse_system, suite.get("forbidden_output_keys", [])))
             case_data = load_fixture_contents({
-                key: value for key, value in case.items() if key != "id" and not key.startswith("expected_")
+                key: value for key, value in case.items() if key not in ("id", "category") and not key.startswith("expected_")
             })
             assertions = [
                 {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},

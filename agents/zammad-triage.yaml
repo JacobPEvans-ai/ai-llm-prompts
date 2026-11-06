@@ -1,28 +1,19 @@
 name: zammad-triage
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 2
+extends: local-batch
+description: |
+  Use when: a ticket webhook or rotation catch-up needs scoped ranking.
+  Do not use when: the request needs ticket closure, reassignment, or customer replies.
 connectors: [zammad-clerk]
-code_work: none
-prompt: agents/prompts/zammad-triage.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools: [zammad_rest.search, zammad_rest.update_priority, zammad_rest.add_tag, zammad_rest.internal_note]
-mcp_servers: []
-privacy_class: internal
-litellm_role: medium
 model_policy: {locality: local_only, cloud_fallback: forbidden, router_key_ref: openbao://agent-key/zammad-triage}
 triggers:
   - kind: event
     source: zammad
   - kind: rotation
     every: 1d
-mode: shadow
 memory_scope: hindsight/zammad-triage
-eval_set: agents/evals/zammad-triage.yaml
 identity: agent-zammad-triage
 api_key_ref: openbao://agent-key/zammad-triage
-channels: [langfuse-trace]
 mandate_binding:
   kind: fixed_in_app
   source: environment_and_policy_refs
