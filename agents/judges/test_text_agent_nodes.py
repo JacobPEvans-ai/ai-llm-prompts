@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from dify_nodes import node_main
+from definitions import definition
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -51,12 +52,12 @@ def _run(agent, reply, text):
 
 @pytest.mark.parametrize("agent", _TEXT_AGENTS)
 def test_rendered_schema_equals_the_agent_definition(agent):
-    definition = yaml.safe_load((_AGENTS / f"{agent}.yaml").read_text())
+    resolved = definition(agent)
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent}.dsl.yml").read_text())
     code = {node["id"]: node["data"] for node in dsl["workflow"]["graph"]["nodes"]}["validate"]["code"]
     namespace = {}
     exec(compile(code, f"{agent}:validate", "exec"), namespace)
-    assert namespace["SCHEMA"] == definition["output_schema"]
+    assert namespace["SCHEMA"] == resolved["output_schema"]
 
 
 @pytest.mark.parametrize("agent", _TEXT_AGENTS)

@@ -1,4 +1,28 @@
 {{- /* Render a definition with gomplate -c .=agents/<name>.yaml -f agents/dify-src/agent.tmpl. */ -}}
+{{- define "resolve" -}}
+  {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
+  {{- $agent := . -}}
+  {{- $profile := dict -}}
+  {{- if coll.Has . "extends" -}}
+    {{- test.Assert "invalid profile name" (and (test.IsKind "string" .extends) (ne .extends "")) -}}
+  {{- end -}}
+  {{- with (index . "extends") -}}
+    {{- test.Assert "invalid profile name" (and (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .) (ne . "defaults")) -}}
+    {{- $profile = file.Read (printf "agents/profiles/%s.yaml" .) | data.YAML -}}
+    {{- $defaults := file.Read "agents/profiles/defaults.yaml" | data.YAML -}}
+    {{- range $layer := coll.Slice $defaults $profile -}}
+      {{- range $field := coll.Slice "extends" "name" "identity" "api_key_ref" "prompt" "eval_set" -}}
+        {{- test.Assert (printf "profiles cannot set %s" $field) (not (coll.Has $layer $field)) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- test.Assert "prompt and eval_set follow from name" (and (not (coll.Has $agent "prompt")) (not (coll.Has $agent "eval_set"))) -}}
+    {{- $profile = coll.Merge $profile $defaults -}}
+    {{- $agent = coll.Merge $agent $profile -}}
+    {{- $agent = coll.Set "prompt" (printf "agents/prompts/%s.md" $agent.name) $agent -}}
+    {{- $agent = coll.Set "eval_set" (printf "agents/evals/%s.yaml" $agent.name) $agent -}}
+  {{- end -}}
+  {{- dict "agent" $agent "profile" $profile | data.ToJSON -}}
+{{- end -}}
 {{- define "prompt" -}}
   {{- test.Assert "prompt paths must name repository files under agents/" (and (strings.HasPrefix "agents/" .) (not (strings.Contains ".." .))) -}}
   {{- $text := file.Read . -}}

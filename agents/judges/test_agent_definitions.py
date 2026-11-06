@@ -6,6 +6,8 @@ import re
 import pytest
 import yaml
 
+from definitions import definition, definitions
+
 
 _ROOT = Path(__file__).resolve().parents[2]
 _AGENTS = _ROOT / "agents"
@@ -45,12 +47,7 @@ _OKF_FIELDS = {
 }
 
 
-def _definitions():
-    return [
-        (path, yaml.safe_load(path.read_text()))
-        for path in sorted(_AGENTS.glob("*.yaml"))
-    ]
-
+_definitions = definitions
 
 def test_retired_eval_agent_has_no_definition_prompt_evals_or_fragments():
     for path in (
@@ -313,7 +310,7 @@ def test_every_definition_conforms_to_v2(path, agent):
 
 def test_code_editing_agents_use_sandbox_jobs():
     for name in ("ci-fixer", "docs-updater"):
-        agent = yaml.safe_load((_AGENTS / f"{name}.yaml").read_text())
+        agent = definition(name)
         assert agent["code_work"] == "sandbox"
 
 
@@ -442,7 +439,7 @@ def _system_prompts(dsl):
 
 @pytest.mark.parametrize("agent_name", _DSL_AGENTS)
 def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
-    agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
+    agent = definition(agent_name)
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
     nodes = dsl["workflow"]["graph"]["nodes"]
     assert dsl["app"]["name"] == agent["name"]
@@ -496,7 +493,7 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
 
 @pytest.mark.parametrize("agent_name", _DSL_AGENTS)
 def test_dify_system_prompt_matches_its_declared_source(agent_name):
-    agent = yaml.safe_load((_AGENTS / f"{agent_name}.yaml").read_text())
+    agent = definition(agent_name)
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent_name}.dsl.yml").read_text())
     system_prompts = _system_prompts(dsl)
     assert len(system_prompts) == 1, (
