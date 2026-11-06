@@ -23,7 +23,7 @@ def sample(root):
     path, definition = sample_checkout(root)
     definition.update(
         shadows=list(RUNTIMES), mode="live", tier=2, privacy_class="private",
-        tools=["litellm.chat_completions", "github.pulls.get", "github.pulls.create_review",
+        tools=["litellm.chat_completions", "github.pulls.create_review",
                "vikunja.tasks.update", "agent-sandbox.run", "unknown.operation"],
         connectors=["github-clerk"],
         output_schema={"type": "object", "properties": {"text": {"type": "string"}}},
@@ -44,11 +44,20 @@ def metadata(runtime, export):
 def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime):
     result = run_make(f"render-{runtime}", f"SHADOW_OUTPUT={tmp_path}")
     assert result.returncode == 0, result.stderr
-    expected = {
-        f"{path.stem}.json" for path in (ROOT / "agents").glob("*.yaml")
-        if runtime in yaml.safe_load(path.read_text()).get("shadows", [])
-        and yaml.safe_load(path.read_text())["home_platform"] == "dify"
-    }
+    expected = set()
+    for path in (ROOT / "agents").glob("*.yaml"):
+        definition = yaml.safe_load(path.read_text())
+        if runtime not in definition.get("shadows", []) or definition["home_platform"] != "dify":
+            continue
+        # Judge independently: every definition read must be present or the agent explicitly skipped.
+        reads = read_tools(definition)
+        if reads:
+            assert f"SKIP | {runtime} | {path.stem} |" in result.stdout
+            for tool in reads:
+                assert tool in result.stdout
+            assert not (tmp_path / f"{path.stem}.json").exists()
+        else:
+            expected.add(f"{path.stem}.json")
     committed = ROOT / "agents" / runtime
     assert {p.name for p in tmp_path.iterdir()} == expected
     assert {p.name for p in committed.iterdir()} == expected
@@ -62,6 +71,63 @@ def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime)
         assert meta["litellm_role"] == definition["litellm_role"]
         assert meta["triggers"] == definition["triggers"]
         assert meta["output_schema"] == definition.get("output_schema")
+        assert read_tools(definition) <= set(meta["tools"])
+
+
+def read_tools(definition):
+    verbs = {"get", "list", "search", "diff", "download", "fetch", "read", "query", "lookup"}
+    return {tool for tool in definition["tools"] if tool.rsplit(".", 1)[-1].split("_", 1)[0] in verbs}
+
+
+@pytest.mark.parametrize("runtime", RUNTIMES)
+@pytest.mark.parametrize("servers", [[], ["unrelated"], ["github"]])
+def test_read_tools_are_never_silently_dropped(tmp_path, runtime, servers):
+    path, definition = sample(tmp_path)
+    definition.update(tools=["github.pulls.get", "github.pulls.diff", "github.pulls.create_review"],
+                      mcp_servers=servers)
+    path.write_text(yaml.safe_dump(definition))
+    result = render(runtime, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert f"SKIP | {runtime} | sample |" in result.stdout
+    for tool in read_tools(definition):
+        assert tool in result.stdout
+    assert "github.pulls.create_review" not in result.stdout
+    assert not (tmp_path / "agents" / runtime / "sample.json").exists()
+    if servers != ["github"]:
+        assert "Unbound read-only tools" in result.stdout
+    elif runtime == "langflow":
+        assert "Langflow MCP binding is not read-only" in result.stdout
+        assert "https://docs.langflow.org/mcp-client" in result.stdout
+    else:
+        assert "Sim MCP binding cannot restrict subcommand arguments" in result.stdout
+        assert "https://docs.sim.ai/agents/mcp" in result.stdout
+    assert run_make(f"check-{runtime}", f"AGENTS_ROOT={tmp_path}").returncode == 0
+
+
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_mixed_mapping_names_only_unbound_tools(tmp_path, runtime):
+    path, definition = sample(tmp_path)
+    definition.update(tools=["vikunja_tasks.list", "github.pulls.diff"], mcp_servers=["vikunja"])
+    path.write_text(yaml.safe_dump(definition))
+    result = render(runtime, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Unbound read-only tools: github.pulls.diff" in result.stdout
+    assert "vikunja_tasks.list" not in result.stdout
+
+
+@pytest.mark.parametrize("runtime", RUNTIMES)
+def test_agent_becomes_eligible_after_read_requirement_is_removed(tmp_path, runtime):
+    path, definition = sample(tmp_path)
+    original = definition["tools"][:]
+    definition["tools"].append("vikunja_tasks.list")
+    definition["mcp_servers"] = ["vikunja"]
+    path.write_text(yaml.safe_dump(definition))
+    assert render(runtime, tmp_path).returncode == 0
+    assert not (tmp_path / "agents" / runtime / "sample.json").exists()
+    definition["tools"] = original
+    path.write_text(yaml.safe_dump(definition))
+    assert render(runtime, tmp_path).returncode == 0
+    assert document(runtime, tmp_path)
 
 
 @pytest.mark.parametrize("runtime", RUNTIMES)
@@ -128,7 +194,7 @@ def test_replay_has_router_only_and_omits_writes_connectors_and_unknown_tools(tm
 
 
 @pytest.mark.parametrize("runtime", RUNTIMES)
-@pytest.mark.parametrize("drift", ["prompt", "prefix", "definition", "render", "missing", "extra"])
+@pytest.mark.parametrize("drift", ["prompt", "prefix", "definition", "render", "missing", "extra", "ineligible"])
 def test_check_rejects_source_drift_and_hand_edits(tmp_path, runtime, drift):
     path, definition = sample(tmp_path)
     assert render(runtime, tmp_path).returncode == 0
@@ -145,6 +211,9 @@ def test_check_rejects_source_drift_and_hand_edits(tmp_path, runtime, drift):
         output.write_text(output.read_text().replace("medium", "changed"))
     elif drift == "missing":
         output.unlink()
+    elif drift == "ineligible":
+        definition["tools"].append("github.pulls.get")
+        path.write_text(yaml.safe_dump(definition))
     else:
         (output.parent / "orphan.json").write_text(output.read_text())
     assert run_make(*args).returncode != 0

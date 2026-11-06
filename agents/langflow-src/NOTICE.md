@@ -10,12 +10,18 @@ Upstream source, accessed 2026-11-06:
 - [Component index](https://github.com/langflow-ai/langflow/blob/v1.13.0/src/lfx/src/lfx/_assets/component_index.json)
 - [OpenAI component](https://github.com/langflow-ai/langflow/blob/v1.13.0/src/bundles/openai/src/lfx_openai/components/openai/openai_chat_model.py)
 - [MIT license](https://github.com/langflow-ai/langflow/blob/v1.13.0/LICENSE)
+- [Native MCP client and tool selection](https://docs.langflow.org/mcp-client)
 
 Configure the `LITELLM_API_BASE` global variable and each agent's `<AGENT_NAME>_LITELLM_API_KEY` global variable
 in the importing workspace. Agent names are uppercased with hyphens replaced by underscores. The base ends in `/v1`.
 The flow consumes replay text through TextInput and terminates at the model response. It has no chat history or
 integration output component. Source trigger declarations and omitted integration tools are retained in `data.metadata`;
 triggers are replay descriptors and do not activate subscriptions or schedules.
+
+The shared eligibility projection in `../sim-src/shared.tmpl` skips definitions with unbound read-only tools.
+It also skips every definition requiring mapped MCP tools: `Langflow MCP binding is not read-only`.
+The native MCP Toolset exposes tool arguments, including mutable task `subcommand` values. A read-only shadow
+identity with gateway grants is separate follow-up work. Each check prints skipped agents, tools, and source URLs.
 
 Trace delivery uses the runtime and router's configured Langfuse/Phoenix tracing. Import, execution, routing policy,
 and trace receipt require runtime acceptance separately from offline render checks.

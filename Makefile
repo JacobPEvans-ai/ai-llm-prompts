@@ -28,6 +28,9 @@ render-sim render-langflow: render-%:
 		case ",$$shadows," in *,$*,*) ;; *) continue ;; esac; \
 		name=$$(basename "$$definition" .yaml); \
 		test "$$(yq -r '.name' "$$definition")" = "$$name"; \
+		reason=$$(gomplate -c .="$$definition" -t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
+			-i '{{ tmpl.Exec "shadow-eligibility" (dict "definition" . "runtime" "$*") }}'); \
+		if [ -n "$$reason" ]; then printf 'SKIP | %s | %s | %s\n' '$*' "$$name" "$$reason"; continue; fi; \
 		gomplate -c .="$$definition" -t dify="$(CURDIR)/agents/dify-src/agent.tmpl" \
 			-t shadow="$(CURDIR)/agents/sim-src/shared.tmpl" \
 			-f "$(CURDIR)/agents/$*-src/agent.tmpl" \
