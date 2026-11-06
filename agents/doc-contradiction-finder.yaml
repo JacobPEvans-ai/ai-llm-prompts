@@ -1,6 +1,10 @@
 name: doc-contradiction-finder
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 1
+connectors: [github-clerk]
+code_work: none
 mode: shadow
 # Credential model: per-agent LiteLLM key plus an AppRole that can mint only a short-lived GitHub App installation token for the event repo.
 prompt: agents/prompts/doc-contradiction-finder.md
@@ -10,22 +14,24 @@ tools:
   - github.pulls.diff
   - github.repos.get
 mcp_servers: []
-privacy_class: internal
+privacy_class: private
 # LiteLLM router role, not a model ID.
 litellm_role: medium
-trigger:
-  kind: event
-  event_filter:
-    event: pull_request
-    action: [closed]
-    merged: true
-    org: dryvist
-    base_branch: main
-  repositories:
-    - repo: dryvist/ai-llm-prompts
-      paths: [auto-ai-agent/instructions/**, agents/prompts/**]
-  # The private documentation repository is named only through this variable. Its value comes from the runtime secret store.
-  private_repository_env: DOC_FINDER_PRIVATE_REPO
+triggers:
+  - kind: event
+    source: github.pull_request
+    skew_minutes: 0
+    event_filter:
+      event: pull_request
+      action: [closed]
+      merged: true
+      org: dryvist
+      base_branch: main
+    repositories:
+      - repo: dryvist/ai-llm-prompts
+        paths: [auto-ai-agent/instructions/**, agents/prompts/**]
+    # The private documentation repository is resolved from the runtime secret store.
+    private_repository_env: DOC_FINDER_PRIVATE_REPO
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request

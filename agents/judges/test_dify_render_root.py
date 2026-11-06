@@ -85,6 +85,26 @@ def test_missing_root_directory_fails(tmp_path):
     assert "--root is not a directory" in result.stderr
 
 
+def test_root_renders_v2_schedule_cadence(tmp_path):
+    output = _checkout(tmp_path)
+    with (tmp_path / "agents" / "sample.yaml").open("a") as definition:
+        definition.write('triggers: [{kind: schedule, source: dify, cadence: "2/10 * * * *", skew_minutes: 2}]\n')
+    with (tmp_path / "agents" / "dify-src" / "sample" / "000.dsl.yml.tmpl").open("a") as template:
+        template.write("cron: __DIFY_TRIGGER_CRON__\n")
+    result = _run("--root", str(tmp_path))
+    assert result.returncode == 0, result.stderr
+    assert "cron: 2/10 * * * *" in output.read_text()
+
+
+def test_root_rejects_multiple_schedules(tmp_path):
+    _checkout(tmp_path)
+    with (tmp_path / "agents" / "sample.yaml").open("a") as definition:
+        definition.write('triggers: [{kind: schedule, cadence: "2 * * * *"}, {kind: schedule, cadence: "7 * * * *"}]\n')
+    result = _run("--root", str(tmp_path))
+    assert result.returncode == 2
+    assert "Dify template supports one schedule" in result.stderr
+
+
 @pytest.mark.parametrize("marker", sorted(render.HELPER_MARKERS))
 def test_helpers_resolve_from_this_repository(marker):
     assert render.HELPER_MARKERS[marker].is_relative_to(_ROOT / "agents" / "dify-src" / "helpers")
