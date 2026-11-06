@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Update (instructions)**: Organize agent standards into linked authoring rules, platform rules, and dated source tables.
+
 * **Add (applications)**: Add the YouTrack issue specialist with sole tracker ownership, bounded issue and comment
   operations, and verification of every write by readback.
 
