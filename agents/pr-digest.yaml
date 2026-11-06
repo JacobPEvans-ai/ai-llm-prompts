@@ -1,0 +1,22 @@
+name: pr-digest
+owner: agent-platform
+tier: 2
+triggers:
+  - {kind: schedule, source: dify, cadence: "23 7 * * *", skew_minutes: 23}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: private
+connectors: [github-clerk, langfuse-clerk, slack-clerk]
+code_work: none
+mode: shadow
+eval_set: agents/evals/pr-digest.yaml
+procedure: []
+prompt: agents/prompts/pr-digest.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.call]
+mcp_servers: []
+litellm_role: medium
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+memory_scope: hindsight/pr-digest
+identity: agent-pr-digest
+channels: [caller, langfuse-trace, phoenix-trace]
