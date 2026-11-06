@@ -1,0 +1,76 @@
+name: github-clerk
+owner: agent-platform
+kind: connector
+owns: github
+home_platform: dify
+prompt: agents/prompts/github-clerk.md
+shared_prefix: agents/prompts/shared/homelab.md
+tier: 1
+trigger: {kind: call}
+triggers: [{kind: call}]
+privacy_class: internal
+connectors: [github]
+code_work: false
+mode: shadow
+litellm_role: small
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+identity: agent-github-clerk
+api_key_ref: openbao://agent-key/github-clerk
+memory_scope: none
+eval_set: agents/evals/github-clerk.yaml
+channels: [caller, langfuse-trace, phoenix-trace]
+callers: verified_gateway_identity_only
+mcp_servers: [github]
+tools:
+  - github.read
+  - github.push_bundle
+  - github.create_pull_request
+  - github.comment
+  - github.reply_review
+  - github.resolve_thread
+  - github.mark_ready
+  - github.merge_pull_request
+mandate_binding:
+  source: verified_gateway_structured_fields_only
+  immutable: true
+  from_fields: [caller, request_id, operation, repository, target, expected_head, payload]
+  write_tools:
+    - github.push_bundle
+    - github.create_pull_request
+    - github.comment
+    - github.reply_review
+    - github.resolve_thread
+    - github.mark_ready
+    - github.merge_pull_request
+guards:
+  credential_owner: github-clerk
+  caller_identity_source: agentgateway
+  require_verified_caller: true
+  require_scoped_mandate: true
+  allowed_repositories_ref: policy://github-clerk/allowed-repositories
+  denied_repositories_ref: policy://github-clerk/denied-repositories
+  deny_wins: true
+  deny_unknown_tools_and_operations: true
+  enforce_before_dispatch: true
+  on_error: deny
+  dedupe_before_write: true
+  readback_after_write: true
+  retry_unknown_write_outcome: read_before_retry
+  shadow_mode: {dispatch_writes: false, return_intended_call: true}
+  bundles:
+    source: agent-sandbox
+    require_verified_job: true
+    require_digest_and_base: true
+    fast_forward_only: true
+    execute_contents: false
+  merge:
+    allowed_states: [CLEAN, UNSTABLE]
+    require_zero_failing_checks: true
+    require_checks_complete: true
+    require_current_head: true
+    require_review_threads_resolved: true
+    require_approvals: true
+    allow_release_please: true
+    major_releases: human_only
+  telemetry:
+    required_fields: [agent, tier, privacy_class, model, accelerator]
