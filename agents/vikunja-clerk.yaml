@@ -1,14 +1,9 @@
 name: vikunja-clerk
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 0
-kind: connector
+extends: connector
+description: |
+  Use when: a scoped task request needs listing, retrieval, creation, or update.
+  Do not use when: the request concerns incidents, deletion, or unsupported operations.
 owns: vikunja
-connectors: []
-code_work: none
-prompt: agents/prompts/vikunja-clerk.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools:
   # The upstream tool supports list/get/create/update; writes remain guarded before dispatch.
   - vikunja_tasks.list
@@ -16,21 +11,12 @@ tools:
   - vikunja_tasks.create
   - vikunja_tasks.update
 mcp_servers: [vikunja]
-privacy_class: internal
-# LiteLLM router role, not a model ID.
-litellm_role: small
-triggers: [{kind: call, source: caller, skew_minutes: 0}]
-mode: shadow # shadow or live
 mandate_binding:
   write_tools: [vikunja_tasks.create, vikunja_tasks.update]
   from_fields: [caller, operation, project_id, task_id, title, description, due_date, priority]
   source: structured_fields_only
   immutable: true
-channels: [caller, langfuse-trace]
-memory_scope: none
 mcp_access: {vikunja: own_litellm_key_only}
-callers: any
-eval_set: agents/evals/vikunja-clerk.yaml
 identity: agent-vikunja-clerk
 api_key_ref: openbao://agent-key/vikunja-clerk
 guards:

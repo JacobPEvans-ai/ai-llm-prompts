@@ -68,7 +68,7 @@ def validate_eval_suite(suite):
         assert isinstance(case, dict), "eval case must be a mapping"
         assert not case.get("skip"), "coverage cases must run"
         assert isinstance(case.get("category"), str) and case["category"], "case category required"
-        assert any(key in case for key in ("input", "input_event_summary", "structured_fields", "tasks", "tickets")), "eval input required"
+        assert any(key in case for key in ("input", "input_fixture", "input_event_summary", "structured_fields", "tasks", "tickets")), "eval input required"
         assert case.get("expected_output") or case.get("expected_behavior"), "eval expectation required"
         categories.add(case["category"])
     assert CATEGORIES <= categories, f"missing eval categories: {CATEGORIES - categories}"

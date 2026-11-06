@@ -17,8 +17,8 @@ render-dify:
 		$(MAKE) --no-print-directory resolve-agents > "$$output/definitions.jsonl"; \
 		cd "$(AGENTS_ROOT)"; while IFS= read -r definition; do \
 			printf '%s\n' "$$definition" | yq '.agent' > "$$output/agent.yaml"; \
-			home=$$(yq -er '.home_platform' "$$output/agent.yaml"); \
-			[ "$$home" = dify ] || continue; \
+			platform=$$(yq -er '.home_platform' "$$output/agent.yaml"); \
+			[ "$$platform" = dify ] || continue; \
 			name=$$(yq -r '.name' "$$output/agent.yaml"); \
 			gomplate -c .="$$output/agent.yaml" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
 		done < "$$output/definitions.jsonl"

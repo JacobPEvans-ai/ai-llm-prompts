@@ -25,13 +25,13 @@ def test_generated_cases_have_assertions_and_static_prefixes():
 
     assert counts == {
         "ci-fixer": 19,
-        "code-simplifier": 9,
-        "vikunja-clerk": 20,
+        "code-simplifier": 13,
+        "vikunja-clerk": 23,
         "vikunja-clerk-parse": 19,
-        "vikunja-triage": 5,
-        "zammad-triage": 4,
+        "vikunja-triage": 9,
+        "zammad-triage": 8,
     }
-    assert len(tests) == 76
+    assert len(tests) == 91
     assert all(test["assert"] for test in tests)
     assert all(
         any(assertion.get("metric") == "not-truncated" for assertion in test["assert"])
@@ -333,7 +333,7 @@ def test_skip_key_drops_a_case_from_generation(monkeypatch):
     generated = [test["metadata"]["case"] for test in cases.generate_tests()]
 
     assert first_id not in generated
-    assert len(generated) == 4
+    assert len(generated) == 8
 
 
 def test_open_linked_pr_case_is_scored_and_not_skipped():

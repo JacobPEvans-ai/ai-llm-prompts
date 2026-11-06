@@ -286,3 +286,22 @@ cases:
       - tool: vikunja_tasks
         operation: create
         args: {projectId: project-allowed, title: Review the onboarding guide}
+  - &unsupported-input
+    id: coverage-negative-trigger
+    intent: {route: vikunja, operation: null, project_named: false, category: null}
+    mandates: {project_id: "", task_id: ""}
+    refusal: The operation is missing or unsupported.
+    offends: [intent.operation]
+    expected_tool_calls: []
+  - &supported-read
+    id: coverage-negative-trigger-control
+    intent: {route: vikunja, operation: list, project_named: false, category: null}
+    mandates: {project_id: "", task_id: ""}
+    expected_tool_calls:
+      - tool: vikunja_tasks
+        operation: list
+        args: {}
+  - <<: *unsupported-input
+    id: coverage-oversized
+  - <<: *supported-read
+    id: coverage-oversized-control

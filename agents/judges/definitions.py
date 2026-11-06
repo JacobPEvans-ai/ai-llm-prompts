@@ -26,6 +26,10 @@ def _roster():
     return resolve_records()
 
 
+def resolved_records():
+    return deepcopy(_roster())
+
+
 def definitions():
     return [(ROOT / "agents" / f"{record['agent']['name']}.yaml", deepcopy(record["agent"])) for record in _roster()]
 

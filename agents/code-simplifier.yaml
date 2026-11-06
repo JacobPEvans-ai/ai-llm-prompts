@@ -1,26 +1,17 @@
 name: code-simplifier
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 1
+extends: event-worker
+description: |
+  Use when: an eligible pull request needs a focused simplification review.
+  Do not use when: the request needs CI diagnosis, approval, or merge.
 connectors: [github-clerk]
 code_work: none
-mode: shadow
-# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
-# short-lived GitHub App installation token for the event repo; Dify holds no
-# PAT or App key.
-prompt: agents/prompts/code-simplifier.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - github.pulls.get
   - github.pulls.diff
   - github.branches.get
   - github.repos.get_branch_rules
   - github.pulls.create_review
-mcp_servers: []
 privacy_class: public
-# LiteLLM router role, not a model ID.
-litellm_role: medium
 triggers:
   - kind: event
     source: github.pull_request
@@ -33,14 +24,12 @@ mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request
 channels:
-  shadow: run_record_only
   live: github.review
-memory_scope: none
-eval_set: agents/evals/code-simplifier.yaml
 promotion:
   after_matching_shadow_runs: 20
   against: agents/evals/code-simplifier.yaml # TBD-master
 identity: agent-code-simplifier
+api_key_ref: agent-key/code-simplifier
 secret_ref: agent-key/code-simplifier
 github_token_ref: github-token/code-simplifier
 guards:

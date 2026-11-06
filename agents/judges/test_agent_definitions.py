@@ -6,8 +6,12 @@ import re
 import pytest
 import yaml
 
-from definitions import definition, definitions
+from definitions import definition, definitions, resolved_records
 from test_triggers import validate_triggers
+from test_authoring_standards import (
+    validate_description, validate_eval_policy, validate_eval_suite,
+    validate_source, validate_unique_jobs,
+)
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +35,9 @@ _ROSTER_FIELDS = (
     "memory_scope",
     "eval_set",
     "identity",
+    "api_key_ref",
+    "description",
+    "eval_policy",
 )
 _EMPTY_LIST_FIELDS = {"shadows", "tools", "mcp_servers", "connectors"}
 _AGENT_NAME = re.compile(r"(?!.*fill)[a-z0-9]+(?:-[a-z0-9]+)*", re.IGNORECASE)
@@ -215,6 +222,23 @@ def test_a_definition_with_an_empty_roster_field_fails_the_check(field, empty):
 def test_every_definition_conforms_to_v2(path, agent):
     _validate_v2(agent)
     assert path.stem == agent["name"]
+
+
+def test_roster_passes_profile_and_authoring_standards():
+    records = resolved_records()
+    for record in records:
+        agent = record["agent"]
+        source = yaml.safe_load((_AGENTS / f"{agent['name']}.yaml").read_text())
+        validate_source(source, record["profile"])
+        validate_description(agent)
+        validate_eval_policy(agent)
+        suite = yaml.safe_load((_ROOT / agent["eval_set"]).read_text())
+        assert suite["agent"] == agent["name"]
+        validate_eval_suite(suite)
+    validate_unique_jobs(
+        [record["agent"] for record in records],
+        [_prompt_body(_ROOT / record["agent"]["prompt"]) for record in records],
+    )
 
 
 def test_code_editing_agents_use_sandbox_jobs():

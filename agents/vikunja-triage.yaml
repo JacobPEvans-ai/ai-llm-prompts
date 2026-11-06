@@ -1,31 +1,22 @@
 name: vikunja-triage
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 2
+extends: local-batch
+description: |
+  Use when: a task webhook or rotation catch-up needs scoped triage.
+  Do not use when: the request needs task creation, deletion, or reassignment.
 connectors: [vikunja-clerk, github-clerk]
-code_work: none
-prompt: agents/prompts/vikunja-triage.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - vikunja_tasks.list
   - vikunja_tasks.update
   - vikunja_tasks.comment
 mcp_servers: [vikunja]
-privacy_class: internal
-litellm_role: medium
 triggers:
   - kind: event
     source: vikunja
   - kind: rotation
     every: 1d
-mode: shadow
-# Hindsight banks are per-agent; this scope is capped.
 memory_scope: hindsight/vikunja-triage
-eval_set: agents/evals/vikunja-triage.yaml
 identity: agent-vikunja-triage
 api_key_ref: openbao://agent-key/vikunja-triage
-channels: [langfuse-trace]
 mandate_binding:
   kind: fixed_in_app
   source: environment_and_policy_refs
