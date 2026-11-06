@@ -1,0 +1,24 @@
+name: merge-steward
+owner: agent-platform
+tier: 0
+triggers:
+  - {kind: call, source: operator-or-planning-lead, cadence: null, skew_minutes: null}
+home_platform: dify
+shadows: [sim, langflow]
+mode: shadow
+privacy_class: internal
+connectors: [github-clerk]
+code_work: none
+procedure:
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/pr-sweep/SKILL.md
+  - repo: dryvist/claude-code-plugins
+    path: github-workflows/skills/merge-pr/SKILL.md
+prompt: agents/prompts/merge-steward.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [a2a.github-clerk]
+mcp_servers: []
+litellm_role: medium
+memory_scope: none
+identity: agent-merge-steward
+eval_set: agents/evals/merge-steward.yaml
