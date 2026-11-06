@@ -1,163 +1,94 @@
 ---
 type: Dify workflow import guide
 title: Dify workflow imports
-description: Import, configure, and publish the code-simplifier and ci-fixer workflows.
-tags: [dify, workflow, github, import]
-timestamp: "2026-11-02T23:11:47Z"
+description: Generate, import, validate, and export published Dify workflows with difyctl.
+tags: [dify, workflow, import, difyctl]
+timestamp: "2026-11-06T20:00:00Z"
 ---
-
-## code-simplifier import and run
-
-Target: Dify 1.16.1 with App DSL 0.7.0.
 
 ## Generated DSL source and synchronization
 
-Each committed DSL in `agents/dify/` is generated from its `agents/<name>.yaml` definition, workflow templates in
-`agents/dify-src/<name>/`, and prompt source paths declared in that YAML. The YAML supplies the Dify app name and
-LiteLLM role, plus schedule, mode-default, and MCP fields where declared; the templates supply graph structure. The
-renderer inserts the declared system prompt. Never copy a prompt into Dify or edit a committed DSL by hand. Edit the
-agent YAML or canonical prompt (or the template for graph changes), run `python3 agents/dify-src/render.py`, and commit
-all changed sources with the generated DSL. The CI check runs
-`python3 agents/dify-src/render.py --check` and fails on any byte difference.
+`agents/<name>.yaml` and its declared prompt sources are the inputs to 1 shared template,
+`agents/dify-src/agent.tmpl`. The maintained [gomplate renderer](https://docs.gomplate.ca/) supplies YAML parsing,
+file loading, parameter substitution, and serialization. The flake lock pins its package through nixpkgs.
+The dev shell provides the renderer, Make, YAML tools, and agent test dependencies.
 
-1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then configure the `litellm_role` declared in `agents/code-simplifier.yaml` (`medium`). The Dify model field takes
-   the role name, not a model ID.
-2. Import [code-simplifier.dsl.yml](./code-simplifier.dsl.yml) as a Workflow app.
-3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, and `GITHUB_TOKEN_WRITE_SET`. Store
-   `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep values out of this repository.
-4. Publish the workflow.
-5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
-   at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the
-   immutable Eval/Router Mandate as the `inputs` object. Use
-   `response_mode: "blocking"` and a stable caller identifier in `user`.
+```sh
+nix develop --command make render-dify
+nix develop --command make check-dify
+nix develop --command python3 -m pytest -q agents/judges
+```
 
-   ```json
-   {
-     "inputs": {
-       "repo": "dryvist/<repository>",
-       "ref": "<branch>",
-       "head_sha": "<40-character commit SHA>",
-       "actor": "<GitHub actor>",
-       "event": "pull_request",
-       "strength": "<Eval/Router strength>",
-       "mode": "shadow",
-       "pr_number": 123
-     },
-     "response_mode": "blocking",
-     "user": "<stable caller identifier>"
-   }
+`render-dify` selects every definition with `home_platform: dify`; other homes are excluded. New definitions use
+the standard Start → model → End workflow without a fragment directory. A definition's optional `dify` mapping
+supplies its existing workflow graph, including node settings and Code-node source. Parameters and canonical
+prompts are inserted as data. Prompt text and Code-node source are never evaluated as gomplate templates.
+Scheduled graphs use `triggers[].cadence` directly; `skew_minutes` is already included in that cadence.
+
+Edit the YAML, canonical prompt, or shared template, and commit the generated DSL with it. Keep the generated-file
+header. `check-dify` renders into a temporary directory and compares the complete output set byte for byte,
+including headers. CI rejects changed content, missing outputs, and extra outputs. Graph overrides retain the
+existing workflows' behavior; a new definition can render without one.
+
+To render another checkout's agent definitions and prompts with this checkout's template and helpers:
+
+```sh
+make render-dify AGENTS_ROOT=/path/to/checkout DIFY_OUTPUT=/path/to/output
+```
+
+## Dify 1.18 compatibility
+
+| Artifact | Contract |
+| --- | --- |
+| Committed `.dsl.yml` | App DSL 0.7.0, or 0.1.5 for `vikunja-clerk`; generated YAML retained for import |
+| Dify application and difyctl | Matching 1.18.0 versions; use the server's operation catalog |
+| Portable `.ifpkg` package | Separate export/import acceptance check on Dify 1.18.0 or later |
+| Agent Backend and sandbox | Match the application release and retain the published build snapshot and skill versions |
+
+Dify 1.18 supports YAML and portable packages. Keep package round-trip validation separate from generated YAML
+parity. Match the Agent Backend, runtime, and sandbox components when using Agent nodes. These are application
+compatibility requirements; this repository's offline checks do not prove a successful import.
+[Dify 1.18 release](https://github.com/langgenius/dify/releases/tag/1.18.0).
+
+## Import and test with difyctl
+
+1. Use the matching difyctl client. Authenticate through the approved runtime login flow, then discover the
+   connected server's commands:
+
+   ```sh
+   difyctl login --server "$DIFY_BASE_URL"
+   difyctl help
    ```
 
-   Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
-   and return the proposed review JSON and mandate trace in the workflow result. `mode: "live"` is comment-only:
-   it can submit a `COMMENT` review after the target is rechecked against the Mandate.
+2. Use the discovered app and Workflow operations to import `agents/dify/<name>.dsl.yml` into a draft.
+   Inspect command help for input fields and the current draft hash before updating an existing app.
+3. Configure the definition's model-provider role, environment variables, and resource bindings in the destination
+   workspace. Keep credential values in the approved runtime store. Configure trace delivery before test runs.
+4. Run the draft with the agent's evaluation fixtures and validate its output contract. Exercise configured branches,
+   missing tools, failure handling, and pause/resume where present. Confirm intended trigger bindings.
+5. Record the rollback version, publish the tested draft, and run the published version. Verify resource bindings,
+   active trigger subscriptions, and trace receipt in Langfuse and Phoenix. Confirm the run metadata includes
+   `agent`, `tier`, `privacy_class`, `model`, and `accelerator`.
 
-## code-simplifier: provider credential scope
+Dify 1.18 discovers authoring, import/export, publish, and execution operations from the server. Use their current
+help instead of retaining an older hard-coded run route. Its client requires a fresh login when moving from v1.
+[Dify 1.18 CLI contract](https://github.com/langgenius/dify/releases/tag/1.18.0).
 
-1. The agent's router key is `agent-key/code-simplifier` from `agents/code-simplifier.yaml`.
-   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
-   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
+## Export the published version
 
-## code-simplifier: enable Langfuse tracing
+Select the intended published version in version history and export from that version's menu. Default Workflow,
+Chatflow, and Agent exports contain the saved draft. Use the corresponding difyctl export operation only when its
+discovered inputs explicitly select that published version. Otherwise use version history.
 
-Do this before the first published run.
+Leave **Export secret values** off. Version-history exports omit them. Review the artifact before storing or
+sharing it. Record required integrations, knowledge bases, external tools, persistent Agent files, credentials,
+and trigger subscriptions separately; configure these bindings again in the destination. Exports omit runtime
+history and previous versions. Import the exported artifact into a test app, exercise the published fixtures,
+and verify trace receipt before promotion. Keep generated YAML validation and package round-trip acceptance separate.
+[Export and Import Apps](https://docs.dify.ai/en/self-host/use-dify/workspace/export-import-apps).
 
-1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
-   **configure**. Dify documents this at
-   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
-2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
-   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
-   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
-   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
-3. Save. The status on the same page must read started.
-4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
-   blocking response of that run's Workflow Run API call, documented at
-   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
-   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
-   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
-   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
-   alias named in step 1. Stop before any promotion if the log line shows a different alias.
+## Acceptance evidence
 
-## Unverified for Dify 1.16.1
-
-- Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a live workspace.
-- Steps 2–5's Console labels, environment variable editor, publish flow, and Workflow Run API call were not checked in a Dify 1.16.1 workspace.
-- The router's `medium` role, Mandate values, and deployment API routing were not exercised here.
-
-## ci-fixer import and run
-
-Target: Dify 1.16.1 with App DSL 0.7.0.
-
-1. Install the OpenAI-API-compatible model provider. Configure its API Base URL and key in the Dify workspace,
-   then configure the `litellm_role` declared in `agents/ci-fixer.yaml` (`medium`). The Dify model field takes the
-   role name, not a model ID.
-2. Import [ci-fixer.dsl.yml](./ci-fixer.dsl.yml) as a Workflow app.
-3. Set these workflow environment variables in Dify: `OPENBAO_ADDR`, `OPENBAO_ROLE_ID`, `OPENBAO_SECRET_ID`,
-   `GITHUB_API_BASE`, `GITHUB_TOKEN_MINT_PATH`, `GITHUB_TOKEN_READ_SET`, `GITHUB_TOKEN_WRITE_SET`, and
-   `ENABLE_PUSH`. Store `OPENBAO_ROLE_ID` and `OPENBAO_SECRET_ID` as secrets. Keep `ENABLE_PUSH` set to `false`
-   by default.
-4. Publish the workflow.
-5. Run it through the Dify [Workflow Run API](https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow)
-   at `<DIFY_BASE_URL>/v1/workflows/run`, with the app API key in the Bearer `Authorization` header. Pass the
-   immutable Eval/Router Mandate as the `inputs` object. Use
-   `response_mode: "blocking"` and a stable caller identifier in `user`.
-
-   ```json
-   {
-     "inputs": {
-       "repo": "dryvist/<repository>",
-       "ref": "<branch>",
-       "head_sha": "<40-character commit SHA>",
-       "actor": "<GitHub actor>",
-       "event": "check_run",
-       "strength": "<Eval/Router strength>",
-       "mode": "shadow",
-       "check_run_id": 123
-     },
-     "response_mode": "blocking",
-     "user": "<stable caller identifier>"
-   }
-   ```
-
-   Agents run with `mode: "shadow"` by default. Shadow runs use `GITHUB_TOKEN_READ_SET`, make no GitHub writes,
-   and return the proposed patch and mandate trace in the workflow result. Live mode requires `ENABLE_PUSH` to be
-   exactly `true`; source writes remain fail-closed while log redaction is unavailable.
-
-## ci-fixer: provider credential scope
-
-1. The agent's router key is `agent-key/ci-fixer` from `agents/ci-fixer.yaml`.
-   Dify sets model-provider credentials per workspace. Expected: the workspace key from step 1. Open design
-   question: per-agent keys, tracked in the ai-llm-prompts #249 gate.
-
-## ci-fixer: enable Langfuse tracing
-
-Do this before the first published run.
-
-1. In the Dify console, open this app, select **Monitoring**, then **Tracing app performance**, then
-   **configure**. Dify documents this at
-   <https://docs.dify.ai/en/use-dify/monitor/integrations/integrate-langfuse>.
-2. Enter the Public Key, Secret Key, and Host of the shared Langfuse project. Keep the values out of this
-   file and out of Git. Read the two keys from the OpenBao KV v2 leaf named by the variable
-   `DIFY_LANGFUSE_OPENBAO_PATH` in mount `secret`, fields `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
-   Read the Host from the variable `DIFY_LANGFUSE_HOST`. Both variables come from the runtime secret store.
-3. Save. The status on the same page must read started.
-4. Acceptance check, after one test run of the published app: take the top-level `workflow_run_id` from the
-   blocking response of that run's Workflow Run API call, documented at
-   <https://docs.dify.ai/en/api-reference/workflow-runs/run-workflow>. A Langfuse trace with that id must exist
-   (inferred from Dify's Langfuse field table, which maps workflow_app_log_id/workflow_run_id to the id column;
-   confirm at first import, and if the trace id differs, match on the run id in trace metadata instead). The
-   router log line for this run's request shows the key alias it used. The expected alias is the workspace key
-   alias named in step 1. Stop before any promotion if the log line shows a different alias.
-
-## ci-fixer unverified for Dify 1.16.1
-
-- Step 1's provider installation screen, model registration flow, and provider credential scope were not tested in a
-  live workspace.
-- Steps 2–5's Console labels, environment variable editor, publish flow, and Workflow Run API call were not checked
-  in a Dify 1.16.1 workspace.
-- The workflow's check_run input mapping, HTTP response fields, model provider binding, and check-run-to-PR association
-  were not exercised in a Dify 1.16.1 workspace.
-- No log-redaction service is connected; source writes remain blocked by code guards, and live GitHub behavior is
-  unverified.
+Record source generation, import, draft execution, publication, published execution, and trace receipt as separate
+checks. The offline suite validates source parity and generation. Live Dify 1.18 import, execution, package
+round-trip, trigger activation, and trace delivery remain unverified until tested in an authorized workspace.

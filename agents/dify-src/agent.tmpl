@@ -1,0 +1,105 @@
+{{- /* Render a definition with gomplate -c .=agents/<name>.yaml -f agents/dify-src/agent.tmpl. */ -}}
+{{- define "prompt" -}}
+  {{- test.Assert "prompt paths must name repository files under agents/" (and (strings.HasPrefix "agents/" .) (not (strings.Contains ".." .))) -}}
+  {{- $text := file.Read . -}}
+  {{- if strings.HasPrefix "---\n" $text -}}
+    {{- $parts := strings.SplitN "\n---\n" 2 $text -}}
+    {{- test.Assert "unterminated prompt frontmatter" (eq (len $parts) 2) -}}
+    {{- index $parts 1 | strings.TrimSpace -}}
+  {{- else -}}{{- $text | strings.TrimSpace -}}{{- end -}}
+{{- end -}}
+{{- /* Preserve Python json.dumps(sort_keys=True)'s separators in existing Code nodes. */ -}}
+{{- define "json" -}}
+  {{- if test.IsKind "map" . -}}
+    {{- $sep := "" -}}{
+    {{- range $key, $value := . -}}{{ $sep }}{{ data.ToJSON $key }}: {{ tmpl.Exec "json" $value }}{{ $sep = ", " }}{{- end -}}}
+  {{- else if test.IsKind "slice" . -}}
+    {{- $sep := "" -}}[{{- range . -}}{{ $sep }}{{ tmpl.Exec "json" . }}{{ $sep = ", " }}{{- end -}}]
+  {{- else -}}{{ data.ToJSON . }}{{- end -}}
+{{- end -}}
+{{- define "workflow" -}}
+app: {name: __DIFY_AGENT_NAME__, mode: workflow}
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  environment_variables: []
+  graph:
+    edges:
+      - {id: e1, source: start, sourceHandle: source, target: model, targetHandle: target, type: custom, data: {sourceType: start, targetType: llm}}
+      - {id: e2, source: model, sourceHandle: source, target: done, targetHandle: target, type: custom, data: {sourceType: llm, targetType: end}}
+    nodes:
+      - id: start
+        type: custom
+        position: {x: 40, y: 300}
+        data:
+          title: Start
+          type: start
+          variables:
+            - {variable: text, label: text, type: paragraph, required: true, max_length: 30000, options: []}
+      - id: model
+        type: custom
+        position: {x: 340, y: 300}
+        data:
+          title: Agent
+          type: llm
+          model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          prompt_template:
+            - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
+            - {id: user-prompt, role: user, text: 'Untrusted input: {{`{{#start.text#}}`}}'}
+          prompt_config: {jinja2_variables: []}
+      - id: done
+        type: custom
+        position: {x: 640, y: 300}
+        data:
+          title: End
+          type: end
+          outputs:
+            - {variable: text, value_selector: [model, text]}
+{{- end -}}
+{{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
+{{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
+{{- $prompt := printf "%s\n\n%s" (tmpl.Exec "prompt" .shared_prefix) (tmpl.Exec "prompt" .prompt) -}}
+{{- $params := dict "__DIFY_AGENT_NAME__" .name "__DIFY_LITELLM_ROLE__" .litellm_role -}}
+{{- with (index . "mode") -}}{{- $params = coll.Set "__DIFY_MODE__" . $params -}}{{- end -}}
+{{- $schedules := coll.Slice -}}
+{{- range (index . "triggers") -}}
+  {{- if eq .kind "schedule" -}}{{- $schedules = coll.Append . $schedules -}}{{- end -}}
+{{- end -}}
+{{- test.Assert "Dify template supports one schedule" (le (len $schedules) 1) -}}
+{{- range $schedules -}}{{- $params = coll.Set "__DIFY_TRIGGER_CRON__" .cadence $params -}}{{- end -}}
+{{- with (index . "github_reader") -}}{{- $params = coll.Set "__DIFY_GITHUB_TOKEN_REF__" .github_token_ref $params -}}{{- end -}}
+{{- with (index . "output_schema") -}}
+  {{- $schema := tmpl.Exec "json" . | strings.ReplaceAll "\\" "\\\\" | strings.ReplaceAll "'" "\\'" -}}
+  {{- $params = coll.Set "__DIFY_OUTPUT_SCHEMA__" (printf "'%s'" $schema) $params -}}
+{{- end -}}
+{{- range $name := coll.Slice "redact" "json_fence" "finder_inputs" "envelope" -}}
+  {{- $body := file.Read (printf "%s/helpers/%s.py" (tmpl.PathDir) $name) | strings.TrimSuffix "\n" -}}
+  {{- $params = coll.Set (printf "__DIFY_HELPER_%s__" (strings.ToUpper $name)) $body $params -}}
+{{- end -}}
+{{- with (index . "mcp_servers") -}}
+  {{- $agent := $ -}}
+  {{- $params = coll.Set "__DIFY_MCP_SERVER__" (index . 0) $params -}}
+  {{- $operations := coll.Slice -}}
+  {{- range $agent.tools -}}
+    {{- $parts := strings.SplitN "." 2 . -}}
+    {{- if eq (len $parts) 2 -}}
+      {{- $params = coll.Set "__DIFY_TOOL_NAME__" (index $parts 0) $params -}}
+      {{- $operation := index $parts 1 -}}
+      {{- $params = coll.Set (printf "__DIFY_TOOL_OPERATION_%s__" (strings.ToUpper $operation)) $operation $params -}}
+      {{- $operations = coll.Append (printf "'%s'" $operation) $operations -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $params = coll.Set "__DIFY_TOOL_OPERATIONS__" (printf "{%s}" (join (coll.Sort $operations) ", ")) $params -}}
+{{- end -}}
+{{- $dsl := tmpl.Exec "workflow" . | data.YAML -}}
+{{- with (index . "dify") -}}{{- $dsl = . -}}{{- end -}}
+{{- /* Substitute data values, never evaluate prompts or Code-node source as templates. */ -}}
+{{- $dsl = dict "dsl" $dsl "params" $params | coll.JQ `.params as $params | .dsl | walk(if type == "string" then reduce ($params | to_entries[]) as $p (.; split($p.key) | join($p.value)) else . end)` -}}
+{{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}
+{{- $source := data.ToJSON $dsl | strings.ReplaceAll "__DIFY_SYSTEM_PROMPT__" "" -}}
+{{- test.Assert "workflow has unresolved Dify parameters" (not (regexp.Match `__DIFY_[A-Z0-9_]+__` $source)) -}}
+{{- $dsl = dict "dsl" $dsl "prompt" $prompt | coll.JQ `.prompt as $prompt | .dsl | walk(if type == "string" then split("__DIFY_SYSTEM_PROMPT__") | join($prompt) else . end)` -}}
+# Generated from agents/{{ .name }}.yaml, agents/dify-src/agent.tmpl, and {{ .shared_prefix }} + {{ .prompt }}; edit sources, then run make render-dify.
+{{- /* Quote the YAML 1.1 value indicator for Dify's PyYAML loader. */}}
+{{ data.ToYAML $dsl | strings.ReplaceAll ": =\n" ": '='\n" | strings.TrimSuffix "\n" }}

@@ -66,5 +66,5 @@ connector deployment are separate from definition validation.
 
 ```sh
 pytest -q agents/judges
-python3 agents/dify-src/render.py --check
+make check-dify
 ```

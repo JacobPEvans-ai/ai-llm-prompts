@@ -64,3 +64,666 @@ guards:
   incident_action: fixed_zammad_comment_only
   shadow_mode: {dispatch_writes: false, return_intended_actions: true}
   on_error: deny
+dify:
+  app: {description: 'Scheduled, policy-scoped task triage with guarded shadow and live branches.', icon: 🤖, icon_background: '#D5F5F6',
+    mode: workflow, name: __DIFY_AGENT_NAME__, use_icon_as_answer_icon: false}
+  dependencies: []
+  kind: app
+  version: 0.7.0
+  workflow:
+    conversation_variables: []
+    environment_variables:
+    - {id: allowed, name: VIKUNJA_TRIAGE_ALLOWED_PROJECTS, value_type: secret, value: '', description: 'JSON array from policy://vikunja-triage/allowed-projects'}
+    - {id: readonly, name: VIKUNJA_TRIAGE_READONLY_PROJECTS, value_type: secret, value: '', description: 'JSON array from
+        policy://vikunja-triage/readonly-projects'}
+    - {id: rank_only, name: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS, value_type: secret, value: '', description: 'JSON array from
+        policy://vikunja-triage/rank-only-projects'}
+    - {id: denied, name: VIKUNJA_TRIAGE_DENIED_PROJECTS, value_type: secret, value: '', description: 'JSON array from policy://vikunja-triage/denied-projects'}
+    - {id: mode, name: VIKUNJA_TRIAGE_MODE, value_type: string, value: __DIFY_MODE__, description: shadow or live; default
+        shadow}
+    - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: '', description: Approved OpenBao API base placeholder}
+    - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: '', description: Agent AppRole ID}
+    - {id: bao_secret, name: OPENBAO_SECRET_ID, value_type: secret, value: '', description: Agent AppRole secret}
+    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving __DIFY_GITHUB_TOKEN_REF__}
+    - {id: github_api, name: GITHUB_API_BASE, value_type: string, value: '', description: Approved public GitHub API base
+        placeholder}
+    - {id: github_web, name: GITHUB_WEB_HOST, value_type: string, value: '', description: Approved public GitHub web host
+        placeholder}
+    features:
+      file_upload: {enabled: false}
+      opening_statement: ''
+      retriever_resource: {enabled: false}
+      sensitive_word_avoidance: {enabled: false}
+      speech_to_text: {enabled: false}
+      suggested_questions: []
+      suggested_questions_after_answer: {enabled: false}
+      text_to_speech: {enabled: false}
+    graph:
+      edges:
+      - data: {isInIteration: false, sourceType: trigger-schedule, targetType: code}
+        id: schedule-policy
+        source: schedule
+        sourceHandle: source
+        target: policy
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: code, targetType: iteration}
+        id: policy-projects
+        source: policy
+        sourceHandle: source
+        target: project_loop
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: iteration, targetType: code}
+        id: projects-context
+        source: project_loop
+        sourceHandle: source
+        target: prepare
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: code, targetType: llm}
+        id: context-model
+        source: prepare
+        sourceHandle: source
+        target: triage
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: llm, targetType: code}
+        id: model-guard
+        source: triage
+        sourceHandle: source
+        target: guard
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: code, targetType: if-else}
+        id: guard-mode
+        source: guard
+        sourceHandle: source
+        target: mode_gate
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: if-else, targetType: end}
+        id: shadow-output
+        source: mode_gate
+        sourceHandle: 'false'
+        target: shadow_end
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: if-else, targetType: iteration}
+        id: live-dispatch
+        source: mode_gate
+        sourceHandle: live
+        target: dispatch_loop
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, sourceType: iteration, targetType: end}
+        id: live-output
+        source: dispatch_loop
+        sourceHandle: source
+        target: live_end
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: true, iteration_id: project_loop, sourceType: tool, targetType: code}
+        id: list-bind-result
+        source: list_tasks
+        sourceHandle: source
+        target: scope_list_result
+        targetHandle: target
+        type: custom
+        zIndex: 1002
+      - data: {isInIteration: true, iteration_id: dispatch_loop, sourceType: code, targetType: tool}
+        id: action-write
+        source: bind_action
+        sourceHandle: source
+        target: dispatch_write
+        targetHandle: target
+        type: custom
+        zIndex: 1002
+      nodes:
+      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available.: null, mode: cron, cron_expression: __DIFY_TRIGGER_CRON__,
+          timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
+        height: 54
+        id: schedule
+        position: {x: 40, y: 320}
+        positionAbsolute: {x: 40, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            def projects(raw):
+                value=json.loads(raw)
+                if not isinstance(value,list) or any(not str(x).strip() for x in value): raise ValueError()
+                return {str(x).strip() for x in value}
+            def main(allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str)->dict:
+                try:
+                    a,r,k,d=map(projects,(allowed_raw,readonly_raw,rank_raw,denied_raw))
+                    ok=k<=a
+                    mode=str(mode_raw or '').strip().lower()
+                    ids=sorted((a|r)-d) if ok else []
+                    return {'project_ids':ids,'mode':mode if mode in ('shadow','live') else 'invalid','policy_ok':ok}
+                except Exception: return {'project_ids':[],'mode':'invalid','policy_ok':False}
+          code_language: python3
+          desc: Load policy from protected env; deny wins and unlisted projects are never read.
+          outputs:
+            project_ids: {type: 'array[string]', children: null}
+            mode: {type: string}
+            policy_ok: {type: boolean}
+          selected: false
+          title: Load project policy
+          type: code
+          variables:
+          - variable: allowed_raw
+            value_selector: [env, VIKUNJA_TRIAGE_ALLOWED_PROJECTS]
+          - variable: readonly_raw
+            value_selector: [env, VIKUNJA_TRIAGE_READONLY_PROJECTS]
+          - variable: rank_raw
+            value_selector: [env, VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS]
+          - variable: denied_raw
+            value_selector: [env, VIKUNJA_TRIAGE_DENIED_PROJECTS]
+          - variable: mode_raw
+            value_selector: [env, VIKUNJA_TRIAGE_MODE]
+        height: 54
+        id: policy
+        position: {x: 340, y: 320}
+        positionAbsolute: {x: 340, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Run one project-filtered list call for each authorized read scope.
+          iterator_selector: [policy, project_ids]
+          output_selector: [scope_list_result, result_json]
+          output_type: array[string]
+          selected: false
+          startNodeType: tool
+          start_node_id: list_tasks
+          title: List authorized projects
+          type: iteration
+        height: 280
+        id: project_loop
+        position: {x: 650, y: 320}
+        positionAbsolute: {x: 650, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 540
+      - data:
+          desc: A list call always carries the current project filter.
+          isInIteration: true
+          isIterationStart: true
+          iteration_id: project_loop
+          provider_id: VIKUNJA_MCP_PROVIDER_ID
+          provider_name: __DIFY_MCP_SERVER__
+          provider_type: mcp
+          selected: false
+          title: List Vikunja tasks
+          type: tool
+          tool_configurations: {}
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
+          tool_parameters:
+            subcommand: {type: mixed, value: __DIFY_TOOL_OPERATION_LIST__}
+            projectId:
+              type: variable
+              value: [project_loop, item]
+        height: 80
+        id: list_tasks
+        parentId: project_loop
+        extent: parent
+        position: {x: 60, y: 60}
+        positionAbsolute: {x: 710, y: 380}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            def main(project_id:str, body:str)->dict:
+                try:
+                    data=json.loads(body)
+                    tasks=data if isinstance(data,list) else next((data.get(k) for k in ('tasks','items','data','result') if isinstance(data.get(k),list)),[])
+                    return {'result_json':json.dumps({'project_id':project_id,'tasks':tasks})}
+                except Exception: return {'result_json':'{}'}
+          code_language: python3
+          desc: Bind each result to its policy-selected project, not model output.
+          isInIteration: true
+          iteration_id: project_loop
+          outputs:
+            result_json: {type: string, children: null}
+          selected: false
+          title: Bind list result
+          type: code
+          variables:
+          - variable: project_id
+            value_selector: [project_loop, item]
+          - variable: body
+            value_selector: [list_tasks, text]
+        height: 54
+        id: scope_list_result
+        parentId: project_loop
+        extent: parent
+        position: {x: 330, y: 60}
+        positionAbsolute: {x: 980, y: 380}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json,re,urllib.request
+            from urllib.parse import urlsplit
+            def link_state(url,web_host,api_base,addr,role,secret,path,session):
+                try:
+                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                    if p.scheme!='https' or p.netloc!=web_host or not m:return None
+                    if not session:
+                        req=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                        with urllib.request.urlopen(req,timeout=10) as r: login=json.loads(r.read())
+                        client=login.get('auth',{}).get('client_token','')
+                        req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                        with urllib.request.urlopen(req,timeout=10) as r: payload=json.loads(r.read())
+                        data=payload.get('data',{}); session.append(data.get('token') or data.get('data',{}).get('token'))
+                    token=session[0]
+                    if not token:return None
+                    owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
+                    req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+                    with urllib.request.urlopen(req,timeout=10) as r: obj=json.loads(r.read())
+                    pr=obj.get('pull_request')
+                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                    state='merged' if merged else str(obj.get('state','')).lower()
+                    if (kind=='pull' or 'pull_request' in obj) and state=='closed': state='closed-unmerged'
+                    return state if state in ('merged','closed','closed-unmerged','open') else None
+                except Exception:return None
+            def main(results:list, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
+                refs=[]; visible=[]
+                session=[]
+                for entry in results or []:
+                    try:
+                        group=json.loads(entry) if isinstance(entry,str) else entry
+                        project=str(group.get('project_id',''))
+                        for task in group.get('tasks',[]):
+                            if not isinstance(task,dict): continue
+                            task_id=task.get('id',task.get('taskId'))
+                            if task_id is None or not project: continue
+                            i=len(refs); title=str(task.get('title','')); desc=str(task.get('description',''))
+                            refs.append({'task_index':i,'id':str(task_id),'project_id':project,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[])})
+                            links=re.findall(r'https://[^\s<>"\']+',title+' '+desc)
+                            url=''; state=None
+                            for candidate in links:
+                                candidate=candidate.rstrip('.,);]'); found=link_state(candidate,web_host,api_base,bao_addr,role_id,secret_id,token_path,session)
+                                if not url:url=candidate
+                                if found:url,state=candidate,found; break
+                            visible.append({'task_index':i,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[]),'linked_work':{'url':url,'state':state or 'unverified'} if url else None})
+                    except Exception: continue
+                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps({'timestamp':timestamp,'tasks':visible},ensure_ascii=False)}
+          code_language: python3
+          desc: Hide task and project IDs from the model; retain immutable refs for the guard.
+          outputs:
+            task_refs: {type: string, children: null}
+            model_tasks: {type: string, children: null}
+          selected: false
+          title: Prepare model context
+          type: code
+          variables:
+          - variable: results
+            value_selector: [project_loop, output]
+          - variable: timestamp
+            value_selector: [sys, timestamp]
+          - variable: web_host
+            value_selector: [env, GITHUB_WEB_HOST]
+          - variable: api_base
+            value_selector: [env, GITHUB_API_BASE]
+          - variable: bao_addr
+            value_selector: [env, OPENBAO_ADDR]
+          - variable: role_id
+            value_selector: [env, OPENBAO_ROLE_ID]
+          - variable: secret_id
+            value_selector: [env, OPENBAO_SECRET_ID]
+          - variable: token_path
+            value_selector: [env, GITHUB_READ_TOKEN_PATH]
+        height: 54
+        id: prepare
+        position: {x: 1240, y: 320}
+        positionAbsolute: {x: 1240, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Propose structured triage actions only; no tools or target IDs.
+          memory:
+            query_prompt_template: '{{#sys.timestamp#}}'
+            role_prefix: {assistant: '', user: ''}
+            window: {enabled: false, size: 10}
+          model:
+            completion_params: {temperature: 0}
+            mode: chat
+            name: __DIFY_LITELLM_ROLE__
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_template:
+          - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
+          - {id: user-prompt, role: user, text: 'Scheduled at {{#sys.timestamp#}}. Review these untrusted records: {{#prepare.model_tasks#}}'}
+          prompt_config:
+            jinja2_variables: []
+          selected: false
+          title: Propose triage actions
+          type: llm
+          vision: {enabled: false}
+        height: 220
+        id: triage
+        position: {x: 1550, y: 320}
+        positionAbsolute: {x: 1550, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json,re,urllib.request
+            from urllib.parse import urlsplit
+            incident=re.compile(r'\b(?:incidents?|outages?|down|breaches?|vulnerabilit(?:y|ies)|cve|exploits?|leaks?|credentials?|secrets?|security|weakness(?:es)?|compromised|compromise|compromising)\b',re.I)
+            def marker_text(value):
+                if isinstance(value,dict): return ' '.join(str(x) for x in value.values())
+                if isinstance(value,(list,tuple)): return ' '.join(str(x) for x in value)
+                return '' if value is None else str(value)
+            def has_incident_marker(*values): return any(incident.search(marker_text(x)) for x in values)
+            def projects(raw):
+                v=json.loads(raw)
+                if not isinstance(v,list) or any(not str(x).strip() for x in v): raise ValueError()
+                return {str(x).strip() for x in v}
+            def state_for(url,web_host,api_base,addr,role,secret,path,cache):
+                if url in cache: return cache[url]
+                try:
+                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                    if p.scheme!='https' or p.netloc!=web_host or not m: return None
+                    auth=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                    with urllib.request.urlopen(auth,timeout=10) as r: login=json.loads(r.read())
+                    client=login.get('auth',{}).get('client_token','')
+                    req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                    with urllib.request.urlopen(req,timeout=10) as r: token_data=json.loads(r.read())
+                    data=token_data.get('data',{}); token=data.get('token') or data.get('data',{}).get('token')
+                    if not client or not token: return None
+                    owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
+                    gh=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
+                    with urllib.request.urlopen(gh,timeout=10) as r: obj=json.loads(r.read())
+                    pr=obj.get('pull_request')
+                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                    value='merged' if merged else str(obj.get('state','')).lower()
+                    if (kind=='pull' or 'pull_request' in obj) and value=='closed': value='closed-unmerged'
+                    cache[url]=value if value in ('merged','closed','closed-unmerged','open') else None
+                    return cache[url]
+                except Exception: return None
+            __DIFY_HELPER_JSON_FENCE__
+            def main(model_text:str,refs_text:str,allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str,web_host:str,api_base:str,bao_addr:str,role_id:str,secret_id:str,token_path:str)->dict:
+                actions=[]; seen=set(); mode=str(mode_raw or '').strip().lower()
+                try:
+                    allowed,readonly,rank_only,denied=map(projects,(allowed_raw,readonly_raw,rank_raw,denied_raw))
+                    refs=json.loads(refs_text)
+                    if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
+                except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid'}
+                try:
+                    intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
+                except Exception: proposed=[]
+                cache={}
+                allowed_operations=__DIFY_TOOL_OPERATIONS__
+                def add(ref,op,**fields):
+                    if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
+                    key=(ref['id'],op,json.dumps(fields,sort_keys=True,ensure_ascii=False))
+                    if key in seen:return
+                    seen.add(key); actions.append({'operation':op,'id':ref['id'],'projectId':ref['project_id'],**fields})
+                for ref in refs:
+                    project=ref['project_id']
+                    if project in denied or project not in allowed|readonly: continue
+                    text=(str(ref.get('title',''))+' '+str(ref.get('description','')))
+                    if has_incident_marker(ref.get('title'),ref.get('description'),ref.get('category'),ref.get('categories')):
+                        if project in allowed and project not in rank_only: add(ref,'__DIFY_TOOL_OPERATION_COMMENT__',comment='This item belongs in Zammad.')
+                        continue
+                    for item in proposed if isinstance(proposed,list) else []:
+                        if not isinstance(item,dict) or type(item.get('task_index')) is not int or item['task_index']!=ref['task_index']: continue
+                        kind=item.get('kind')
+                        if kind=='rank' and project in allowed:
+                            fields={}
+                            p=item.get('priority',ref.get('priority'))
+                            if isinstance(p,(int,float)) and not isinstance(p,bool): fields['priority']=p
+                            labels=item.get('labels',ref.get('labels',[]))
+                            if isinstance(labels,list) and all(isinstance(x,str) for x in labels): fields['labels']=labels
+                            if fields: add(ref,'__DIFY_TOOL_OPERATION_UPDATE__',**fields)
+                        elif kind in ('comment','done') and project in allowed and project not in rank_only:
+                            urls=re.findall(r'https://[^\s<>"\']+',text)
+                            for raw_url in urls:
+                                url=raw_url.rstrip('.,);]')
+                                state=state_for(url,web_host,api_base,bao_addr,role_id,secret_id,token_path,cache)
+                                if state is None: continue
+                                if kind=='comment':
+                                    add(ref,'__DIFY_TOOL_OPERATION_COMMENT__',comment=f'Linked GitHub work: {url} (state: {state}).')
+                                    break
+                                if kind=='done' and state in ('merged','closed') and not ref.get('done'):
+                                    add(ref,'__DIFY_TOOL_OPERATION_UPDATE__',done=True); break
+                return {'actions':actions,'actions_json':json.dumps(actions,ensure_ascii=False),'dispatch':mode=='live','mode':mode}
+          code_language: python3
+          desc: Enforce project tiers and incidents; mint a short-lived public-read token through AppRole and verify GitHub
+            state in code before authorizing comments or done.
+          outputs:
+            actions: {type: 'array[object]', children: null}
+            actions_json: {type: string, children: null}
+            dispatch: {type: boolean}
+            mode: {type: string}
+          selected: false
+          title: Guard proposed actions
+          type: code
+          variables:
+          - variable: model_text
+            value_selector: [triage, text]
+          - variable: refs_text
+            value_selector: [prepare, task_refs]
+          - variable: allowed_raw
+            value_selector: [env, VIKUNJA_TRIAGE_ALLOWED_PROJECTS]
+          - variable: readonly_raw
+            value_selector: [env, VIKUNJA_TRIAGE_READONLY_PROJECTS]
+          - variable: rank_raw
+            value_selector: [env, VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS]
+          - variable: denied_raw
+            value_selector: [env, VIKUNJA_TRIAGE_DENIED_PROJECTS]
+          - variable: mode_raw
+            value_selector: [policy, mode]
+          - variable: web_host
+            value_selector: [env, GITHUB_WEB_HOST]
+          - variable: api_base
+            value_selector: [env, GITHUB_API_BASE]
+          - variable: bao_addr
+            value_selector: [env, OPENBAO_ADDR]
+          - variable: role_id
+            value_selector: [env, OPENBAO_ROLE_ID]
+          - variable: secret_id
+            value_selector: [env, OPENBAO_SECRET_ID]
+          - variable: token_path
+            value_selector: [env, GITHUB_READ_TOKEN_PATH]
+        height: 54
+        id: guard
+        position: {x: 1860, y: 320}
+        positionAbsolute: {x: 1860, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: live
+            id: live
+            logical_operator: and
+            conditions:
+            - comparison_operator: is
+              id: dispatch-enabled
+              value: true
+              varType: boolean
+              variable_selector: [guard, dispatch]
+          desc: Shadow returns the intended action JSON and cannot reach the write iteration.
+          selected: false
+          title: Live dispatch enabled?
+          type: if-else
+        height: 120
+        id: mode_gate
+        position: {x: 2170, y: 320}
+        positionAbsolute: {x: 2170, y: 320}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Emit intended actions for Langfuse trace; no write tools are on this branch.
+          outputs:
+          - variable: actions
+            value_selector: [guard, actions_json]
+          - variable: mode
+            value_selector: [guard, mode]
+          - variable: dispatch
+            value_selector: [guard, dispatch]
+          selected: false
+          title: Shadow output
+          type: end
+        height: 90
+        id: shadow_end
+        position: {x: 2470, y: 430}
+        positionAbsolute: {x: 2470, y: 430}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Dispatch only guard-approved updates and comments.
+          iterator_selector: [guard, actions]
+          output_selector: [dispatch_write, text]
+          output_type: array[string]
+          selected: false
+          startNodeType: code
+          start_node_id: bind_action
+          title: Dispatch guarded actions
+          type: iteration
+        height: 220
+        id: dispatch_loop
+        position: {x: 2470, y: 220}
+        positionAbsolute: {x: 2470, y: 220}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 540
+      - data:
+          code: |-
+            def main(action:dict)->dict:
+                return {'operation':action['operation'],'id':action['id'],'project_id':action['projectId'],'priority':action.get('priority'),'labels':action.get('labels',[]),'done':action.get('done'),'comment':action.get('comment','')}
+          code_language: python3
+          desc: Bind only the guard's immutable target and allowed fields.
+          isInIteration: true
+          isIterationStart: true
+          iteration_id: dispatch_loop
+          outputs:
+            operation: {type: string}
+            id: {type: string}
+            project_id: {type: string}
+            priority: {type: number}
+            labels: {type: 'array[string]', children: null}
+            done: {type: boolean}
+            comment: {type: string}
+          selected: false
+          title: Bind guarded action
+          type: code
+          variables:
+          - variable: action
+            value_selector: [dispatch_loop, item]
+        height: 54
+        id: bind_action
+        parentId: dispatch_loop
+        extent: parent
+        position: {x: 60, y: 60}
+        positionAbsolute: {x: 2530, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: The only write node; its inputs come from the Code guard through the live branch.
+          isInIteration: true
+          iteration_id: dispatch_loop
+          provider_id: VIKUNJA_MCP_PROVIDER_ID
+          provider_name: __DIFY_MCP_SERVER__
+          provider_type: mcp
+          selected: false
+          title: Apply guarded update or comment
+          type: tool
+          tool_configurations: {}
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
+          tool_parameters:
+            subcommand:
+              type: variable
+              value: [bind_action, operation]
+            id:
+              type: variable
+              value: [bind_action, id]
+            projectId:
+              type: variable
+              value: [bind_action, project_id]
+            priority:
+              type: variable
+              value: [bind_action, priority]
+            labels:
+              type: variable
+              value: [bind_action, labels]
+            done:
+              type: variable
+              value: [bind_action, done]
+            comment:
+              type: variable
+              value: [bind_action, comment]
+        height: 90
+        id: dispatch_write
+        parentId: dispatch_loop
+        extent: parent
+        position: {x: 330, y: 60}
+        positionAbsolute: {x: 2800, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: Return guarded intent and dispatch receipts.
+          outputs:
+          - variable: actions
+            value_selector: [guard, actions_json]
+          - variable: mode
+            value_selector: [guard, mode]
+          - variable: dispatch_results
+            value_selector: [dispatch_loop, output]
+          selected: false
+          title: Live output
+          type: end
+        height: 90
+        id: live_end
+        position: {x: 3070, y: 220}
+        positionAbsolute: {x: 3070, y: 220}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
