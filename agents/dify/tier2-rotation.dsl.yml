@@ -1,0 +1,79 @@
+# Generated from agents/*.yaml, agents/dify-src/rotation.tmpl, and helpers/rotation_due.py; run make render-dify.
+app: {name: tier2-rotation, mode: workflow, description: Dispatch tier-2 rotation windows.}
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  environment_variables:
+    - {id: rotation-speed, name: ROTATION_SPEED, value_type: number, value: 1.0, selector: [env, ROTATION_SPEED]}
+    - {id: rotation-offset, name: ROTATION_OFFSET, value_type: number, value: 0, selector: [env, ROTATION_OFFSET]}
+    - {id: rotation-paused, name: ROTATION_PAUSED, value_type: string, value: 'false', selector: [env, ROTATION_PAUSED]}
+  graph:
+    edges:
+      - {id: schedule-due, source: schedule, sourceHandle: source, target: due, targetHandle: target, type: custom, data: {sourceType: trigger-schedule, targetType: code}}
+      - {id: last-done, source: due, sourceHandle: 'source', target: done, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+    nodes:
+      - id: schedule
+        type: custom
+        position: {x: 0, y: 0}
+        data: {title: Odd minutes, type: trigger-schedule, mode: cron, cron_expression: '1-59/2 * * * *', timezone: UTC}
+      - id: due
+        type: custom
+        position: {x: 300, y: 0}
+        data:
+          title: Rotation windows
+          type: code
+          code_language: python3
+          code: |
+            """Select two-minute rotation windows from UTC epoch minutes, without I/O or state."""
+
+            import json
+            import math
+
+
+            def rotation_due(now, agents, ROTATION_SPEED=1.0, ROTATION_OFFSET=0, ROTATION_PAUSED=False):
+                speed = float(ROTATION_SPEED)
+                shift = float(ROTATION_OFFSET)
+                now = float(now)
+                if not all(math.isfinite(value) for value in (now, speed, shift)) or speed <= 0:
+                    raise ValueError("rotation time and offset must be finite; speed must be positive")
+                if str(ROTATION_PAUSED).lower() not in {"true", "false"}:
+                    raise ValueError("ROTATION_PAUSED must be true or false")
+                paused = str(ROTATION_PAUSED).lower() == "true"
+                due, skipped = [], []
+                for agent in agents:
+                    period = round(agent["every_minutes"] * speed)
+                    if period < 2:
+                        raise ValueError("scaled rotation interval must be at least two minutes")
+                    target = due if not paused and (now + shift - agent["offset_minutes"]) % period < 2 else skipped
+                    target.append(agent["name"])
+                return {
+                    "due": due,
+                    "skipped": skipped,
+                    "log": json.dumps({
+                        "due": due, "skipped": skipped,
+                        "ROTATION_SPEED": speed, "ROTATION_OFFSET": shift, "ROTATION_PAUSED": paused,
+                    }, separators=(",", ":")),
+                }
+
+            ROTATION_AGENTS = []
+
+            def main(timestamp, speed, offset, paused):
+                return rotation_due(float(timestamp) // 60, ROTATION_AGENTS, speed, offset, paused)
+          variables:
+            - {variable: timestamp, value_selector: [sys, timestamp]}
+            - {variable: speed, value_selector: [env, ROTATION_SPEED]}
+            - {variable: offset, value_selector: [env, ROTATION_OFFSET]}
+            - {variable: paused, value_selector: [env, ROTATION_PAUSED]}
+          outputs:
+            due: {type: 'array[string]', children: null}
+            skipped: {type: 'array[string]', children: null}
+            log: {type: string, children: null}
+      - id: done
+        type: custom
+        position: {x: 600, y: 0}
+        data:
+          title: Tick log
+          type: end
+          outputs:
+            - {variable: log, value_selector: [due, log]}

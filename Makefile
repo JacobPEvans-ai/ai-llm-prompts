@@ -10,7 +10,9 @@ render-dify:
 		name=$$(basename "$$definition" .yaml); \
 		test "$$(yq -r '.name' "$$definition")" = "$$name"; \
 		gomplate -c .="$$definition" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
-	done
+	done; \
+		gomplate -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
+		-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
 
 check-dify:
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/dify.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \

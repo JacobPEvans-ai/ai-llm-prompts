@@ -1,0 +1,118 @@
+{{- /* One native scheduler; only tier-2 Dify rotation triggers participate. */ -}}
+{{- $definitions := coll.Slice -}}
+{{- range file.ReadDir "agents" -}}
+  {{- if strings.HasSuffix ".yaml" . -}}
+    {{- $definitions = coll.Append (file.Read (printf "agents/%s" .) | data.YAML) $definitions -}}
+  {{- end -}}
+{{- end -}}
+{{- $agents := coll.JQ `[.[] | select(.home_platform == "dify" and .tier == 2) | [.triggers[]? | select(.kind == "rotation")] as $triggers | select($triggers | length > 0) | {name: .name, every: $triggers[0].every, trigger_count: ($triggers | length), expected_runtime_minutes: (.expected_runtime_minutes // 10)}] | sort_by(.name)` $definitions -}}
+{{- $roster := coll.Slice -}}
+{{- range $i, $agent := $agents -}}
+  {{- test.Assert "one rotation trigger per agent is required" (eq (conv.ToInt $agent.trigger_count) 1) -}}
+  {{- test.Assert "rotation every must use positive whole minutes, hours, or days" (regexp.Match `^[1-9][0-9]*[mhd]$` $agent.every) -}}
+  {{- $value := regexp.Replace `[mhd]$` "" $agent.every | conv.ToInt -}}
+  {{- $unit := regexp.Replace `^[0-9]+` "" $agent.every -}}
+  {{- $minutes := mul $value (index (dict "m" 1 "h" 60 "d" 1440) $unit) | conv.ToInt -}}
+  {{- test.Assert "rotation interval must be at least two minutes" (ge $minutes 2) -}}
+  {{- test.Assert "expected runtime must be positive" (gt (conv.ToFloat64 $agent.expected_runtime_minutes) 0.0) -}}
+  {{- $offset := div (mul $i $minutes) (len $agents) | conv.ToInt -}}
+  {{- $roster = coll.Append (dict "name" $agent.name "every_minutes" $minutes "offset_minutes" $offset "expected_runtime_minutes" $agent.expected_runtime_minutes) $roster -}}
+{{- end -}}
+# Generated from agents/*.yaml, agents/dify-src/rotation.tmpl, and helpers/rotation_due.py; run make render-dify.
+app: {name: tier2-rotation, mode: workflow, description: Dispatch tier-2 rotation windows.}
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  environment_variables:
+    - {id: rotation-speed, name: ROTATION_SPEED, value_type: number, value: 1.0, selector: [env, ROTATION_SPEED]}
+    - {id: rotation-offset, name: ROTATION_OFFSET, value_type: number, value: 0, selector: [env, ROTATION_OFFSET]}
+    - {id: rotation-paused, name: ROTATION_PAUSED, value_type: string, value: 'false', selector: [env, ROTATION_PAUSED]}
+{{- range $roster }}
+{{- $key := .name | strings.ReplaceAll "-" "_" | strings.ToUpper }}
+    - {id: {{ .name }}-trigger-url, name: {{ $key }}_TRIGGER_URL, value_type: string, value: '', selector: [env, {{ $key }}_TRIGGER_URL]}
+    - {id: {{ .name }}-webhook-id, name: {{ $key }}_WEBHOOK_ID, value_type: secret, value: '', selector: [env, {{ $key }}_WEBHOOK_ID]}
+{{- end }}
+  graph:
+    edges:
+      - {id: schedule-due, source: schedule, sourceHandle: source, target: due, targetHandle: target, type: custom, data: {sourceType: trigger-schedule, targetType: code}}
+{{- $previous := "due" }}
+{{- $previousType := "code" }}
+{{- range $roster }}
+      - {id: {{ $previous }}-{{ .name }}, source: {{ $previous }}, sourceHandle: '{{ if eq $previous "due" }}source{{ else }}false{{ end }}', target: check-{{ .name }}, targetHandle: target, type: custom, data: {sourceType: {{ $previousType }}, targetType: if-else}}
+{{- if ne $previous "due" }}
+      - {id: dispatch-{{ $previous }}-{{ .name }}, source: {{ strings.TrimPrefix "check-" $previous | printf "dispatch-%s" }}, sourceHandle: source, target: check-{{ .name }}, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+{{- end }}
+      - {id: {{ .name }}-dispatch, source: check-{{ .name }}, sourceHandle: 'true', target: dispatch-{{ .name }}, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
+{{- $previous = printf "check-%s" .name }}
+{{- $previousType = "if-else" }}
+{{- end }}
+      - {id: last-done, source: {{ $previous }}, sourceHandle: '{{ if eq $previous "due" }}source{{ else }}false{{ end }}', target: done, targetHandle: target, type: custom, data: {sourceType: {{ $previousType }}, targetType: end}}
+{{- if ne $previous "due" }}
+      - {id: last-dispatch-done, source: {{ strings.TrimPrefix "check-" $previous | printf "dispatch-%s" }}, sourceHandle: source, target: done, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: end}}
+{{- end }}
+    nodes:
+      - id: schedule
+        type: custom
+        position: {x: 0, y: 0}
+        data: {title: Odd minutes, type: trigger-schedule, mode: cron, cron_expression: '1-59/2 * * * *', timezone: UTC}
+      - id: due
+        type: custom
+        position: {x: 300, y: 0}
+        data:
+          title: Rotation windows
+          type: code
+          code_language: python3
+          code: |
+{{ file.Read (printf "%s/helpers/rotation_due.py" (tmpl.PathDir)) | strings.TrimSuffix "\n" | strings.Indent 12 }}
+
+            ROTATION_AGENTS = {{ data.ToJSON $roster }}
+
+            def main(timestamp, speed, offset, paused):
+                return rotation_due(float(timestamp) // 60, ROTATION_AGENTS, speed, offset, paused)
+          variables:
+            - {variable: timestamp, value_selector: [sys, timestamp]}
+            - {variable: speed, value_selector: [env, ROTATION_SPEED]}
+            - {variable: offset, value_selector: [env, ROTATION_OFFSET]}
+            - {variable: paused, value_selector: [env, ROTATION_PAUSED]}
+          outputs:
+            due: {type: 'array[string]', children: null}
+            skipped: {type: 'array[string]', children: null}
+            log: {type: string, children: null}
+{{- range $i, $agent := $roster }}
+{{- $key := .name | strings.ReplaceAll "-" "_" | strings.ToUpper }}
+      - id: check-{{ .name }}
+        type: custom
+        position: {x: {{ add 600 (mul $i 600) }}, y: 0}
+        data:
+          title: {{ .name }} due
+          type: if-else
+          cases:
+            - case_id: 'true'
+              logical_operator: and
+              conditions:
+                - {id: due-{{ .name }}, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: {{ .name }}}
+      - id: dispatch-{{ .name }}
+        type: custom
+        position: {x: {{ add 900 (mul $i 600) }}, y: 200}
+        data:
+          title: Dispatch {{ .name }}
+          type: http-request
+          method: post
+          url: '{{ printf "{{#env.%s_TRIGGER_URL#}}/triggers/webhook/{{#env.%s_WEBHOOK_ID#}}" $key $key }}'
+          authorization: {type: no-auth}
+          headers: ''
+          params: ''
+          body: {type: none, data: ''}
+          timeout: {connect: 5, read: 10, write: 10}
+          retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
+          ssl_verify: true
+{{- end }}
+      - id: done
+        type: custom
+        position: {x: {{ add 600 (mul (len $roster) 600) }}, y: 0}
+        data:
+          title: Tick log
+          type: end
+          outputs:
+            - {variable: log, value_selector: [due, log]}

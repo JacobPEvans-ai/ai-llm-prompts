@@ -59,6 +59,7 @@ def test_committed_outputs_match_shared_template(tmp_path):
         for path in (ROOT / "agents").glob("*.yaml")
         if yaml.safe_load(path.read_text())["home_platform"] == "dify"
     }
+    expected.add("tier2-rotation.dsl.yml")
     assert {path.name for path in tmp_path.glob("*.dsl.yml")} == expected
     assert {path.name for path in (ROOT / "agents" / "dify").glob("*.dsl.yml")} == expected
     for name in expected:
@@ -91,7 +92,9 @@ def test_non_dify_agent_is_skipped_without_fragments(tmp_path):
     (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: sim\n")
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
-    assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {"sample.dsl.yml"}
+    assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {
+        "sample.dsl.yml", "tier2-rotation.dsl.yml",
+    }
 
 
 def test_missing_home_platform_fails(tmp_path):
