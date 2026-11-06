@@ -9,6 +9,7 @@ import yaml
 
 _ROOT = Path(__file__).resolve().parents[2]
 _AGENTS = _ROOT / "agents"
+_HOME_PLATFORMS = {"dify", "hermes", "sim", "langflow", "litellm"}
 _ROSTER_FIELDS = (
     "home_platform",
     "prompt",
@@ -38,6 +39,21 @@ def _definitions():
         (path, yaml.safe_load(path.read_text()))
         for path in sorted(_AGENTS.glob("*.yaml"))
     ]
+
+
+def test_retired_eval_agent_has_no_definition_prompt_evals_or_fragments():
+    for path in (
+        _AGENTS / "hatchet-eval.yaml",
+        _AGENTS / "prompts" / "hatchet-eval.md",
+        _AGENTS / "evals" / "hatchet-eval.yaml",
+        _AGENTS / "dify-src" / "hatchet-eval",
+    ):
+        assert not path.exists(), path.relative_to(_ROOT)
+
+
+def test_agent_home_platforms_use_supported_values():
+    for path, agent in _definitions():
+        assert agent["home_platform"] in _HOME_PLATFORMS, path.name
 
 
 def _prompt_body(path):

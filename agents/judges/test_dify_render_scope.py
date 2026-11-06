@@ -36,7 +36,7 @@ def test_every_dify_definition_has_a_fragment_directory():
 
 def test_non_dify_definition_is_skipped_without_rendering(tmp_path, monkeypatch):
     (tmp_path / "agents").mkdir()
-    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: hatchet\n")
+    (tmp_path / "agents" / "elsewhere.yaml").write_text("home_platform: sim\n")
     (tmp_path / "agents" / "homed.yaml").write_text("home_platform: dify\n")
     rendered = []
     monkeypatch.setattr(render, "ROOT", tmp_path)
