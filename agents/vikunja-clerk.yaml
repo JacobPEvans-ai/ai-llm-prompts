@@ -1,5 +1,7 @@
 name: vikunja-clerk
 owner: agent-platform
+kind: connector
+owns: vikunja
 home_platform: dify
 prompt: agents/prompts/vikunja-clerk.md
 shared_prefix: agents/prompts/shared/homelab.md
@@ -9,31 +11,50 @@ tools:
   - vikunja_tasks.get
   - vikunja_tasks.create
   - vikunja_tasks.update
+  - vikunja_projects.list
+  - vikunja_comments.list
+  - vikunja_comments.create
 mcp_servers: [vikunja]
 privacy_class: internal
+tier: 1
+triggers: [{kind: call}]
+connectors: [vikunja]
+code_work: false
+model_policy: {locality: local_only, cloud_fallback: forbidden}
 # LiteLLM router role, not a model ID.
 litellm_role: small
 trigger:
   kind: call
 mode: shadow # shadow or live
 mandate_binding:
-  write_tools: [vikunja_tasks.create, vikunja_tasks.update]
-  from_fields: [caller, operation, project_id, task_id, title, description, due_date, priority]
+  write_tools: [vikunja_tasks.create, vikunja_tasks.update, vikunja_comments.create]
+  from_fields: [caller, request_id, operation, project_id, task_id, title, description, due_date, priority]
   source: structured_fields_only
   immutable: true
-channels: [caller, langfuse-trace]
+channels: [caller, langfuse-trace, phoenix-trace]
 memory_scope: none
 mcp_access: {vikunja: own_litellm_key_only}
-callers: any
+callers: verified_gateway_identity_only
 eval_set: agents/evals/vikunja-clerk.yaml
 identity: agent-vikunja-clerk
 api_key_ref: openbao://agent-key/vikunja-clerk
 guards:
+  credential_owner: vikunja-clerk
+  caller_identity_source: agentgateway
+  require_verified_caller: true
+  require_scoped_mandate: true
+  dedupe_before_write: true
+  readback_after_write: true
+  retry_unknown_write_outcome: read_before_retry
+  telemetry:
+    required_fields: [agent, tier, privacy_class, model, accelerator]
   vikunja:
-    tool_allowlist: [vikunja_tasks]
+    tool_allowlist: [vikunja_tasks, vikunja_projects, vikunja_comments]
     tool_allowlist_enforced_in_code: true
     operation_allowlist:
       vikunja_tasks: [list, get, create, update]
+      vikunja_projects: [list]
+      vikunja_comments: [list, create]
     operation_allowlist_enforced_in_code: true
     deny_operations:
       - delete
