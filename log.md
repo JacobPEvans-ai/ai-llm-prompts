@@ -2,6 +2,7 @@
 
 ## 2026-11-06
 
+* **Update (instructions)**: Agent standards require secret-free exports and records of omitted resource dependencies.
 * **Update (claude-code)**: Delegate briefs state runtime authority, independent sandbox and approval choices, proportional checks, and delivery evidence.
 * **Creation (instructions)**: Add source-cited agent and skill building standards with dated attribution and rules for briefs and platform integrations.
 * **Creation (agents)**: Add an agent catalog index linking authoring standards and validation guides.

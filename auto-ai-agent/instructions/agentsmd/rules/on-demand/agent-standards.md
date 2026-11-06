@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T20:00:00Z"
+timestamp: "2026-11-06T20:23:55Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -131,6 +131,8 @@ Source IDs in the rules resolve to the URLs below. Local policy is identified se
 - Pin application and sandbox contracts together. Preserve build snapshots and skill versions for reproducibility. [D5] [D7]
 - Render platform files from the canonical agent definitions and one standard template (local policy); test compatibility paths for newer formats. [D7]
 - Export the intended published version explicitly; account for workflow, Agent, and skill exports containing saved draft changes. [D9] [D11]
+- Exclude secret values from exported artifacts. Record dependencies that exports omit: credentials, linked knowledge bases,
+  trigger subscriptions, and relevant runtime files. [D9]
 - Test routing, failure branches, pause/resume, unavailable tools, and output contracts before publication; name a rollback version. [D10] [D12] [A3]
 - Prefer supported integration triggers, then webhooks. Test activation and verify published subscriptions. [D8]
 - Define exhaustive Agent routes, an otherwise route, and failure handling for invalid results. [D12]
