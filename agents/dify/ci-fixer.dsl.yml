@@ -1,9 +1,8 @@
-# Generated from agents/ci-fixer.yaml, agents/dify-src/ci-fixer/, and agents/prompts/shared/homelab.md + agents/prompts/ci-fixer.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/ci-fixer.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/ci-fixer.md; edit sources, then run make render-dify.
 app:
-  description: Bounded CI repair for eligible same-repository pull requests; source
-    writes stay disabled until log redaction is available.
+  description: Bounded CI repair for eligible same-repository pull requests; source writes stay disabled until log redaction is available.
   icon: "\U0001F916"
-  icon_background: "#D5F5F6"
+  icon_background: '#D5F5F6'
   mode: workflow
   name: ci-fixer
   use_icon_as_answer_icon: false
@@ -13,58 +12,58 @@ version: 0.7.0
 workflow:
   conversation_variables: []
   environment_variables:
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000001
+    - description: OpenBao base URL supplied in the Dify workspace.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000001
       name: OPENBAO_ADDR
-      value: ''
-      value_type: string
-      description: OpenBao base URL supplied in the Dify workspace.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000002
+      value: ""
+      value_type: string
+    - description: OpenBao AppRole role ID supplied in the Dify workspace.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000002
       name: OPENBAO_ROLE_ID
-      value: ''
-      value_type: secret
-      description: OpenBao AppRole role ID supplied in the Dify workspace.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000003
+      value: ""
+      value_type: secret
+    - description: OpenBao AppRole secret ID supplied in the Dify workspace.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000003
       name: OPENBAO_SECRET_ID
-      value: ''
+      selector: []
+      value: ""
       value_type: secret
-      description: OpenBao AppRole secret ID supplied in the Dify workspace.
-      selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000004
+    - description: GitHub API base URL supplied in the Dify workspace.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000004
       name: GITHUB_API_BASE
-      value: ''
-      value_type: string
-      description: GitHub API base URL supplied in the Dify workspace.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000005
+      value: ""
+      value_type: string
+    - description: Approved installation-token mint path supplied in the Dify workspace.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000005
       name: GITHUB_TOKEN_MINT_PATH
-      value: ''
-      value_type: string
-      description: Approved installation-token mint path supplied in the Dify workspace.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000007
+      value: ""
+      value_type: string
+    - description: Source writes require the exact value true and all code guards.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000007
       name: ENABLE_PUSH
-      value: 'false'
-      value_type: string
-      description: Source writes require the exact value true and all code guards.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000008
+      value: "false"
+      value_type: string
+    - description: OpenBao GitHub token set used for live comments and source writes.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000008
       name: GITHUB_TOKEN_WRITE_SET
-      value: ''
-      value_type: string
-      description: OpenBao GitHub token set used for live comments and source writes.
       selector: []
-    - id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000009
+      value: ""
+      value_type: string
+    - description: OpenBao read-only GitHub token set used in shadow mode.
+      id: 8a4a2c01-1dc7-4ec0-a5e7-5c4120000009
       name: GITHUB_TOKEN_READ_SET
-      value: ''
-      value_type: string
-      description: OpenBao read-only GitHub token set used in shadow mode.
       selector: []
+      value: ""
+      value_type: string
   features:
     file_upload:
       enabled: false
-    opening_statement: ''
+    opening_statement: ""
     retriever_resource:
       enabled: false
     sensitive_word_avoidance:
@@ -750,18 +749,18 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - id: push-disabled-comment
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
+        id: push-disabled-comment
         source: push_gate
         sourceHandle: false
         target: prepare_comment
         targetHandle: target
         type: custom
         zIndex: 0
-        data:
-          isInIteration: false
-          isInLoop: false
-          sourceType: if-else
-          targetType: code
       - data:
           isInIteration: false
           isInLoop: false
@@ -779,15 +778,15 @@ workflow:
           authorization:
             type: no-auth
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
                 value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'
+            type: json
           desc: Logs in through AppRole.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -796,11 +795,15 @@ workflow:
             write: 30
           title: OpenBao AppRole login
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login"
+          url: '{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login'
         height: 90
         id: openbao_login
-        position: {x: 942, y: 350}
-        positionAbsolute: {x: 942, y: 350}
+        position:
+          x: 942
+          "y": 350
+        positionAbsolute:
+          x: 942
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -820,20 +823,27 @@ workflow:
           desc: Extracts the AppRole client token.
           outputs:
             client_token:
+              children: null
               type: string
-              children: null
             ready:
-              type: number
               children: null
+              type: number
           selected: false
           title: Parse OpenBao response
           type: code
           variables:
-            - {variable: response_body, value_selector: [openbao_login, body]}
+            - value_selector:
+                - openbao_login
+                - body
+              variable: response_body
         height: 54
         id: parse_openbao
-        position: {x: 1246, y: 350}
-        positionAbsolute: {x: 1246, y: 350}
+        position:
+          x: 1246
+          "y": 350
+        positionAbsolute:
+          x: 1246
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -853,26 +863,60 @@ workflow:
           desc: Builds bounded, redacted context.
           outputs:
             review_context:
-              type: string
               children: null
+              type: string
           selected: false
           title: Prepare CI repair context
           type: code
           variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: actor, value_selector: [start, actor]}
-            - {variable: event, value_selector: [start, event]}
-            - {variable: strength, value_selector: [start, strength]}
-            - {variable: check_run_body, value_selector: [get_check_run, body]}
-            - {variable: annotations_body, value_selector: [get_annotations, body]}
-            - {variable: files_body, value_selector: [get_pull_files, body]}
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - start
+                - actor
+              variable: actor
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - strength
+              variable: strength
+            - value_selector:
+                - get_check_run
+                - body
+              variable: check_run_body
+            - value_selector:
+                - get_annotations
+                - body
+              variable: annotations_body
+            - value_selector:
+                - get_pull_files
+                - body
+              variable: files_body
         height: 54
         id: prepare_context
-        position: {x: 4742, y: 200}
-        positionAbsolute: {x: 4742, y: 200}
+        position:
+          x: 4742
+          "y": 200
+        positionAbsolute:
+          x: 4742
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -881,18 +925,28 @@ workflow:
       - data:
           cases:
             - case_id: ready
+              conditions:
+                - comparison_operator: '='
+                  id: login-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - parse_openbao
+                    - ready
               id: ready
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: login-ready, value: '1', varType: number, variable_selector: [parse_openbao, ready]}
           desc: Stops when AppRole login fails.
           selected: false
           title: OpenBao token gate
           type: if-else
         height: 126
         id: login_gate
-        position: {x: 1550, y: 350}
-        positionAbsolute: {x: 1550, y: 350}
+        position:
+          x: 1550
+          "y": 350
+        positionAbsolute:
+          x: 1550
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -900,21 +954,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_openbao.client_token#}}"
+              api_key: '{{#parse_openbao.client_token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
-                value: "{{#token_request.request_json#}}"
+                value: '{{#token_request.request_json#}}'
+            type: json
           desc: Mints a scoped installation token.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -923,11 +977,15 @@ workflow:
             write: 30
           title: Mint repository-scoped GitHub token
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}"
+          url: '{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}'
         height: 90
         id: mint_github_token
-        position: {x: 1854, y: 300}
-        positionAbsolute: {x: 1854, y: 300}
+        position:
+          x: 1854
+          "y": 300
+        positionAbsolute:
+          x: 1854
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -947,21 +1005,28 @@ workflow:
           code_language: python3
           desc: Extracts the scoped installation token.
           outputs:
-            token:
-              type: string
-              children: null
             ready:
-              type: number
               children: null
+              type: number
+            token:
+              children: null
+              type: string
           selected: false
           title: Parse GitHub token
           type: code
           variables:
-            - {variable: response_body, value_selector: [mint_github_token, body]}
+            - value_selector:
+                - mint_github_token
+                - body
+              variable: response_body
         height: 54
         id: parse_github_token
-        position: {x: 2158, y: 300}
-        positionAbsolute: {x: 2158, y: 300}
+        position:
+          x: 2158
+          "y": 300
+        positionAbsolute:
+          x: 2158
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -970,18 +1035,28 @@ workflow:
       - data:
           cases:
             - case_id: ready
+              conditions:
+                - comparison_operator: '='
+                  id: token-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - parse_github_token
+                    - ready
               id: ready
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: token-ready, value: '1', varType: number, variable_selector: [parse_github_token, ready]}
           desc: Stops when token minting fails.
           selected: false
           title: GitHub token gate
           type: if-else
         height: 126
         id: token_gate
-        position: {x: 2462, y: 300}
-        positionAbsolute: {x: 2462, y: 300}
+        position:
+          x: 2462
+          "y": 300
+        positionAbsolute:
+          x: 2462
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -989,18 +1064,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads the mandated check run.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1009,11 +1084,15 @@ workflow:
             write: 30
           title: Read check run
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}'
         height: 90
         id: get_check_run
-        position: {x: 2766, y: 200}
-        positionAbsolute: {x: 2766, y: 200}
+        position:
+          x: 2766
+          "y": 200
+        positionAbsolute:
+          x: 2766
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1021,14 +1100,14 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads annotations; no raw logs.
           headers: 'Accept: application/vnd.github+json'
           method: get
@@ -1041,11 +1120,15 @@ workflow:
             write: 30
           title: Read check annotations
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}/annotations"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/check-runs/{{#start.check_run_id#}}/annotations'
         height: 90
         id: get_annotations
-        position: {x: 3070, y: 200}
-        positionAbsolute: {x: 3070, y: 200}
+        position:
+          x: 3070
+          "y": 200
+        positionAbsolute:
+          x: 3070
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1053,18 +1136,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads the PR linked to the check run.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1073,11 +1156,15 @@ workflow:
             write: 30
           title: Read pull request
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}'
         height: 90
         id: get_pull_request
-        position: {x: 3374, y: 200}
-        positionAbsolute: {x: 3374, y: 200}
+        position:
+          x: 3374
+          "y": 200
+        positionAbsolute:
+          x: 3374
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1085,18 +1172,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads rules before write eligibility.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1105,11 +1192,15 @@ workflow:
             write: 30
           title: Read branch rules
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#validate_mandate.encoded_ref#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#validate_mandate.encoded_ref#}}'
         height: 90
         id: get_branch_rules
-        position: {x: 3678, y: 200}
-        positionAbsolute: {x: 3678, y: 200}
+        position:
+          x: 3678
+          "y": 200
+        positionAbsolute:
+          x: 3678
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1117,14 +1208,14 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads changed files and line counts.
           headers: 'Accept: application/vnd.github+json'
           method: get
@@ -1137,11 +1228,15 @@ workflow:
             write: 30
           title: Read pull request files
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}/files"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}/files'
         height: 90
         id: get_pull_files
-        position: {x: 3982, y: 200}
-        positionAbsolute: {x: 3982, y: 200}
+        position:
+          x: 3982
+          "y": 200
+        positionAbsolute:
+          x: 3982
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1149,18 +1244,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads the current head tree.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1169,11 +1264,15 @@ workflow:
             write: 30
           title: Read current head commit
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits/{{#start.head_sha#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits/{{#start.head_sha#}}'
         height: 90
         id: get_head_commit
-        position: {x: 4286, y: 200}
-        positionAbsolute: {x: 4286, y: 200}
+        position:
+          x: 4286
+          "y": 200
+        positionAbsolute:
+          x: 4286
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1233,47 +1332,87 @@ workflow:
           code_language: python3
           desc: Rejects fork, stale, protected, and oversized PRs.
           outputs:
-            eligible:
-              type: number
-              children: null
-            comment_allowed:
-              type: number
-              children: null
-            model_allowed:
-              type: number
-              children: null
-            tree_sha:
-              type: string
-              children: null
-            current_head_sha:
-              type: string
-              children: null
             changed_lines:
+              children: null
               type: number
+            comment_allowed:
               children: null
-            reason:
+              type: number
+            current_head_sha:
+              children: null
               type: string
+            eligible:
               children: null
+              type: number
+            model_allowed:
+              children: null
+              type: number
+            reason:
+              children: null
+              type: string
+            tree_sha:
+              children: null
+              type: string
           selected: false
           title: Guard pull request and branch rules
           type: code
           variables:
-            - {variable: payload_repo, value_selector: [start, repo]}
-            - {variable: payload_head_ref, value_selector: [start, ref]}
-            - {variable: payload_head_sha, value_selector: [start, head_sha]}
-            - {variable: payload_check_run_id, value_selector: [start, check_run_id]}
-            - {variable: payload_pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: check_run_body, value_selector: [get_check_run, body]}
-            - {variable: annotations_body, value_selector: [get_annotations, body]}
-            - {variable: current_pr_body, value_selector: [get_pull_request, body]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
-            - {variable: files_body, value_selector: [get_pull_files, body]}
-            - {variable: head_commit_body, value_selector: [get_head_commit, body]}
-            - {variable: mode, value_selector: [start, mode]}
+            - value_selector:
+                - start
+                - repo
+              variable: payload_repo
+            - value_selector:
+                - start
+                - ref
+              variable: payload_head_ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: payload_head_sha
+            - value_selector:
+                - start
+                - check_run_id
+              variable: payload_check_run_id
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: payload_pr_number
+            - value_selector:
+                - get_check_run
+                - body
+              variable: check_run_body
+            - value_selector:
+                - get_annotations
+                - body
+              variable: annotations_body
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: current_pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - get_pull_files
+                - body
+              variable: files_body
+            - value_selector:
+                - get_head_commit
+                - body
+              variable: head_commit_body
+            - value_selector:
+                - start
+                - mode
+              variable: mode
         height: 54
         id: guard_context
-        position: {x: 4590, y: 200}
-        positionAbsolute: {x: 4590, y: 200}
+        position:
+          x: 4590
+          "y": 200
+        positionAbsolute:
+          x: 4590
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1282,18 +1421,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: pr-eligible
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_context
+                    - eligible
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: pr-eligible, value: '1', varType: number, variable_selector: [guard_context, eligible]}
           desc: Gates model use on current eligible PRs.
           selected: false
           title: Pull request gate
           type: if-else
         height: 126
         id: preflight_gate
-        position: {x: 4894, y: 200}
-        positionAbsolute: {x: 4894, y: 200}
+        position:
+          x: 4894
+          "y": 200
+        positionAbsolute:
+          x: 4894
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1302,18 +1451,28 @@ workflow:
       - data:
           cases:
             - case_id: safe
+              conditions:
+                - comparison_operator: '='
+                  id: model-safe
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_context
+                    - model_allowed
               id: safe
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: model-safe, value: '1', varType: number, variable_selector: [guard_context, model_allowed]}
           desc: Gates model access on log redaction.
           selected: false
           title: Redaction gate
           type: if-else
         height: 126
         id: safe_context_gate
-        position: {x: 5198, y: 100}
-        positionAbsolute: {x: 5198, y: 100}
+        position:
+          x: 5198
+          "y": 100
+        positionAbsolute:
+          x: 5198
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1330,11 +1489,11 @@ workflow:
               enabled: false
               size: 10
           model:
-            provider: langgenius/openai_api_compatible/openai_api_compatible
-            name: medium
-            mode: chat
             completion_params:
               temperature: 0
+            mode: chat
+            name: medium
+            provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_config:
             jinja2_variables: []
           prompt_template:
@@ -1413,18 +1572,22 @@ workflow:
                 `comment_body`. Do not include logs or credentials in any field. In shadow mode, this JSON is only a proposed artifact
                 stored in the run record; never send the comment or commit it externally.
             - role: user
-              text: "{{#prepare_context.review_context#}}"
+              text: '{{#prepare_context.review_context#}}'
           selected: false
           title: CI repair model
           type: llm
           vision:
-            enabled: false
             configs:
               variable_selector: []
+            enabled: false
         height: 90
         id: fixer_llm
-        position: {x: 5502, y: 100}
-        positionAbsolute: {x: 5502, y: 100}
+        position:
+          x: 5502
+          "y": 100
+        positionAbsolute:
+          x: 5502
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1509,52 +1672,98 @@ workflow:
           code_language: python3
           desc: Checks patches and write gates.
           outputs:
-            push_allowed:
-              type: number
-              children: null
-            path:
-              type: string
-              children: null
-            content_json:
-              type: string
-              children: null
-            commit_message:
-              type: string
-              children: null
             artifact_json:
-              type: string
               children: null
-            trace_json:
               type: string
+            commit_message:
               children: null
-            status:
               type: string
+            content_json:
               children: null
+              type: string
+            path:
+              children: null
+              type: string
+            push_allowed:
+              children: null
+              type: number
             reason:
-              type: string
               children: null
+              type: string
+            status:
+              children: null
+              type: string
+            trace_json:
+              children: null
+              type: string
           selected: false
           title: Validate patch and write guards
           type: code
           variables:
-            - {variable: model_text, value_selector: [fixer_llm, text]}
-            - {variable: files_body, value_selector: [get_pull_files, body]}
-            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
-            - {variable: eligible, value_selector: [guard_context, eligible]}
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: actor, value_selector: [start, actor]}
-            - {variable: event, value_selector: [start, event]}
-            - {variable: strength, value_selector: [start, strength]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: current_pr_body, value_selector: [get_pull_request, body]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
+            - value_selector:
+                - fixer_llm
+                - text
+              variable: model_text
+            - value_selector:
+                - get_pull_files
+                - body
+              variable: files_body
+            - value_selector:
+                - env
+                - ENABLE_PUSH
+              variable: enable_push
+            - value_selector:
+                - guard_context
+                - eligible
+              variable: eligible
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - start
+                - actor
+              variable: actor
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - strength
+              variable: strength
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: current_pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
         height: 54
         id: validate_patch
-        position: {x: 5806, y: 100}
-        positionAbsolute: {x: 5806, y: 100}
+        position:
+          x: 5806
+          "y": 100
+        positionAbsolute:
+          x: 5806
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1563,20 +1772,42 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: push-authorized
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - validate_patch
+                    - push_allowed
+                - comparison_operator: '='
+                  id: push-live
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+                - comparison_operator: '='
+                  id: push-enabled
+                  value: "true"
+                  varType: string
+                  variable_selector:
+                    - env
+                    - ENABLE_PUSH
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: push-authorized, value: '1', varType: number, variable_selector: [validate_patch, push_allowed]}
-                - {comparison_operator: "=", id: push-live, value: live, varType: string, variable_selector: [start, mode]}
-                - {comparison_operator: "=", id: push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
           desc: Gates Git writes on validation.
           selected: false
           title: Git Data write gate
           type: if-else
         height: 126
         id: push_gate
-        position: {x: 6110, y: 100}
-        positionAbsolute: {x: 6110, y: 100}
+        position:
+          x: 6110
+          "y": 100
+        positionAbsolute:
+          x: 6110
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1584,21 +1815,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
                 value: '{"content":{{#validate_patch.content_json#}},"encoding":"utf-8"}'
+            type: json
           desc: Creates a blob behind the write gate.
           headers: 'Accept: application/vnd.github+json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1607,11 +1838,15 @@ workflow:
             write: 30
           title: Create Git blob
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/blobs"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/blobs'
         height: 90
         id: create_blob
-        position: {x: 6414, y: 0}
-        positionAbsolute: {x: 6414, y: 0}
+        position:
+          x: 6414
+          "y": 0
+        positionAbsolute:
+          x: 6414
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1630,21 +1865,28 @@ workflow:
           code_language: python3
           desc: Extracts the new blob SHA.
           outputs:
-            sha:
-              type: string
-              children: null
             ready:
-              type: number
               children: null
+              type: number
+            sha:
+              children: null
+              type: string
           selected: false
           title: Parse blob response
           type: code
           variables:
-            - {variable: response_body, value_selector: [create_blob, body]}
+            - value_selector:
+                - create_blob
+                - body
+              variable: response_body
         height: 54
         id: parse_blob
-        position: {x: 6718, y: 0}
-        positionAbsolute: {x: 6718, y: 0}
+        position:
+          x: 6718
+          "y": 0
+        positionAbsolute:
+          x: 6718
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1663,19 +1905,32 @@ workflow:
           desc: Builds a Git tree from validated paths.
           outputs:
             tree_json:
-              type: string
               children: null
+              type: string
           selected: false
           title: Build Git tree request
           type: code
           variables:
-            - {variable: base_tree_sha, value_selector: [guard_context, tree_sha]}
-            - {variable: path, value_selector: [validate_patch, path]}
-            - {variable: blob_sha, value_selector: [parse_blob, sha]}
+            - value_selector:
+                - guard_context
+                - tree_sha
+              variable: base_tree_sha
+            - value_selector:
+                - validate_patch
+                - path
+              variable: path
+            - value_selector:
+                - parse_blob
+                - sha
+              variable: blob_sha
         height: 54
         id: build_tree_request
-        position: {x: 7022, y: 0}
-        positionAbsolute: {x: 7022, y: 0}
+        position:
+          x: 7022
+          "y": 0
+        positionAbsolute:
+          x: 7022
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1683,21 +1938,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
-                value: "{{#build_tree_request.tree_json#}}"
+                value: '{{#build_tree_request.tree_json#}}'
+            type: json
           desc: Creates a tree behind the write gate.
           headers: 'Accept: application/vnd.github+json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1706,11 +1961,15 @@ workflow:
             write: 30
           title: Create Git tree
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/trees"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/trees'
         height: 90
         id: create_tree
-        position: {x: 7326, y: 0}
-        positionAbsolute: {x: 7326, y: 0}
+        position:
+          x: 7326
+          "y": 0
+        positionAbsolute:
+          x: 7326
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1718,21 +1977,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
                 value: '{"message":"{{#validate_patch.commit_message#}}","tree":"{{#create_tree.sha#}}","parents":["{{#start.head_sha#}}"]}'
+            type: json
           desc: Creates a commit on the mandate head.
           headers: 'Accept: application/vnd.github+json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1741,11 +2000,15 @@ workflow:
             write: 30
           title: Create Git commit
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/commits'
         height: 90
         id: create_commit
-        position: {x: 7630, y: 0}
-        positionAbsolute: {x: 7630, y: 0}
+        position:
+          x: 7630
+          "y": 0
+        positionAbsolute:
+          x: 7630
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1753,18 +2016,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Re-reads PR head before ref update.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1773,11 +2036,15 @@ workflow:
             write: 30
           title: Recheck pull request head
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#extract_check_target.pr_number#}}'
         height: 90
         id: recheck_pull_request
-        position: {x: 7934, y: 0}
-        positionAbsolute: {x: 7934, y: 0}
+        position:
+          x: 7934
+          "y": 0
+        positionAbsolute:
+          x: 7934
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1820,28 +2087,59 @@ workflow:
           desc: Rechecks the mandate ref against PR head.
           outputs:
             eligible:
+              children: null
               type: number
-              children: null
             ref_encoded:
-              type: string
               children: null
+              type: string
           selected: false
           title: Guard ref update
           type: code
           variables:
-            - {variable: pr_body, value_selector: [recheck_pull_request, body]}
-            - {variable: expected_head_sha, value_selector: [start, head_sha]}
-            - {variable: mandate_ref, value_selector: [start, ref]}
-            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
-            - {variable: commit_body, value_selector: [create_commit, body]}
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
-            - {variable: mode, value_selector: [start, mode]}
+            - value_selector:
+                - recheck_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - start
+                - head_sha
+              variable: expected_head_sha
+            - value_selector:
+                - start
+                - ref
+              variable: mandate_ref
+            - value_selector:
+                - env
+                - ENABLE_PUSH
+              variable: enable_push
+            - value_selector:
+                - create_commit
+                - body
+              variable: commit_body
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - start
+                - mode
+              variable: mode
         height: 54
         id: guard_ref_update
-        position: {x: 8238, y: 0}
-        positionAbsolute: {x: 8238, y: 0}
+        position:
+          x: 8238
+          "y": 0
+        positionAbsolute:
+          x: 8238
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1850,20 +2148,42 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: ref-eligible
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_ref_update
+                    - eligible
+                - comparison_operator: '='
+                  id: ref-live
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+                - comparison_operator: '='
+                  id: ref-push-enabled
+                  value: "true"
+                  varType: string
+                  variable_selector:
+                    - env
+                    - ENABLE_PUSH
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: ref-eligible, value: '1', varType: number, variable_selector: [guard_ref_update, eligible]}
-                - {comparison_operator: "=", id: ref-live, value: live, varType: string, variable_selector: [start, mode]}
-                - {comparison_operator: "=", id: ref-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
           desc: Blocks stale ref updates.
           selected: false
           title: Ref update gate
           type: if-else
         height: 126
         id: ref_update_gate
-        position: {x: 8542, y: 0}
-        positionAbsolute: {x: 8542, y: 0}
+        position:
+          x: 8542
+          "y": 0
+        positionAbsolute:
+          x: 8542
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1871,21 +2191,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
                 value: '{"sha":"{{#create_commit.sha#}}","force":false}'
+            type: json
           desc: Updates the mandate ref without force push.
           headers: 'Accept: application/vnd.github+json'
           method: patch
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1894,11 +2214,15 @@ workflow:
             write: 30
           title: Update Git ref
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/refs/heads/{{#guard_ref_update.ref_encoded#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/git/refs/heads/{{#guard_ref_update.ref_encoded#}}'
         height: 90
         id: update_ref
-        position: {x: 8846, y: 0}
-        positionAbsolute: {x: 8846, y: 0}
+        position:
+          x: 8846
+          "y": 0
+        positionAbsolute:
+          x: 8846
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1917,36 +2241,64 @@ workflow:
           desc: Builds a neutral comment without untrusted text.
           outputs:
             body:
-              type: string
               children: null
-            request_json:
               type: string
-              children: null
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
+              type: string
+            request_json:
+              children: null
+              type: string
+            status:
+              children: null
+              type: string
             trace_json:
-              type: string
               children: null
+              type: string
           selected: false
           title: Prepare comment-only response
           type: code
           variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: actor, value_selector: [start, actor]}
-            - {variable: event, value_selector: [start, event]}
-            - {variable: strength, value_selector: [start, strength]}
-            - {variable: mode, value_selector: [start, mode]}
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - start
+                - actor
+              variable: actor
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - strength
+              variable: strength
+            - value_selector:
+                - start
+                - mode
+              variable: mode
         height: 54
         id: prepare_comment
-        position: {x: 5502, y: 400}
-        positionAbsolute: {x: 5502, y: 400}
+        position:
+          x: 5502
+          "y": 400
+        positionAbsolute:
+          x: 5502
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1954,21 +2306,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
-                value: "{{#prepare_comment.request_json#}}"
+                value: '{{#prepare_comment.request_json#}}'
+            type: json
           desc: Posts a neutral comment to the matched PR.
           headers: 'Accept: application/vnd.github+json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1977,11 +2329,15 @@ workflow:
             write: 30
           title: Post comment-only response
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/issues/{{#extract_check_target.pr_number#}}/comments"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/issues/{{#extract_check_target.pr_number#}}/comments'
         height: 90
         id: post_comment
-        position: {x: 5806, y: 400}
-        positionAbsolute: {x: 5806, y: 400}
+        position:
+          x: 5806
+          "y": 400
+        positionAbsolute:
+          x: 5806
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1989,82 +2345,86 @@ workflow:
         width: 244
       - data:
           desc: Receives the immutable mandate.
-          variables:
-            - variable: repo
-              label: repo
-              type: text-input
-              required: true
-              max_length: 256
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: ref
-              label: ref
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: head_sha
-              label: head_sha
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: actor
-              label: actor
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: event
-              label: event
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: strength
-              label: strength
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: mode
-              label: mode
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: shadow
-              hint: ''
-              placeholder: ''
-            - variable: check_run_id
-              label: check_run_id
-              type: number
-              required: true
-              options: []
           selected: false
           title: Start
           type: start
+          variables:
+            - default: ""
+              hint: ""
+              label: repo
+              max_length: 256
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: repo
+            - default: ""
+              hint: ""
+              label: ref
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: ref
+            - default: ""
+              hint: ""
+              label: head_sha
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: head_sha
+            - default: ""
+              hint: ""
+              label: actor
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: actor
+            - default: ""
+              hint: ""
+              label: event
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: event
+            - default: ""
+              hint: ""
+              label: strength
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: strength
+            - default: shadow
+              hint: ""
+              label: mode
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: mode
+            - label: check_run_id
+              options: []
+              required: true
+              type: number
+              variable: check_run_id
         height: 90
         id: start
-        position: {x: 30, y: 400}
-        positionAbsolute: {x: 30, y: 400}
+        position:
+          x: 30
+          "y": 400
+        positionAbsolute:
+          x: 30
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2102,34 +2462,62 @@ workflow:
           code_language: python3
           desc: Rejects incomplete or widened mandates.
           outputs:
-            valid:
-              type: number
-              children: null
             encoded_ref:
-              type: string
               children: null
-            status:
               type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: mandate_ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: actor, value_selector: [start, actor]}
-            - {variable: event, value_selector: [start, event]}
-            - {variable: strength, value_selector: [start, strength]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: check_run_id, value_selector: [start, check_run_id]}
+              type: string
+            status:
+              children: null
+              type: string
+            valid:
+              children: null
+              type: number
           selected: false
           title: Validate immutable mandate
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - ref
+              variable: mandate_ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - start
+                - actor
+              variable: actor
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - strength
+              variable: strength
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - start
+                - check_run_id
+              variable: check_run_id
         height: 54
         id: validate_mandate
-        position: {x: 334, y: 400}
-        positionAbsolute: {x: 334, y: 400}
+        position:
+          x: 334
+          "y": 400
+        positionAbsolute:
+          x: 334
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2138,18 +2526,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: mandate-valid
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - validate_mandate
+                    - valid
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: mandate-valid, value: '1', varType: number, variable_selector: [validate_mandate, valid]}
-          desc: ''
+          desc: ""
           selected: false
           title: Mandate gate
           type: if-else
         height: 126
         id: mandate_gate
-        position: {x: 638, y: 400}
-        positionAbsolute: {x: 638, y: 400}
+        position:
+          x: 638
+          "y": 400
+        positionAbsolute:
+          x: 638
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2171,23 +2569,39 @@ workflow:
           desc: Selects token scope by run mode.
           outputs:
             ready:
+              children: null
               type: number
-              children: null
             request_json:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: read_set, value_selector: [env, GITHUB_TOKEN_READ_SET]}
-            - {variable: write_set, value_selector: [env, GITHUB_TOKEN_WRITE_SET]}
+              type: string
           selected: false
           title: Select token permission set
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - env
+                - GITHUB_TOKEN_READ_SET
+              variable: read_set
+            - value_selector:
+                - env
+                - GITHUB_TOKEN_WRITE_SET
+              variable: write_set
         height: 54
         id: token_request
-        position: {x: 1700, y: 300}
-        positionAbsolute: {x: 1700, y: 300}
+        position:
+          x: 1700
+          "y": 300
+        positionAbsolute:
+          x: 1700
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2196,18 +2610,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: token-set-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - token_request
+                    - ready
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: token-set-ready, value: '1', varType: number, variable_selector: [token_request, ready]}
-          desc: ''
+          desc: ""
           selected: false
           title: Token set gate
           type: if-else
         height: 126
         id: token_request_gate
-        position: {x: 1990, y: 300}
-        positionAbsolute: {x: 1990, y: 300}
+        position:
+          x: 1990
+          "y": 300
+        positionAbsolute:
+          x: 1990
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2234,30 +2658,49 @@ workflow:
           desc: Matches the mandated check to one PR.
           outputs:
             eligible:
-              type: number
               children: null
+              type: number
             pr_number:
+              children: null
               type: number
-              children: null
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: response_body, value_selector: [get_check_run, body]}
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: check_run_id, value_selector: [start, check_run_id]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
+              type: string
+            status:
+              children: null
+              type: string
           selected: false
           title: Validate check run and linked PR
           type: code
+          variables:
+            - value_selector:
+                - get_check_run
+                - body
+              variable: response_body
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - check_run_id
+              variable: check_run_id
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
         height: 54
         id: extract_check_target
-        position: {x: 3350, y: 300}
-        positionAbsolute: {x: 3350, y: 300}
+        position:
+          x: 3350
+          "y": 300
+        positionAbsolute:
+          x: 3350
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2266,18 +2709,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: check-target-valid
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - extract_check_target
+                    - eligible
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: check-target-valid, value: '1', varType: number, variable_selector: [extract_check_target, eligible]}
-          desc: ''
+          desc: ""
           selected: false
           title: Check run target gate
           type: if-else
         height: 126
         id: check_target_gate
-        position: {x: 3640, y: 300}
-        positionAbsolute: {x: 3640, y: 300}
+        position:
+          x: 3640
+          "y": 300
+        positionAbsolute:
+          x: 3640
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2288,24 +2741,34 @@ workflow:
             def main(repo: str, mode: str) -> dict:
                 return {"status": "handback", "reason": "The check run, PR, or repository guards did not authorize this mandate."}
           code_language: python3
-          desc: ''
+          desc: ""
           outputs:
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: mode, value_selector: [start, mode]}
+              type: string
+            status:
+              children: null
+              type: string
           selected: false
           title: Prepare handback
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - mode
+              variable: mode
         height: 54
         id: prepare_handback
-        position: {x: 9200, y: 600}
-        positionAbsolute: {x: 9200, y: 600}
+        position:
+          x: 9200
+          "y": 600
+        positionAbsolute:
+          x: 9200
+          "y": 600
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2314,18 +2777,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: shadow-mode
+                  value: shadow
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: shadow-mode, value: shadow, varType: string, variable_selector: [start, mode]}
           desc: Returns proposals without shadow writes.
           selected: false
           title: Shadow proposal gate
           type: if-else
         height: 126
         id: mode_gate
-        position: {x: 6080, y: 100}
-        positionAbsolute: {x: 6080, y: 100}
+        position:
+          x: 6080
+          "y": 100
+        positionAbsolute:
+          x: 6080
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2358,31 +2831,62 @@ workflow:
                     and mode == "live" and enable_push == "true" and bool(target))
                 return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
           code_language: python3
-          desc: ''
+          desc: ""
           outputs:
             allowed:
+              children: null
               type: number
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: pr_body, value_selector: [get_pull_request, body]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
-            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: target_body, value_selector: [build_tree_request, tree_json]}
+              type: string
           selected: false
           title: Recheck tree write target
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - env
+                - ENABLE_PUSH
+              variable: enable_push
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - build_tree_request
+                - tree_json
+              variable: target_body
         height: 54
         id: guard_tree_write
-        position: {x: 7040, y: 0}
-        positionAbsolute: {x: 7040, y: 0}
+        position:
+          x: 7040
+          "y": 0
+        positionAbsolute:
+          x: 7040
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2391,20 +2895,42 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: tree-write-authorized
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_tree_write
+                    - allowed
+                - comparison_operator: '='
+                  id: tree-live
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+                - comparison_operator: '='
+                  id: tree-push-enabled
+                  value: "true"
+                  varType: string
+                  variable_selector:
+                    - env
+                    - ENABLE_PUSH
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: tree-write-authorized, value: '1', varType: number, variable_selector: [guard_tree_write, allowed]}
-                - {comparison_operator: "=", id: tree-live, value: live, varType: string, variable_selector: [start, mode]}
-                - {comparison_operator: "=", id: tree-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
-          desc: ''
+          desc: ""
           selected: false
           title: Tree write gate
           type: if-else
         height: 126
         id: tree_write_gate
-        position: {x: 7320, y: 0}
-        positionAbsolute: {x: 7320, y: 0}
+        position:
+          x: 7320
+          "y": 0
+        positionAbsolute:
+          x: 7320
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2437,31 +2963,62 @@ workflow:
                     and mode == "live" and enable_push == "true" and bool(target))
                 return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
           code_language: python3
-          desc: ''
+          desc: ""
           outputs:
             allowed:
+              children: null
               type: number
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: pr_body, value_selector: [get_pull_request, body]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
-            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: target_body, value_selector: [create_tree, body]}
+              type: string
           selected: false
           title: Recheck commit write target
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - env
+                - ENABLE_PUSH
+              variable: enable_push
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - create_tree
+                - body
+              variable: target_body
         height: 54
         id: guard_commit_write
-        position: {x: 7900, y: 0}
-        positionAbsolute: {x: 7900, y: 0}
+        position:
+          x: 7900
+          "y": 0
+        positionAbsolute:
+          x: 7900
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2470,20 +3027,42 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: commit-write-authorized
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_commit_write
+                    - allowed
+                - comparison_operator: '='
+                  id: commit-live
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+                - comparison_operator: '='
+                  id: commit-push-enabled
+                  value: "true"
+                  varType: string
+                  variable_selector:
+                    - env
+                    - ENABLE_PUSH
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: commit-write-authorized, value: '1', varType: number, variable_selector: [guard_commit_write, allowed]}
-                - {comparison_operator: "=", id: commit-live, value: live, varType: string, variable_selector: [start, mode]}
-                - {comparison_operator: "=", id: commit-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
-          desc: ''
+          desc: ""
           selected: false
           title: Commit write gate
           type: if-else
         height: 126
         id: commit_write_gate
-        position: {x: 8180, y: 0}
-        positionAbsolute: {x: 8180, y: 0}
+        position:
+          x: 8180
+          "y": 0
+        positionAbsolute:
+          x: 8180
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2516,31 +3095,62 @@ workflow:
                     and mode == "live" and enable_push == "true" and bool(target))
                 return {"allowed": 1 if valid else 0, "reason": "" if valid else "write target no longer matches the mandate"}
           code_language: python3
-          desc: ''
+          desc: ""
           outputs:
             allowed:
+              children: null
               type: number
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [extract_check_target, pr_number]}
-            - {variable: ref, value_selector: [start, ref]}
-            - {variable: head_sha, value_selector: [start, head_sha]}
-            - {variable: pr_body, value_selector: [get_pull_request, body]}
-            - {variable: rules_body, value_selector: [get_branch_rules, body]}
-            - {variable: enable_push, value_selector: [env, ENABLE_PUSH]}
-            - {variable: mode, value_selector: [start, mode]}
-            - {variable: target_body, value_selector: [prepare_comment, request_json]}
+              type: string
           selected: false
           title: Recheck comment target
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - extract_check_target
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - env
+                - ENABLE_PUSH
+              variable: enable_push
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - prepare_comment
+                - request_json
+              variable: target_body
         height: 54
         id: guard_comment_write
-        position: {x: 6100, y: 400}
-        positionAbsolute: {x: 6100, y: 400}
+        position:
+          x: 6100
+          "y": 400
+        positionAbsolute:
+          x: 6100
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2549,127 +3159,224 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: comment-target-authorized
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - guard_comment_write
+                    - allowed
+                - comparison_operator: '='
+                  id: comment-live
+                  value: live
+                  varType: string
+                  variable_selector:
+                    - start
+                    - mode
+                - comparison_operator: '='
+                  id: comment-push-enabled
+                  value: "true"
+                  varType: string
+                  variable_selector:
+                    - env
+                    - ENABLE_PUSH
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: "=", id: comment-target-authorized, value: '1', varType: number, variable_selector: [guard_comment_write, allowed]}
-                - {comparison_operator: "=", id: comment-live, value: live, varType: string, variable_selector: [start, mode]}
-                - {comparison_operator: "=", id: comment-push-enabled, value: 'true', varType: string, variable_selector: [env, ENABLE_PUSH]}
-          desc: ''
+          desc: ""
           selected: false
           title: Live comment gate
           type: if-else
         height: 126
         id: comment_write_gate
-        position: {x: 6400, y: 400}
-        positionAbsolute: {x: 6400, y: 400}
+        position:
+          x: 6400
+          "y": 400
+        positionAbsolute:
+          x: 6400
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [validate_patch, status]}
-            - {variable: artifact, value_selector: [validate_patch, artifact_json]}
-            - {variable: trace, value_selector: [validate_patch, trace_json]}
-            - {variable: reason, value_selector: [validate_patch, reason]}
+            - value_selector:
+                - validate_patch
+                - status
+              variable: status
+            - value_selector:
+                - validate_patch
+                - artifact_json
+              variable: artifact
+            - value_selector:
+                - validate_patch
+                - trace_json
+              variable: trace
+            - value_selector:
+                - validate_patch
+                - reason
+              variable: reason
           selected: false
           title: End proposed patch
           type: end
         height: 90
         id: end_proposed
-        position: {x: 6400, y: 100}
-        positionAbsolute: {x: 6400, y: 100}
+        position:
+          x: 6400
+          "y": 100
+        positionAbsolute:
+          x: 6400
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [validate_mandate, status]}
-            - {variable: reason, value_selector: [validate_mandate, reason]}
+            - value_selector:
+                - validate_mandate
+                - status
+              variable: status
+            - value_selector:
+                - validate_mandate
+                - reason
+              variable: reason
           selected: false
           title: End mandate handback
           type: end
         height: 90
         id: end_handback_mandate
-        position: {x: 900, y: 850}
-        positionAbsolute: {x: 900, y: 850}
+        position:
+          x: 900
+          "y": 850
+        positionAbsolute:
+          x: 900
+          "y": 850
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [prepare_handback, status]}
-            - {variable: reason, value_selector: [prepare_handback, reason]}
+            - value_selector:
+                - prepare_handback
+                - status
+              variable: status
+            - value_selector:
+                - prepare_handback
+                - reason
+              variable: reason
           selected: false
           title: End run handback
           type: end
         height: 90
         id: end_handback_run
-        position: {x: 9500, y: 650}
-        positionAbsolute: {x: 9500, y: 650}
+        position:
+          x: 9500
+          "y": 650
+        positionAbsolute:
+          x: 9500
+          "y": 650
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [prepare_comment, status]}
-            - {variable: reason, value_selector: [prepare_comment, reason]}
-            - {variable: trace, value_selector: [prepare_comment, trace_json]}
+            - value_selector:
+                - prepare_comment
+                - status
+              variable: status
+            - value_selector:
+                - prepare_comment
+                - reason
+              variable: reason
+            - value_selector:
+                - prepare_comment
+                - trace_json
+              variable: trace
           selected: false
           title: End comment handback
           type: end
         height: 90
         id: end_handback_comment
-        position: {x: 6700, y: 650}
-        positionAbsolute: {x: 6700, y: 650}
+        position:
+          x: 6700
+          "y": 650
+        positionAbsolute:
+          x: 6700
+          "y": 650
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [prepare_comment, status]}
-            - {variable: artifact, value_selector: [prepare_comment, request_json]}
-            - {variable: trace, value_selector: [prepare_comment, trace_json]}
+            - value_selector:
+                - prepare_comment
+                - status
+              variable: status
+            - value_selector:
+                - prepare_comment
+                - request_json
+              variable: artifact
+            - value_selector:
+                - prepare_comment
+                - trace_json
+              variable: trace
           selected: false
           title: End posted comment
           type: end
         height: 90
         id: end_comment
-        position: {x: 6700, y: 400}
-        positionAbsolute: {x: 6700, y: 400}
+        position:
+          x: 6700
+          "y": 400
+        positionAbsolute:
+          x: 6700
+          "y": 400
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - {variable: status, value_selector: [validate_patch, status]}
-            - {variable: artifact, value_selector: [validate_patch, artifact_json]}
-            - {variable: trace, value_selector: [validate_patch, trace_json]}
+            - value_selector:
+                - validate_patch
+                - status
+              variable: status
+            - value_selector:
+                - validate_patch
+                - artifact_json
+              variable: artifact
+            - value_selector:
+                - validate_patch
+                - trace_json
+              variable: trace
           selected: false
           title: End source update
           type: end
         height: 90
         id: end_pushed
-        position: {x: 9150, y: 0}
-        positionAbsolute: {x: 9150, y: 0}
+        position:
+          x: 9150
+          "y": 0
+        positionAbsolute:
+          x: 9150
+          "y": 0
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2677,5 +3384,5 @@ workflow:
         width: 244
     viewport:
       x: 0
-      y: 0
+      "y": 0
       zoom: 0.55

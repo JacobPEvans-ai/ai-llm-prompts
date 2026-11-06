@@ -1,8 +1,8 @@
-# Generated from agents/code-simplifier.yaml, agents/dify-src/code-simplifier/, and agents/prompts/shared/homelab.md + agents/prompts/code-simplifier.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/code-simplifier.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/code-simplifier.md; edit sources, then run make render-dify.
 app:
   description: Bounded, comment-only simplification reviews for eligible pull requests.
   icon: "\U0001F916"
-  icon_background: "#D5F5F6"
+  icon_background: '#D5F5F6'
   mode: workflow
   name: code-simplifier
   use_icon_as_answer_icon: false
@@ -12,52 +12,52 @@ version: 0.7.0
 workflow:
   conversation_variables: []
   environment_variables:
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50101
+    - description: OpenBao base URL supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50101
       name: OPENBAO_ADDR
-      value: ''
-      value_type: string
-      description: OpenBao base URL supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50102
+      value: ""
+      value_type: string
+    - description: OpenBao AppRole role ID supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50102
       name: OPENBAO_ROLE_ID
-      value: ''
-      value_type: secret
-      description: OpenBao AppRole role ID supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50103
+      value: ""
+      value_type: secret
+    - description: OpenBao AppRole secret ID supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50103
       name: OPENBAO_SECRET_ID
-      value: ''
+      selector: []
+      value: ""
       value_type: secret
-      description: OpenBao AppRole secret ID supplied in the Dify workspace.
-      selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50104
+    - description: GitHub API base URL supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50104
       name: GITHUB_API_BASE
-      value: ''
-      value_type: string
-      description: GitHub API base URL supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50105
+      value: ""
+      value_type: string
+    - description: Approved installation-token mint path supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50105
       name: GITHUB_TOKEN_MINT_PATH
-      value: ''
-      value_type: string
-      description: Approved installation-token mint path supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50107
+      value: ""
+      value_type: string
+    - description: OpenBao GitHub token set used for live comment writes.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50107
       name: GITHUB_TOKEN_WRITE_SET
-      value: ''
-      value_type: string
-      description: OpenBao GitHub token set used for live comment writes.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50108
+      value: ""
+      value_type: string
+    - description: OpenBao read-only GitHub token set used in shadow mode.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50108
       name: GITHUB_TOKEN_READ_SET
-      value: ''
-      value_type: string
-      description: OpenBao read-only GitHub token set used in shadow mode.
       selector: []
+      value: ""
+      value_type: string
   features:
     file_upload:
       enabled: false
-    opening_statement: ''
+    opening_statement: ""
     retriever_resource:
       enabled: false
     sensitive_word_avoidance:
@@ -306,7 +306,7 @@ workflow:
           targetType: end
         id: mandate-invalid
         source: mandate_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_handback_mandate
         targetHandle: target
         type: custom
@@ -354,7 +354,7 @@ workflow:
           targetType: code
         id: token-request-failed
         source: token_request_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: prepare_handback
         targetHandle: target
         type: custom
@@ -390,7 +390,7 @@ workflow:
           targetType: if-else
         id: review-status-unproposed
         source: review_status_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: review_refusal_gate
         targetHandle: target
         type: custom
@@ -414,7 +414,7 @@ workflow:
           targetType: code
         id: review-handback
         source: review_refusal_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: prepare_handback
         targetHandle: target
         type: custom
@@ -450,7 +450,7 @@ workflow:
           targetType: end
         id: review-target-failed
         source: review_target_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_handback_review
         targetHandle: target
         type: custom
@@ -474,7 +474,7 @@ workflow:
           targetType: end
         id: review-shadow
         source: review_mode_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_review_proposal
         targetHandle: target
         type: custom
@@ -508,15 +508,15 @@ workflow:
           authorization:
             type: no-auth
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
                 value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'
+            type: json
           desc: AppRole login; keep secret values in Dify environment variables.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -525,15 +525,15 @@ workflow:
             write: 30
           title: OpenBao AppRole login
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login"
+          url: '{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login'
         height: 90
         id: openbao_login
         position:
           x: 942
-          y: 350
+          "y": 350
         positionAbsolute:
           x: 942
-          y: 350
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -553,27 +553,27 @@ workflow:
           desc: Extracts the short-lived OpenBao client token.
           outputs:
             client_token:
+              children: null
               type: string
-              children: null
             ready:
-              type: number
               children: null
+              type: number
           selected: false
           title: Parse OpenBao response
           type: code
           variables:
-            - variable: response_body
-              value_selector:
+            - value_selector:
                 - openbao_login
                 - body
+              variable: response_body
         height: 54
         id: parse_openbao
         position:
           x: 1246
-          y: 350
+          "y": 350
         positionAbsolute:
           x: 1246
-          y: 350
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -582,16 +582,16 @@ workflow:
       - data:
           cases:
             - case_id: ready
-              id: ready
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: login-ready
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - parse_openbao
                     - ready
+              id: ready
+              logical_operator: and
           desc: Stops if OpenBao did not return a token.
           selected: false
           title: OpenBao token gate
@@ -600,10 +600,10 @@ workflow:
         id: login_ready_gate
         position:
           x: 1430
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 1430
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -611,21 +611,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_openbao.client_token#}}"
+              api_key: '{{#parse_openbao.client_token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
-                value: "{{#token_request.request_json#}}"
+                value: '{{#token_request.request_json#}}'
+            type: json
           desc: Requests an installation token scoped to the mandated repository.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -634,15 +634,15 @@ workflow:
             write: 30
           title: Mint repository-scoped GitHub token
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}"
+          url: '{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}'
         height: 90
         id: mint_github_token
         position:
           x: 1854
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 1854
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -662,28 +662,28 @@ workflow:
           code_language: python3
           desc: Extracts the scoped installation token.
           outputs:
-            token:
-              type: string
-              children: null
             ready:
-              type: number
               children: null
+              type: number
+            token:
+              children: null
+              type: string
           selected: false
           title: Parse GitHub token
           type: code
           variables:
-            - variable: response_body
-              value_selector:
+            - value_selector:
                 - mint_github_token
                 - body
+              variable: response_body
         height: 54
         id: parse_github_token
         position:
           x: 2158
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 2158
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -692,16 +692,16 @@ workflow:
       - data:
           cases:
             - case_id: ready
-              id: ready
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: token-ready
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - parse_github_token
                     - ready
+              id: ready
+              logical_operator: and
           desc: Stops if the token broker did not return a token.
           selected: false
           title: GitHub token gate
@@ -710,10 +710,10 @@ workflow:
         id: token_ready_gate
         position:
           x: 2290
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 2290
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -721,18 +721,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads the current PR state from the mandated repository and PR number.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -741,15 +741,15 @@ workflow:
             write: 30
           title: Read pull request
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}'
         height: 90
         id: get_pull_request
         position:
           x: 2766
-          y: 250
+          "y": 250
         positionAbsolute:
           x: 2766
-          y: 250
+          "y": 250
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -757,18 +757,18 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Reads active branch rules before any review write.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -777,15 +777,15 @@ workflow:
             write: 30
           title: Read branch rules
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#start.ref#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/rules/branches/{{#start.ref#}}'
         height: 90
         id: get_branch_rules
         position:
           x: 3070
-          y: 250
+          "y": 250
         positionAbsolute:
           x: 3070
-          y: 250
+          "y": 250
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -824,44 +824,44 @@ workflow:
           desc: Refuses stale PR heads, closed PRs, protected refs, or unreadable rules.
           outputs:
             eligible:
-              type: number
               children: null
+              type: number
           selected: false
           title: Guard pull request and branch rules
           type: code
           variables:
-            - variable: mandate_ref
-              value_selector:
+            - value_selector:
                 - start
                 - ref
-            - variable: mandate_head_sha
-              value_selector:
+              variable: mandate_ref
+            - value_selector:
                 - start
                 - head_sha
-            - variable: mandate_repo
-              value_selector:
+              variable: mandate_head_sha
+            - value_selector:
                 - start
                 - repo
-            - variable: mandate_pr_number
-              value_selector:
+              variable: mandate_repo
+            - value_selector:
                 - start
                 - pr_number
-            - variable: current_pr_body
-              value_selector:
+              variable: mandate_pr_number
+            - value_selector:
                 - get_pull_request
                 - body
-            - variable: rules_body
-              value_selector:
+              variable: current_pr_body
+            - value_selector:
                 - get_branch_rules
                 - body
+              variable: rules_body
         height: 54
         id: guard_pull_request
         position:
           x: 3374
-          y: 250
+          "y": 250
         positionAbsolute:
           x: 3374
-          y: 250
+          "y": 250
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -870,16 +870,16 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: pr-eligible
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - guard_pull_request
                     - eligible
+              id: eligible
+              logical_operator: and
           desc: Blocks all review writes unless the mandate and current PR still match.
           selected: false
           title: Pull request gate
@@ -888,10 +888,10 @@ workflow:
         id: pull_request_gate
         position:
           x: 3678
-          y: 250
+          "y": 250
         positionAbsolute:
           x: 3678
-          y: 250
+          "y": 250
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -899,14 +899,14 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: none
             data: []
+            type: none
           desc: Retrieves only the mandated PR's files and patch hunks.
           headers: 'Accept: application/vnd.github+json'
           method: get
@@ -919,15 +919,15 @@ workflow:
             write: 30
           title: Read pull request files
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/files"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/files'
         height: 90
         id: get_pull_files
         position:
           x: 3982
-          y: 200
+          "y": 200
         positionAbsolute:
           x: 3982
-          y: 200
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -991,83 +991,82 @@ workflow:
                     "head_ref": pr.get("head", {}).get("ref"), "head_sha": pr.get("head", {}).get("sha")}, "active_branch_rules": len(rules), "files": context_files}
                 return {"safe": 1, "fallback_json": fallback, "changed_files_json": json.dumps(changed), "review_context": json.dumps(context, ensure_ascii=False), "trace_json": trace, "status": "proposed"}
           code_language: python3
-          desc: Bounds the diff and prevents likely secrets or incomplete patches
-            from reaching the model.
+          desc: Bounds the diff and prevents likely secrets or incomplete patches from reaching the model.
           outputs:
-            safe:
-              type: number
-              children: null
-            fallback_json:
-              type: string
-              children: null
             changed_files_json:
-              type: string
               children: null
+              type: string
+            fallback_json:
+              children: null
+              type: string
             review_context:
-              type: string
               children: null
-            trace_json:
               type: string
+            safe:
               children: null
+              type: number
             status:
-              type: string
               children: null
+              type: string
+            trace_json:
+              children: null
+              type: string
           selected: false
           title: Prepare bounded review context
           type: code
           variables:
-            - variable: files_body
-              value_selector:
+            - value_selector:
                 - get_pull_files
                 - body
-            - variable: event
-              value_selector:
+              variable: files_body
+            - value_selector:
                 - start
                 - event
-            - variable: strength
-              value_selector:
+              variable: event
+            - value_selector:
                 - start
                 - strength
-            - variable: repo
-              value_selector:
+              variable: strength
+            - value_selector:
                 - start
                 - repo
-            - variable: pr_number
-              value_selector:
+              variable: repo
+            - value_selector:
                 - start
                 - pr_number
-            - variable: ref
-              value_selector:
+              variable: pr_number
+            - value_selector:
                 - start
                 - ref
-            - variable: head_sha
-              value_selector:
+              variable: ref
+            - value_selector:
                 - start
                 - head_sha
-            - variable: actor
-              value_selector:
+              variable: head_sha
+            - value_selector:
                 - start
                 - actor
-            - variable: current_pr_body
-              value_selector:
+              variable: actor
+            - value_selector:
                 - get_pull_request
                 - body
-            - variable: rules_body
-              value_selector:
+              variable: current_pr_body
+            - value_selector:
                 - get_branch_rules
                 - body
-            - variable: requested_action
-              value_selector:
+              variable: rules_body
+            - value_selector:
                 - start
                 - requested_action
+              variable: requested_action
         height: 54
         id: prepare_review
         position:
           x: 4286
-          y: 200
+          "y": 200
         positionAbsolute:
           x: 4286
-          y: 200
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1076,16 +1075,16 @@ workflow:
       - data:
           cases:
             - case_id: safe
-              id: safe
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: review-safe
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - prepare_review
                     - safe
+              id: safe
+              logical_operator: and
           desc: Sends only bounded, non-secret diff data to the model.
           selected: false
           title: Safe context gate
@@ -1094,10 +1093,10 @@ workflow:
         id: context_gate
         position:
           x: 4590
-          y: 200
+          "y": 200
         positionAbsolute:
           x: 4590
-          y: 200
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1114,11 +1113,11 @@ workflow:
               enabled: false
               size: 10
           model:
-            provider: langgenius/openai_api_compatible/openai_api_compatible
-            name: medium
-            mode: chat
             completion_params:
               temperature: 0
+            mode: chat
+            name: medium
+            provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_config:
             jinja2_variables: []
           prompt_template:
@@ -1199,22 +1198,22 @@ workflow:
                 array. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
                 proposed artifact stored in the run record; never submit the review externally.
             - role: user
-              text: "{{#prepare_review.review_context#}}"
+              text: '{{#prepare_review.review_context#}}'
           selected: false
           title: Simplification review model
           type: llm
           vision:
-            enabled: false
             configs:
               variable_selector: []
+            enabled: false
         height: 90
         id: simplifier_llm
         position:
           x: 4894
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 4894
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1277,73 +1276,72 @@ workflow:
                 trace = {"repo": repo, "pr_number": pr_number, "ref": ref, "head_sha": head_sha, "actor": actor, "event": event, "strength": strength, "mode": mode}
                 return {"event": "COMMENT", "request_json": json.dumps(request, ensure_ascii=False), "trace_json": json.dumps(trace, ensure_ascii=False), "status": status}
           code_language: python3
-          desc: Forces COMMENT and accepts only changed-line suggestions of at most
-            20 lines.
+          desc: Forces COMMENT and accepts only changed-line suggestions of at most 20 lines.
           outputs:
             event:
-              type: string
               children: null
+              type: string
             request_json:
-              type: string
               children: null
-            trace_json:
               type: string
-              children: null
             status:
-              type: string
               children: null
+              type: string
+            trace_json:
+              children: null
+              type: string
           selected: false
           title: Validate and force comment review
           type: code
           variables:
-            - variable: model_text
-              value_selector:
+            - value_selector:
                 - simplifier_llm
                 - text
-            - variable: changed_files_json
-              value_selector:
+              variable: model_text
+            - value_selector:
                 - prepare_review
                 - changed_files_json
-            - variable: repo
-              value_selector:
+              variable: changed_files_json
+            - value_selector:
                 - start
                 - repo
-            - variable: pr_number
-              value_selector:
+              variable: repo
+            - value_selector:
                 - start
                 - pr_number
-            - variable: ref
-              value_selector:
+              variable: pr_number
+            - value_selector:
                 - start
                 - ref
-            - variable: head_sha
-              value_selector:
+              variable: ref
+            - value_selector:
                 - start
                 - head_sha
-            - variable: actor
-              value_selector:
+              variable: head_sha
+            - value_selector:
                 - start
                 - actor
-            - variable: event
-              value_selector:
+              variable: actor
+            - value_selector:
                 - start
                 - event
-            - variable: strength
-              value_selector:
+              variable: event
+            - value_selector:
                 - start
                 - strength
-            - variable: mode
-              value_selector:
+              variable: strength
+            - value_selector:
                 - start
                 - mode
+              variable: mode
         height: 54
         id: validate_review
         position:
           x: 5198
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5198
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1351,21 +1349,21 @@ workflow:
         width: 244
       - data:
           authorization:
-            type: api-key
             config:
-              type: bearer
-              api_key: "{{#parse_github_token.token#}}"
+              api_key: '{{#parse_github_token.token#}}'
               header: Authorization
+              type: bearer
+            type: api-key
           body:
-            type: json
             data:
-              - key: ''
+              - key: ""
                 type: text
-                value: "{{#validate_review.request_json#}}"
+                value: '{{#validate_review.request_json#}}'
+            type: json
           desc: Submits one review with the event forced to COMMENT by code.
           headers: 'Accept: application/vnd.github+json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
           timeout:
@@ -1374,15 +1372,15 @@ workflow:
             write: 30
           title: Submit comment-only review
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/reviews"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/reviews'
         height: 90
         id: post_review
         position:
           x: 5502
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5502
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1391,18 +1389,18 @@ workflow:
       - data:
           desc: Returns the comment-only review artifact and mandate trace.
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - validate_review
                 - status
-            - variable: artifact
-              value_selector:
+              variable: status
+            - value_selector:
                 - validate_review
                 - request_json
-            - variable: trace
-              value_selector:
+              variable: artifact
+            - value_selector:
                 - validate_review
                 - trace_json
+              variable: trace
           selected: false
           title: End posted comment
           type: end
@@ -1410,10 +1408,10 @@ workflow:
         id: end_reviewed
         position:
           x: 5806
-          y: 150
+          "y": 150
         positionAbsolute:
           x: 5806
-          y: 150
+          "y": 150
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1421,95 +1419,95 @@ workflow:
         width: 244
       - data:
           desc: Immutable Eval/Router mandate supplied through the workflow run API.
-          variables:
-            - variable: repo
-              label: repo
-              type: text-input
-              required: true
-              max_length: 256
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: ref
-              label: ref
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: head_sha
-              label: head_sha
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: actor
-              label: actor
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: event
-              label: event
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: strength
-              label: strength
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: ''
-              hint: ''
-              placeholder: ''
-            - variable: mode
-              label: mode
-              type: text-input
-              required: true
-              max_length: 128
-              options: []
-              default: shadow
-              hint: ''
-              placeholder: ''
-            - variable: requested_action
-              label: requested_action
-              type: text-input
-              required: false
-              max_length: 2000
-              options: []
-              default: ''
-              hint: Optional untrusted request; it cannot widen the Mandate or tool permissions.
-              placeholder: ''
-            - variable: pr_number
-              label: pr_number
-              type: number
-              required: true
-              options: []
           selected: false
           title: Start
           type: start
+          variables:
+            - default: ""
+              hint: ""
+              label: repo
+              max_length: 256
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: repo
+            - default: ""
+              hint: ""
+              label: ref
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: ref
+            - default: ""
+              hint: ""
+              label: head_sha
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: head_sha
+            - default: ""
+              hint: ""
+              label: actor
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: actor
+            - default: ""
+              hint: ""
+              label: event
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: event
+            - default: ""
+              hint: ""
+              label: strength
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: strength
+            - default: shadow
+              hint: ""
+              label: mode
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: mode
+            - default: ""
+              hint: Optional untrusted request; it cannot widen the Mandate or tool permissions.
+              label: requested_action
+              max_length: 2000
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: requested_action
+            - label: pr_number
+              options: []
+              required: true
+              type: number
+              variable: pr_number
         height: 90
         id: start
         position:
           x: 30
-          y: 500
+          "y": 500
         positionAbsolute:
           x: 30
-          y: 500
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1543,59 +1541,59 @@ workflow:
           code_language: python3
           desc: Rejects incomplete or wider targets before any external call.
           outputs:
-            valid:
-              type: number
-              children: null
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - variable: repo
-              value_selector:
-                - start
-                - repo
-            - variable: ref
-              value_selector:
-                - start
-                - ref
-            - variable: head_sha
-              value_selector:
-                - start
-                - head_sha
-            - variable: actor
-              value_selector:
-                - start
-                - actor
-            - variable: event
-              value_selector:
-                - start
-                - event
-            - variable: strength
-              value_selector:
-                - start
-                - strength
-            - variable: mode
-              value_selector:
-                - start
-                - mode
-            - variable: pr_number
-              value_selector:
-                - start
-                - pr_number
+              type: string
+            status:
+              children: null
+              type: string
+            valid:
+              children: null
+              type: number
           selected: false
           title: Validate immutable mandate
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - start
+                - actor
+              variable: actor
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - strength
+              variable: strength
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - start
+                - pr_number
+              variable: pr_number
         height: 54
         id: validate_mandate
         position:
           x: 334
-          y: 500
+          "y": 500
         positionAbsolute:
           x: 334
-          y: 500
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1604,17 +1602,17 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: mandate-valid
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - validate_mandate
                     - valid
-          desc: ''
+              id: eligible
+              logical_operator: and
+          desc: ""
           selected: false
           title: Mandate gate
           type: if-else
@@ -1622,10 +1620,10 @@ workflow:
         id: mandate_gate
         position:
           x: 638
-          y: 500
+          "y": 500
         positionAbsolute:
           x: 638
-          y: 500
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1641,43 +1639,42 @@ workflow:
                     return {"ready": 0, "request_json": "{}"}
                 return {"ready": 1, "request_json": json.dumps({"repositories": [repo], "token_set": token_set}, ensure_ascii=False)}
           code_language: python3
-          desc: Selects a repository read set for shadow runs and the configured write
-            set for live runs.
+          desc: Selects a repository read set for shadow runs and the configured write set for live runs.
           outputs:
             ready:
+              children: null
               type: number
-              children: null
             request_json:
-              type: string
               children: null
-          variables:
-            - variable: repo
-              value_selector:
-                - start
-                - repo
-            - variable: mode
-              value_selector:
-                - start
-                - mode
-            - variable: read_set
-              value_selector:
-                - env
-                - GITHUB_TOKEN_READ_SET
-            - variable: write_set
-              value_selector:
-                - env
-                - GITHUB_TOKEN_WRITE_SET
+              type: string
           selected: false
           title: Select token permission set
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - mode
+              variable: mode
+            - value_selector:
+                - env
+                - GITHUB_TOKEN_READ_SET
+              variable: read_set
+            - value_selector:
+                - env
+                - GITHUB_TOKEN_WRITE_SET
+              variable: write_set
         height: 54
         id: token_request
         position:
           x: 1700
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 1700
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1686,17 +1683,17 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: token-set-ready
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - token_request
                     - ready
-          desc: ''
+              id: eligible
+              logical_operator: and
+          desc: ""
           selected: false
           title: Token set gate
           type: if-else
@@ -1704,10 +1701,10 @@ workflow:
         id: token_request_gate
         position:
           x: 1990
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 1990
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1740,58 +1737,57 @@ workflow:
                 return {"allowed": 1 if valid else 0, "status": "ready" if valid else "handback",
                     "reason": "" if valid else "review write target no longer matches the mandate"}
           code_language: python3
-          desc: Rechecks the exact PR, ref, and SHA against the immutable mandate
-            immediately before a review write.
+          desc: Rechecks the exact PR, ref, and SHA against the immutable mandate immediately before a review write.
           outputs:
             allowed:
+              children: null
               type: number
-              children: null
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - variable: repo
-              value_selector:
-                - start
-                - repo
-            - variable: pr_number
-              value_selector:
-                - start
-                - pr_number
-            - variable: ref
-              value_selector:
-                - start
-                - ref
-            - variable: head_sha
-              value_selector:
-                - start
-                - head_sha
-            - variable: pr_body
-              value_selector:
-                - get_pull_request
-                - body
-            - variable: rules_body
-              value_selector:
-                - get_branch_rules
-                - body
-            - variable: review_json
-              value_selector:
-                - validate_review
-                - request_json
+              type: string
+            status:
+              children: null
+              type: string
           selected: false
           title: Recheck review target
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - ref
+              variable: ref
+            - value_selector:
+                - start
+                - head_sha
+              variable: head_sha
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - get_branch_rules
+                - body
+              variable: rules_body
+            - value_selector:
+                - validate_review
+                - request_json
+              variable: review_json
         height: 54
         id: guard_review_write
         position:
           x: 5200
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5200
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1800,17 +1796,17 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: target-authorized
-                  value: '1'
+                  value: "1"
                   varType: number
                   variable_selector:
                     - guard_review_write
                     - allowed
-          desc: ''
+              id: eligible
+              logical_operator: and
+          desc: ""
           selected: false
           title: Review target gate
           type: if-else
@@ -1818,10 +1814,10 @@ workflow:
         id: review_target_gate
         position:
           x: 5480
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5480
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1830,16 +1826,16 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: review-proposed
                   value: proposed
                   varType: string
                   variable_selector:
                     - validate_review
                     - status
+              id: eligible
+              logical_operator: and
           desc: Only a proposed review reaches the target guard. Refused and handback reviews never post.
           selected: false
           title: Review status gate
@@ -1848,10 +1844,10 @@ workflow:
         id: review_status_gate
         position:
           x: 5200
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5200
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1860,16 +1856,16 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: review-refused
                   value: refused
                   varType: string
                   variable_selector:
                     - validate_review
                     - status
+              id: eligible
+              logical_operator: and
           desc: A refused review ends with a run record. Any other unproposed review takes the handback record.
           selected: false
           title: Review refusal gate
@@ -1878,26 +1874,26 @@ workflow:
         id: review_refusal_gate
         position:
           x: 5200
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 5200
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - validate_review
                 - status
-            - variable: trace
-              value_selector:
+              variable: status
+            - value_selector:
                 - validate_review
                 - trace_json
+              variable: trace
           selected: false
           title: End refused review
           type: end
@@ -1905,10 +1901,10 @@ workflow:
         id: end_review_refused
         position:
           x: 5480
-          y: 300
+          "y": 300
         positionAbsolute:
           x: 5480
-          y: 300
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1917,18 +1913,17 @@ workflow:
       - data:
           cases:
             - case_id: eligible
-              id: eligible
-              logical_operator: and
               conditions:
-                - comparison_operator: "="
+                - comparison_operator: '='
                   id: live-mode
                   value: live
                   varType: string
                   variable_selector:
                     - start
                     - mode
-          desc: Shadow mode ends with the review artifact and trace. Live mode can
-            submit only the fixed COMMENT payload.
+              id: eligible
+              logical_operator: and
+          desc: Shadow mode ends with the review artifact and trace. Live mode can submit only the fixed COMMENT payload.
           selected: false
           title: Live comment gate
           type: if-else
@@ -1936,10 +1931,10 @@ workflow:
         id: review_mode_gate
         position:
           x: 5760
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 5760
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1950,50 +1945,50 @@ workflow:
             def main(repo: str, mode: str) -> dict:
                 return {"status": "handback", "reason": "OpenBao, token, or pull request eligibility checks did not authorize this mandate."}
           code_language: python3
-          desc: ''
+          desc: ""
           outputs:
-            status:
-              type: string
-              children: null
             reason:
-              type: string
               children: null
-          variables:
-            - variable: repo
-              value_selector:
-                - start
-                - repo
-            - variable: mode
-              value_selector:
-                - start
-                - mode
+              type: string
+            status:
+              children: null
+              type: string
           selected: false
           title: Prepare handback
           type: code
+          variables:
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - mode
+              variable: mode
         height: 54
         id: prepare_handback
         position:
           x: 5800
-          y: 700
+          "y": 700
         positionAbsolute:
           x: 5800
-          y: 700
+          "y": 700
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - validate_mandate
                 - status
-            - variable: reason
-              value_selector:
+              variable: status
+            - value_selector:
                 - validate_mandate
                 - reason
+              variable: reason
           selected: false
           title: End mandate handback
           type: end
@@ -2001,26 +1996,26 @@ workflow:
         id: end_handback_mandate
         position:
           x: 900
-          y: 850
+          "y": 850
         positionAbsolute:
           x: 900
-          y: 850
+          "y": 850
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - prepare_handback
                 - status
-            - variable: reason
-              value_selector:
+              variable: status
+            - value_selector:
                 - prepare_handback
                 - reason
+              variable: reason
           selected: false
           title: End run handback
           type: end
@@ -2028,26 +2023,26 @@ workflow:
         id: end_handback_run
         position:
           x: 6100
-          y: 700
+          "y": 700
         positionAbsolute:
           x: 6100
-          y: 700
+          "y": 700
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - guard_review_write
                 - status
-            - variable: reason
-              value_selector:
+              variable: status
+            - value_selector:
                 - guard_review_write
                 - reason
+              variable: reason
           selected: false
           title: End review handback
           type: end
@@ -2055,30 +2050,30 @@ workflow:
         id: end_handback_review
         position:
           x: 6040
-          y: 450
+          "y": 450
         positionAbsolute:
           x: 6040
-          y: 450
+          "y": 450
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - validate_review
                 - status
-            - variable: artifact
-              value_selector:
+              variable: status
+            - value_selector:
                 - validate_review
                 - request_json
-            - variable: trace
-              value_selector:
+              variable: artifact
+            - value_selector:
                 - validate_review
                 - trace_json
+              variable: trace
           selected: false
           title: End proposed review
           type: end
@@ -2086,30 +2081,30 @@ workflow:
         id: end_review_proposal
         position:
           x: 6040
-          y: 100
+          "y": 100
         positionAbsolute:
           x: 6040
-          y: 100
+          "y": 100
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          desc: ''
+          desc: ""
           outputs:
-            - variable: status
-              value_selector:
+            - value_selector:
                 - prepare_review
                 - status
-            - variable: artifact
-              value_selector:
+              variable: status
+            - value_selector:
                 - prepare_review
                 - fallback_json
-            - variable: trace
-              value_selector:
+              variable: artifact
+            - value_selector:
                 - prepare_review
                 - trace_json
+              variable: trace
           selected: false
           title: End fallback review
           type: end
@@ -2117,10 +2112,10 @@ workflow:
         id: end_fallback_proposal
         position:
           x: 4900
-          y: 500
+          "y": 500
         positionAbsolute:
           x: 4900
-          y: 500
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -2128,5 +2123,5 @@ workflow:
         width: 244
     viewport:
       x: 0
-      y: 0
+      "y": 0
       zoom: 0.65

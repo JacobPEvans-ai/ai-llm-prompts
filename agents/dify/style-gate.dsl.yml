@@ -1,5 +1,8 @@
-# Generated from agents/style-gate.yaml, agents/dify-src/style-gate/, and agents/prompts/shared/homelab.md + agents/prompts/style-gate.md; edit sources, then rerun agents/dify-src/render.py.
-app: {description: 'Check one draft against the style rules and return findings.', mode: workflow, name: style-gate}
+# Generated from agents/style-gate.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/style-gate.md; edit sources, then run make render-dify.
+app:
+  description: Check one draft against the style rules and return findings.
+  mode: workflow
+  name: style-gate
 dependencies: []
 kind: app
 version: 0.7.0
@@ -7,20 +10,59 @@ workflow:
   environment_variables: []
   graph:
     edges:
-      - {data: {sourceType: start, targetType: llm}, id: e1, source: start, sourceHandle: source, target: model, targetHandle: target, type: custom}
-      - {data: {sourceType: llm, targetType: code}, id: e2, source: model, sourceHandle: source, target: validate, targetHandle: target, type: custom}
-      - {data: {sourceType: code, targetType: end}, id: e3, source: validate, sourceHandle: source, target: done, targetHandle: target, type: custom}
+      - data:
+          sourceType: start
+          targetType: llm
+        id: e1
+        source: start
+        sourceHandle: source
+        target: model
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: llm
+          targetType: code
+        id: e2
+        source: model
+        sourceHandle: source
+        target: validate
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: e3
+        source: validate
+        sourceHandle: source
+        target: done
+        targetHandle: target
+        type: custom
     nodes:
       - data:
           title: Start
           type: start
           variables:
-            - {variable: text, label: text, type: paragraph, required: true, max_length: 30000, options: [], hint: 'Markdown draft, or a JSON object whose string values are checked'}
+            - hint: Markdown draft, or a JSON object whose string values are checked
+              label: text
+              max_length: 30000
+              options: []
+              required: true
+              type: paragraph
+              variable: text
         id: start
-        position: {x: 40, y: 300}
+        position:
+          x: 40
+          "y": 300
         type: custom
       - data:
-          model: {completion_params: {temperature: 0}, mode: chat, name: medium, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          model:
+            completion_params:
+              temperature: 0
+            mode: chat
+            name: medium
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_config:
+            jinja2_variables: []
           prompt_template:
             - id: system-prompt
               role: system
@@ -62,15 +104,17 @@ workflow:
                 - Name people by first name only.
 
                 Result shape: `{"pass": true, "findings": [{"rule": "pronoun", "text": "...", "fix": "..."}]}`
-            - {id: user-prompt, role: user, text: 'Untrusted input: {{#start.text#}}'}
-          prompt_config: {jinja2_variables: []}
+            - id: user-prompt
+              role: user
+              text: 'Untrusted input: {{#start.text#}}'
           title: Check draft
           type: llm
         id: model
-        position: {x: 340, y: 300}
+        position:
+          x: 340
+          "y": 300
         type: custom
       - data:
-          # Callers receive only an envelope that matches output_schema; anything else becomes status stop.
           code: |-
             import json
             def strip_json_fence(text):
@@ -151,21 +195,41 @@ workflow:
                     envelope = parsed if problem is None else {"status": "stop", "reason": problem, "result": None}
                 return {"status": envelope["status"], "envelope": json.dumps(envelope, ensure_ascii=False)}
           code_language: python3
-          outputs: {status: {type: string}, envelope: {type: string}}
+          outputs:
+            envelope:
+              type: string
+            status:
+              type: string
           title: Validate reply
           type: code
           variables:
-            - {variable: reply, value_selector: [model, text]}
-            - {variable: text, value_selector: [start, text]}
+            - value_selector:
+                - model
+                - text
+              variable: reply
+            - value_selector:
+                - start
+                - text
+              variable: text
         id: validate
-        position: {x: 640, y: 300}
+        position:
+          x: 640
+          "y": 300
         type: custom
       - data:
           outputs:
-            - {variable: status, value_selector: [validate, status]}
-            - {variable: envelope, value_selector: [validate, envelope]}
+            - value_selector:
+                - validate
+                - status
+              variable: status
+            - value_selector:
+                - validate
+                - envelope
+              variable: envelope
           title: End
           type: end
         id: done
-        position: {x: 940, y: 300}
+        position:
+          x: 940
+          "y": 300
         type: custom

@@ -2,6 +2,9 @@
 
 ## 2026-11-06
 
+* **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
+  CI compares the generated output set, and the import guide covers Dify 1.18, difyctl, and published-version exports.
+
 * **Update (instructions)**: Organize agent standards into linked authoring rules, platform rules, and dated source tables.
 
 * **Add (applications)**: Add the YouTrack issue specialist with sole tracker ownership, bounded issue and comment
