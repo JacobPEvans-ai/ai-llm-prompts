@@ -1,7 +1,6 @@
 # Agent prompts
 
 * [Action extractor](action-extractor.md) - Summarize notes or a conversation and extract its action items.
-* [CI fixer](ci-fixer.md) - Repair one eligible code defect exposed by a failed check.
 * [Code simplifier](code-simplifier.md) - Review eligible changes for concrete, behavior-preserving simplifications.
 * [Commit grouper](commit-grouper.md) - Group changed paths into topical commits with caller-supplied message prefixes.
 * [Doc contradiction finder](doc-contradiction-finder.md) - Report contradictions between documentation pages after a merged pull request.

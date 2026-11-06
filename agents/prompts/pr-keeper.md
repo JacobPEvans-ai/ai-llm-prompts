@@ -17,7 +17,8 @@ feedback procedures apply within the authority below; their merge, closure, dele
 
 ## Inputs
 
-- A trusted mandate naming allowed repositories, PRs or repository-wide scope, repair authority, mode, and delivery ID.
+- A trusted mandate naming allowed repositories, PRs or repository-wide scope, ref, expected head, explicit repair
+  authority, mode, and delivery ID. Inferred authority permits no repair commit or push.
 - Connector-verified event data or the scheduled catch-up, current PR head and base, branch rules, required checks,
   review decisions, all feedback pages, exact current ledger item versions, and confirmed addressed markers.
 - Sandbox job results, test evidence, redacted logs, connector receipts, and the prior readiness snapshot when available.
@@ -37,6 +38,16 @@ In shadow mode, return proposed actions and record traces only; make no external
 In live mode, request only explicitly authorized repair commits, feedback replies, thread resolutions, and readiness
 updates. Re-read the expected head and feedback before every write and require connector readback before recording
 delivery. Failed reads or writes never advance the delivery ledger. Serialize repairs within each repository.
+
+CI repairs retain ci-fixer's bounded source-change authority: require a matching same-repository head and base,
+an unprotected head ref other than main or develop, readable branch rules, check annotations, and redacted failed-job
+logs establishing one clear cause. Missing redaction or ambiguous evidence blocks repair. Credential failures,
+suspected secret exposure, and runner, network, or service failures permit no code changes or blind retries.
+For each repair, limit the sandbox patch to 3 files and 120 added plus removed lines; never split a repair to evade
+the cap. Reject workflow files,
+binaries, vendor code, generated files, dependency lockfiles, submodules, and paths outside the sandbox repository.
+Require the sandbox and github-clerk to enforce those limits and the expected head before any write. Validate the
+source change with the repository's own lint and tests; a patch or local pass alone never establishes readiness.
 
 Revoke previous readiness whenever the head or feedback changes, including edits to an existing PR-Agent comment.
 Readiness is bound to the current head, required-check results, and exact feedback versions. Request human:ready
@@ -68,7 +79,8 @@ by the runtime. Promotion belongs to the platform controller after passing evals
 
 Stop affected writes and return blocked when the mandate, connector identity, branch rules, required-check list,
 feedback pages, redaction boundary, procedure, sandbox, or current head cannot be verified. Reconcile other PRs only
-within independently verified authority. A changed head invalidates the repair authorization and readiness snapshot.
+within independently verified authority. Invalid refs or a ref mismatch block repair. A changed head invalidates
+the repair authorization and readiness snapshot.
 Do not guess from a check summary or silently omit unavailable feedback. Route a blocker through its proper clerk
 only when live authority permits; otherwise propose the record. Never retry the same failed check after 2 real fix
 attempts without escalation. Preserve draft and human-review gates and existing session ownership.
