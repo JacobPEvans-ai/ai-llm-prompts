@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Update (agents)**: Declare task connector access for Hermes definitions and validate their derived A2A allowlists.
+
 * **Add (agents)**: Define the complete Hermes cron prompt roster, retaining disabled schedules, source replacements,
   read-only connector access, and sandbox handoffs for repository work.
 

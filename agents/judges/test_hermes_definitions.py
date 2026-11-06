@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import json
+import re
 
 import pytest
 import yaml
@@ -21,6 +22,17 @@ DEFINITIONS = [
     for path in sorted(AGENTS.glob("*.yaml"))
     if yaml.safe_load(path.read_text()).get("home_platform") == "hermes"
 ]
+
+
+@pytest.mark.parametrize("path,agent", DEFINITIONS, ids=[p.stem for p, _ in DEFINITIONS])
+def test_task_connectors_are_declared_for_a2a(path, agent):
+    prompt = (ROOT / agent["prompt"]).read_text()
+    task = prompt.split("## Authority and completion", 1)[0]
+    required = set(re.findall(r"\b[a-z]+-clerk\b", task))
+    assert required <= set(agent["connectors"]), (
+        f"{path.stem} lacks task connectors: {sorted(required - set(agent['connectors']))}"
+    )
+    assert "connectors" in agent["a2a"]["allowlist_from"]
 
 
 @pytest.mark.parametrize("path,agent", DEFINITIONS, ids=[p.stem for p, _ in DEFINITIONS])

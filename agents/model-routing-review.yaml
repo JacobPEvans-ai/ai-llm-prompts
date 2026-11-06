@@ -13,7 +13,7 @@ privacy_class: private
 litellm_role: review-local
 trigger: &primary_trigger {kind: schedule, cron: "59 10 * * 1", timezone: UTC}
 triggers: [*primary_trigger]
-connectors: ["vikunja-clerk","zammad-clerk"]
+connectors: ["github-clerk","vikunja-clerk","zammad-clerk"]
 peers: []
 code_work: none
 routing: {local_only: true, cloud_fallback: false, max_wait_seconds: 43200}

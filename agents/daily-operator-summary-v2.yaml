@@ -13,7 +13,7 @@ privacy_class: private
 litellm_role: review-local
 trigger: &primary_trigger {kind: schedule, cron: "31 12 * * *", timezone: UTC}
 triggers: [*primary_trigger]
-connectors: []
+connectors: ["splunk-clerk"]
 peers: []
 code_work: none
 routing: {local_only: true, cloud_fallback: false, max_wait_seconds: 43200}
