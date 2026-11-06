@@ -43,6 +43,24 @@ def load_yaml(path):
     raise RuntimeError(f"Could not parse YAML file: {path}")
 
 
+def load_suite(path):
+    """Expand Promptfoo-style file:// case lists relative to their owning suite."""
+    suite = load_yaml(path)
+    expanded = []
+    for entry in suite["cases"]:
+        if isinstance(entry, str) and entry.startswith("file://"):
+            source = (path.parent / entry.removeprefix("file://")).resolve()
+            if not source.is_relative_to(ROOT) or not source.is_file():
+                raise ValueError(f"Case reference is missing or outside the repository: {entry}")
+            shared = load_yaml(source)
+            if not isinstance(shared, list) or not all(isinstance(case, dict) for case in shared):
+                raise ValueError(f"Case reference must contain a list of cases: {entry}")
+            expanded.extend(shared)
+        else:
+            expanded.append(entry)
+    return {**suite, "cases": expanded}
+
+
 def prompt_body(path):
     text = path.read_text()
     if text.startswith("---\n"):
@@ -175,7 +193,7 @@ def generate_tests():
     agents = {record["agent"]["name"]: record["agent"] for record in map(json.loads, resolved.stdout.splitlines())}
     for name in SUITES:
         agent = agents[name]
-        suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
+        suite = load_suite(ROOT / "agents" / "evals" / f"{name}.yaml")
         static_prefix = suite_prompt(agent, suite)
         writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
         scoring = suite.get("expected_output_scoring", "field-credit")

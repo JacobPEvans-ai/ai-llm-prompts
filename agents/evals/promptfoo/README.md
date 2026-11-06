@@ -8,6 +8,10 @@ assertion counts:
 python3 agents/evals/promptfoo/generate.py
 ```
 
+Suite `cases` lists may include `file://` references to shared YAML case lists, relative to the suite file.
+The generator and authoring judges expand these references through the same loader. Text-agent boundary cases live
+in `agents/evals/shared/text-boundaries.yaml`.
+
 Each suite's static prefix contains its declared shared prefix when that file exists, its canonical prompt, the declared
 tool list, fixed JSON instructions and the names (never the values) of the outcome fields that suite scores. The prefix
 is byte-identical across the suite's cases; case data comes last, in the user message. The generator includes

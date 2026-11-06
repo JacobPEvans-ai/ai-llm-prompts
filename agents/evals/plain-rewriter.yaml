@@ -31,20 +31,4 @@ cases:
       status: ok
     expected_behavior: Keep both conflicting retry counts and do not decide which is current.
 
-  - id: coverage-oversized
-    category: oversized
-    input_fixture: agents/evals/fixtures/oversized-input.txt
-    expected_output:
-      status: stop
-      result: null
-    expected_behavior: Stop at the 30000-character input bound and return a null result.
-  - id: coverage-unavailable-source
-    category: unavailable-source
-    input: ''
-    expected_output:
-      status: stop
-      result: null
-    expected_behavior: Stop because the source input is unavailable and return a null result.
-    source_result:
-      available: false
-      error: source unavailable
+  - file://shared/text-boundaries.yaml
