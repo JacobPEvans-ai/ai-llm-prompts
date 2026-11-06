@@ -72,5 +72,10 @@ tests:
       task: '{"task":"model-benchmarker","now":"2026-11-06T12:00:00Z","config":{},"candidate":{"benchmark":{"version":"1","reasoning_budget":0}},"incumbent":{"benchmark":{"version":"2","reasoning_budget":8192}},"sources":[{"date":"2026-11-06"}]}'
     assert:
       - {type: javascript, value: "JSON.parse(output).status === 'stop'"}
+  - description: Successfully read empty scope is silent rather than a failure
+    vars:
+      task: '{"task":"model-benchmarker","now":"2026-11-06T12:00:00Z","config":{"llm_model_watch_orgs":[],"llm_model_watch_accelerators":[],"benchmark_sources":[],"quant_sources":[],"news_sources":[],"interest_topics":[]},"sources":{"read_status":"success","observed_at":"2026-11-06T12:00:00Z","records":[]},"tasks":[],"candidates":[],"bookmarks":{},"delivery_ledger":[],"queue_status":"successfully read; empty"}'
+    assert:
+      - {type: javascript, value: "JSON.parse(output).status === 'silent' && JSON.parse(output).reply === '[SILENT]'"}
 sharing: false
 writeLatestResults: false

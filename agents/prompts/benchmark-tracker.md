@@ -19,6 +19,8 @@ model-benchmarker supplies the complete dated dossier. Unchanged results produce
 
 ## Authority and completion
 
+An explicitly empty, successfully read source or candidate queue is a completed no-change run.
+
 Use only declared tools. Call integrations only through the named connector agents over A2A through agentgateway,
 with caller identity checked. Hold no integration credentials, make no direct integration API calls, and run no shell,
 code, scripts, or deployments. Read public sources with the runtime's native read-only retrieval tools when declared.

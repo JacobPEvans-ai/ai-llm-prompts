@@ -47,5 +47,10 @@ tests:
         "bookmarks":{"source":"revision-a"},"delivery_ledger":[]}
     assert:
       - {type: javascript, value: "JSON.parse(output).status === 'stop'"}
+  - description: Scoped personal input yields a factual read-only response
+    vars:
+      task: '{"task":"Summarize the personal note","now":"2026-11-06T12:00:00Z","config":{"operator_preferences":{}},"note":"Renew the library book before Friday."}'
+    assert:
+      - {type: javascript, value: "JSON.parse(output).status === 'ok' && JSON.parse(output).reply.toLowerCase().includes('library')"}
 sharing: false
 writeLatestResults: false

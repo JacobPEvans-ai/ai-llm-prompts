@@ -47,5 +47,10 @@ tests:
         "bookmarks":{"source":"revision-a"},"delivery_ledger":[]}
     assert:
       - {type: javascript, value: "JSON.parse(output).status === 'stop'"}
+  - description: Scoped personal input yields a factual read-only response
+    vars:
+      task: '{"task":"slack-digest","now":"2026-11-06T13:07:00Z","config":{"channel_ids":["channel-allowed"]},"sources":{"read_status":"success","channels":[{"id":"channel-allowed","messages":[{"id":"message-a","observed_at":"2026-11-06T12:00:00Z","text":"Decision: move the reading group to Saturday. Please confirm by Friday.","thread_replies":[]}],"pagination_complete":true}]},"bookmarks":{},"delivery_ledger":[]}'
+    assert:
+      - {type: javascript, value: "JSON.parse(output).status === 'ok' && JSON.parse(output).reply.includes('Saturday')"}
 sharing: false
 writeLatestResults: false

@@ -47,5 +47,10 @@ tests:
         "bookmarks":{"source":"revision-a"},"delivery_ledger":[]}
     assert:
       - {type: javascript, value: "JSON.parse(output).status === 'stop'"}
+  - description: Successfully read empty scope is silent rather than a failure
+    vars:
+      task: '{"task":"assistant-weekly-review","now":"2026-11-06T12:00:00Z","config":{"project_ids":["personal-project"]},"sources":{"read_status":"success","observed_at":"2026-11-06T12:00:00Z","records":[]},"tasks":[],"candidates":[],"bookmarks":{},"delivery_ledger":[],"queue_status":"successfully read; empty"}'
+    assert:
+      - {type: javascript, value: "JSON.parse(output).status === 'silent' && JSON.parse(output).reply === '[SILENT]'"}
 sharing: false
 writeLatestResults: false
