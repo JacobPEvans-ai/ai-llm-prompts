@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Update (instructions)**: Agent standards link to the canonical delegate brief rules for verification and evidence reporting.
+
 * **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
   CI compares the generated output set, and the import guide covers Dify 1.18, difyctl, and published-version exports.
 

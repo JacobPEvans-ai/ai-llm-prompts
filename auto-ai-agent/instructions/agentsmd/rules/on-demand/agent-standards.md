@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T22:25:00Z"
+timestamp: "2026-11-06T22:45:07Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -68,13 +68,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 
 ## e. Coding-agent briefs
 
-- Use [Brief Delegates Completely](../../../../claude-code/rules/brief-delegates.md) for scope, authority, stops, verification, and evidence reporting.
-- Specify edit, create, network, internal-service, dependency-install, commit, push, and publication authority; enforce boundaries at runtime. [O4] [O5] [O7]
-- Select sandbox and approvals independently. Confine research to read-only; replace unsupported `untrusted` and migrate deprecated `on-failure`. [O4] [O5]
-- Allow routine assumptions; stop on missing authority, unmet prerequisites, ambiguous scope, or the named failure threshold. [O6]
-- Supply the smallest relevant examples and references; require whole-repository reading only when the task needs it. [O1]
-- Run required checks and the narrowest additional proof. Broaden only for new failures, changes, or unresolved concerns. [O6]
-- Report changed artifacts, passed checks, failed or unrun checks, blockers, and delivery status. Separate local proof from external acceptance. [A4] [D9] [F2]
+Follow [Brief Delegates Completely](../../../../claude-code/rules/brief-delegates.md) for scope, authority, stops, verification, and evidence reporting.
 
 [A4]: agent-standards-sources.md
 [A5]: agent-standards-sources.md
@@ -95,7 +89,3 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 [F3]: agent-standards-platform-sources.md
 [F1]: agent-standards-platform-sources.md
 [F2]: agent-standards-platform-sources.md
-[O4]: agent-standards-sources.md
-[O5]: agent-standards-sources.md
-[O6]: agent-standards-sources.md
-[D9]: agent-standards-platform-sources.md
