@@ -47,10 +47,11 @@ workflow:
 {{- $previous = printf "check-%s" .name }}
 {{- $previousType = "if-else" }}
 {{- end }}
-      - {id: last-done, source: {{ $previous }}, sourceHandle: '{{ if eq $previous "due" }}source{{ else }}false{{ end }}', target: done, targetHandle: target, type: custom, data: {sourceType: {{ $previousType }}, targetType: end}}
+      - {id: last-log, source: {{ $previous }}, sourceHandle: '{{ if eq $previous "due" }}source{{ else }}false{{ end }}', target: tick-log, targetHandle: target, type: custom, data: {sourceType: {{ $previousType }}, targetType: code}}
 {{- if ne $previous "due" }}
-      - {id: last-dispatch-done, source: {{ strings.TrimPrefix "check-" $previous | printf "dispatch-%s" }}, sourceHandle: source, target: done, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: end}}
+      - {id: last-dispatch-log, source: {{ strings.TrimPrefix "check-" $previous | printf "dispatch-%s" }}, sourceHandle: source, target: tick-log, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: code}}
 {{- end }}
+      - {id: log-done, source: tick-log, sourceHandle: source, target: done, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
     nodes:
       - id: schedule
         type: custom
@@ -98,6 +99,9 @@ workflow:
         data:
           title: Dispatch {{ .name }}
           type: http-request
+          error_strategy: default-value
+          default_value:
+            - {key: status_code, type: number, value: 0}
           method: post
           url: '{{ printf "{{#env.%s_TRIGGER_URL#}}/triggers/webhook/{{#env.%s_WEBHOOK_ID#}}" $key $key }}'
           authorization: {type: no-auth}
@@ -108,11 +112,33 @@ workflow:
           retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
           ssl_verify: true
 {{- end }}
-      - id: done
+      - id: tick-log
         type: custom
         position: {x: {{ add 600 (mul (len $roster) 600) }}, y: 0}
+        data:
+          title: Dispatch results
+          type: code
+          code_language: python3
+          code: |
+            import json
+
+            def main(log, **statuses):
+                tick = json.loads(log)
+                tick["failures"] = [name for name in tick["due"]
+                                    if not 200 <= (statuses.get("status_" + name.replace("-", "_")) or 0) < 300]
+                return {"log": json.dumps(tick, separators=(",", ":"))}
+          variables:
+            - {variable: log, value_selector: [due, log]}
+{{- range $roster }}
+            - {variable: status_{{ .name | strings.ReplaceAll "-" "_" }}, value_selector: [dispatch-{{ .name }}, status_code]}
+{{- end }}
+          outputs:
+            log: {type: string, children: null}
+      - id: done
+        type: custom
+        position: {x: {{ add 900 (mul (len $roster) 600) }}, y: 0}
         data:
           title: Tick log
           type: end
           outputs:
-            - {variable: log, value_selector: [due, log]}
+            - {variable: log, value_selector: [tick-log, log]}

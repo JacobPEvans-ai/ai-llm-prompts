@@ -11,7 +11,8 @@ workflow:
   graph:
     edges:
       - {id: schedule-due, source: schedule, sourceHandle: source, target: due, targetHandle: target, type: custom, data: {sourceType: trigger-schedule, targetType: code}}
-      - {id: last-done, source: due, sourceHandle: 'source', target: done, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+      - {id: last-log, source: due, sourceHandle: 'source', target: tick-log, targetHandle: target, type: custom, data: {sourceType: code, targetType: code}}
+      - {id: log-done, source: tick-log, sourceHandle: source, target: done, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
     nodes:
       - id: schedule
         type: custom
@@ -69,11 +70,30 @@ workflow:
             due: {type: 'array[string]', children: null}
             skipped: {type: 'array[string]', children: null}
             log: {type: string, children: null}
-      - id: done
+      - id: tick-log
         type: custom
         position: {x: 600, y: 0}
+        data:
+          title: Dispatch results
+          type: code
+          code_language: python3
+          code: |
+            import json
+
+            def main(log, **statuses):
+                tick = json.loads(log)
+                tick["failures"] = [name for name in tick["due"]
+                                    if not 200 <= (statuses.get("status_" + name.replace("-", "_")) or 0) < 300]
+                return {"log": json.dumps(tick, separators=(",", ":"))}
+          variables:
+            - {variable: log, value_selector: [due, log]}
+          outputs:
+            log: {type: string, children: null}
+      - id: done
+        type: custom
+        position: {x: 900, y: 0}
         data:
           title: Tick log
           type: end
           outputs:
-            - {variable: log, value_selector: [due, log]}
+            - {variable: log, value_selector: [tick-log, log]}
