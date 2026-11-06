@@ -1,0 +1,24 @@
+name: slack-clerk
+owner: agent-platform
+kind: connector
+owns: slack
+tier: 0
+triggers:
+  - {kind: call, source: authenticated-caller, cadence: on-demand, skew_minutes: 0}
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: private
+connectors: []
+code_work: none
+mode: shadow
+prompt: agents/prompts/slack-clerk.md
+shared_prefix: agents/prompts/shared/homelab.md
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: homelab-ops/skills/monitoring-first/SKILL.md}
+tools: [slack.conversations.history, slack.chat.postMessage]
+mcp_servers: [slack]
+litellm_role: slack-clerk
+memory_scope: slack-clerk-ledger
+eval_set: agents/evals/slack-clerk.yaml
+identity: agent-slack-clerk
+api_key_ref: openbao://agent-key/slack-clerk
