@@ -1,0 +1,35 @@
+name: model-routing-review
+owner: agent-platform
+schema_version: 2
+home_platform: hermes
+mode: shadow
+enabled: true
+tier: 2
+prompt: agents/prompts/model-routing-review.md
+shared_prefix: agents/prompts/shared/homelab.md
+tools: [litellm.chat_completions, a2a.call]
+mcp_servers: []
+privacy_class: private
+litellm_role: review-local
+trigger: &primary_trigger {kind: schedule, cron: "59 10 * * 1", timezone: UTC}
+triggers: [*primary_trigger]
+connectors: ["vikunja-clerk","zammad-clerk"]
+peers: []
+code_work: none
+routing: {local_only: true, cloud_fallback: false, max_wait_seconds: 43200}
+a2a: {gateway: agentgateway, identity_check: required, allowlist_from: [connectors, peers]}
+channels: [caller, langfuse-trace, phoenix-trace]
+observability:
+  attributes: [agent, tier, privacy_class, model, accelerator]
+memory_scope: none
+identity: agent-model-routing-review
+api_key_ref: openbao://agent-key/model-routing-review
+eval_set: agents/evals/model-routing-review.yaml
+input: >-
+  A structured task with operator-managed config, retrieved source records, UTC now, bookmarks,
+  delivery_ledger, and connector receipts. Secrets and integration credentials are never inputs.
+output_schema: {"type":"object","required":["status","reply","proposals","state_updates"],"additionalProperties":false,"properties":{"status":{"enum":["ok","silent","stop","refused"]},"reply":{"type":"string"},"proposals":{"type":"array","items":{"type":"object"}},"state_updates":{"type":"array","items":{"type":"object"}}}}
+source_replacements:
+  - path: roles/hermes_agent/defaults/main/46-recurring-catalog-model-routing-review.yml
+    prompt: "hermes_agent_model_routing_review_cron_prompt"
+    revision: a060f47494c4bf74a0048cab43d74574c9730876

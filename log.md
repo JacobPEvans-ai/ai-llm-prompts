@@ -2,6 +2,9 @@
 
 ## 2026-11-06
 
+* **Add (agents)**: Define the complete Hermes cron prompt roster, retaining disabled schedules, source replacements,
+  read-only connector access, and sandbox handoffs for repository work.
+
 * **Add (agents)**: Define Donna, scheduled news, Slack, memory and backlog tasks, and five local scouting tasks with
   private routing, connector proposals, dated model dossiers, and Promptfoo suites.
 

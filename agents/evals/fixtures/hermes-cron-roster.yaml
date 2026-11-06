@@ -1,0 +1,272 @@
+revision: a060f47494c4bf74a0048cab43d74574c9730876
+crons:
+  zammad-review:
+    schedule: "41 1,3,5,7,9,11,13,15,17,19,21,23 * * *"
+    source: roles/hermes_agent/defaults/main/120-docs-and-review-crons.yml
+    prompt: "hermes_agent_zammad_review_cron_prompt"
+    enabled: true
+  self-audit:
+    schedule: "29 3,15 * * *"
+    source: roles/hermes_agent/defaults/main/145-self-audit.yml
+    prompt: "hermes-self-audit.md"
+    enabled: true
+  voice-learn:
+    schedule: "43 10 * * 1"
+    source: roles/hermes_agent/defaults/main/146-voice-learn.yml
+    prompt: "hermes_agent_voice_learn_cron_prompt"
+    enabled: true
+  assistant-pulse:
+    schedule: "45 * * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_pulse_prompt"
+    enabled: true
+  assistant-inbox-groom:
+    schedule: "52 10 * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_inbox_groom_prompt"
+    enabled: true
+  assistant-daily-brief:
+    schedule: "35 12 * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_daily_brief_prompt"
+    enabled: true
+  assistant-decision-nudge:
+    schedule: "53 13,17,21 * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_nudge_prompt"
+    enabled: true
+  assistant-evening-wrap:
+    schedule: "10 23 * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_evening_wrap_prompt"
+    enabled: true
+  assistant-nightly-research:
+    schedule: "40 2 * * *"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_research_prompt"
+    enabled: true
+  assistant-task-triage:
+    schedule: "55 14 * * 1"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_task_triage_prompt"
+    enabled: true
+  assistant-weekly-review:
+    schedule: "30 15 * * 0"
+    source: roles/hermes_agent/defaults/main/40-assistant-identity-prompts.yml
+    prompt: "hermes_agent_assistant_weekly_review_prompt"
+    enabled: true
+  splunk-security-lens-v2:
+    schedule: "22 */6 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-splunk-security-lens.md"
+    enabled: false
+  splunk-error-triage-v2:
+    schedule: "37 * * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-splunk-error-triage.md"
+    enabled: false
+  splunk-parsing-quality-v2:
+    schedule: "17 3 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-splunk-parsing-quality.md"
+    enabled: false
+  anomaly-hunt-v2:
+    schedule: "41 6,18 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-anomaly-hunt.md"
+    enabled: false
+  homelab-ai-fabric-status-v2:
+    schedule: "3 */6 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-homelab-ai-fabric-status.md"
+    enabled: false
+  zammad-incident-review-v2:
+    schedule: "9 13 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-zammad-incident-review.md"
+    enabled: false
+  github-org-triage-v2:
+    schedule: "26 8 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-github-org-triage.md"
+    enabled: false
+  daily-operator-summary-v2:
+    schedule: "31 12 * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-digest-daily-operator-summary.md"
+    enabled: false
+  splunk-hourly-digest-v3:
+    schedule: "52 * * * *"
+    source: roles/hermes_agent/defaults/main/42-direct-cron-jobs-legacy-v2.yml
+    prompt: "hermes-splunk-digest.md"
+    enabled: false
+  homelab-ai-fabric-status:
+    schedule: "4 8-22 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_daily_status_cron_prompt"
+    enabled: true
+  hermes-nightly-wiki:
+    schedule: "25 2 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_nightly_wiki_cron_prompt"
+    enabled: false
+  daily-summary:
+    schedule: "25 12 * * *"
+    source: roles/hermes_agent/defaults/main/120-docs-and-review-crons.yml
+    prompt: "hermes_agent_summary_cron_prompt"
+    enabled: true
+  splunk-triage:
+    schedule: "7 * * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_splunk_triage_cron_prompt"
+    enabled: false
+  splunk-security:
+    schedule: "22 */6 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_splunk_security_cron_prompt"
+    enabled: false
+  splunk-parsing:
+    schedule: "49 3 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_splunk_parsing_cron_prompt"
+    enabled: true
+  splunk-deepdive:
+    schedule: "5 4 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_splunk_deepdive_cron_prompt"
+    enabled: true
+  github-triage:
+    schedule: "26 2,8,14,20 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_github_monitor_cron_prompt"
+    enabled: true
+  bot-pr-triage:
+    schedule: "9 * * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_bot_pr_triage_cron_prompt"
+    enabled: true
+  github-maint-review:
+    schedule: "8 1,5,9,13,17,21 * * *"
+    source: roles/hermes_agent/defaults/main/110-kanban-digest-retirements.yml
+    prompt: "hermes_agent_github_maint_cron_prompt"
+    enabled: true
+  release-watch:
+    schedule: "17 12 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes-release-watch.md"
+    enabled: true
+  review:
+    schedule: "39 */8 * * *"
+    source: roles/hermes_agent/defaults/main/130-workload-reframe.yml
+    prompt: "hermes_agent_reviewer_card_prompt"
+    enabled: false
+  anomaly-hunt:
+    schedule: "13 */12 * * *"
+    source: roles/hermes_agent/defaults/main/140-work-supply-cards-a.yml
+    prompt: "hermes_agent_anomaly_hunt_cron_prompt"
+    enabled: false
+  docs-study:
+    schedule: "16 6 * * *"
+    source: roles/hermes_agent/defaults/main/140-work-supply-cards-a.yml
+    prompt: "hermes_agent_docs_study_cron_prompt"
+    enabled: true
+  fleet-health:
+    schedule: "3 10 * * 1"
+    source: roles/hermes_agent/defaults/main/150-fleet-health-profiles.yml
+    prompt: "hermes_agent_fleet_health_cron_prompt"
+    enabled: true
+  docs-sync:
+    schedule: "13 8 * * 1"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_docs_sync_cron_prompt"
+    enabled: false
+  repo-scorecard:
+    schedule: "19 9 * * 1"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_repo_scorecard_cron_prompt"
+    enabled: false
+  secrets-policy-audit:
+    schedule: "31 5 * * *"
+    source: roles/hermes_agent/defaults/main/43-direct-cron-jobs-core.yml
+    prompt: "hermes_agent_secrets_audit_cron_prompt"
+    enabled: true
+  pricing-diff:
+    schedule: "23 7 * * 3"
+    source: roles/hermes_agent/defaults/main/45-recurring-catalog.yml
+    prompt: "hermes_agent_pricing_diff_cron_prompt"
+    enabled: false
+  blocked-parent-triage-digest:
+    schedule: "11 8 * * *"
+    source: roles/hermes_agent/defaults/main/45-recurring-catalog.yml
+    prompt: "hermes_agent_blocked_parent_triage_digest_cron_prompt"
+    enabled: true
+  router-capacity-digest:
+    schedule: "37 8 * * *"
+    source: roles/hermes_agent/defaults/main/45-recurring-catalog.yml
+    prompt: "hermes_agent_router_capacity_digest_cron_prompt"
+    enabled: true
+  backlog-sweep:
+    schedule: "41 */4 * * *"
+    source: roles/hermes_agent/defaults/main/45-recurring-catalog.yml
+    prompt: "hermes_agent_backlog_sweep_cron_prompt"
+    enabled: false
+  github-cache-stats:
+    schedule: "47 3 * * *"
+    source: roles/hermes_agent/defaults/main/45-recurring-catalog.yml
+    prompt: "hermes_agent_github_cache_stats_cron_prompt"
+    enabled: true
+  ai-news:
+    schedule: "19 0,12,16,19 * * *"
+    source: roles/hermes_agent/defaults/main/140-work-supply-cards-b.yml
+    prompt: "hermes_agent_ai_news_cron_prompt"
+    enabled: false
+  daily-innovation:
+    schedule: "1 7 * * *"
+    source: roles/hermes_agent/defaults/main/140-work-supply-cards-b.yml
+    prompt: "hermes_agent_daily_innovation_cron_prompt"
+    enabled: false
+  app-seeding:
+    schedule: "48 7 * * *"
+    source: roles/hermes_agent/defaults/main/140-work-supply-cards-b.yml
+    prompt: "hermes_agent_app_seeding_cron_prompt"
+    enabled: false
+  model-routing-review:
+    schedule: "59 10 * * 1"
+    source: roles/hermes_agent/defaults/main/46-recurring-catalog-model-routing-review.yml
+    prompt: "hermes_agent_model_routing_review_cron_prompt"
+    enabled: true
+  promotion-drift:
+    schedule: "33 13 * * *"
+    source: roles/hermes_agent/defaults/main/47-promotion-drift.yml
+    prompt: "hermes-promotion-drift.md"
+    enabled: true
+  service-pulse:
+    schedule: "20 * * * *"
+    source: roles/hermes_agent/defaults/main/48-service-pulse-and-splunk-health.yml
+    prompt: "hermes_agent_service_pulse_cron_prompt"
+    enabled: true
+  splunk-health:
+    schedule: "1 */2 * * *"
+    source: roles/hermes_agent/defaults/main/48-service-pulse-and-splunk-health.yml
+    prompt: "hermes_agent_splunk_health_cron_prompt"
+    enabled: true
+  splunk-license:
+    schedule: "1 */2 * * *"
+    source: roles/hermes_agent/defaults/main/48-service-pulse-and-splunk-health.yml
+    prompt: ""
+    enabled: false
+  demo-pulse:
+    schedule: "20 14-22 * * 1-3"
+    source: roles/hermes_agent/defaults/main/48-service-pulse-and-splunk-health.yml
+    prompt: ""
+    enabled: false
+  llm-stats-hourly:
+    schedule: "54 * * * *"
+    source: roles/hermes_agent/defaults/main/49-llm-stats-hourly.yml
+    prompt: "hermes_agent_llm_stats_hourly_cron_prompt"
+    enabled: true
+  repo-crawl:
+    schedule: "17 6 * * *"
+    source: roles/hermes_agent/defaults/main/94-repo-crawl.yml
+    prompt: hermes_agent_repo_crawl_cron_prompt
+    enabled: false

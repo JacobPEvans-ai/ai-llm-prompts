@@ -123,3 +123,58 @@ def test_dossier_covers_all_model_kinds_and_artifact_admission():
         "MIRACL", "OCRBench", "OmniDocBench", "olmOCR", "AILuminate", "HarmBench",
     ):
         assert evidence in text
+
+
+def test_every_source_cron_prompt_has_a_definition_without_reviving_retirements():
+    snapshot = yaml.safe_load((AGENTS / "evals/fixtures/hermes-cron-roster.yaml").read_text())
+    for name, original in snapshot["crons"].items():
+        path = AGENTS / f"{name}.yaml"
+        if not original["prompt"]:
+            assert not path.exists(), "promptless retirement records must stay retired"
+            continue
+        agent = yaml.safe_load(path.read_text())
+        assert agent["home_platform"] == "hermes"
+        assert agent["enabled"] == original["enabled"]
+        assert {
+            "path": original["source"],
+            "prompt": original["prompt"],
+            "revision": snapshot["revision"],
+        }.items() <= agent["source_replacements"][0].items()
+        expected_cron = original["schedule"]
+        if name == "zammad-review":
+            expected_cron = expected_cron.replace("41 ", "43 ", 1)
+            assert agent["source_replacements"][0]["schedule_pull_request"] == 2042
+        assert agent["trigger"]["cron"] == expected_cron
+
+
+def _cron_values(expression, maximum):
+    values = set()
+    for part in expression.split(","):
+        if part == "*":
+            values.update(range(maximum + 1))
+        elif part.startswith("*/"):
+            values.update(range(0, maximum + 1, int(part[2:])))
+        elif "-" in part:
+            start, end = map(int, part.split("-"))
+            values.update(range(start, end + 1))
+        else:
+            values.add(int(part))
+    return values
+
+
+def test_enabled_crons_and_new_scouts_have_distinct_weekly_start_minutes():
+    occupied = {}
+    for path, agent in DEFINITIONS:
+        trigger = agent["trigger"]
+        if not agent.get("enabled", True) or trigger["kind"] != "schedule":
+            continue
+        minute, hour, day, month, weekday = trigger["cron"].split()
+        assert day == month == "*"
+        for dow in _cron_values(weekday, 6):
+            for hh in _cron_values(hour, 23):
+                for mm in _cron_values(minute, 59):
+                    slot = (dow, hh, mm)
+                    assert slot not in occupied, (
+                        f"{path.stem} collides with {occupied.get(slot)} at {slot}"
+                    )
+                    occupied[slot] = path.stem
