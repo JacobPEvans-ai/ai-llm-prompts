@@ -124,14 +124,17 @@
         self.packages.${system} // {
           agent-tests = pkgs.runCommand "ai-llm-prompts-agent-tests" {
             nativeBuildInputs = [
+              pkgs.gnumake
+              pkgs.gomplate
               pkgs.jq
               pkgs.yq
               (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
             ];
           } ''
             cp -R ${self}/. source
+            chmod -R u+w source
             cd source
-            python3 agents/dify-src/render.py --check
+            make check-dify
             python3 -m pytest -q agents/judges
             touch $out
           '';
@@ -146,9 +149,12 @@
         in {
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
+              gnumake
+              gomplate
               markdownlint-cli2
               pre-commit
               yq-go
+              (python3.withPackages (ps: [ ps.pytest ps.pyyaml ]))
             ];
           };
         });

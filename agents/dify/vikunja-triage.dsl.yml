@@ -1,7 +1,7 @@
-# Generated from agents/vikunja-triage.yaml, agents/dify-src/vikunja-triage/, and agents/prompts/shared/homelab.md + agents/prompts/vikunja-triage.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/vikunja-triage.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/vikunja-triage.md; edit sources, then run make render-dify.
 app:
   description: Scheduled, policy-scoped task triage with guarded shadow and live branches.
-  icon: 🤖
+  icon: "\U0001F916"
   icon_background: '#D5F5F6'
   mode: workflow
   name: vikunja-triage
@@ -12,45 +12,210 @@ version: 0.7.0
 workflow:
   conversation_variables: []
   environment_variables:
-    - {id: allowed, name: VIKUNJA_TRIAGE_ALLOWED_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/allowed-projects}
-    - {id: readonly, name: VIKUNJA_TRIAGE_READONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/readonly-projects}
-    - {id: rank_only, name: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/rank-only-projects}
-    - {id: denied, name: VIKUNJA_TRIAGE_DENIED_PROJECTS, value_type: secret, value: '', description: JSON array from policy://vikunja-triage/denied-projects}
-    - {id: mode, name: VIKUNJA_TRIAGE_MODE, value_type: string, value: shadow, description: shadow or live; default shadow}
-    - {id: bao_addr, name: OPENBAO_ADDR, value_type: string, value: '', description: Approved OpenBao API base placeholder}
-    - {id: bao_role, name: OPENBAO_ROLE_ID, value_type: secret, value: '', description: Agent AppRole ID}
-    - {id: bao_secret, name: OPENBAO_SECRET_ID, value_type: secret, value: '', description: Agent AppRole secret}
-    - {id: github_path, name: GITHUB_READ_TOKEN_PATH, value_type: string, value: '', description: Path resolving github-token/vikunja-triage}
-    - {id: github_api, name: GITHUB_API_BASE, value_type: string, value: '', description: Approved public GitHub API base placeholder}
-    - {id: github_web, name: GITHUB_WEB_HOST, value_type: string, value: '', description: Approved public GitHub web host placeholder}
+    - description: JSON array from policy://vikunja-triage/allowed-projects
+      id: allowed
+      name: VIKUNJA_TRIAGE_ALLOWED_PROJECTS
+      value: ""
+      value_type: secret
+    - description: JSON array from policy://vikunja-triage/readonly-projects
+      id: readonly
+      name: VIKUNJA_TRIAGE_READONLY_PROJECTS
+      value: ""
+      value_type: secret
+    - description: JSON array from policy://vikunja-triage/rank-only-projects
+      id: rank_only
+      name: VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS
+      value: ""
+      value_type: secret
+    - description: JSON array from policy://vikunja-triage/denied-projects
+      id: denied
+      name: VIKUNJA_TRIAGE_DENIED_PROJECTS
+      value: ""
+      value_type: secret
+    - description: shadow or live; default shadow
+      id: mode
+      name: VIKUNJA_TRIAGE_MODE
+      value: shadow
+      value_type: string
+    - description: Approved OpenBao API base placeholder
+      id: bao_addr
+      name: OPENBAO_ADDR
+      value: ""
+      value_type: string
+    - description: Agent AppRole ID
+      id: bao_role
+      name: OPENBAO_ROLE_ID
+      value: ""
+      value_type: secret
+    - description: Agent AppRole secret
+      id: bao_secret
+      name: OPENBAO_SECRET_ID
+      value: ""
+      value_type: secret
+    - description: Path resolving github-token/vikunja-triage
+      id: github_path
+      name: GITHUB_READ_TOKEN_PATH
+      value: ""
+      value_type: string
+    - description: Approved public GitHub API base placeholder
+      id: github_api
+      name: GITHUB_API_BASE
+      value: ""
+      value_type: string
+    - description: Approved public GitHub web host placeholder
+      id: github_web
+      name: GITHUB_WEB_HOST
+      value: ""
+      value_type: string
   features:
-    file_upload: {enabled: false}
-    opening_statement: ''
-    retriever_resource: {enabled: false}
-    sensitive_word_avoidance: {enabled: false}
-    speech_to_text: {enabled: false}
+    file_upload:
+      enabled: false
+    opening_statement: ""
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
     suggested_questions: []
-    suggested_questions_after_answer: {enabled: false}
-    text_to_speech: {enabled: false}
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
   graph:
     edges:
-      - {data: {isInIteration: false, sourceType: trigger-schedule, targetType: code}, id: schedule-policy, source: schedule, sourceHandle: source, target: policy, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: code, targetType: iteration}, id: policy-projects, source: policy, sourceHandle: source, target: project_loop, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: iteration, targetType: code}, id: projects-context, source: project_loop, sourceHandle: source, target: prepare, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: code, targetType: llm}, id: context-model, source: prepare, sourceHandle: source, target: triage, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: llm, targetType: code}, id: model-guard, source: triage, sourceHandle: source, target: guard, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: code, targetType: if-else}, id: guard-mode, source: guard, sourceHandle: source, target: mode_gate, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: if-else, targetType: end}, id: shadow-output, source: mode_gate, sourceHandle: 'false', target: shadow_end, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: if-else, targetType: iteration}, id: live-dispatch, source: mode_gate, sourceHandle: live, target: dispatch_loop, targetHandle: target, type: custom}
-      - {data: {isInIteration: false, sourceType: iteration, targetType: end}, id: live-output, source: dispatch_loop, sourceHandle: source, target: live_end, targetHandle: target, type: custom}
-      - {data: {isInIteration: true, iteration_id: project_loop, sourceType: tool, targetType: code}, id: list-bind-result, source: list_tasks, sourceHandle: source, target: scope_list_result, targetHandle: target, type: custom, zIndex: 1002}
-      - {data: {isInIteration: true, iteration_id: dispatch_loop, sourceType: code, targetType: tool}, id: action-write, source: bind_action, sourceHandle: source, target: dispatch_write, targetHandle: target, type: custom, zIndex: 1002}
+      - data:
+          isInIteration: false
+          sourceType: trigger-schedule
+          targetType: code
+        id: schedule-policy
+        source: schedule
+        sourceHandle: source
+        target: policy
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: iteration
+        id: policy-projects
+        source: policy
+        sourceHandle: source
+        target: project_loop
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: iteration
+          targetType: code
+        id: projects-context
+        source: project_loop
+        sourceHandle: source
+        target: prepare
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: llm
+        id: context-model
+        source: prepare
+        sourceHandle: source
+        target: triage
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: model-guard
+        source: triage
+        sourceHandle: source
+        target: guard
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: if-else
+        id: guard-mode
+        source: guard
+        sourceHandle: source
+        target: mode_gate
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: end
+        id: shadow-output
+        source: mode_gate
+        sourceHandle: "false"
+        target: shadow_end
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: iteration
+        id: live-dispatch
+        source: mode_gate
+        sourceHandle: live
+        target: dispatch_loop
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: false
+          sourceType: iteration
+          targetType: end
+        id: live-output
+        source: dispatch_loop
+        sourceHandle: source
+        target: live_end
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: true
+          iteration_id: project_loop
+          sourceType: tool
+          targetType: code
+        id: list-bind-result
+        source: list_tasks
+        sourceHandle: source
+        target: scope_list_result
+        targetHandle: target
+        type: custom
+        zIndex: 1002
+      - data:
+          isInIteration: true
+          iteration_id: dispatch_loop
+          sourceType: code
+          targetType: tool
+        id: action-write
+        source: bind_action
+        sourceHandle: source
+        target: dispatch_write
+        targetHandle: target
+        type: custom
+        zIndex: 1002
     nodes:
-      - data: {desc: Native Dify scheduled trigger; no user inputs, with sys.timestamp available., mode: cron, cron_expression: '*/10 * * * *', timezone: UTC, selected: false, title: Schedule every ten minutes, type: trigger-schedule}
+      - data:
+          cron_expression: 2,12,22,32,42,52 * * * *
+          desc: Native Dify scheduled trigger; no user inputs
+          mode: cron
+          selected: false
+          timezone: UTC
+          title: Schedule every ten minutes
+          type: trigger-schedule
+          with sys.timestamp available.: null
         height: 54
         id: schedule
-        position: {x: 40, y: 320}
-        positionAbsolute: {x: 40, y: 320}
+        position:
+          x: 40
+          "y": 320
+        positionAbsolute:
+          x: 40
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -73,30 +238,73 @@ workflow:
                 except Exception: return {'project_ids':[],'mode':'invalid','policy_ok':False}
           code_language: python3
           desc: Load policy from protected env; deny wins and unlisted projects are never read.
-          outputs: {project_ids: {type: 'array[string]', children: null}, mode: {type: string}, policy_ok: {type: boolean}}
+          outputs:
+            mode:
+              type: string
+            policy_ok:
+              type: boolean
+            project_ids:
+              children: null
+              type: array[string]
           selected: false
           title: Load project policy
           type: code
           variables:
-            - {variable: allowed_raw, value_selector: [env, VIKUNJA_TRIAGE_ALLOWED_PROJECTS]}
-            - {variable: readonly_raw, value_selector: [env, VIKUNJA_TRIAGE_READONLY_PROJECTS]}
-            - {variable: rank_raw, value_selector: [env, VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS]}
-            - {variable: denied_raw, value_selector: [env, VIKUNJA_TRIAGE_DENIED_PROJECTS]}
-            - {variable: mode_raw, value_selector: [env, VIKUNJA_TRIAGE_MODE]}
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_ALLOWED_PROJECTS
+              variable: allowed_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_READONLY_PROJECTS
+              variable: readonly_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS
+              variable: rank_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_DENIED_PROJECTS
+              variable: denied_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_MODE
+              variable: mode_raw
         height: 54
         id: policy
-        position: {x: 340, y: 320}
-        positionAbsolute: {x: 340, y: 320}
+        position:
+          x: 340
+          "y": 320
+        positionAbsolute:
+          x: 340
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
-      - data: {desc: Run one project-filtered list call for each authorized read scope., iterator_selector: [policy, project_ids], output_selector: [scope_list_result, result_json], output_type: 'array[string]', selected: false, startNodeType: tool, start_node_id: list_tasks, title: List authorized projects, type: iteration}
+      - data:
+          desc: Run one project-filtered list call for each authorized read scope.
+          iterator_selector:
+            - policy
+            - project_ids
+          output_selector:
+            - scope_list_result
+            - result_json
+          output_type: array[string]
+          selected: false
+          start_node_id: list_tasks
+          startNodeType: tool
+          title: List authorized projects
+          type: iteration
         height: 280
         id: project_loop
-        position: {x: 650, y: 320}
-        positionAbsolute: {x: 650, y: 320}
+        position:
+          x: 650
+          "y": 320
+        positionAbsolute:
+          x: 650
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -112,19 +320,29 @@ workflow:
           provider_type: mcp
           selected: false
           title: List Vikunja tasks
-          type: tool
           tool_configurations: {}
           tool_label: vikunja_tasks
           tool_name: vikunja_tasks
           tool_parameters:
-            subcommand: {type: mixed, value: list}
-            projectId: {type: variable, value: [project_loop, item]}
+            projectId:
+              type: variable
+              value:
+                - project_loop
+                - item
+            subcommand:
+              type: mixed
+              value: list
+          type: tool
+        extent: parent
         height: 80
         id: list_tasks
         parentId: project_loop
-        extent: parent
-        position: {x: 60, y: 60}
-        positionAbsolute: {x: 710, y: 380}
+        position:
+          x: 60
+          "y": 60
+        positionAbsolute:
+          x: 710
+          "y": 380
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -143,19 +361,32 @@ workflow:
           desc: Bind each result to its policy-selected project, not model output.
           isInIteration: true
           iteration_id: project_loop
-          outputs: {result_json: {type: string, children: null}}
+          outputs:
+            result_json:
+              children: null
+              type: string
           selected: false
           title: Bind list result
           type: code
           variables:
-            - {variable: project_id, value_selector: [project_loop, item]}
-            - {variable: body, value_selector: [list_tasks, text]}
+            - value_selector:
+                - project_loop
+                - item
+              variable: project_id
+            - value_selector:
+                - list_tasks
+                - text
+              variable: body
+        extent: parent
         height: 54
         id: scope_list_result
         parentId: project_loop
-        extent: parent
-        position: {x: 330, y: 60}
-        positionAbsolute: {x: 980, y: 380}
+        position:
+          x: 330
+          "y": 60
+        positionAbsolute:
+          x: 980
+          "y": 380
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -211,33 +442,83 @@ workflow:
                 return {'task_refs':json.dumps(refs),'model_tasks':json.dumps({'timestamp':timestamp,'tasks':visible},ensure_ascii=False)}
           code_language: python3
           desc: Hide task and project IDs from the model; retain immutable refs for the guard.
-          outputs: {task_refs: {type: string, children: null}, model_tasks: {type: string, children: null}}
+          outputs:
+            model_tasks:
+              children: null
+              type: string
+            task_refs:
+              children: null
+              type: string
           selected: false
           title: Prepare model context
           type: code
           variables:
-            - {variable: results, value_selector: [project_loop, output]}
-            - {variable: timestamp, value_selector: [sys, timestamp]}
-            - {variable: web_host, value_selector: [env, GITHUB_WEB_HOST]}
-            - {variable: api_base, value_selector: [env, GITHUB_API_BASE]}
-            - {variable: bao_addr, value_selector: [env, OPENBAO_ADDR]}
-            - {variable: role_id, value_selector: [env, OPENBAO_ROLE_ID]}
-            - {variable: secret_id, value_selector: [env, OPENBAO_SECRET_ID]}
-            - {variable: token_path, value_selector: [env, GITHUB_READ_TOKEN_PATH]}
+            - value_selector:
+                - project_loop
+                - output
+              variable: results
+            - value_selector:
+                - sys
+                - timestamp
+              variable: timestamp
+            - value_selector:
+                - env
+                - GITHUB_WEB_HOST
+              variable: web_host
+            - value_selector:
+                - env
+                - GITHUB_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - OPENBAO_ADDR
+              variable: bao_addr
+            - value_selector:
+                - env
+                - OPENBAO_ROLE_ID
+              variable: role_id
+            - value_selector:
+                - env
+                - OPENBAO_SECRET_ID
+              variable: secret_id
+            - value_selector:
+                - env
+                - GITHUB_READ_TOKEN_PATH
+              variable: token_path
         height: 54
         id: prepare
-        position: {x: 1240, y: 320}
-        positionAbsolute: {x: 1240, y: 320}
+        position:
+          x: 1240
+          "y": 320
+        positionAbsolute:
+          x: 1240
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          context: {enabled: false, variable_selector: []}
+          context:
+            enabled: false
+            variable_selector: []
           desc: Propose structured triage actions only; no tools or target IDs.
-          memory: {query_prompt_template: '{{#sys.timestamp#}}', role_prefix: {assistant: '', user: ''}, window: {enabled: false, size: 10}}
-          model: {completion_params: {temperature: 0}, mode: chat, name: medium, provider: langgenius/openai_api_compatible/openai_api_compatible}
+          memory:
+            query_prompt_template: '{{#sys.timestamp#}}'
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+          model:
+            completion_params:
+              temperature: 0
+            mode: chat
+            name: medium
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_config:
+            jinja2_variables: []
           prompt_template:
             - id: system-prompt
               role: system
@@ -267,15 +548,19 @@ workflow:
             - id: user-prompt
               role: user
               text: 'Scheduled at {{#sys.timestamp#}}. Review these untrusted records: {{#prepare.model_tasks#}}'
-          prompt_config: {jinja2_variables: []}
           selected: false
           title: Propose triage actions
           type: llm
-          vision: {enabled: false}
+          vision:
+            enabled: false
         height: 220
         id: triage
-        position: {x: 1550, y: 320}
-        positionAbsolute: {x: 1550, y: 320}
+        position:
+          x: 1550
+          "y": 320
+        positionAbsolute:
+          x: 1550
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -377,28 +662,81 @@ workflow:
                 return {'actions':actions,'actions_json':json.dumps(actions,ensure_ascii=False),'dispatch':mode=='live','mode':mode}
           code_language: python3
           desc: Enforce project tiers and incidents; mint a short-lived public-read token through AppRole and verify GitHub state in code before authorizing comments or done.
-          outputs: {actions: {type: 'array[object]', children: null}, actions_json: {type: string, children: null}, dispatch: {type: boolean}, mode: {type: string}}
+          outputs:
+            actions:
+              children: null
+              type: array[object]
+            actions_json:
+              children: null
+              type: string
+            dispatch:
+              type: boolean
+            mode:
+              type: string
           selected: false
           title: Guard proposed actions
           type: code
           variables:
-            - {variable: model_text, value_selector: [triage, text]}
-            - {variable: refs_text, value_selector: [prepare, task_refs]}
-            - {variable: allowed_raw, value_selector: [env, VIKUNJA_TRIAGE_ALLOWED_PROJECTS]}
-            - {variable: readonly_raw, value_selector: [env, VIKUNJA_TRIAGE_READONLY_PROJECTS]}
-            - {variable: rank_raw, value_selector: [env, VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS]}
-            - {variable: denied_raw, value_selector: [env, VIKUNJA_TRIAGE_DENIED_PROJECTS]}
-            - {variable: mode_raw, value_selector: [policy, mode]}
-            - {variable: web_host, value_selector: [env, GITHUB_WEB_HOST]}
-            - {variable: api_base, value_selector: [env, GITHUB_API_BASE]}
-            - {variable: bao_addr, value_selector: [env, OPENBAO_ADDR]}
-            - {variable: role_id, value_selector: [env, OPENBAO_ROLE_ID]}
-            - {variable: secret_id, value_selector: [env, OPENBAO_SECRET_ID]}
-            - {variable: token_path, value_selector: [env, GITHUB_READ_TOKEN_PATH]}
+            - value_selector:
+                - triage
+                - text
+              variable: model_text
+            - value_selector:
+                - prepare
+                - task_refs
+              variable: refs_text
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_ALLOWED_PROJECTS
+              variable: allowed_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_READONLY_PROJECTS
+              variable: readonly_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_RANK_ONLY_PROJECTS
+              variable: rank_raw
+            - value_selector:
+                - env
+                - VIKUNJA_TRIAGE_DENIED_PROJECTS
+              variable: denied_raw
+            - value_selector:
+                - policy
+                - mode
+              variable: mode_raw
+            - value_selector:
+                - env
+                - GITHUB_WEB_HOST
+              variable: web_host
+            - value_selector:
+                - env
+                - GITHUB_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - OPENBAO_ADDR
+              variable: bao_addr
+            - value_selector:
+                - env
+                - OPENBAO_ROLE_ID
+              variable: role_id
+            - value_selector:
+                - env
+                - OPENBAO_SECRET_ID
+              variable: secret_id
+            - value_selector:
+                - env
+                - GITHUB_READ_TOKEN_PATH
+              variable: token_path
         height: 54
         id: guard
-        position: {x: 1860, y: 320}
-        positionAbsolute: {x: 1860, y: 320}
+        position:
+          x: 1860
+          "y": 320
+        positionAbsolute:
+          x: 1860
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -406,35 +744,87 @@ workflow:
         width: 244
       - data:
           cases:
-            - {case_id: live, id: live, logical_operator: and, conditions: [{comparison_operator: is, id: dispatch-enabled, value: true, varType: boolean, variable_selector: [guard, dispatch]}]}
+            - case_id: live
+              conditions:
+                - comparison_operator: is
+                  id: dispatch-enabled
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - guard
+                    - dispatch
+              id: live
+              logical_operator: and
           desc: Shadow returns the intended action JSON and cannot reach the write iteration.
           selected: false
           title: Live dispatch enabled?
           type: if-else
         height: 120
         id: mode_gate
-        position: {x: 2170, y: 320}
-        positionAbsolute: {x: 2170, y: 320}
+        position:
+          x: 2170
+          "y": 320
+        positionAbsolute:
+          x: 2170
+          "y": 320
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
-      - data: {desc: Emit intended actions for Langfuse trace; no write tools are on this branch., outputs: [{variable: actions, value_selector: [guard, actions_json]}, {variable: mode, value_selector: [guard, mode]}, {variable: dispatch, value_selector: [guard, dispatch]}], selected: false, title: Shadow output, type: end}
+      - data:
+          desc: Emit intended actions for Langfuse trace; no write tools are on this branch.
+          outputs:
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - guard
+                - dispatch
+              variable: dispatch
+          selected: false
+          title: Shadow output
+          type: end
         height: 90
         id: shadow_end
-        position: {x: 2470, y: 430}
-        positionAbsolute: {x: 2470, y: 430}
+        position:
+          x: 2470
+          "y": 430
+        positionAbsolute:
+          x: 2470
+          "y": 430
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
-      - data: {desc: Dispatch only guard-approved updates and comments., iterator_selector: [guard, actions], output_selector: [dispatch_write, text], output_type: 'array[string]', selected: false, startNodeType: code, start_node_id: bind_action, title: Dispatch guarded actions, type: iteration}
+      - data:
+          desc: Dispatch only guard-approved updates and comments.
+          iterator_selector:
+            - guard
+            - actions
+          output_selector:
+            - dispatch_write
+            - text
+          output_type: array[string]
+          selected: false
+          start_node_id: bind_action
+          startNodeType: code
+          title: Dispatch guarded actions
+          type: iteration
         height: 220
         id: dispatch_loop
-        position: {x: 2470, y: 220}
-        positionAbsolute: {x: 2470, y: 220}
+        position:
+          x: 2470
+          "y": 220
+        positionAbsolute:
+          x: 2470
+          "y": 220
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -449,17 +839,40 @@ workflow:
           isInIteration: true
           isIterationStart: true
           iteration_id: dispatch_loop
-          outputs: {operation: {type: string}, id: {type: string}, project_id: {type: string}, priority: {type: number}, labels: {type: 'array[string]', children: null}, done: {type: boolean}, comment: {type: string}}
+          outputs:
+            comment:
+              type: string
+            done:
+              type: boolean
+            id:
+              type: string
+            labels:
+              children: null
+              type: array[string]
+            operation:
+              type: string
+            priority:
+              type: number
+            project_id:
+              type: string
           selected: false
           title: Bind guarded action
           type: code
-          variables: [{variable: action, value_selector: [dispatch_loop, item]}]
+          variables:
+            - value_selector:
+                - dispatch_loop
+                - item
+              variable: action
+        extent: parent
         height: 54
         id: bind_action
         parentId: dispatch_loop
-        extent: parent
-        position: {x: 60, y: 60}
-        positionAbsolute: {x: 2530, y: 280}
+        position:
+          x: 60
+          "y": 60
+        positionAbsolute:
+          x: 2530
+          "y": 280
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -474,34 +887,87 @@ workflow:
           provider_type: mcp
           selected: false
           title: Apply guarded update or comment
-          type: tool
           tool_configurations: {}
           tool_label: vikunja_tasks
           tool_name: vikunja_tasks
           tool_parameters:
-            subcommand: {type: variable, value: [bind_action, operation]}
-            id: {type: variable, value: [bind_action, id]}
-            projectId: {type: variable, value: [bind_action, project_id]}
-            priority: {type: variable, value: [bind_action, priority]}
-            labels: {type: variable, value: [bind_action, labels]}
-            done: {type: variable, value: [bind_action, done]}
-            comment: {type: variable, value: [bind_action, comment]}
+            comment:
+              type: variable
+              value:
+                - bind_action
+                - comment
+            done:
+              type: variable
+              value:
+                - bind_action
+                - done
+            id:
+              type: variable
+              value:
+                - bind_action
+                - id
+            labels:
+              type: variable
+              value:
+                - bind_action
+                - labels
+            priority:
+              type: variable
+              value:
+                - bind_action
+                - priority
+            projectId:
+              type: variable
+              value:
+                - bind_action
+                - project_id
+            subcommand:
+              type: variable
+              value:
+                - bind_action
+                - operation
+          type: tool
+        extent: parent
         height: 90
         id: dispatch_write
         parentId: dispatch_loop
-        extent: parent
-        position: {x: 330, y: 60}
-        positionAbsolute: {x: 2800, y: 280}
+        position:
+          x: 330
+          "y": 60
+        positionAbsolute:
+          x: 2800
+          "y": 280
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
-      - data: {desc: Return guarded intent and dispatch receipts., outputs: [{variable: actions, value_selector: [guard, actions_json]}, {variable: mode, value_selector: [guard, mode]}, {variable: dispatch_results, value_selector: [dispatch_loop, output]}], selected: false, title: Live output, type: end}
+      - data:
+          desc: Return guarded intent and dispatch receipts.
+          outputs:
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - dispatch_loop
+                - output
+              variable: dispatch_results
+          selected: false
+          title: Live output
+          type: end
         height: 90
         id: live_end
-        position: {x: 3070, y: 220}
-        positionAbsolute: {x: 3070, y: 220}
+        position:
+          x: 3070
+          "y": 220
+        positionAbsolute:
+          x: 3070
+          "y": 220
         selected: false
         sourcePosition: right
         targetPosition: left

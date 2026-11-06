@@ -1,6 +1,12 @@
 name: vikunja-clerk
 owner: agent-platform
 home_platform: dify
+shadows: [sim, langflow]
+tier: 0
+kind: connector
+owns: vikunja
+connectors: []
+code_work: none
 prompt: agents/prompts/vikunja-clerk.md
 shared_prefix: agents/prompts/shared/homelab.md
 tools:
@@ -13,8 +19,7 @@ mcp_servers: [vikunja]
 privacy_class: internal
 # LiteLLM router role, not a model ID.
 litellm_role: small
-trigger:
-  kind: call
+triggers: [{kind: call, source: caller, skew_minutes: 0}]
 mode: shadow # shadow or live
 mandate_binding:
   write_tools: [vikunja_tasks.create, vikunja_tasks.update]
@@ -82,3 +87,811 @@ guards:
     deny_unknown_tools_and_operations: true
     enforce_before_dispatch: true
     on_error: deny
+dify:
+  app: {description: 'Read, file, and update Vikunja tasks through a guarded workflow.', icon: 🤖, icon_background: '#D5F5F6',
+    mode: advanced-chat, name: __DIFY_AGENT_NAME__, use_icon_as_answer_icon: false}
+  dependencies: []
+  kind: app
+  version: 0.1.5
+  workflow:
+    conversation_variables: []
+    environment_variables:
+    - {id: vikunja_allowed_projects, name: VIKUNJA_ALLOWED_PROJECTS, value_type: secret, value: '', description: 'JSON array
+        resolved from policy://vikunja-clerk/allowed-projects'}
+    - {id: vikunja_denied_projects, name: VIKUNJA_DENIED_PROJECTS, value_type: secret, value: '', description: 'JSON array
+        resolved from policy://vikunja-clerk/denied-projects'}
+    - {id: vikunja_inbox_project, name: VIKUNJA_INBOX_PROJECT_ID, value_type: secret, value: '', description: 'Runtime project
+        ID resolved from policy://vikunja-clerk/inbox'}
+    - {id: vikunja_mode, name: VIKUNJA_MODE, value_type: string, value: __DIFY_MODE__, description: Use shadow to preview
+        writes; use live only when live writes are authorized.}
+    features:
+      file_upload:
+        allowed_file_extensions: []
+        allowed_file_types: []
+        allowed_file_upload_methods: []
+        enabled: false
+        image:
+          enabled: false
+          number_limits: 3
+          transfer_methods: [local_file, remote_url]
+        number_limits: 3
+      opening_statement: ''
+      retriever_resource: {enabled: false}
+      sensitive_word_avoidance: {enabled: false}
+      speech_to_text: {enabled: false}
+      suggested_questions: []
+      suggested_questions_after_answer: {enabled: false}
+      text_to_speech: {enabled: false, language: '', voice: ''}
+    graph:
+      edges:
+      - data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: llm}
+        id: start-to-intent
+        source: start
+        sourceHandle: source
+        target: intent
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: code}
+        id: intent-to-guard
+        source: intent
+        sourceHandle: source
+        target: guard
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: guard-to-gate
+        source: guard
+        sourceHandle: source
+        target: guard-gate
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: guard-allowed-to-mode-gate
+        source: guard-gate
+        sourceHandle: guard-allowed
+        target: guard-mode-gate
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: answer}
+        id: guard-refused-to-answer
+        source: guard-gate
+        sourceHandle: 'false'
+        target: guard-refusal
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: tool}
+        id: live-mode-to-preflight
+        source: guard-mode-gate
+        sourceHandle: live-mode
+        target: preflight-tool
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: answer}
+        id: shadow-mode-to-preview
+        source: guard-mode-gate
+        sourceHandle: 'false'
+        target: shadow-answer
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: tool, targetType: if-else}
+        id: preflight-to-update-route
+        source: preflight-tool
+        sourceHandle: source
+        target: update-route
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+        id: update-route-to-guard
+        source: update-route
+        sourceHandle: update-check-required
+        target: update-guard
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: answer}
+        id: read-or-create-to-answer
+        source: update-route
+        sourceHandle: 'false'
+        target: preflight-answer
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: update-guard-to-gate
+        source: update-guard
+        sourceHandle: source
+        target: update-gate
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+        id: update-allowed-to-mode-gate
+        source: update-gate
+        sourceHandle: update-allowed
+        target: update-mode-gate
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: answer}
+        id: update-refused-to-answer
+        source: update-gate
+        sourceHandle: 'false'
+        target: update-refusal
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: tool}
+        id: live-update-to-tool
+        source: update-mode-gate
+        sourceHandle: live-mode
+        target: update-tool
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: answer}
+        id: shadow-update-to-preview
+        source: update-mode-gate
+        sourceHandle: 'false'
+        target: shadow-answer
+        targetHandle: target
+        type: custom
+      - data: {isInIteration: false, isInLoop: false, sourceType: tool, targetType: answer}
+        id: update-tool-to-answer
+        source: update-tool
+        sourceHandle: source
+        target: update-answer
+        targetHandle: target
+        type: custom
+      nodes:
+      - data:
+          desc: Structured project and task scope supplied by the caller.
+          selected: false
+          title: Start
+          type: start
+          variables:
+          - variable: project_id
+            label: project_id
+            type: text-input
+            required: false
+            max_length: 128
+            options: []
+            default: ''
+            hint: Immutable caller-supplied project scope for writes.
+            placeholder: ''
+          - variable: task_id
+            label: task_id
+            type: text-input
+            required: false
+            max_length: 128
+            options: []
+            default: ''
+            hint: Immutable caller-supplied task scope for updates.
+            placeholder: ''
+        height: 54
+        id: start
+        position: {x: 40, y: 280}
+        positionAbsolute: {x: 40, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: Convert the caller request to structured intent only. This node has no tools.
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            role_prefix: {assistant: '', user: ''}
+            window: {enabled: false, size: 50}
+          model:
+            completion_params: {temperature: 0}
+            mode: chat
+            name: __DIFY_LITELLM_ROLE__
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_template:
+          - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
+          - {id: user-prompt, role: user, text: '{{#sys.query#}}'}
+          prompt_config:
+            jinja2_variables: []
+          selected: false
+          title: Parse request
+          type: llm
+          vision: {enabled: false}
+        height: 220
+        id: intent
+        position: {x: 340, y: 280}
+        positionAbsolute: {x: 340, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+            import re
+
+            incident_markers = re.compile(r"\b(?:incidents?|outages?|down|breaches?|vulnerabilit(?:y|ies)|cve|exploits?|leaks?|credentials?|secrets?|security|weakness(?:es)?|compromised|compromise|compromising)\b", re.IGNORECASE)
+
+            def marker_text(value):
+                if isinstance(value, dict):
+                    return " ".join(str(item) for item in value.values())
+                if isinstance(value, (list, tuple)):
+                    return " ".join(str(item) for item in value)
+                return "" if value is None else str(value)
+
+            def has_incident_marker(*values):
+                return any(incident_markers.search(marker_text(value)) for value in values)
+
+            def project_set(raw):
+                parsed = json.loads(raw)
+                if not isinstance(parsed, list):
+                    raise ValueError("project policy must be a JSON array")
+                values = {str(item).strip() for item in parsed}
+                if "" in values:
+                    raise ValueError("project policy is invalid")
+                return values
+
+            def output(allowed=False, reason="", **values):
+                result = {
+                    "allowed": allowed,
+                    "reason": reason,
+                    "dispatch": False,
+                    "preview": "",
+                    "needs_update_check": False,
+                    "operation": "",
+                    "task_id": "",
+                    "project_id": "",
+                    "requested_project_id": "",
+                    "title": "",
+                    "description": "",
+                    "due_date": "",
+                    "priority": None,
+                    "done": None,
+                    "filter": "",
+                    "search": "",
+                }
+                result.update(values)
+                return result
+
+            def preview_call(operation, **args):
+                args = {key: value for key, value in args.items() if value is not None and value != ""}
+                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"subcommand": operation, **args}}, separators=(",", ":"))
+
+            __DIFY_HELPER_JSON_FENCE__
+            def main(intent_text: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, inbox_project_id: str, mode_raw: str) -> dict:
+                try:
+                    intent = json.loads(strip_json_fence(intent_text))
+                    if not isinstance(intent, dict) or intent.get("route") != "vikunja":
+                        return output(reason="Refused; file this in Zammad.")
+                    title = "" if intent.get("title") is None else str(intent["title"])
+                    description = "" if intent.get("description") is None else str(intent["description"])
+                    if has_incident_marker(title, description, intent.get("category"), intent.get("categories")):
+                        return output(reason="Refused; file this in Zammad.")
+                    operation = intent.get("operation")
+                    if operation not in __DIFY_TOOL_OPERATIONS__:
+                        return output(reason="The operation is missing or unsupported.")
+                    mode = str(mode_raw or "").strip().lower()
+                    if operation in {"create", "update"} and mode not in {"shadow", "live"}:
+                        return output(reason="Write mode is missing or invalid; writes are refused.")
+                    project_id_mandate = str(project_id_mandate or "").strip()
+                    task_id_mandate = str(task_id_mandate or "").strip()
+                    due_date = "" if intent.get("due_date") is None else str(intent["due_date"])
+                    priority = intent.get("priority")
+                    done = intent.get("done")
+                    if priority is not None and (isinstance(priority, bool) or not isinstance(priority, (int, float))):
+                        return output(reason="Priority must be a number.")
+                    if done is not None and type(done) is not bool:
+                        return output(reason="Done must be a boolean.")
+                    filter_value = "" if intent.get("filter") is None else str(intent["filter"])
+                    search = "" if intent.get("search") is None else str(intent["search"])
+                    if operation == "list":
+                        return output(True, operation="list", dispatch=True, done=done, filter=filter_value, search=search)
+                    if operation == "get":
+                        task_id = "" if intent.get("task_id") is None else str(intent["task_id"]).strip()
+                        if not task_id:
+                            return output(reason="A task reference is required for get.")
+                        return output(True, operation="get", dispatch=True, task_id=task_id)
+                    project_named = intent.get("project_named")
+                    if not project_id_mandate and type(project_named) is not bool:
+                        return output(reason="Project scope is missing or ambiguous.")
+                    try:
+                        allowed = project_set(allowed_projects_raw)
+                        denied = project_set(denied_projects_raw)
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        return output(reason="Project policies are missing or invalid; writes are refused.")
+                    if operation == "create":
+                        if not title.strip():
+                            return output(reason="A task title is required for create.")
+                        if project_id_mandate:
+                            project_id = project_id_mandate
+                        elif project_named:
+                            return output(reason="The named project is unknown or unscoped.")
+                        else:
+                            project_id = str(inbox_project_id or "").strip()
+                            if not project_id:
+                                return output(reason="The inbox project policy is missing; the create is refused.")
+                        if project_id in denied:
+                            return output(reason="The target project is denied; deny wins over allow.")
+                        if project_id not in allowed:
+                            return output(reason="The target project is unknown or outside the allowed policy.")
+                        preview = preview_call("create", projectId=project_id, title=title, description=description, dueDate=due_date, priority=priority, done=done)
+                        return output(True, operation="create", dispatch=mode == "live", preview=preview, project_id=project_id, title=title, description=description, due_date=due_date, priority=priority, done=done)
+                    task_id = task_id_mandate
+                    if not task_id:
+                        return output(reason="A task reference is required for update.")
+                    requested_project_id = project_id_mandate
+                    if project_named and not requested_project_id:
+                        return output(reason="The named project is unknown or unscoped.")
+                    if requested_project_id:
+                        if requested_project_id in denied:
+                            return output(reason="The requested project is denied; deny wins over allow.")
+                        if requested_project_id not in allowed:
+                            return output(reason="The requested project is unknown or outside the allowed policy.")
+                    if not any([title, description, due_date, priority is not None, done is not None]):
+                        return output(reason="At least one task field is required for update.")
+                    return output(True, operation="get", dispatch=True, needs_update_check=True, task_id=task_id, requested_project_id=requested_project_id, title=title, description=description, due_date=due_date, priority=priority, done=done)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    return output(reason="The request could not be parsed safely; file this in Zammad.")
+          code_language: python3
+          desc: Validate the operation and write scope before every first Vikunja call.
+          isInIteration: false
+          isInLoop: false
+          outputs:
+            allowed: {type: boolean}
+            reason: {type: string}
+            dispatch: {type: boolean}
+            preview: {type: string}
+            needs_update_check: {type: boolean}
+            operation: {type: string}
+            task_id: {type: string}
+            project_id: {type: string}
+            requested_project_id: {type: string}
+            title: {type: string}
+            description: {type: string}
+            due_date: {type: string}
+            priority: {type: number}
+            done: {type: boolean}
+            filter: {type: string}
+            search: {type: string}
+          selected: false
+          title: Code guard
+          type: code
+          variables:
+          - variable: intent_text
+            value_selector: [intent, text]
+          - variable: project_id_mandate
+            value_selector: [start, project_id]
+          - variable: task_id_mandate
+            value_selector: [start, task_id]
+          - variable: allowed_projects_raw
+            value_selector: [env, VIKUNJA_ALLOWED_PROJECTS]
+          - variable: denied_projects_raw
+            value_selector: [env, VIKUNJA_DENIED_PROJECTS]
+          - variable: inbox_project_id
+            value_selector: [env, VIKUNJA_INBOX_PROJECT_ID]
+          - variable: mode_raw
+            value_selector: [env, VIKUNJA_MODE]
+        height: 54
+        id: guard
+        position: {x: 640, y: 280}
+        positionAbsolute: {x: 640, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: guard-allowed
+            conditions:
+            - comparison_operator: is
+              id: guard-allowed-condition
+              value: true
+              varType: boolean
+              variable_selector: [guard, allowed]
+            id: guard-allowed
+            logical_operator: and
+          desc: A refused request terminates here without an MCP call.
+          selected: false
+          title: Guard passed?
+          type: if-else
+        height: 120
+        id: guard-gate
+        position: {x: 940, y: 280}
+        positionAbsolute: {x: 940, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: live-mode
+            conditions:
+            - comparison_operator: is
+              id: live-mode-condition
+              value: true
+              varType: boolean
+              variable_selector: [guard, dispatch]
+            id: live-mode
+            logical_operator: and
+          desc: Shadow writes return a preview and stop before MCP.
+          selected: false
+          title: Dispatch enabled?
+          type: if-else
+        height: 120
+        id: guard-mode-gate
+        position: {x: 1120, y: 280}
+        positionAbsolute: {x: 1120, y: 280}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: The only path to this MCP node passes through the Code guard.
+          is_team_authorization: false
+          provider_id: VIKUNJA_MCP_PROVIDER_ID
+          provider_name: __DIFY_MCP_SERVER__
+          provider_type: mcp
+          selected: false
+          title: __DIFY_TOOL_NAME__
+          type: tool
+          tool_configurations: {}
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
+          tool_parameters:
+            subcommand:
+              type: variable
+              value: [guard, operation]
+            id:
+              type: variable
+              value: [guard, task_id]
+            projectId:
+              type: variable
+              value: [guard, project_id]
+            title:
+              type: variable
+              value: [guard, title]
+            description:
+              type: variable
+              value: [guard, description]
+            dueDate:
+              type: variable
+              value: [guard, due_date]
+            priority:
+              type: variable
+              value: [guard, priority]
+            done:
+              type: variable
+              value: [guard, done]
+            filter:
+              type: variable
+              value: [guard, filter]
+            search:
+              type: variable
+              value: [guard, search]
+        height: 100
+        id: preflight-tool
+        position: {x: 1240, y: 180}
+        positionAbsolute: {x: 1240, y: 180}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: update-check-required
+            conditions:
+            - comparison_operator: is
+              id: update-check-condition
+              value: true
+              varType: boolean
+              variable_selector: [guard, needs_update_check]
+            id: update-check-required
+            logical_operator: and
+          desc: Updates must read the current project before the write check.
+          selected: false
+          title: Check update?
+          type: if-else
+        height: 120
+        id: update-route
+        position: {x: 1540, y: 180}
+        positionAbsolute: {x: 1540, y: 180}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |-
+            import json
+
+            def project_set(raw):
+                parsed = json.loads(raw)
+                if not isinstance(parsed, list):
+                    raise ValueError("project policy must be a JSON array")
+                values = {str(item).strip() for item in parsed}
+                if "" in values:
+                    raise ValueError("project policy is invalid")
+                return values
+
+            def output(allowed=False, reason="", **values):
+                result = {"allowed": allowed, "reason": reason, "dispatch": False, "preview": "", "task_id": "", "project_id": "", "title": "", "description": "", "due_date": "", "priority": None, "done": None}
+                result.update(values)
+                return result
+
+            def preview_call(**args):
+                args = {key: value for key, value in args.items() if value is not None and value != ""}
+                return json.dumps({"tool": "__DIFY_TOOL_NAME__", "args": {"subcommand": "__DIFY_TOOL_OPERATION_UPDATE__", **args}}, separators=(",", ":"))
+
+            __DIFY_HELPER_JSON_FENCE__
+            def main(intent_text: str, task_result: str, project_id_mandate: str, task_id_mandate: str, allowed_projects_raw: str, denied_projects_raw: str, mode_raw: str) -> dict:
+                try:
+                    intent = json.loads(strip_json_fence(intent_text))
+                    mode = str(mode_raw or "").strip().lower()
+                    if mode not in {"shadow", "live"}:
+                        return output(reason="Write mode is missing or invalid; update refused.")
+                    project_id_mandate = str(project_id_mandate or "").strip()
+                    task_id = str(task_id_mandate or "").strip()
+                    project_named = intent.get("project_named")
+                    if not project_id_mandate and type(project_named) is not bool:
+                        return output(reason="Project scope is missing or ambiguous; update refused.")
+                    allowed = project_set(allowed_projects_raw)
+                    denied = project_set(denied_projects_raw)
+                    result = json.loads(task_result)
+                    if isinstance(result, list):
+                        result = result[0] if result else {}
+                    if isinstance(result, dict) and isinstance(result.get("task"), dict):
+                        result = result["task"]
+                    if not isinstance(result, dict):
+                        return output(reason="The current task could not be read safely; update refused.")
+                    current_task_id = str(result.get("id", result.get("taskId", ""))).strip()
+                    current_project_id = str(result.get("projectId", result.get("project_id", ""))).strip()
+                    if not task_id or task_id != current_task_id or not current_project_id:
+                        return output(reason="The current task scope could not be verified; update refused.")
+                    if current_project_id in denied:
+                        return output(reason="The current task project is denied; deny wins over allow.")
+                    if current_project_id not in allowed:
+                        return output(reason="The current task project is unknown or outside the allowed policy.")
+                    requested_project_id = project_id_mandate
+                    if project_named and not requested_project_id:
+                        return output(reason="The named project is unknown or unscoped; update refused.")
+                    if requested_project_id:
+                        if requested_project_id in denied:
+                            return output(reason="The requested project is denied; deny wins over allow.")
+                        if requested_project_id not in allowed:
+                            return output(reason="The requested project is unknown or outside the allowed policy.")
+                        if requested_project_id != current_project_id:
+                            return output(reason="A task update may not change its project.")
+                    title = "" if intent.get("title") is None else str(intent["title"])
+                    description = "" if intent.get("description") is None else str(intent["description"])
+                    due_date = "" if intent.get("due_date") is None else str(intent["due_date"])
+                    priority = intent.get("priority")
+                    done = intent.get("done")
+                    if priority is not None and (isinstance(priority, bool) or not isinstance(priority, (int, float))):
+                        return output(reason="Priority must be a number; update refused.")
+                    if done is not None and type(done) is not bool:
+                        return output(reason="Done must be a boolean; update refused.")
+                    if not any([title, description, due_date, priority is not None, done is not None]):
+                        return output(reason="At least one task field is required for update.")
+                    preview = preview_call(id=task_id, projectId=current_project_id, title=title, description=description, dueDate=due_date, priority=priority, done=done)
+                    return output(True, dispatch=mode == "live", preview=preview, task_id=task_id, project_id=current_project_id, title=title, description=description, due_date=due_date, priority=priority, done=done)
+                except (TypeError, ValueError, KeyError, json.JSONDecodeError):
+                    return output(reason="The current task or project policy could not be parsed safely; update refused.")
+          code_language: python3
+          desc: Confirm the fetched task is allowed and the update keeps its current project ID.
+          isInIteration: false
+          isInLoop: false
+          outputs:
+            allowed: {type: boolean}
+            reason: {type: string}
+            dispatch: {type: boolean}
+            preview: {type: string}
+            task_id: {type: string}
+            project_id: {type: string}
+            title: {type: string}
+            description: {type: string}
+            due_date: {type: string}
+            priority: {type: number}
+            done: {type: boolean}
+          selected: false
+          title: Update project guard
+          type: code
+          variables:
+          - variable: intent_text
+            value_selector: [intent, text]
+          - variable: task_result
+            value_selector: [preflight-tool, text]
+          - variable: project_id_mandate
+            value_selector: [start, project_id]
+          - variable: task_id_mandate
+            value_selector: [start, task_id]
+          - variable: allowed_projects_raw
+            value_selector: [env, VIKUNJA_ALLOWED_PROJECTS]
+          - variable: denied_projects_raw
+            value_selector: [env, VIKUNJA_DENIED_PROJECTS]
+          - variable: mode_raw
+            value_selector: [env, VIKUNJA_MODE]
+        height: 54
+        id: update-guard
+        position: {x: 1840, y: 180}
+        positionAbsolute: {x: 1840, y: 180}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: update-allowed
+            conditions:
+            - comparison_operator: is
+              id: update-allowed-condition
+              value: true
+              varType: boolean
+              variable_selector: [update-guard, allowed]
+            id: update-allowed
+            logical_operator: and
+          desc: Refused updates terminate without a write call.
+          selected: false
+          title: Update guard passed?
+          type: if-else
+        height: 120
+        id: update-gate
+        position: {x: 2140, y: 180}
+        positionAbsolute: {x: 2140, y: 180}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+          - case_id: live-mode
+            conditions:
+            - comparison_operator: is
+              id: update-live-mode-condition
+              value: true
+              varType: boolean
+              variable_selector: [update-guard, dispatch]
+            id: live-mode
+            logical_operator: and
+          desc: Shadow updates return a preview and stop before MCP.
+          selected: false
+          title: Dispatch update?
+          type: if-else
+        height: 120
+        id: update-mode-gate
+        position: {x: 2340, y: 180}
+        positionAbsolute: {x: 2340, y: 180}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: The only path to this MCP node passes through the update Code guard.
+          is_team_authorization: false
+          provider_id: VIKUNJA_MCP_PROVIDER_ID
+          provider_name: __DIFY_MCP_SERVER__
+          provider_type: mcp
+          selected: false
+          title: __DIFY_TOOL_NAME__ update
+          type: tool
+          tool_configurations: {}
+          tool_label: __DIFY_TOOL_NAME__
+          tool_name: __DIFY_TOOL_NAME__
+          tool_parameters:
+            subcommand: {type: constant, value: __DIFY_TOOL_OPERATION_UPDATE__}
+            id:
+              type: variable
+              value: [update-guard, task_id]
+            projectId:
+              type: variable
+              value: [update-guard, project_id]
+            title:
+              type: variable
+              value: [update-guard, title]
+            description:
+              type: variable
+              value: [update-guard, description]
+            dueDate:
+              type: variable
+              value: [update-guard, due_date]
+            priority:
+              type: variable
+              value: [update-guard, priority]
+            done:
+              type: variable
+              value: [update-guard, done]
+        height: 100
+        id: update-tool
+        position: {x: 2440, y: 80}
+        positionAbsolute: {x: 2440, y: 80}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#guard.reason#}}'
+          desc: Refused before any MCP dispatch.
+          selected: false
+          title: Refusal
+          type: answer
+          variables: []
+        height: 80
+        id: guard-refusal
+        position: {x: 1240, y: 400}
+        positionAbsolute: {x: 1240, y: 400}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#guard.preview#}}'
+          desc: The guarded write preview is returned without dispatch.
+          selected: false
+          title: Shadow preview
+          type: answer
+          variables: []
+        height: 80
+        id: shadow-answer
+        position: {x: 1540, y: 500}
+        positionAbsolute: {x: 1540, y: 500}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#preflight-tool.text#}}'
+          desc: Return the guarded read or create result.
+          selected: false
+          title: Result
+          type: answer
+          variables: []
+        height: 80
+        id: preflight-answer
+        position: {x: 1840, y: 360}
+        positionAbsolute: {x: 1840, y: 360}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#update-guard.reason#}}'
+          desc: Refused before the update call.
+          selected: false
+          title: Update refusal
+          type: answer
+          variables: []
+        height: 80
+        id: update-refusal
+        position: {x: 2440, y: 340}
+        positionAbsolute: {x: 2440, y: 340}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#update-tool.text#}}'
+          desc: Return the guarded update result.
+          selected: false
+          title: Update result
+          type: answer
+          variables: []
+        height: 80
+        id: update-answer
+        position: {x: 2740, y: 80}
+        positionAbsolute: {x: 2740, y: 80}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      viewport: {x: 0, y: 0, zoom: 0.6}
+    rag_pipeline_variables: []
+    version: 0.1.0

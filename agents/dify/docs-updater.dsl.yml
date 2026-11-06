@@ -1,8 +1,8 @@
-# Generated from agents/docs-updater.yaml, agents/dify-src/docs-updater/, and agents/prompts/shared/homelab.md + agents/prompts/docs-updater.md; edit sources, then rerun agents/dify-src/render.py.
+# Generated from agents/docs-updater.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/docs-updater.md; edit sources, then run make render-dify.
 app:
   description: Read-only documentation proposals for merged pull requests.
   icon: "\U0001F916"
-  icon_background: "#D5F5F6"
+  icon_background: '#D5F5F6'
   mode: workflow
   name: docs-updater
   use_icon_as_answer_icon: false
@@ -12,46 +12,46 @@ version: 0.7.0
 workflow:
   conversation_variables: []
   environment_variables:
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50201
+    - description: OpenBao base URL supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50201
       name: OPENBAO_ADDR
-      value: ''
-      value_type: string
-      description: OpenBao base URL supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50202
+      value: ""
+      value_type: string
+    - description: OpenBao AppRole role ID supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50202
       name: OPENBAO_ROLE_ID
-      value: ''
-      value_type: secret
-      description: OpenBao AppRole role ID supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50203
+      value: ""
+      value_type: secret
+    - description: OpenBao AppRole secret ID supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50203
       name: OPENBAO_SECRET_ID
-      value: ''
+      selector: []
+      value: ""
       value_type: secret
-      description: OpenBao AppRole secret ID supplied in the Dify workspace.
-      selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50204
+    - description: GitHub API base URL supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50204
       name: GITHUB_API_BASE
-      value: ''
-      value_type: string
-      description: GitHub API base URL supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50205
+      value: ""
+      value_type: string
+    - description: Approved installation-token mint path supplied in the Dify workspace.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50205
       name: GITHUB_TOKEN_MINT_PATH
-      value: ''
-      value_type: string
-      description: Approved installation-token mint path supplied in the Dify workspace.
       selector: []
-    - id: 448e86f5-7a8a-4f70-999f-234c9ec50208
+      value: ""
+      value_type: string
+    - description: Read-only token set for github-token/docs-updater.
+      id: 448e86f5-7a8a-4f70-999f-234c9ec50208
       name: GITHUB_TOKEN_READ_SET
-      value: ''
-      value_type: string
-      description: Read-only token set for github-token/docs-updater.
       selector: []
+      value: ""
+      value_type: string
   features:
     file_upload:
       enabled: false
-    opening_statement: ''
+    opening_statement: ""
     retriever_resource:
       enabled: false
     sensitive_word_avoidance:
@@ -65,7 +65,11 @@ workflow:
       enabled: false
   graph:
     edges:
-      - data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: start
+          targetType: code
         id: start-validate-event
         source: start
         sourceHandle: source
@@ -73,7 +77,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
         id: event-validated
         source: validate_event
         sourceHandle: source
@@ -81,7 +89,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
         id: event-ready
         source: event_gate
         sourceHandle: eligible
@@ -89,15 +101,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: if-else
         id: event-not-eligible
         source: event_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: decision_gate
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
         id: decision-accepted
         source: decision_gate
         sourceHandle: accepted
@@ -105,15 +125,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
         id: decision-rejected
         source: decision_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_empty
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
         id: login-parsed
         source: openbao_login
         sourceHandle: source
@@ -121,7 +149,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
         id: login-ready-check
         source: parse_openbao
         sourceHandle: source
@@ -129,7 +161,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: code
         id: login-ready
         source: login_gate
         sourceHandle: ready
@@ -137,15 +173,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
         id: login-failed
         source: login_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_empty
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
         id: token-set-checked
         source: token_request
         sourceHandle: source
@@ -153,7 +197,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
         id: token-set-ready
         source: token_request_gate
         sourceHandle: eligible
@@ -161,15 +209,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
         id: token-set-missing
         source: token_request_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_empty
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
         id: token-minted
         source: mint_github_token
         sourceHandle: source
@@ -177,7 +233,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
         id: token-ready-check
         source: parse_github_token
         sourceHandle: source
@@ -185,7 +245,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: http-request
         id: token-ready
         source: token_gate
         sourceHandle: ready
@@ -193,15 +257,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
         id: token-failed
         source: token_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_empty
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: http-request
         id: repo-read
         source: get_repo
         sourceHandle: source
@@ -209,7 +281,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: http-request}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: http-request
         id: pr-read
         source: get_pull_request
         sourceHandle: source
@@ -217,7 +293,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
         id: files-read
         source: get_pull_files
         sourceHandle: source
@@ -225,7 +305,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
         id: context-prepared
         source: prepare_context
         sourceHandle: source
@@ -233,7 +317,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: llm}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: llm
         id: context-safe
         source: context_gate
         sourceHandle: eligible
@@ -241,15 +329,23 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: end
         id: context-empty
         source: context_gate
-        sourceHandle: 'false'
+        sourceHandle: "false"
         target: end_empty
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: code}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: code
         id: proposal-generated
         source: docs_updater_llm
         sourceHandle: source
@@ -257,7 +353,11 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
-      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: end}
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: end
         id: proposal-validated
         source: validate_proposal
         sourceHandle: source
@@ -268,24 +368,103 @@ workflow:
     nodes:
       - data:
           desc: Immutable event and mandate fields plus the available private documentation page context.
-          variables:
-            - {variable: event, label: event, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
-            - {variable: action, label: action, type: text-input, required: false, max_length: 64, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
-            - {variable: merged, label: merged, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
-            - {variable: org, label: org, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Required for the pull request shape; the gate checks it.', placeholder: ''}
-            - {variable: repo, label: repo, type: text-input, required: true, max_length: 256, options: [], default: '', hint: '', placeholder: ''}
-            - {variable: pr_number, label: pr_number, type: number, required: false}
-            - {variable: finding_ref, label: finding_ref, type: text-input, required: false, max_length: 128, options: [], default: '', hint: 'Finding reference for the operator-decision shape.', placeholder: ''}
-            - {variable: operator_decision, label: operator_decision, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Operator decision for the operator-decision shape: A, B, or neither.', placeholder: ''}
-            - {variable: finding_statements, label: finding_statements, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of the two cited statements, each with page_path, line, and quote, for the operator-decision shape.', placeholder: ''}
-            - {variable: private_documentation_context, label: private_documentation_context, type: paragraph, required: false, max_length: 60000, options: [], default: '[]', hint: 'JSON array of available private pages with page_path and text fields.', placeholder: ''}
           selected: false
           title: Start
           type: start
+          variables:
+            - default: ""
+              hint: Required for the pull request shape; the gate checks it.
+              label: event
+              max_length: 64
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: event
+            - default: ""
+              hint: Required for the pull request shape; the gate checks it.
+              label: action
+              max_length: 64
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: action
+            - default: ""
+              hint: Required for the pull request shape; the gate checks it.
+              label: merged
+              max_length: 16
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: merged
+            - default: ""
+              hint: Required for the pull request shape; the gate checks it.
+              label: org
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: org
+            - default: ""
+              hint: ""
+              label: repo
+              max_length: 256
+              options: []
+              placeholder: ""
+              required: true
+              type: text-input
+              variable: repo
+            - label: pr_number
+              required: false
+              type: number
+              variable: pr_number
+            - default: ""
+              hint: Finding reference for the operator-decision shape.
+              label: finding_ref
+              max_length: 128
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: finding_ref
+            - default: ""
+              hint: 'Operator decision for the operator-decision shape: A, B, or neither.'
+              label: operator_decision
+              max_length: 16
+              options: []
+              placeholder: ""
+              required: false
+              type: text-input
+              variable: operator_decision
+            - default: '[]'
+              hint: JSON array of the two cited statements, each with page_path, line, and quote, for the operator-decision shape.
+              label: finding_statements
+              max_length: 60000
+              options: []
+              placeholder: ""
+              required: false
+              type: paragraph
+              variable: finding_statements
+            - default: '[]'
+              hint: JSON array of available private pages with page_path and text fields.
+              label: private_documentation_context
+              max_length: 60000
+              options: []
+              placeholder: ""
+              required: false
+              type: paragraph
+              variable: private_documentation_context
         height: 90
         id: start
-        position: {x: 30, y: 500}
-        positionAbsolute: {x: 30, y: 500}
+        position:
+          x: 30
+          "y": 500
+        positionAbsolute:
+          x: 30
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -329,26 +508,62 @@ workflow:
           code_language: python3
           desc: Accepts merged pull_request closed events from dryvist repositories, or one operator decision on a reported finding. Only the pull request path continues to the pull request reads.
           outputs:
-            accepted: {type: number, children: null}
-            eligible: {type: number, children: null}
-            decision: {type: string, children: null}
-            finding_ref: {type: string, children: null}
+            accepted:
+              children: null
+              type: number
+            decision:
+              children: null
+              type: string
+            eligible:
+              children: null
+              type: number
+            finding_ref:
+              children: null
+              type: string
           selected: false
           title: Validate merged PR event
           type: code
           variables:
-            - {variable: event, value_selector: [start, event]}
-            - {variable: action, value_selector: [start, action]}
-            - {variable: merged, value_selector: [start, merged]}
-            - {variable: org, value_selector: [start, org]}
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [start, pr_number]}
-            - {variable: finding_ref, value_selector: [start, finding_ref]}
-            - {variable: operator_decision, value_selector: [start, operator_decision]}
+            - value_selector:
+                - start
+                - event
+              variable: event
+            - value_selector:
+                - start
+                - action
+              variable: action
+            - value_selector:
+                - start
+                - merged
+              variable: merged
+            - value_selector:
+                - start
+                - org
+              variable: org
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - start
+                - finding_ref
+              variable: finding_ref
+            - value_selector:
+                - start
+                - operator_decision
+              variable: operator_decision
         height: 54
         id: validate_event
-        position: {x: 334, y: 500}
-        positionAbsolute: {x: 334, y: 500}
+        position:
+          x: 334
+          "y": 500
+        positionAbsolute:
+          x: 334
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -357,43 +572,63 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: event-eligible
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - validate_event
+                    - eligible
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: event-eligible, value: '1', varType: number, variable_selector: [validate_event, eligible]}
           desc: Ignores events outside the declared trigger.
           selected: false
           title: Merged PR event gate
           type: if-else
         height: 126
         id: event_gate
-        position: {x: 638, y: 500}
-        positionAbsolute: {x: 638, y: 500}
+        position:
+          x: 638
+          "y": 500
+        positionAbsolute:
+          x: 638
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          authorization: {type: no-auth}
+          authorization:
+            type: no-auth
           body:
-            type: json
             data:
-              - {key: '', type: text, value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'}
+              - key: ""
+                type: text
+                value: '{"role_id":"{{#env.OPENBAO_ROLE_ID#}}","secret_id":"{{#env.OPENBAO_SECRET_ID#}}"}'
+            type: json
           desc: AppRole login; keep secret values in Dify environment variables.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
-          timeout: {connect: 10, read: 30, write: 30}
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
           title: OpenBao AppRole login
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login"
+          url: '{{#env.OPENBAO_ADDR#}}/v1/auth/approle/login'
         height: 90
         id: openbao_login
-        position: {x: 942, y: 350}
-        positionAbsolute: {x: 942, y: 350}
+        position:
+          x: 942
+          "y": 350
+        positionAbsolute:
+          x: 942
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -412,17 +647,28 @@ workflow:
           code_language: python3
           desc: Extracts the short-lived OpenBao client token.
           outputs:
-            client_token: {type: string, children: null}
-            ready: {type: number, children: null}
+            client_token:
+              children: null
+              type: string
+            ready:
+              children: null
+              type: number
           selected: false
           title: Parse OpenBao response
           type: code
           variables:
-            - {variable: response_body, value_selector: [openbao_login, body]}
+            - value_selector:
+                - openbao_login
+                - body
+              variable: response_body
         height: 54
         id: parse_openbao
-        position: {x: 1246, y: 350}
-        positionAbsolute: {x: 1246, y: 350}
+        position:
+          x: 1246
+          "y": 350
+        positionAbsolute:
+          x: 1246
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -431,18 +677,28 @@ workflow:
       - data:
           cases:
             - case_id: ready
+              conditions:
+                - comparison_operator: '='
+                  id: login-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - parse_openbao
+                    - ready
               id: ready
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: login-ready, value: '1', varType: number, variable_selector: [parse_openbao, ready]}
           desc: Stops if OpenBao did not return a token.
           selected: false
           title: OpenBao token gate
           type: if-else
         height: 126
         id: login_gate
-        position: {x: 1550, y: 350}
-        positionAbsolute: {x: 1550, y: 350}
+        position:
+          x: 1550
+          "y": 350
+        positionAbsolute:
+          x: 1550
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -462,18 +718,32 @@ workflow:
           code_language: python3
           desc: Selects the declared read-only GitHub token set for the mandated repository.
           outputs:
-            ready: {type: number, children: null}
-            request_json: {type: string, children: null}
+            ready:
+              children: null
+              type: number
+            request_json:
+              children: null
+              type: string
           selected: false
           title: Select read-only GitHub token set
           type: code
           variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: read_set, value_selector: [env, GITHUB_TOKEN_READ_SET]}
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - env
+                - GITHUB_TOKEN_READ_SET
+              variable: read_set
         height: 54
         id: token_request
-        position: {x: 1854, y: 350}
-        positionAbsolute: {x: 1854, y: 350}
+        position:
+          x: 1854
+          "y": 350
+        positionAbsolute:
+          x: 1854
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -482,18 +752,28 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: token-set-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - token_request
+                    - ready
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: token-set-ready, value: '1', varType: number, variable_selector: [token_request, ready]}
           desc: Requires the declared read-only GitHub token set.
           selected: false
           title: Read-only token set gate
           type: if-else
         height: 126
         id: token_request_gate
-        position: {x: 2158, y: 350}
-        positionAbsolute: {x: 2158, y: 350}
+        position:
+          x: 2158
+          "y": 350
+        positionAbsolute:
+          x: 2158
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -501,26 +781,38 @@ workflow:
         width: 244
       - data:
           authorization:
+            config:
+              api_key: '{{#parse_openbao.client_token#}}'
+              header: Authorization
+              type: bearer
             type: api-key
-            config: {type: bearer, api_key: "{{#parse_openbao.client_token#}}", header: Authorization}
           body:
-            type: json
             data:
-              - {key: '', type: text, value: "{{#token_request.request_json#}}"}
+              - key: ""
+                type: text
+                value: '{{#token_request.request_json#}}'
+            type: json
           desc: Mints a short-lived installation token for read-only repository access.
           headers: 'Content-Type: application/json'
           method: post
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
-          timeout: {connect: 10, read: 30, write: 30}
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
           title: Mint repository-scoped GitHub token
           type: http-request
-          url: "{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}"
+          url: '{{#env.OPENBAO_ADDR#}}{{#env.GITHUB_TOKEN_MINT_PATH#}}'
         height: 90
         id: mint_github_token
-        position: {x: 2158, y: 350}
-        positionAbsolute: {x: 2158, y: 350}
+        position:
+          x: 2158
+          "y": 350
+        positionAbsolute:
+          x: 2158
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -540,17 +832,28 @@ workflow:
           code_language: python3
           desc: Extracts the scoped installation token.
           outputs:
-            token: {type: string, children: null}
-            ready: {type: number, children: null}
+            ready:
+              children: null
+              type: number
+            token:
+              children: null
+              type: string
           selected: false
           title: Parse GitHub token
           type: code
           variables:
-            - {variable: response_body, value_selector: [mint_github_token, body]}
+            - value_selector:
+                - mint_github_token
+                - body
+              variable: response_body
         height: 54
         id: parse_github_token
-        position: {x: 2462, y: 350}
-        positionAbsolute: {x: 2462, y: 350}
+        position:
+          x: 2462
+          "y": 350
+        positionAbsolute:
+          x: 2462
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -559,18 +862,28 @@ workflow:
       - data:
           cases:
             - case_id: ready
+              conditions:
+                - comparison_operator: '='
+                  id: token-ready
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - parse_github_token
+                    - ready
               id: ready
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: token-ready, value: '1', varType: number, variable_selector: [parse_github_token, ready]}
           desc: Stops if the token broker did not return a token.
           selected: false
           title: GitHub token gate
           type: if-else
         height: 126
         id: token_gate
-        position: {x: 2766, y: 350}
-        positionAbsolute: {x: 2766, y: 350}
+        position:
+          x: 2766
+          "y": 350
+        positionAbsolute:
+          x: 2766
+          "y": 350
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -578,23 +891,35 @@ workflow:
         width: 244
       - data:
           authorization:
+            config:
+              api_key: '{{#parse_github_token.token#}}'
+              header: Authorization
+              type: bearer
             type: api-key
-            config: {type: bearer, api_key: "{{#parse_github_token.token#}}", header: Authorization}
-          body: {type: none, data: []}
+          body:
+            data: []
+            type: none
           desc: Confirms the mandated repository is a dryvist repository.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
-          timeout: {connect: 10, read: 30, write: 30}
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
           title: Read repository
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}'
         height: 90
         id: get_repo
-        position: {x: 3070, y: 300}
-        positionAbsolute: {x: 3070, y: 300}
+        position:
+          x: 3070
+          "y": 300
+        positionAbsolute:
+          x: 3070
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -602,23 +927,35 @@ workflow:
         width: 244
       - data:
           authorization:
+            config:
+              api_key: '{{#parse_github_token.token#}}'
+              header: Authorization
+              type: bearer
             type: api-key
-            config: {type: bearer, api_key: "{{#parse_github_token.token#}}", header: Authorization}
-          body: {type: none, data: []}
+          body:
+            data: []
+            type: none
           desc: Reads the mandated pull request and verifies its merged state.
           headers: 'Accept: application/vnd.github+json'
           method: get
-          params: ''
+          params: ""
           selected: false
           ssl_verify: true
-          timeout: {connect: 10, read: 30, write: 30}
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
           title: Read pull request
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}'
         height: 90
         id: get_pull_request
-        position: {x: 3374, y: 300}
-        positionAbsolute: {x: 3374, y: 300}
+        position:
+          x: 3374
+          "y": 300
+        positionAbsolute:
+          x: 3374
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -626,23 +963,35 @@ workflow:
         width: 244
       - data:
           authorization:
+            config:
+              api_key: '{{#parse_github_token.token#}}'
+              header: Authorization
+              type: bearer
             type: api-key
-            config: {type: bearer, api_key: "{{#parse_github_token.token#}}", header: Authorization}
-          body: {type: none, data: []}
+          body:
+            data: []
+            type: none
           desc: Reads the changed paths and patches from the mandated pull request.
           headers: 'Accept: application/vnd.github+json'
           method: get
           params: 'per_page: 100'
           selected: false
           ssl_verify: true
-          timeout: {connect: 10, read: 30, write: 30}
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
           title: Read pull request diff
           type: http-request
-          url: "{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/files"
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#start.repo#}}/pulls/{{#start.pr_number#}}/files'
         height: 90
         id: get_pull_files
-        position: {x: 3678, y: 300}
-        positionAbsolute: {x: 3678, y: 300}
+        position:
+          x: 3678
+          "y": 300
+        positionAbsolute:
+          x: 3678
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -768,26 +1117,63 @@ workflow:
           code_language: python3
           desc: Checks the merged PR target, bounds its changed files, and prepares untrusted documentation context.
           outputs:
-            eligible: {type: number, children: null}
-            context_json: {type: string, children: null}
-            page_paths_json: {type: string, children: null}
+            context_json:
+              children: null
+              type: string
+            eligible:
+              children: null
+              type: number
+            page_paths_json:
+              children: null
+              type: string
           selected: false
           title: Prepare safe PR context
           type: code
           variables:
-            - {variable: repo, value_selector: [start, repo]}
-            - {variable: pr_number, value_selector: [start, pr_number]}
-            - {variable: repo_body, value_selector: [get_repo, body]}
-            - {variable: pr_body, value_selector: [get_pull_request, body]}
-            - {variable: files_body, value_selector: [get_pull_files, body]}
-            - {variable: docs_context, value_selector: [start, private_documentation_context]}
-            - {variable: decision, value_selector: [validate_event, decision]}
-            - {variable: finding_ref, value_selector: [validate_event, finding_ref]}
-            - {variable: finding_statements, value_selector: [start, finding_statements]}
+            - value_selector:
+                - start
+                - repo
+              variable: repo
+            - value_selector:
+                - start
+                - pr_number
+              variable: pr_number
+            - value_selector:
+                - get_repo
+                - body
+              variable: repo_body
+            - value_selector:
+                - get_pull_request
+                - body
+              variable: pr_body
+            - value_selector:
+                - get_pull_files
+                - body
+              variable: files_body
+            - value_selector:
+                - start
+                - private_documentation_context
+              variable: docs_context
+            - value_selector:
+                - validate_event
+                - decision
+              variable: decision
+            - value_selector:
+                - validate_event
+                - finding_ref
+              variable: finding_ref
+            - value_selector:
+                - start
+                - finding_statements
+              variable: finding_statements
         height: 54
         id: prepare_context
-        position: {x: 3982, y: 300}
-        positionAbsolute: {x: 3982, y: 300}
+        position:
+          x: 3982
+          "y": 300
+        positionAbsolute:
+          x: 3982
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -796,33 +1182,51 @@ workflow:
       - data:
           cases:
             - case_id: eligible
+              conditions:
+                - comparison_operator: '='
+                  id: context-eligible
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - prepare_context
+                    - eligible
               id: eligible
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: context-eligible, value: '1', varType: number, variable_selector: [prepare_context, eligible]}
           desc: Sends only a bounded, verified merged pull request to the model.
           selected: false
           title: Safe context gate
           type: if-else
         height: 126
         id: context_gate
-        position: {x: 4286, y: 300}
-        positionAbsolute: {x: 4286, y: 300}
+        position:
+          x: 4286
+          "y": 300
+        positionAbsolute:
+          x: 4286
+          "y": 300
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
       - data:
-          context: {enabled: false, variable_selector: []}
+          context:
+            enabled: false
+            variable_selector: []
           desc: Matches the verified PR diff to supplied private documentation pages.
-          memory: {enabled: false, window: {enabled: false, size: 10}}
+          memory:
+            enabled: false
+            window:
+              enabled: false
+              size: 10
           model:
-            provider: langgenius/openai_api_compatible/openai_api_compatible
-            name: medium
+            completion_params:
+              temperature: 0
             mode: chat
-            completion_params: {temperature: 0}
-          prompt_config: {jinja2_variables: []}
+            name: medium
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_config:
+            jinja2_variables: []
           prompt_template:
             - role: system
               text: |
@@ -884,15 +1288,22 @@ workflow:
                 reason briefly states which documented behavior changed. In shadow mode this proposal is only recorded in the run
                 record. Do not wrap the JSON in a code fence. When no edit is warranted, output no text.
             - role: user
-              text: "{{#prepare_context.context_json#}}"
+              text: '{{#prepare_context.context_json#}}'
           selected: false
           title: Docs update proposal model
           type: llm
-          vision: {enabled: false, configs: {variable_selector: []}}
+          vision:
+            configs:
+              variable_selector: []
+            enabled: false
         height: 90
         id: docs_updater_llm
-        position: {x: 4590, y: 200}
-        positionAbsolute: {x: 4590, y: 200}
+        position:
+          x: 4590
+          "y": 200
+        positionAbsolute:
+          x: 4590
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -974,17 +1385,29 @@ workflow:
           code_language: python3
           desc: Accepts only valid page edits whose paths were supplied and whose text omits likely secrets and private addresses.
           outputs:
-            proposal_json: {type: string, children: null}
+            proposal_json:
+              children: null
+              type: string
           selected: false
           title: Validate safe page proposals
           type: code
           variables:
-            - {variable: model_text, value_selector: [docs_updater_llm, text]}
-            - {variable: page_paths_json, value_selector: [prepare_context, page_paths_json]}
+            - value_selector:
+                - docs_updater_llm
+                - text
+              variable: model_text
+            - value_selector:
+                - prepare_context
+                - page_paths_json
+              variable: page_paths_json
         height: 54
         id: validate_proposal
-        position: {x: 4894, y: 200}
-        positionAbsolute: {x: 4894, y: 200}
+        position:
+          x: 4894
+          "y": 200
+        positionAbsolute:
+          x: 4894
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -998,8 +1421,12 @@ workflow:
           type: end
         height: 90
         id: end_empty
-        position: {x: 4590, y: 500}
-        positionAbsolute: {x: 4590, y: 500}
+        position:
+          x: 4590
+          "y": 500
+        positionAbsolute:
+          x: 4590
+          "y": 500
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1008,14 +1435,21 @@ workflow:
       - data:
           desc: Returns the validated proposal JSON.
           outputs:
-            - {variable: proposal_json, value_selector: [validate_proposal, proposal_json]}
+            - value_selector:
+                - validate_proposal
+                - proposal_json
+              variable: proposal_json
           selected: false
           title: End proposal
           type: end
         height: 90
         id: end_proposal
-        position: {x: 5198, y: 200}
-        positionAbsolute: {x: 5198, y: 200}
+        position:
+          x: 5198
+          "y": 200
+        positionAbsolute:
+          x: 5198
+          "y": 200
         selected: false
         sourcePosition: right
         targetPosition: left
@@ -1024,21 +1458,34 @@ workflow:
       - data:
           cases:
             - case_id: accepted
+              conditions:
+                - comparison_operator: '='
+                  id: decision-accepted-check
+                  value: "1"
+                  varType: number
+                  variable_selector:
+                    - validate_event
+                    - accepted
               id: accepted
               logical_operator: and
-              conditions:
-                - {comparison_operator: '=', id: decision-accepted-check, value: '1', varType: number, variable_selector: [validate_event, accepted]}
           desc: Routes an accepted operator decision to the context builder. Anything else ends empty.
           selected: false
           title: Operator decision gate
           type: if-else
         height: 126
         id: decision_gate
-        position: {x: 638, y: 700}
-        positionAbsolute: {x: 638, y: 700}
+        position:
+          x: 638
+          "y": 700
+        positionAbsolute:
+          x: 638
+          "y": 700
         selected: false
         sourcePosition: right
         targetPosition: left
         type: custom
         width: 244
-    viewport: {x: 0, y: 0, zoom: 0.65}
+    viewport:
+      x: 0
+      "y": 0
+      zoom: 0.65

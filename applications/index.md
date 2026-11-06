@@ -4,6 +4,8 @@ System and user prompt assets consumed by applications and infrastructure servic
 
 ## Prompts
 
+* [YouTrack issue specialist](youtrack-specialist.md) - Portable issue-domain contract for built-in YouTrack
+  operations and verified issue and comment records.
 * [Vikunja task specialist](vikunja-specialist.md) - Portable task-domain contract for native Vikunja
   operations and verified progress records.
 * [LangGraph homelab assistant](langgraph-homelab-assistant.md) - System prompt for the minimal self-hosted LangGraph ReAct agent.

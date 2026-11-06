@@ -1,5 +1,13 @@
 # Change Log
 
+## 2026-11-06
+
+* **Update (agents)**: Dify workflows render through 1 shared gomplate template from agent YAML and canonical prompts.
+  CI compares the generated output set, and the import guide covers Dify 1.18, difyctl, and published-version exports.
+
+* **Add (applications)**: Add the YouTrack issue specialist with sole tracker ownership, bounded issue and comment
+  operations, and verification of every write by readback.
+
 ## 2026-11-04
 
 * **Update (auto-ai-agent)**: The Splunk deep dive bounds its utilization pass to one search per signal over an 8-day
