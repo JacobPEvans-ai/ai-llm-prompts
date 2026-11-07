@@ -1,0 +1,82 @@
+{{- define "rubric" -}}
+{{ .rubric.header }}
+messages:
+  - role: system
+    content: |-
+{{ .rubric.system | strings.Indent 6 }}
+  - role: user
+    content: |-
+{{- if eq .name "semantic-review" }}
+      PULL REQUEST AND DIFF:
+{{- else }}
+      CHANGED FILES:
+      {{ "{{changed}}" }}
+{{ if eq .name "policy-gate" }}
+      FILE SIZES:
+      {{ "{{sizes}}" }}
+{{ end }}
+      DIFF:
+{{- end }}
+      {{ "{{diff}}" }}
+responseFormat: json_schema
+jsonSchema: |-
+  {
+    "name": "{{ .name | strings.ReplaceAll "-" "_" }}",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "check": {
+                "type": "string",
+                "enum": [
+{{- range $index, $check := .rubric.checks }}
+                  {{ $check | data.ToJSON }}{{ if lt (add $index 1) (len $.rubric.checks) }},{{ end }}
+{{- end }}
+                ]
+              },
+              "result": {
+                "type": "string",
+                "enum": [
+{{- if ne .name "leak-review" }}
+                  "pass",
+{{- end }}
+                  "fail"
+                ]
+              },
+              "file": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "check",
+              "result",
+              "file",
+              "line",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "findings",
+        "summary"
+      ],
+      "additionalProperties": false
+    }
+  }
+{{ end -}}

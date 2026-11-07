@@ -13,6 +13,14 @@ in GitHub Actions on a GitHub App token — so it and the one fragment it includ
 
 ## Prompts
 
+* [Policy Rubric Sources](policy-gate-src/index.md) - Shared gomplate template, rubric inputs, and render checks.
+* [Policy Gate](ai-workflows-policy-gate.prompt.yml) - Structured pull-request policy checks.
+* [Security Review](ai-workflows-security-review.prompt.yml) - Structured pull-request security review.
+* [Semantic Review](ai-workflows-semantic-review.prompt.yml) - Structured pull-request semantic review.
+* [Leak Review](ai-workflows-leak-review.prompt.yml) - Structured public-disclosure review.
+* [Docs Drift](ai-workflows-docs-drift.prompt.yml) - Documentation drift analysis.
+* [Repository Hygiene](ai-workflows-repo-hygiene.prompt.yml) - Repository hygiene analysis.
+* [Thread Triage](ai-workflows-thread-triage.prompt.yml) - Pull-request review-thread triage.
 * [Testing Agents](testing/index.md) - Portable instruction bodies for specialized browser and UI-testing agents.
 * [CI Workbook](ci-workbook/index.md) - Known CI failure signatures with their class, match pattern and fix recipe.
 * [DRY Enforcer Agent](ai-workflows-agent-dry-enforcer.md) - Dormant Copilot agent profile for code simplification and DRY enforcement.
