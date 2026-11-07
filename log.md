@@ -2,6 +2,9 @@
 
 ## 2026-11-06
 
+* **Add (agents)**: Consolidate operations into alert triage, deep dives, agent audit, PR upkeep, repository maintenance,
+  release promotion, and voice learning; retain standalone patch-grader fixtures.
+
 * **Add (agents)**: Add AI news, model scouting and dossiers, and release digests with shared evaluation boundaries.
 
 * **Add (agents)**: Add the Donna briefs, weekly review, research, and innovation agents with shared report contracts,

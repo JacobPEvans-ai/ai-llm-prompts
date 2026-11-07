@@ -1,0 +1,18 @@
+name: repo-janitor
+extends: local-batch
+description: |
+  Use when: repository hygiene findings need bounded maintenance proposals.
+  Do not use when: cleanup lacks current evidence or authority.
+code_work: sandbox
+connectors: [github-clerk]
+tools: [a2a.call, agent-sandbox.jobs]
+triggers:
+  - {kind: rotation, every: 7d}
+  - {kind: event, source: agent-sandbox.finding}
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/refresh-repo/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/prune-branches/SKILL.md}
+reader: agent-sandbox jobs
+acted_signal: fix PR merged
+identity: agent-repo-janitor
+api_key_ref: openbao://agent-key/repo-janitor

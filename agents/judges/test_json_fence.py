@@ -82,7 +82,6 @@ def test_every_model_output_parse_node_routes_through_the_helper():
     names = {(file, title) for file, title, _ in _NODES}
     assert names == {
         ("action-extractor.dsl.yml", "Validate reply"),
-        ("ci-fixer.dsl.yml", "Validate patch and write guards"),
         ("commit-grouper.dsl.yml", "Validate reply"),
         ("code-simplifier.dsl.yml", "Validate and force comment review"),
         ("doc-contradiction-finder.dsl.yml", "Validate contradiction findings"),

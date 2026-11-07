@@ -41,9 +41,10 @@ def test_catalog_uses_sorted_resolved_roster_and_output_overrides(tmp_path):
     assert result.returncode == 0, result.stderr
     text = index.read_text()
     assert text.index("[alpha](alpha.yaml)") < text.index("[zulu](zulu.yaml)")
-    assert "event: github.push; rotation: 15m" in text
+    assert "Trigger: event: github.push" in text
+    assert "Trigger: rotation: 15m" in text
     assert "anchor: 06:07 UTC (Mon, Fri)" in text
-    assert "reviewer | checks green" in text
+    assert "Reader: reviewer" in text and "Acted signal: checks green" in text
     assert "agent-standards.md" in text and "evals/promptfoo/README.md" in text
     prompt_text = prompts.read_text()
     assert prompt_text.index("[alpha](alpha.md)") < prompt_text.index("[zulu](zulu.md)")

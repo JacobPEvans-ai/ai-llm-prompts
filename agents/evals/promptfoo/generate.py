@@ -20,7 +20,6 @@ RUBRIC_PROVIDERS = {
 SCORING_MODES = ("field-credit", "strict")
 CUT_METRICS = {
     ("vikunja-clerk", "json-valid"),
-    *((("ci-fixer", metric) for metric in RUBRIC_PROVIDERS)),
 }
 # Reuses the parse checker the hosted Langfuse code evaluator runs (agents/judges/parse-json-schema.py).
 PARSE_SCHEMA_ASSERTION = f"""import importlib.util

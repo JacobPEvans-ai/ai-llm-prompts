@@ -1,0 +1,13 @@
+name: splunk-deepdive
+extends: local-batch
+description: |
+  Use when: an index or sourcetype needs a bounded utilization baseline.
+  Do not use when: an alert needs immediate incident triage.
+privacy_class: private
+connectors: [splunk-clerk]
+tools: [a2a.call]
+triggers: [{kind: rotation, every: 7d}]
+reader: private documentation page
+acted_signal: page PR merged
+identity: agent-splunk-deepdive
+api_key_ref: openbao://agent-key/splunk-deepdive

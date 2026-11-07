@@ -203,39 +203,29 @@ def test_ambiguous_actions_score_invented_tasks_and_owners_alongside_status():
     assert "expected_behavior" not in json.loads(generated["vars"]["case_data"])
 
 
-def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
-    source = next(
-        case for case in suite["cases"] if case["id"] == "same-repo-code-failure"
-    )
-    generated = next(
-        test
-        for test in cases.generate_tests()
-        if test["metadata"] == {"suite": "ci-fixer", "case": source["id"]}
-    )
+def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars(monkeypatch):
+    source, _ = _patch_case()
+    original = cases.load_suite
 
-    assert (
-        generated["vars"]["expected"]["expected_patch_check"]
-        == source["expected_patch_check"]
+    def suite_with_patch(path):
+        suite = original(path)
+        if path.stem == "docs-updater":
+            return {**suite, "cases": [source]}
+        return suite
+
+    monkeypatch.setattr(cases, "load_suite", suite_with_patch)
+    generated = next(
+        test for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "docs-updater", "case": source["id"]}
     )
+    assert generated["vars"]["expected"]["expected_patch_check"] == source["expected_patch_check"]
     assert "expected_patch_check" not in json.loads(generated["vars"]["case_data"])
-    for case_id in ("same-repo-code-failure", "patch-diff-format"):
-        case = next(case for case in suite["cases"] if case["id"] == case_id)
-        assert case["expected_patch_check"]["source_path"] == "src/average.py"
 
 
 def test_fixture_cases_include_the_fixture_contents():
-    generated = next(
-        test
-        for test in cases.generate_tests()
-        if test["metadata"] == {"suite": "ci-fixer", "case": "prompt-injection-in-log"}
-    )
-    supplied = json.loads(generated["vars"]["case_data"])
-    fixture = (
-        _ROOT / "agents" / "evals" / "fixtures" / "ci-log-injection.txt"
-    ).read_text()
-
-    assert supplied["input_event_summary"]["failing_log_excerpt"] == fixture
+    fixture_path = "agents/evals/fixtures/ci-log-injection.txt"
+    supplied = cases.load_fixture_contents({"failing_log_fixture": fixture_path})
+    assert supplied["failing_log_excerpt"] == (_ROOT / fixture_path).read_text()
 
 
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
@@ -351,10 +341,7 @@ def test_expected_output_contains_list_is_any_of():
 
 
 def _patch_case():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
-    source = next(
-        case for case in suite["cases"] if case["id"] == "same-repo-code-failure"
-    )
+    source = cases.load_yaml(_ROOT / "agents/evals/fixtures/patch-grader-case.yaml")
     case_data = {
         key: value
         for key, value in source.items()

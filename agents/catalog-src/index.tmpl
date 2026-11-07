@@ -11,9 +11,17 @@
 * [Dify import](dify/IMPORT.md) - Generated application imports and acceptance checks.
 
 ## Roster
+{{ range (datasource "agents") }}
+### [{{ .name }}]({{ .name }}.yaml)
 
-| Agent | Tier | Trigger | Reader | Acted signal |
-| --- | --- | --- | --- | --- |
-{{- range (datasource "agents") }}
-| [{{ .name }}]({{ .name }}.yaml) | {{ .tier }} | {{ range $i, $trigger := .triggers }}{{ if $i }}; {{ end }}{{ $trigger.kind }}{{ with (index $trigger "source") }}: {{ . }}{{ end }}{{ with (index $trigger "every") }}: {{ . }}{{ end }}{{ with (index $trigger "at") }}: {{ . }} UTC{{ end }}{{ with (index $trigger "days") }} ({{ join . ", " }}){{ end }}{{ end }} | {{ with (index . "reader") }}{{ . | strings.ReplaceAll "|" "\\|" }}{{ else }}—{{ end }} | {{ with (index . "acted_signal") }}{{ . | strings.ReplaceAll "|" "\\|" }}{{ else }}—{{ end }} |
+* Tier: {{ .tier }}
+{{- range $trigger := .triggers }}
+* Trigger: {{ $trigger.kind }}{{ with (index $trigger "source") }}: {{ . }}{{ end }}{{ with (index $trigger "every") }}: {{ . }}{{ end }}{{ with (index $trigger "at") }}: {{ . }} UTC{{ end }}{{ with (index $trigger "days") }} ({{ join . ", " }}){{ end }}
 {{- end }}
+{{- with (index . "reader") }}
+* Reader: {{ . }}
+{{- end }}
+{{- with (index . "acted_signal") }}
+* Acted signal: {{ . }}
+{{- end }}
+{{ end -}}

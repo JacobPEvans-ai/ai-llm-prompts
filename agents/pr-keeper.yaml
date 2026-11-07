@@ -1,0 +1,24 @@
+name: pr-keeper
+extends: event-worker
+description: |
+  Use when: authorized pull requests need checks or review feedback reconciled.
+  Do not use when: the request authorizes merging or release promotion.
+privacy_class: private
+connectors: [github-clerk]
+tools: [a2a.call, agent-sandbox.jobs]
+triggers:
+  - {kind: event, source: github.pull_request}
+  - {kind: event, source: github.check_run}
+  - {kind: event, source: github.pull_request_review}
+  - {kind: event, source: github.pull_request_review_comment}
+  - {kind: event, source: github.issue_comment}
+  - {kind: rotation, every: 15m}
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/finalize-pr/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/resolve-pr-threads/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/gh-cli-patterns/references/pr-feedback-ledger.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/pr-sweep/SKILL.md}
+reader: pull requests via github-clerk
+acted_signal: required checks green on current head
+identity: agent-pr-keeper
+api_key_ref: openbao://agent-key/pr-keeper

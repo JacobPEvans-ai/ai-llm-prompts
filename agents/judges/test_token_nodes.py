@@ -12,7 +12,7 @@ import pytest
 from dify_nodes import node_main
 
 
-_WORKFLOWS = ("doc-contradiction-finder", "docs-updater", "ci-fixer", "code-simplifier")
+_WORKFLOWS = ("doc-contradiction-finder", "docs-updater", "code-simplifier")
 _READ_SET_WORKFLOWS = ("doc-contradiction-finder", "docs-updater")
 _TOKEN_FIELD = {"parse_openbao": "client_token", "parse_github_token": "token"}
 

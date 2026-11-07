@@ -243,7 +243,7 @@ def test_roster_passes_profile_and_authoring_standards():
 
 
 def test_code_editing_agents_use_sandbox_jobs():
-    for name in ("ci-fixer", "docs-updater"):
+    for name in ("pr-keeper", "docs-updater"):
         agent = definition(name)
         assert agent["code_work"] == "sandbox"
 
@@ -457,3 +457,15 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
         f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
     )
+
+
+def test_pr_keeper_replaces_ci_fixer():
+    agent = definition("pr-keeper")
+    assert agent["code_work"] == "sandbox"
+    assert {"kind": "rotation", "every": "15m"} in agent["triggers"]
+    assert {"kind": "event", "source": "github.check_run"} in agent["triggers"]
+    for path in (
+        "agents/ci-fixer.yaml", "agents/prompts/ci-fixer.md",
+        "agents/evals/ci-fixer.yaml", "agents/dify/ci-fixer.dsl.yml",
+    ):
+        assert not (_ROOT / path).exists()

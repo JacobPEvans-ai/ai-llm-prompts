@@ -1,0 +1,13 @@
+name: voice-learn
+extends: local-batch
+description: |
+  Use when: approved writing corrections support a voice prompt proposal.
+  Do not use when: corrections are unapproved or source material is unavailable.
+privacy_class: private
+connectors: [splunk-clerk]
+tools: [a2a.call]
+triggers: [{kind: rotation, every: 7d}]
+reader: style-gate and plain-rewriter prompts
+acted_signal: draft PR merged
+identity: agent-voice-learn
+api_key_ref: openbao://agent-key/voice-learn

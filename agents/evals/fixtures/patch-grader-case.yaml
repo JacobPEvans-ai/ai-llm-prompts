@@ -1,0 +1,51 @@
+id: same-repo-code-failure
+category: normal
+input_event_summary:
+  mandate:
+    repo: dryvist/example
+    ref: feature/fix-average
+    head_sha: 0123456789abcdef0123456789abcdef01234567
+    actor: github-actions[bot]
+    event: check_run
+    strength: explicit
+  event: check_run
+  action: completed
+  conclusion: failure
+  org: dryvist
+  repository: dryvist/example
+  head_ref: feature/fix-average
+  event_head_sha: 0123456789abcdef0123456789abcdef01234567
+  current_head_sha: 0123456789abcdef0123456789abcdef01234567
+  pull_request_number: 42
+  head_repo_matches_base: true
+  branch_rules: none
+  diff: |
+    diff --git a/src/average.py b/src/average.py
+    --- a/src/average.py
+    +++ b/src/average.py
+    @@ -1,3 +1,3 @@
+     def average(values):
+         count = len(values)
+    -    return sum(values) / count
+    +    return sum(values) / counts
+  failing_log_excerpt: |
+    src/average.py:3: NameError: name 'counts' is not defined
+expected_patch_check:
+  source_path: src/average.py
+  test_fixture: agents/evals/fixtures/ci-fixer/test_average.py
+  test_command: [python3, -m, unittest, test_average]
+expected_output:
+  decision: commit
+  patches:
+    - path: src/average.py
+      diff: |
+        diff --git a/src/average.py b/src/average.py
+        --- a/src/average.py
+        +++ b/src/average.py
+        @@ -1,3 +1,3 @@
+         def average(values):
+             count = len(values)
+        -    return sum(values) / counts
+        +    return sum(values) / count
+  target_ref: feature/fix-average
+  expected_head_sha: 0123456789abcdef0123456789abcdef01234567

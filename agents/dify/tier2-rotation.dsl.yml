@@ -8,6 +8,8 @@ workflow:
     - {id: rotation-speed, name: ROTATION_SPEED, value_type: number, value: 1.0, selector: [env, ROTATION_SPEED]}
     - {id: rotation-offset, name: ROTATION_OFFSET, value_type: number, value: 0, selector: [env, ROTATION_OFFSET]}
     - {id: rotation-paused, name: ROTATION_PAUSED, value_type: string, value: 'false', selector: [env, ROTATION_PAUSED]}
+    - {id: agent-audit-trigger-url, name: AGENT_AUDIT_TRIGGER_URL, value_type: string, value: '', selector: [env, AGENT_AUDIT_TRIGGER_URL]}
+    - {id: agent-audit-webhook-id, name: AGENT_AUDIT_WEBHOOK_ID, value_type: secret, value: '', selector: [env, AGENT_AUDIT_WEBHOOK_ID]}
     - {id: ai-news-trigger-url, name: AI_NEWS_TRIGGER_URL, value_type: string, value: '', selector: [env, AI_NEWS_TRIGGER_URL]}
     - {id: ai-news-webhook-id, name: AI_NEWS_WEBHOOK_ID, value_type: secret, value: '', selector: [env, AI_NEWS_WEBHOOK_ID]}
     - {id: daily-innovation-trigger-url, name: DAILY_INNOVATION_TRIGGER_URL, value_type: string, value: '', selector: [env, DAILY_INNOVATION_TRIGGER_URL]}
@@ -18,14 +20,23 @@ workflow:
     - {id: model-scout-webhook-id, name: MODEL_SCOUT_WEBHOOK_ID, value_type: secret, value: '', selector: [env, MODEL_SCOUT_WEBHOOK_ID]}
     - {id: release-digest-trigger-url, name: RELEASE_DIGEST_TRIGGER_URL, value_type: string, value: '', selector: [env, RELEASE_DIGEST_TRIGGER_URL]}
     - {id: release-digest-webhook-id, name: RELEASE_DIGEST_WEBHOOK_ID, value_type: secret, value: '', selector: [env, RELEASE_DIGEST_WEBHOOK_ID]}
+    - {id: repo-janitor-trigger-url, name: REPO_JANITOR_TRIGGER_URL, value_type: string, value: '', selector: [env, REPO_JANITOR_TRIGGER_URL]}
+    - {id: repo-janitor-webhook-id, name: REPO_JANITOR_WEBHOOK_ID, value_type: secret, value: '', selector: [env, REPO_JANITOR_WEBHOOK_ID]}
+    - {id: splunk-deepdive-trigger-url, name: SPLUNK_DEEPDIVE_TRIGGER_URL, value_type: string, value: '', selector: [env, SPLUNK_DEEPDIVE_TRIGGER_URL]}
+    - {id: splunk-deepdive-webhook-id, name: SPLUNK_DEEPDIVE_WEBHOOK_ID, value_type: secret, value: '', selector: [env, SPLUNK_DEEPDIVE_WEBHOOK_ID]}
     - {id: vikunja-triage-trigger-url, name: VIKUNJA_TRIAGE_TRIGGER_URL, value_type: string, value: '', selector: [env, VIKUNJA_TRIAGE_TRIGGER_URL]}
     - {id: vikunja-triage-webhook-id, name: VIKUNJA_TRIAGE_WEBHOOK_ID, value_type: secret, value: '', selector: [env, VIKUNJA_TRIAGE_WEBHOOK_ID]}
+    - {id: voice-learn-trigger-url, name: VOICE_LEARN_TRIGGER_URL, value_type: string, value: '', selector: [env, VOICE_LEARN_TRIGGER_URL]}
+    - {id: voice-learn-webhook-id, name: VOICE_LEARN_WEBHOOK_ID, value_type: secret, value: '', selector: [env, VOICE_LEARN_WEBHOOK_ID]}
     - {id: zammad-triage-trigger-url, name: ZAMMAD_TRIAGE_TRIGGER_URL, value_type: string, value: '', selector: [env, ZAMMAD_TRIAGE_TRIGGER_URL]}
     - {id: zammad-triage-webhook-id, name: ZAMMAD_TRIAGE_WEBHOOK_ID, value_type: secret, value: '', selector: [env, ZAMMAD_TRIAGE_WEBHOOK_ID]}
   graph:
     edges:
       - {id: schedule-due, source: schedule, sourceHandle: source, target: due, targetHandle: target, type: custom, data: {sourceType: trigger-schedule, targetType: code}}
-      - {id: due-ai-news, source: due, sourceHandle: 'source', target: check-ai-news, targetHandle: target, type: custom, data: {sourceType: code, targetType: if-else}}
+      - {id: due-agent-audit, source: due, sourceHandle: 'source', target: check-agent-audit, targetHandle: target, type: custom, data: {sourceType: code, targetType: if-else}}
+      - {id: agent-audit-dispatch, source: check-agent-audit, sourceHandle: 'true', target: dispatch-agent-audit, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
+      - {id: check-agent-audit-ai-news, source: check-agent-audit, sourceHandle: 'false', target: check-ai-news, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-agent-audit-ai-news, source: dispatch-agent-audit, sourceHandle: source, target: check-ai-news, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
       - {id: ai-news-dispatch, source: check-ai-news, sourceHandle: 'true', target: dispatch-ai-news, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
       - {id: check-ai-news-daily-innovation, source: check-ai-news, sourceHandle: 'false', target: check-daily-innovation, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
       - {id: dispatch-check-ai-news-daily-innovation, source: dispatch-ai-news, sourceHandle: source, target: check-daily-innovation, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
@@ -39,11 +50,20 @@ workflow:
       - {id: check-model-scout-release-digest, source: check-model-scout, sourceHandle: 'false', target: check-release-digest, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
       - {id: dispatch-check-model-scout-release-digest, source: dispatch-model-scout, sourceHandle: source, target: check-release-digest, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
       - {id: release-digest-dispatch, source: check-release-digest, sourceHandle: 'true', target: dispatch-release-digest, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
-      - {id: check-release-digest-vikunja-triage, source: check-release-digest, sourceHandle: 'false', target: check-vikunja-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
-      - {id: dispatch-check-release-digest-vikunja-triage, source: dispatch-release-digest, sourceHandle: source, target: check-vikunja-triage, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+      - {id: check-release-digest-repo-janitor, source: check-release-digest, sourceHandle: 'false', target: check-repo-janitor, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-release-digest-repo-janitor, source: dispatch-release-digest, sourceHandle: source, target: check-repo-janitor, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+      - {id: repo-janitor-dispatch, source: check-repo-janitor, sourceHandle: 'true', target: dispatch-repo-janitor, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
+      - {id: check-repo-janitor-splunk-deepdive, source: check-repo-janitor, sourceHandle: 'false', target: check-splunk-deepdive, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-repo-janitor-splunk-deepdive, source: dispatch-repo-janitor, sourceHandle: source, target: check-splunk-deepdive, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+      - {id: splunk-deepdive-dispatch, source: check-splunk-deepdive, sourceHandle: 'true', target: dispatch-splunk-deepdive, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
+      - {id: check-splunk-deepdive-vikunja-triage, source: check-splunk-deepdive, sourceHandle: 'false', target: check-vikunja-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-splunk-deepdive-vikunja-triage, source: dispatch-splunk-deepdive, sourceHandle: source, target: check-vikunja-triage, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
       - {id: vikunja-triage-dispatch, source: check-vikunja-triage, sourceHandle: 'true', target: dispatch-vikunja-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
-      - {id: check-vikunja-triage-zammad-triage, source: check-vikunja-triage, sourceHandle: 'false', target: check-zammad-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
-      - {id: dispatch-check-vikunja-triage-zammad-triage, source: dispatch-vikunja-triage, sourceHandle: source, target: check-zammad-triage, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+      - {id: check-vikunja-triage-voice-learn, source: check-vikunja-triage, sourceHandle: 'false', target: check-voice-learn, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-vikunja-triage-voice-learn, source: dispatch-vikunja-triage, sourceHandle: source, target: check-voice-learn, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
+      - {id: voice-learn-dispatch, source: check-voice-learn, sourceHandle: 'true', target: dispatch-voice-learn, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
+      - {id: check-voice-learn-zammad-triage, source: check-voice-learn, sourceHandle: 'false', target: check-zammad-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+      - {id: dispatch-check-voice-learn-zammad-triage, source: dispatch-voice-learn, sourceHandle: source, target: check-zammad-triage, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: if-else}}
       - {id: zammad-triage-dispatch, source: check-zammad-triage, sourceHandle: 'true', target: dispatch-zammad-triage, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: http-request}}
       - {id: last-log, source: check-zammad-triage, sourceHandle: 'false', target: tick-log, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: code}}
       - {id: last-dispatch-log, source: dispatch-zammad-triage, sourceHandle: source, target: tick-log, targetHandle: target, type: custom, data: {sourceType: http-request, targetType: code}}
@@ -92,7 +112,7 @@ workflow:
                     }, separators=(",", ":")),
                 }
 
-            ROTATION_AGENTS = [{"every_minutes":1440,"expected_runtime_minutes":10,"name":"ai-news","offset_minutes":0},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"daily-innovation","offset_minutes":205},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"donna-research","offset_minutes":411},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"model-scout","offset_minutes":617},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"release-digest","offset_minutes":822},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"vikunja-triage","offset_minutes":1028},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"zammad-triage","offset_minutes":1234}]
+            ROTATION_AGENTS = [{"every_minutes":720,"expected_runtime_minutes":10,"name":"agent-audit","offset_minutes":0},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"ai-news","offset_minutes":130},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"daily-innovation","offset_minutes":261},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"donna-research","offset_minutes":392},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"model-scout","offset_minutes":523},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"release-digest","offset_minutes":654},{"every_minutes":10080,"expected_runtime_minutes":10,"name":"repo-janitor","offset_minutes":5498},{"every_minutes":10080,"expected_runtime_minutes":10,"name":"splunk-deepdive","offset_minutes":6414},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"vikunja-triage","offset_minutes":1047},{"every_minutes":10080,"expected_runtime_minutes":10,"name":"voice-learn","offset_minutes":8247},{"every_minutes":1440,"expected_runtime_minutes":10,"name":"zammad-triage","offset_minutes":1309}]
 
             def main(timestamp, speed, offset, paused):
                 return rotation_due(float(timestamp) // 60, ROTATION_AGENTS, speed, offset, paused)
@@ -105,9 +125,38 @@ workflow:
             due: {type: 'array[string]', children: null}
             skipped: {type: 'array[string]', children: null}
             log: {type: string, children: null}
-      - id: check-ai-news
+      - id: check-agent-audit
         type: custom
         position: {x: 600, y: 0}
+        data:
+          title: agent-audit due
+          type: if-else
+          cases:
+            - case_id: 'true'
+              logical_operator: and
+              conditions:
+                - {id: due-agent-audit, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: agent-audit}
+      - id: dispatch-agent-audit
+        type: custom
+        position: {x: 900, y: 200}
+        data:
+          title: Dispatch agent-audit
+          type: http-request
+          error_strategy: default-value
+          default_value:
+            - {key: status_code, type: number, value: 0}
+          method: post
+          url: '{{#env.AGENT_AUDIT_TRIGGER_URL#}}/triggers/webhook/{{#env.AGENT_AUDIT_WEBHOOK_ID#}}'
+          authorization: {type: no-auth}
+          headers: ''
+          params: ''
+          body: {type: none, data: ''}
+          timeout: {connect: 5, read: 10, write: 10}
+          retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
+          ssl_verify: true
+      - id: check-ai-news
+        type: custom
+        position: {x: 1200, y: 0}
         data:
           title: ai-news due
           type: if-else
@@ -118,7 +167,7 @@ workflow:
                 - {id: due-ai-news, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: ai-news}
       - id: dispatch-ai-news
         type: custom
-        position: {x: 900, y: 200}
+        position: {x: 1500, y: 200}
         data:
           title: Dispatch ai-news
           type: http-request
@@ -136,7 +185,7 @@ workflow:
           ssl_verify: true
       - id: check-daily-innovation
         type: custom
-        position: {x: 1200, y: 0}
+        position: {x: 1800, y: 0}
         data:
           title: daily-innovation due
           type: if-else
@@ -147,7 +196,7 @@ workflow:
                 - {id: due-daily-innovation, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: daily-innovation}
       - id: dispatch-daily-innovation
         type: custom
-        position: {x: 1500, y: 200}
+        position: {x: 2100, y: 200}
         data:
           title: Dispatch daily-innovation
           type: http-request
@@ -165,7 +214,7 @@ workflow:
           ssl_verify: true
       - id: check-donna-research
         type: custom
-        position: {x: 1800, y: 0}
+        position: {x: 2400, y: 0}
         data:
           title: donna-research due
           type: if-else
@@ -176,7 +225,7 @@ workflow:
                 - {id: due-donna-research, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: donna-research}
       - id: dispatch-donna-research
         type: custom
-        position: {x: 2100, y: 200}
+        position: {x: 2700, y: 200}
         data:
           title: Dispatch donna-research
           type: http-request
@@ -194,7 +243,7 @@ workflow:
           ssl_verify: true
       - id: check-model-scout
         type: custom
-        position: {x: 2400, y: 0}
+        position: {x: 3000, y: 0}
         data:
           title: model-scout due
           type: if-else
@@ -205,7 +254,7 @@ workflow:
                 - {id: due-model-scout, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: model-scout}
       - id: dispatch-model-scout
         type: custom
-        position: {x: 2700, y: 200}
+        position: {x: 3300, y: 200}
         data:
           title: Dispatch model-scout
           type: http-request
@@ -223,7 +272,7 @@ workflow:
           ssl_verify: true
       - id: check-release-digest
         type: custom
-        position: {x: 3000, y: 0}
+        position: {x: 3600, y: 0}
         data:
           title: release-digest due
           type: if-else
@@ -234,7 +283,7 @@ workflow:
                 - {id: due-release-digest, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: release-digest}
       - id: dispatch-release-digest
         type: custom
-        position: {x: 3300, y: 200}
+        position: {x: 3900, y: 200}
         data:
           title: Dispatch release-digest
           type: http-request
@@ -250,9 +299,67 @@ workflow:
           timeout: {connect: 5, read: 10, write: 10}
           retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
           ssl_verify: true
+      - id: check-repo-janitor
+        type: custom
+        position: {x: 4200, y: 0}
+        data:
+          title: repo-janitor due
+          type: if-else
+          cases:
+            - case_id: 'true'
+              logical_operator: and
+              conditions:
+                - {id: due-repo-janitor, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: repo-janitor}
+      - id: dispatch-repo-janitor
+        type: custom
+        position: {x: 4500, y: 200}
+        data:
+          title: Dispatch repo-janitor
+          type: http-request
+          error_strategy: default-value
+          default_value:
+            - {key: status_code, type: number, value: 0}
+          method: post
+          url: '{{#env.REPO_JANITOR_TRIGGER_URL#}}/triggers/webhook/{{#env.REPO_JANITOR_WEBHOOK_ID#}}'
+          authorization: {type: no-auth}
+          headers: ''
+          params: ''
+          body: {type: none, data: ''}
+          timeout: {connect: 5, read: 10, write: 10}
+          retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
+          ssl_verify: true
+      - id: check-splunk-deepdive
+        type: custom
+        position: {x: 4800, y: 0}
+        data:
+          title: splunk-deepdive due
+          type: if-else
+          cases:
+            - case_id: 'true'
+              logical_operator: and
+              conditions:
+                - {id: due-splunk-deepdive, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: splunk-deepdive}
+      - id: dispatch-splunk-deepdive
+        type: custom
+        position: {x: 5100, y: 200}
+        data:
+          title: Dispatch splunk-deepdive
+          type: http-request
+          error_strategy: default-value
+          default_value:
+            - {key: status_code, type: number, value: 0}
+          method: post
+          url: '{{#env.SPLUNK_DEEPDIVE_TRIGGER_URL#}}/triggers/webhook/{{#env.SPLUNK_DEEPDIVE_WEBHOOK_ID#}}'
+          authorization: {type: no-auth}
+          headers: ''
+          params: ''
+          body: {type: none, data: ''}
+          timeout: {connect: 5, read: 10, write: 10}
+          retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
+          ssl_verify: true
       - id: check-vikunja-triage
         type: custom
-        position: {x: 3600, y: 0}
+        position: {x: 5400, y: 0}
         data:
           title: vikunja-triage due
           type: if-else
@@ -263,7 +370,7 @@ workflow:
                 - {id: due-vikunja-triage, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: vikunja-triage}
       - id: dispatch-vikunja-triage
         type: custom
-        position: {x: 3900, y: 200}
+        position: {x: 5700, y: 200}
         data:
           title: Dispatch vikunja-triage
           type: http-request
@@ -279,9 +386,38 @@ workflow:
           timeout: {connect: 5, read: 10, write: 10}
           retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
           ssl_verify: true
+      - id: check-voice-learn
+        type: custom
+        position: {x: 6000, y: 0}
+        data:
+          title: voice-learn due
+          type: if-else
+          cases:
+            - case_id: 'true'
+              logical_operator: and
+              conditions:
+                - {id: due-voice-learn, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: voice-learn}
+      - id: dispatch-voice-learn
+        type: custom
+        position: {x: 6300, y: 200}
+        data:
+          title: Dispatch voice-learn
+          type: http-request
+          error_strategy: default-value
+          default_value:
+            - {key: status_code, type: number, value: 0}
+          method: post
+          url: '{{#env.VOICE_LEARN_TRIGGER_URL#}}/triggers/webhook/{{#env.VOICE_LEARN_WEBHOOK_ID#}}'
+          authorization: {type: no-auth}
+          headers: ''
+          params: ''
+          body: {type: none, data: ''}
+          timeout: {connect: 5, read: 10, write: 10}
+          retry_config: {retry_enabled: false, max_retries: 0, retry_interval: 0}
+          ssl_verify: true
       - id: check-zammad-triage
         type: custom
-        position: {x: 4200, y: 0}
+        position: {x: 6600, y: 0}
         data:
           title: zammad-triage due
           type: if-else
@@ -292,7 +428,7 @@ workflow:
                 - {id: due-zammad-triage, variable_selector: [due, due], varType: 'array[string]', comparison_operator: contains, value: zammad-triage}
       - id: dispatch-zammad-triage
         type: custom
-        position: {x: 4500, y: 200}
+        position: {x: 6900, y: 200}
         data:
           title: Dispatch zammad-triage
           type: http-request
@@ -310,7 +446,7 @@ workflow:
           ssl_verify: true
       - id: tick-log
         type: custom
-        position: {x: 4800, y: 0}
+        position: {x: 7200, y: 0}
         data:
           title: Dispatch results
           type: code
@@ -325,18 +461,22 @@ workflow:
                 return {"log": json.dumps(tick, separators=(",", ":"))}
           variables:
             - {variable: log, value_selector: [due, log]}
+            - {variable: status_agent_audit, value_selector: [dispatch-agent-audit, status_code]}
             - {variable: status_ai_news, value_selector: [dispatch-ai-news, status_code]}
             - {variable: status_daily_innovation, value_selector: [dispatch-daily-innovation, status_code]}
             - {variable: status_donna_research, value_selector: [dispatch-donna-research, status_code]}
             - {variable: status_model_scout, value_selector: [dispatch-model-scout, status_code]}
             - {variable: status_release_digest, value_selector: [dispatch-release-digest, status_code]}
+            - {variable: status_repo_janitor, value_selector: [dispatch-repo-janitor, status_code]}
+            - {variable: status_splunk_deepdive, value_selector: [dispatch-splunk-deepdive, status_code]}
             - {variable: status_vikunja_triage, value_selector: [dispatch-vikunja-triage, status_code]}
+            - {variable: status_voice_learn, value_selector: [dispatch-voice-learn, status_code]}
             - {variable: status_zammad_triage, value_selector: [dispatch-zammad-triage, status_code]}
           outputs:
             log: {type: string, children: null}
       - id: done
         type: custom
-        position: {x: 5100, y: 0}
+        position: {x: 7500, y: 0}
         data:
           title: Tick log
           type: end
