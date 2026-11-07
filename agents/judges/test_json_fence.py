@@ -81,6 +81,10 @@ _NODES = list(_rendered_nodes())
 def test_every_model_output_parse_node_routes_through_the_helper():
     names = {(file, title) for file, title, _ in _NODES}
     assert names == {
+        ("alert-triage.dsl.yml", "Bound and redact trigger input"),
+        ("pr-keeper.dsl.yml", "Bound and redact trigger input"),
+        ("release-promoter.dsl.yml", "Bound and redact trigger input"),
+        ("repo-janitor.dsl.yml", "Bound and redact trigger input"),
         ("action-extractor.dsl.yml", "Validate reply"),
         ("commit-grouper.dsl.yml", "Validate reply"),
         ("code-simplifier.dsl.yml", "Validate and force comment review"),

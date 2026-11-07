@@ -191,7 +191,7 @@ def test_generic_event_only_renders_webhook(tmp_path):
     assert result.returncode == 0, result.stderr
     dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
     nodes = dsl["workflow"]["graph"]["nodes"]
-    assert [node["data"]["type"] for node in nodes] == ["trigger-webhook", "llm", "end"]
+    assert {node["data"]["type"] for node in nodes} == {"trigger-webhook", "llm", "end", "code", "variable-aggregator"}
     assert nodes[0]["data"]["method"] == "post"
 
 def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
@@ -207,8 +207,47 @@ def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     assert nodes["start"]["method"] == "post"
     assert nodes["start"]["content_type"] == "application/json"
     edges = [edge for edge in graph["edges"] if edge["source"] == "start"]
-    assert len(edges) == 1 and edges[0]["target"] == "model"
+    assert len(edges) == 1 and edges[0]["target"] == "start-input"
     assert not any(data["type"] in ("start", "trigger-schedule") for data in nodes.values())
+
+
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter"])
+def test_each_event_branch_delivers_bounded_redacted_payload_to_the_model(name):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    graph = dsl["workflow"]["graph"]
+    nodes = {node["id"]: node["data"] for node in graph["nodes"]}
+    aggregate = nodes["trigger-input"]
+    model_input = next(message["text"] for message in nodes["model"]["prompt_template"] if message["role"] == "user")
+    assert "{{#trigger-input.output#}}" in model_input
+    assert aggregate["type"] == "variable-aggregator" and aggregate["output_type"] == "string"
+    payload = {"payload": {"action": "opened", "number": 7}, "scope": {"repository": "example/repo"},
+               "mandate": {"operation": "create_pull_request", "request_id": "req-1"}}
+    for entry, data in nodes.items():
+        if not data["type"].startswith("trigger-"):
+            continue
+        prepare = f"{entry}-input"
+        assert [prepare, "text"] in aggregate["variables"]
+        assert any(edge["source"] == entry and edge["target"] == prepare for edge in graph["edges"])
+        assert any(edge["source"] == prepare and edge["target"] == "trigger-input" for edge in graph["edges"])
+        namespace = {}
+        exec(compile(nodes[prepare]["code"], prepare, "exec"), namespace)
+        main = namespace["main"]
+        if data["type"] == "trigger-schedule":
+            assert json.loads(main(timestamp=123)["text"])["result"] == {"timestamp": 123, "kind": "schedule"}
+            continue
+        assert {"variable": "event", "value_selector": [entry, "_webhook_raw"]} in nodes[prepare]["variables"]
+        text = main(timestamp=123, event={"body": payload, "headers": {"Authorization": "excluded"}})["text"]
+        assert json.loads(text) == {"status": "ok", "reason": "", "result": {"timestamp": 123, "kind": "event", "event": payload}}
+        assert "excluded" not in text
+        secret = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
+        redacted = main(timestamp=123, event={"body": {"description": secret}})["text"]
+        assert secret not in redacted and "[REDACTED]" in redacted
+        for malformed in (None, [], {}, {"body": []}, {"body": "not an object"}):
+            with pytest.raises(ValueError, match="invalid triggering event"):
+                main(timestamp=123, event=malformed)
+        with pytest.raises(ValueError, match="exceeds 30000"):
+            main(timestamp=123, event={"body": {"payload": "x" * 30001}})
+    assert any(edge["source"] == "trigger-input" and edge["target"] == "model" for edge in graph["edges"])
 
 
 @pytest.mark.parametrize("triggers", [
@@ -297,7 +336,7 @@ def test_rotation_can_also_have_a_fixed_anchor(tmp_path):
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
     assert nodes["start"]["type"] == "trigger-schedule"
     assert nodes["webhook-0"]["type"] == "trigger-webhook"
-    assert graph["edges"][-1]["data"]["sourceType"] == "trigger-webhook"
+    assert any(edge["source"] == "webhook-0" and edge["data"]["sourceType"] == "trigger-webhook" for edge in graph["edges"])
     assert "{{#start.text#}}" not in str(dsl)
 
 

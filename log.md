@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-11-07
+
+* **Update (agents)**: Generic trigger workflows pass bounded, redacted event envelopes through native branch aggregation.
+
 ## 2026-11-06
 
 * **Update (agents)**: Fold follow-up recording, documentation stewardship, and simplification review into existing
