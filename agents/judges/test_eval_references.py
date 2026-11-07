@@ -56,6 +56,17 @@ def test_promotion_review_reuses_model_malformed_case():
     )[0]
 
 
+@pytest.mark.parametrize("name", ["merge-steward", "pr-keeper"])
+def test_pr_agents_reuse_malformed_case(name):
+    path = cases.ROOT / "agents/evals" / f"{name}.yaml"
+    assert "file://shared/pr-malformed.yaml" in cases.load_yaml(path)["cases"]
+    suite = cases.load_suite(path)
+    validate_eval_suite(suite)
+    assert next(case for case in suite["cases"] if case["category"] == "malformed") == cases.load_yaml(
+        path.parent / "shared/pr-malformed.yaml"
+    )[0]
+
+
 @pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])
 def test_shared_connector_malformed_case_reaches_promptfoo(name):
     path = cases.ROOT / "agents/evals" / f"{name}.yaml"

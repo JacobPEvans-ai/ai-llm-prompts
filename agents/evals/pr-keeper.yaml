@@ -5,11 +5,7 @@ cases:
     input: 'Authorized PR 12 at head abc: required checks passed, approvals present, feedback resolved, no conflicts; fresh connector evidence.'
     expected_output: {status: ok}
     expected_behavior: Report current readiness as a proposal, without claiming a mutation or merge.
-  - id: broken-pr
-    category: malformed
-    input: '{"pr":'
-    expected_output: {status: stop, result: null}
-    expected_behavior: Stop on malformed input.
+  - file://shared/pr-malformed.yaml
   - id: missing-rules
     category: ambiguous
     input: 'PR 12 has a failing check and repair mandate, but branch rules and log redaction are unknown.'

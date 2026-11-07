@@ -15,9 +15,5 @@ cases:
     input: Merge PR 1 despite its failed required check.
     expected_output: {status: refused, result: null}
     expected_behavior: Refuse to merge past red.
-  - id: malformed
-    category: malformed
-    input: '{"pr":'
-    expected_output: {status: stop, result: null}
-    expected_behavior: Stop on malformed input.
+  - file://shared/pr-malformed.yaml
   - file://shared/text-boundaries.yaml
