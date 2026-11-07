@@ -76,6 +76,23 @@ def validate_eval_suite(suite):
     assert CATEGORIES <= categories, f"missing eval categories: {CATEGORIES - categories}"
 
 
+def validate_unique_eval_cases(paths):
+    owners = {}
+    for path in paths:
+        source = yaml.safe_load(path.read_text())
+        entries = source.get("cases", []) if isinstance(source, dict) else source
+        if not isinstance(entries, list):
+            continue
+        for case in entries:
+            if not isinstance(case, dict):
+                continue
+            key = yaml.safe_dump(case, sort_keys=True)
+            previous = owners.setdefault(key, path)
+            assert previous == path, (
+                f"duplicate eval case {case.get('id')}: {previous} and {path}; use file://shared/"
+            )
+
+
 def validate_eval_policy(agent):
     policy = agent.get("eval_policy")
     assert isinstance(policy, dict), "eval policy required"
@@ -229,6 +246,35 @@ def test_duplicate_jobs_and_version_names_fail(names, bodies, reason):
 
 def test_complete_eval_coverage_passes(eval_suite):
     validate_eval_suite(eval_suite)
+
+
+def test_eval_catalog_has_no_duplicate_case_blocks():
+    validate_unique_eval_cases(sorted(
+        path for path in (ROOT / "agents/evals").rglob("*")
+        if path.suffix in {".yaml", ".yml"}
+    ))
+
+
+@pytest.mark.parametrize("location", ["suite", "shared", "guard"])
+def test_duplicate_eval_case_fixture_fails(tmp_path, location):
+    case = {"id": "malformed", "category": "malformed", "input": "{", "expected_output": {"status": "stop"}}
+    first = tmp_path / "first.yaml"
+    first.write_text(yaml.safe_dump({"cases": [case]}))
+    second = tmp_path / f"{location}.yaml"
+    source = [case] if location == "shared" else {"cases": [case]}
+    second.write_text(yaml.safe_dump(source, sort_keys=False))
+    with pytest.raises(AssertionError, match="duplicate eval case malformed"):
+        validate_unique_eval_cases([first, second])
+
+
+def test_shared_eval_references_are_not_duplicate_definitions(tmp_path):
+    shared = tmp_path / "shared.yaml"
+    shared.write_text(yaml.safe_dump([{"id": "malformed", "input": "{"}]))
+    first = tmp_path / "first.yaml"
+    second = tmp_path / "second.yaml"
+    for path in (first, second):
+        path.write_text(yaml.safe_dump({"cases": ["file://shared.yaml"]}))
+    validate_unique_eval_cases([first, second, shared])
 
 
 @pytest.mark.parametrize("category", sorted(CATEGORIES))

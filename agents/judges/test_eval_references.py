@@ -14,6 +14,7 @@ from test_promptfoo_cases import cases
     ("style-gate", "text-boundaries"), ("tag-suggester", "text-boundaries"),
     ("action-extractor", "text-boundaries"), ("vikunja-triage", "triage-boundaries"),
     ("zammad-triage", "triage-boundaries"),
+    ("plain-rewriter", "text-empty"), ("style-gate", "text-empty"),
 ])
 def test_shared_boundaries_reach_the_generator_and_coverage_gate(name, shared_file):
     path = cases.ROOT / "agents" / "evals" / f"{name}.yaml"
@@ -23,8 +24,13 @@ def test_shared_boundaries_reach_the_generator_and_coverage_gate(name, shared_fi
     shared = cases.load_yaml(path.parent / reference.removeprefix("file://"))
     suite = cases.load_suite(path)
     validate_eval_suite(suite)
-    position = raw["cases"].index(reference)
-    assert suite["cases"] == raw["cases"][:position] + shared + raw["cases"][position + 1:]
+    expected = []
+    for entry in raw["cases"]:
+        if isinstance(entry, str) and entry.startswith("file://"):
+            expected.extend(cases.load_yaml(path.parent / entry.removeprefix("file://")))
+        else:
+            expected.append(entry)
+    assert suite["cases"] == expected
 
     generated = {test["metadata"]["case"]: test for test in cases.generate_tests()
                  if test["metadata"]["suite"] == name}
