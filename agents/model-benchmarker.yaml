@@ -1,0 +1,13 @@
+name: model-benchmarker
+extends: local-batch
+description: |
+  Use when: model-scout requests a dated evidence dossier for a candidate and incumbent.
+  Do not use when: asked to select, run, or deploy a model.
+triggers: [{kind: call, source: model-scout}]
+callers: [model-scout]
+tools: [litellm.chat_completions, web_search, web_extract]
+reader: catalog PR
+acted_signal: dossier merged
+identity: agent-model-benchmarker
+api_key_ref: openbao://agent-key/model-benchmarker
+input: Candidate and incumbent references, task, lane, runtime settings, acceptance criteria and live dated sources.

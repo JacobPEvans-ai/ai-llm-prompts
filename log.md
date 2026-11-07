@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Add (agents)**: Add AI news, model scouting and dossiers, and release digests with shared evaluation boundaries.
+
 * **Add (agents)**: Add the Donna briefs, weekly review, research, and innovation agents with shared report contracts,
   evaluation cases, and generated runtime exports and catalogs.
 

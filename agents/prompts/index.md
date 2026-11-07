@@ -4,6 +4,7 @@
 * [Shared homelab context](shared/homelab.md) - Static safety and routing context composed into agent prompts.
 
 * [action-extractor](action-extractor.md)
+* [ai-news](ai-news.md)
 * [ci-fixer](ci-fixer.md)
 * [code-simplifier](code-simplifier.md)
 * [commit-grouper](commit-grouper.md)
@@ -14,7 +15,10 @@
 * [donna-morning-brief](donna-morning-brief.md)
 * [donna-research](donna-research.md)
 * [donna-weekly-review](donna-weekly-review.md)
+* [model-benchmarker](model-benchmarker.md)
+* [model-scout](model-scout.md)
 * [plain-rewriter](plain-rewriter.md)
+* [release-digest](release-digest.md)
 * [style-gate](style-gate.md)
 * [tag-suggester](tag-suggester.md)
 * [vikunja-clerk](vikunja-clerk.md)

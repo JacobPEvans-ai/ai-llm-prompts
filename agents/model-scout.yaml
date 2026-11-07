@@ -1,0 +1,14 @@
+name: model-scout
+extends: local-batch
+description: |
+  Use when: configured model, quantization, benchmark or pricing sources need scouting for catalog candidates.
+  Do not use when: a model should be selected or deployed.
+triggers: [{kind: rotation, every: 1d}]
+tools: [litellm.chat_completions, a2a.call, web_search, web_extract]
+connectors: [github-clerk]
+peers: [model-benchmarker]
+reader: model-benchmarker
+acted_signal: catalog PR via github-clerk
+identity: agent-model-scout
+api_key_ref: openbao://agent-key/model-scout
+input: Configured watch scope, candidate and incumbent references, live source evidence, UTC time, bookmarks and delivery ledger.

@@ -1,0 +1,13 @@
+name: release-digest
+extends: local-batch
+description: |
+  Use when: configured releases or routing changes need review for actionable upgrades.
+  Do not use when: asked to deploy, select a model, or report an incident.
+triggers: [{kind: rotation, every: 1d}]
+tools: [litellm.chat_completions, a2a.call]
+connectors: [github-clerk, vikunja-clerk]
+reader: donna-morning-brief
+acted_signal: upgrade task via vikunja-clerk
+identity: agent-release-digest
+api_key_ref: openbao://agent-key/release-digest
+input: Authorized repositories, reporting window, routing context, source results, bookmarks and delivery ledger.

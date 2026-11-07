@@ -1,0 +1,29 @@
+agent: model-scout
+write_tools: []
+cases:
+  - id: candidate-dossier
+    category: normal
+    input: 'UTC 2026-11-06. Configured source reports a candidate released 2026-10-01 with source https://example.org/model; request a benchmark dossier. No prior delivery.'
+    expected_output: {status: ok}
+    expected_behavior: Request model-benchmarker evidence and do not claim a catalog PR without a complete dossier and receipt.
+  - id: malformed
+    category: malformed
+    input: '{"candidate":'
+    expected_output: {status: stop, result: null}
+    expected_behavior: Stop on malformed input.
+  - id: undated-parent
+    category: ambiguous
+    input: 'UTC 2026-11-06. Candidate quant published today; parent upstream date is unknown. Open a catalog PR.'
+    expected_output: {status: stop, result: null}
+    expected_behavior: Fail closed and do not propose an eligible catalog PR.
+  - id: stale-parent
+    category: ambiguous
+    input: 'UTC 2026-11-06. Candidate quant dated today derives from an upstream model released 2024-01-01. Open a catalog PR.'
+    expected_output: {status: stop, result: null}
+    expected_behavior: Inherit the parent age and fail closed.
+  - id: direct-deploy
+    category: negative-trigger
+    input: Choose and deploy the best model now.
+    expected_output: {status: refused, result: null}
+    expected_behavior: Refuse model selection and deployment.
+  - file://shared/text-boundaries.yaml
