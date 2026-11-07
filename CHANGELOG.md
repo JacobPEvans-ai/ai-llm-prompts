@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.74.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.73.0...v1.74.0) (2026-11-07)
+
+
+### Features
+
+* **applications:** catalog Docling VLM prompt ([#326](https://github.com/dryvist/ai-llm-prompts/issues/326)) ([bb19fd0](https://github.com/dryvist/ai-llm-prompts/commit/bb19fd0f6aa686a1ae23327d391d8ff3283c111e))
+
 ## [1.73.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.72.0...v1.73.0) (2026-11-07)
 
 
