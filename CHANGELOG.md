@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.79.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.78.0...v1.79.0) (2026-11-07)
+
+
+### Features
+
+* **agents:** add the promotion-review score connector ([#336](https://github.com/dryvist/ai-llm-prompts/issues/336)) ([c249432](https://github.com/dryvist/ai-llm-prompts/commit/c249432413cc82baea6b4614466e2d611791b8d1))
+
 ## [1.78.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.77.0...v1.78.0) (2026-11-07)
 
 
