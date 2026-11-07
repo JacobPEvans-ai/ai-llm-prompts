@@ -94,6 +94,13 @@
 * Reader: operator
 * Acted signal: A proposed move is applied.
 
+### [github-clerk](github-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized caller
+* Acted signal: verified receipt or actionable blocked result
+
 ### [model-benchmarker](model-benchmarker.yaml)
 
 * Tier: 2
@@ -181,6 +188,13 @@
 * Trigger: rotation: 7d
 * Reader: style-gate and plain-rewriter prompts
 * Acted signal: draft PR merged
+
+### [zammad-clerk](zammad-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized incident operator
+* Acted signal: verified ticket receipt or actionable blocked result
 
 ### [zammad-triage](zammad-triage.yaml)
 

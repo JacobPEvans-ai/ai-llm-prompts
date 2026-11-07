@@ -1,0 +1,30 @@
+name: zammad-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests a scoped incident ticket operation.
+  Do not use when: the request targets another integration or lacks a mandate.
+owns: zammad
+reader: authorized incident operator
+acted_signal: verified ticket receipt or actionable blocked result
+privacy_class: private
+identity: agent-zammad-clerk
+api_key_ref: openbao://agent-key/zammad-clerk
+mcp_servers: [zammad]
+tools:
+  - zammad.search_tickets
+  - zammad.get_ticket
+  - zammad.get_articles
+  - zammad.create_ticket
+  - zammad.update_ticket
+  - zammad.create_article
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, group_id, ticket_id, payload]
+  write_tools: [zammad.create_ticket, zammad.update_ticket, zammad.create_article]
+guards:
+  credential_owner: zammad-clerk
+  allowed_groups_ref: policy://zammad-clerk/allowed-groups
+  denied_groups_ref: policy://zammad-clerk/denied-groups
+  unknown_or_unscoped_group: refuse
+  articles: {type: note, internal: true, content_type: text/plain}
+  closure: {require_condition: true, require_evidence: true, require_root_cause: true}

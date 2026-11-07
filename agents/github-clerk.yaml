@@ -1,0 +1,50 @@
+name: github-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests a scoped GitHub operation.
+  Do not use when: the request targets another integration or lacks a mandate.
+owns: github
+reader: authorized caller
+acted_signal: verified receipt or actionable blocked result
+identity: agent-github-clerk
+api_key_ref: openbao://agent-key/github-clerk
+mcp_servers: [github]
+tools:
+  - github.read
+  - github.push_bundle
+  - github.create_pull_request
+  - github.comment
+  - github.reply_review
+  - github.resolve_thread
+  - github.mark_ready
+  - github.merge_pull_request
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, repository, target, expected_head, payload]
+  write_tools:
+    - github.push_bundle
+    - github.create_pull_request
+    - github.comment
+    - github.reply_review
+    - github.resolve_thread
+    - github.mark_ready
+    - github.merge_pull_request
+guards:
+  credential_owner: github-clerk
+  allowed_repositories_ref: policy://github-clerk/allowed-repositories
+  denied_repositories_ref: policy://github-clerk/denied-repositories
+  bundles:
+    source: agent-sandbox
+    require_verified_job: true
+    require_digest_and_base: true
+    fast_forward_only: true
+    execute_contents: false
+  merge:
+    allowed_states: [CLEAN, UNSTABLE]
+    require_zero_failing_checks: true
+    require_checks_complete: true
+    require_current_head: true
+    require_review_threads_resolved: true
+    require_approvals: true
+    allow_release_please: true
+    major_releases: human_only

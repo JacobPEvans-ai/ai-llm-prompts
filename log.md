@@ -2,6 +2,8 @@
 
 ## 2026-11-06
 
+* **Add (agents)**: Add GitHub and Zammad connector definitions with shared mandate and receipt policies and shadow evals.
+
 * **Add (agents)**: Consolidate operations into alert triage, deep dives, agent audit, PR upkeep, repository maintenance,
   release promotion, and voice learning; retain standalone patch-grader fixtures.
 

@@ -16,6 +16,7 @@
 * [donna-morning-brief](donna-morning-brief.md)
 * [donna-research](donna-research.md)
 * [donna-weekly-review](donna-weekly-review.md)
+* [github-clerk](github-clerk.md)
 * [model-benchmarker](model-benchmarker.md)
 * [model-scout](model-scout.md)
 * [plain-rewriter](plain-rewriter.md)
@@ -29,4 +30,5 @@
 * [vikunja-clerk](vikunja-clerk.md)
 * [vikunja-triage](vikunja-triage.md)
 * [voice-learn](voice-learn.md)
+* [zammad-clerk](zammad-clerk.md)
 * [zammad-triage](zammad-triage.md)
