@@ -125,6 +125,7 @@
           agent-tests = pkgs.runCommand "ai-llm-prompts-agent-tests" {
             nativeBuildInputs = [
               pkgs.gnumake
+              pkgs.git
               pkgs.gomplate
               pkgs.jq
               pkgs.nodejs
@@ -151,6 +152,7 @@
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
+              git
               gomplate
               markdownlint-cli2
               nodejs
