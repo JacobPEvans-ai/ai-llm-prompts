@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T13:33:21Z"
+timestamp: "2026-11-07T18:50:41Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -26,6 +26,7 @@ Treat the rules as authoring requirements; verify implementation and delivery se
 Resolve source IDs through the dated [authoring source table](agent-standards-sources.md) and
 [platform source table](agent-standards-platform-sources.md). Local policy is identified separately from upstream requirements.
 Memory guidance: Anthropic, *The components of agent memory*, published 2026-11-06. [A20]
+Subagent guidance: Anthropic, *Building agents: When to fold subagents into your main agent loop*, published 2026-10-22. [A21]
 
 ## a. Agent definitions and prompts
 
@@ -33,6 +34,7 @@ Memory guidance: Anthropic, *The components of agent memory*, published 2026-11-
 - Name the native workflow enforcing the [scheduling, branching, approval, and recovery boundary](agent-standards-platform.md#f-dify-agent-and-workflow-construction). [D3]
 - Encode local conventions and costly gotchas; remove discoverable structure and default behavior. Re-evaluate instructions when changing models. [A1] [O1]
 - Define focused roles with explicit tools, Model Context Protocol (MCP) servers, and essential startup skills. [A5]
+- Prefer one agent with progressively disclosed skills and tools for related domain work. Keep an optional subagent only for measured context bloat, fresh-context parallelism, tool-selection or instruction conflicts, or modular permission boundaries. Connector-agent boundaries stay mandatory and are not optional subagents. [A21]
 - Keep `CLAUDE.md` concise, scope specialized rules to files, and store learned context in memory. [A11]
 - Give each learned or stored rule an evidence reference and a confirmed or unconfirmed status. Define who is authorized to correct or retire a wrong rule and how they check it against its source. [A20]
 - Name one writer per source record in shared memory. Preserve key facts exactly: numbers, names, dates, and links. Concurrent writers append to their own records and never rewrite a shared summary (local write policy). [A20]
@@ -110,3 +112,4 @@ Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for sc
 [O8]: agent-standards-sources.md
 [F5]: agent-standards-sources.md
 [A20]: https://www.anthropic.com/research/components-of-agent-memory
+[A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop
