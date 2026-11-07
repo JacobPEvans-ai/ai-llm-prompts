@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T23:00:00Z"
+timestamp: "2026-11-07T09:33:34Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -29,22 +29,26 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 ## a. Agent definitions and prompts
 
 - State the job, inputs, output schema, tools, completion criterion, and authority boundary. Separate project guidance from task instructions. [A4] [A5] [O7]
+- Name the native workflow enforcing the [scheduling, branching, approval, and recovery boundary](agent-standards-platform.md#f-dify-agent-and-workflow-construction). [D3]
 - Encode local conventions and costly gotchas; remove discoverable structure and default behavior. Re-evaluate instructions when changing models. [A1] [O1]
 - Define focused roles with explicit tools, Model Context Protocol (MCP) servers, and essential startup skills. [A5]
 - Keep `CLAUDE.md` concise, scope specialized rules to files, and store learned context in memory. [A11]
 - Treat retrieval and writable memory as instruction inputs. Enforce source, destination, and network limits at runtime; keep preferences read-only. [A2]
-- Retain per-source bookmarks and a delivery ledger. Preserve bookmarks after failed reads; report unavailable sources; advance only after receipt. [A2]
+- Retain per-source bookmarks and a delivery ledger. Preserve bookmarks after failed reads; report unavailable sources. [A2]
+- Reconcile with the destination before retrying delivery. Record ambiguous delivery separately; advance bookmarks and ledger only after confirmed receipt. [A2]
 
 ## b. Skills: structure, descriptions, disclosure, scripts, tests
 
 - Package YAML-frontmatter `SKILL.md` with optional `references/`, `scripts/`, and `assets/`; distribute the complete directory. [A15] [O3]
 - Describe the task and exact triggers. Front-load distinguishing words and include exclusions that prevent false activation. [O1] [O3]
+- Check description overlap with neighboring skills before paid execution trials; measure intended selection and sibling hijacking in the deployed catalog. [G1]
 - Limit descriptions to 1,024 characters. Apply the separate local portability budget of 1,024 bytes and approximately 250-character soft target. [A15]
 - Keep the body below the recommended 500 lines. Link references directly from `SKILL.md`; add navigation to long references. [A12]
 - Keep prerequisites, authority limits, and stop conditions available when loaded alone; disclose optional detail progressively (local policy). [A12]
 - Prefer instructions and existing native tools. Include executable resources only for warranted deterministic work; document dependencies and errors. [O3] [A12]
 - Set invocation policy per harness: Claude `disable-model-invocation` and Codex `agents/openai.yaml`. Verify both behaviors. [A6] [O3]
 - Test triggering and execution separately with positive and negative prompts. Compare outputs against no skill or the previous version. [O3] [A16]
+- Reject revisions with no measured gain over the previous version; consider skills with no measured gain over no skill for retirement (local acceptance policy). [G1] [A3]
 - Test the actual permitted target models and environments. Measure instruction changes for each target. [A12] [O1]
 
 ## c. Tool and MCP design
@@ -60,10 +64,17 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 
 - Define measurable acceptance thresholds for correctness, privacy, latency, cost, and consequential failures before optimization. [A14]
 - Sample production tasks and hard cases: malformed, ambiguous, oversized, unavailable-source, and negative-trigger inputs. [A14] [A3]
-- Check constrained outputs deterministically. Calibrate rubric judges against human-reviewed examples; keep judges distinct from candidates. [A3] [F3]
+- Explain each hard case's intrinsic difficulty independently of current model failures; diagnose saturation, universal failures, and permitted model/effort scaling. [A3]
+- Pair plan-only cases with authorized disposable sandbox execution; grade actual tool arguments, artifacts, and unauthorized effects separately. [G2]
+- Preserve assistant-turn boundaries, parallel call batches, and instruction-injection timing; detect actions dispatched before loaded guidance arrives. [G2]
+- Evaluate complete multi-turn sessions across handoffs; deduplicate repeated messages in ordered trajectories and retain the underlying traces. [C1]
+- Check constrained outputs deterministically. Calibrate rubric judges against human-reviewed examples; keep judges distinct from candidates and blind to candidate identity. [A3] [F3]
+- Randomize candidate/baseline order and check position bias; regrade identical outputs and report verdict disagreement. [A3]
 - Repeat trials in clean environments. Separate model failures from timeouts, truncation, grader inconsistency, and stale state. [A3]
+- Replay shared fixtures through existing direct-tool, controlled-loop, and installed-harness runners; locate guidance/tool-availability differences before editing instructions. [O8]
 - Compare baselines and report uncertainty. Hold test cases outside optimizer context; reject gains within noise. [A3]
 - Record dataset and prompt versions, model and evaluator configurations, and trace-linked results. Gate promotion on regression checks. [F1] [F2]
+- Trace available skills, exact loaded versions, and loaded resource paths; link observations to the canonical skill revision without creating another source of truth. [F5]
 - Continue sampled production evaluation; feed reviewed failures into datasets while protecting held-out answers. [F2] [F3] [A3]
 
 ## e. Coding-agent briefs
@@ -89,3 +100,9 @@ Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for sc
 [F3]: agent-standards-platform-sources.md
 [F1]: agent-standards-platform-sources.md
 [F2]: agent-standards-platform-sources.md
+[D3]: agent-standards-platform-sources.md
+[G1]: agent-standards-sources.md
+[G2]: agent-standards-sources.md
+[C1]: agent-standards-sources.md
+[O8]: agent-standards-sources.md
+[F5]: agent-standards-sources.md

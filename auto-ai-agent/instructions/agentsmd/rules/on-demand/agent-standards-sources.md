@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T22:25:00Z"
+timestamp: "2026-11-07T09:33:34Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -17,7 +17,7 @@ source_history:
 
 # Agent authoring standards sources
 
-Research cutoff: **2026-11-06**. Titles, publishers, dates, and URLs retain the R2 source table's attribution.
+Research cutoff: **2026-11-07**. Titles, publishers, dates, and URLs retain primary-source attribution.
 An undated official page does not establish publication within July–November 2026.
 
 Use these source IDs with the [building standards](agent-standards.md). See the [platform sources](agent-standards-platform-sources.md)
@@ -49,6 +49,11 @@ for Dify, LiteLLM, and Langfuse attribution.
 | O4. Agent approvals & security / Configuration Reference | OpenAI | Undated official pages | [Security][O4], [configuration][O5] |
 | O6. Using GPT-6: prompting best practices | OpenAI | Undated official page | [O6] |
 | O7. Prompting | OpenAI | Undated official page | [O7] |
+| O8. Harness-aware evaluation of plugins | OpenAI | 2026-09-23 | [O8] |
+| G1. Five rules for evaluating agent skills before they bloat your context window | Google Cloud | 2026-11-03 | [G1] |
+| G2. Four evaluation engineering lessons learned from building agent plugins | Google Cloud | 2026-10-16 | [G2] |
+| C1. Trajectories now in LangSmith: A readable view of every agent session | LangChain | 2026-09-24 | [C1] |
+| F5. Skill Management in Langfuse | Langfuse | 2026-11-03 | [F5] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
 [A2]: https://claude.dev/blog/building-effective-agent-automations/
@@ -76,3 +81,8 @@ for Dify, LiteLLM, and Langfuse attribution.
 [O5]: https://learn.chatgpt.com/docs/config-file/config-reference
 [O6]: https://developers.openai.com/api/docs/guides/latest-model
 [O7]: https://learn.chatgpt.com/docs/prompting
+[O8]: https://developers.openai.com/cookbook/examples/partners/harness_aware_plugin_evals/harness_aware_plugin_evals
+[G1]: https://cloud.google.com/blog/topics/developers-practitioners/evaluate-agent-skills-before-they-bloat-your-context-window
+[G2]: https://cloud.google.com/blog/topics/developers-practitioners/four-eval-engineering-lessons
+[C1]: https://www.langchain.com/blog/langsmith-trajectories-tracing
+[F5]: https://langfuse.com/changelog/2026-11-03-skill-management
