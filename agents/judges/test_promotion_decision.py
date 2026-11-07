@@ -91,10 +91,10 @@ def test_score_drop_holds_shadow_candidate():
     assert decide(data) == "hold"
 
 
-def test_zero_acted_signals_holds_shadow_candidate():
+def test_zero_acted_signals_does_not_block_shadow_promotion():
     data = evidence()
     data["acted_signals"]["count"] = 0
-    assert decide(data) == "hold"
+    assert decide(data) == "promote"
 
 
 def test_live_score_regression_demotes():

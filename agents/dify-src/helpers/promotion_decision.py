@@ -131,6 +131,6 @@ def decide(
         promptfoo["passed"] == promptfoo["total"]
         and all(promptfoo[key] == 0 for key in ("failed", "skipped", "timed_out", "truncated"))
     )
-    if current_mode == "shadow" and evals_pass and not regression and acted_count > 0:
+    if current_mode == "shadow" and evals_pass and not regression:
         return "promote"
     return "hold"

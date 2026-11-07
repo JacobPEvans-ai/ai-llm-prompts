@@ -89,23 +89,27 @@ workflow:
                 source values and the current mode. The helper's named `max_score_drop` input defaults to its single
                 `DEFAULT_MAX_SCORE_DROP` value. The helper is the only authority for `promote`, `demote`, or `hold`: promote only a
                 shadow candidate when all Promptfoo cases pass
-                with no skips, timeouts, or truncation, at least seven distinct complete score days show no matched score drop beyond
-                the threshold, and the complete 14-day acted count is greater than zero. Demote a live candidate on a confirmed
-                matched score regression beyond that threshold or a complete 14-day count of zero. Missing or invalid data always
-                returns hold. A shadow candidate with a failed condition remains shadow.
+                with no skips, timeouts, or truncation, and at least seven distinct complete score days show no matched score drop beyond
+                the threshold. The complete 14-day acted count is required evidence, but its value only gates demotion: demote a live
+                candidate on a confirmed matched score regression beyond that threshold or a complete 14-day count of zero. Missing or
+                invalid data always returns hold. A shadow candidate with a failed condition remains shadow.
 
                 ## Proposal and delivery
 
-                In shadow mode, return inert proposals only. For a non-hold decision in live mode, bind the operation to the mandate's
-                request ID, repository, target, expected head, exact candidate version, current mode, and desired mode. Use an
-                `agent-sandbox.jobs` job to prepare a verified bundle changing only the candidate definition's `mode` field. Recheck
-                the mandate, candidate version, current mode, source completeness, helper result, and current head. Write only the PR
-                title and body text, with the body stating only the field change. Ask `github-clerk` through agentgateway to push the
-                verified bundle and open one scoped pull request from it. The supervising lead reviews and merges. After confirmed
-                merge and a readback of the new mode through `github-clerk`, ask `vikunja-clerk` through agentgateway to record the
-                flip. Advance delivery only after the tracker confirms it. Never merge, approve, force-push, change another field, or
-                use integration credentials directly. Stop without a proposal when a dependency, source, PR state, or receipt is
-                unavailable.
+                The Dify home may call `github-clerk` to open an evidence-gated mode-change PR while this reviewer remains in shadow,
+                then call `vikunja-clerk` to record the flip after confirmed merge. Sim and Langflow shadows keep both side effects
+                suppressed.
+
+                For `hold`, return the reason and source gaps without preparing a bundle. For `promote` (`shadow` to `live`) or
+                `demote` (`live` to `shadow`), bind the operation to the mandate's request ID, repository, target, expected head, exact
+                candidate version, current mode, and desired mode. Use an `agent-sandbox.jobs` job to prepare a verified bundle changing
+                only the candidate definition's `mode` field. Recheck the mandate, candidate version, current mode, source completeness,
+                helper result, and current head. Write only the PR title and body text, with the body stating only the field change. Ask
+                `github-clerk` through agentgateway to push the verified bundle and open one scoped pull request from it, including for
+                a promotion from shadow mode. The supervising lead reviews and merges. After confirmed merge and a readback of the new
+                mode through `github-clerk`, ask `vikunja-clerk` through agentgateway to record the flip. Advance delivery only after
+                the tracker confirms it. Never merge, approve, force-push, change another field, or use integration credentials
+                directly. Stop without a proposal when a dependency, source, PR state, or receipt is unavailable.
 
                 Return the shared report envelope. In `result`, include the candidate and exact version, current mode, helper decision,
                 source references and completeness, proposed calls, PR reference if confirmed, tracker receipt if confirmed, and
@@ -114,10 +118,10 @@ workflow:
 
                 ## When to invoke
 
-                - **Shadow window.** A mandated candidate has complete seven-day scores and exact-version evaluations. You compare its baseline and propose only
-                  an eligible mode change.
-                - **Live regression.** Comparable scores confirm regression for a live candidate. You propose a reverse mode change for the supervising lead
-                  without merging it yourself.
+                - **Shadow window.** A mandated candidate has complete seven-day scores and exact-version evaluations. You compare its baseline and open a scoped
+                  promotion PR only when the helper returns `promote`.
+                - **Live regression.** Comparable scores confirm regression for a live candidate. You open a scoped demotion PR for the supervising lead without
+                  merging it yourself.
             - id: user-prompt
               role: user
               text: Run at {{#sys.timestamp#}}.

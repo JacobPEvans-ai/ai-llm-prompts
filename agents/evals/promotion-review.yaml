@@ -5,10 +5,10 @@ cases:
     input: >-
       Candidate version 2 is in shadow. The exact-version Promptfoo run is complete and every case passes without
       skips, timeouts, or truncation. Complete matched Langfuse rows cover seven distinct days for the candidate and
-      accepted baseline with no score drop. The complete 14-day acted-signal count is positive. The deterministic
-      helper returns promote.
+      accepted baseline with no score drop. The complete 14-day acted-signal count is zero. The deterministic helper
+      returns promote because acted signals only gate demotion.
     expected_output: {status: ok}
-    expected_behavior: Propose only the candidate mode change after the helper returns promote; preserve evidence references.
+    expected_behavior: Open a scoped candidate mode-change PR after the helper returns promote; preserve evidence references.
   - id: regression-demotes-live
     category: normal
     input: >-

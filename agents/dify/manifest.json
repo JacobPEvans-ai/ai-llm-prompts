@@ -181,7 +181,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/promotion-review.dsl.yml",
-    "sha256": "a438da814421f29bc4688c2e3316f2c388e210e4140752d1de3981df6541d8d1"
+    "sha256": "6e66462692e17fad1012fb09d7a307098e8507a2ba3a5db57ed938d5ffcd8b97"
   },
   {
     "name": "release-digest",
