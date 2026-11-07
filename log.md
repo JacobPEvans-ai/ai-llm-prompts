@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Add (automation)**: Catalog seven workflow prompts in the actions/ai-inference YAML prompt-file format.
+
 * **Update (instructions)**: Extend dated agent authoring standards for delivery reconciliation, skill selection,
   measured revision gains, evaluation fidelity, judge calibration, and skill tracing.
 
