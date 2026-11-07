@@ -1,10 +1,5 @@
 {{- /* One native scheduler; only tier-2 Dify rotation triggers participate. */ -}}
-{{- $definitions := coll.Slice -}}
-{{- range file.ReadDir "agents" -}}
-  {{- if strings.HasSuffix ".yaml" . -}}
-    {{- $definitions = coll.Append (file.Read (printf "agents/%s" .) | data.YAML) $definitions -}}
-  {{- end -}}
-{{- end -}}
+{{- $definitions := .agents -}}
 {{- $agents := coll.JQ `[.[] | select(.home_platform == "dify" and .tier == 2) | [.triggers[]? | select(.kind == "rotation")] as $triggers | select($triggers | length > 0) | {name: .name, every: $triggers[0].every, trigger_count: ($triggers | length), expected_runtime_minutes: (.expected_runtime_minutes // 10)}] | sort_by(.name)` $definitions -}}
 {{- $roster := coll.Slice -}}
 {{- range $i, $agent := $agents -}}

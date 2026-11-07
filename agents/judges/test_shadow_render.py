@@ -6,6 +6,7 @@ import json
 import pytest
 import yaml
 
+from definitions import definition as resolved_definition, definitions
 from test_dify_render import ROOT, run_make, sample_checkout
 
 
@@ -45,8 +46,7 @@ def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime)
     result = run_make(f"render-{runtime}", f"SHADOW_OUTPUT={tmp_path}")
     assert result.returncode == 0, result.stderr
     expected = set()
-    for path in (ROOT / "agents").glob("*.yaml"):
-        definition = yaml.safe_load(path.read_text())
+    for path, definition in definitions():
         if runtime not in definition.get("shadows", []) or definition["home_platform"] != "dify":
             continue
         # Judge independently: every definition read must be present or the agent explicitly skipped.
@@ -64,7 +64,7 @@ def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime)
     for name in expected:
         assert (tmp_path / name).read_bytes() == (committed / name).read_bytes()
         export = json.loads((tmp_path / name).read_text())
-        definition = yaml.safe_load((ROOT / "agents" / name.replace(".json", ".yaml")).read_text())
+        definition = resolved_definition(name.removesuffix(".json"))
         meta = metadata(runtime, export)
         assert meta["agent"] == definition["name"]
         assert meta["mode"] == "shadow"

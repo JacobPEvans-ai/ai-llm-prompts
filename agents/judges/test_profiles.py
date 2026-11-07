@@ -63,3 +63,20 @@ def test_conventional_paths_cannot_be_overridden(profiled_checkout, tmp_path, fi
     path.write_text(yaml.safe_dump(agent))
     with pytest.raises(subprocess.CalledProcessError):
         resolve_records(tmp_path)
+
+
+def test_rotation_driver_uses_inherited_tier_and_triggers(profiled_checkout, tmp_path):
+    profile = tmp_path / "agents" / "profiles" / "interactive.yaml"
+    profile.write_text("tier: 2\ntriggers: [{kind: rotation, every: 1d}]\n")
+    path, agent = profiled_checkout
+    agent.pop("triggers")
+    path.write_text(yaml.safe_dump(agent))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    code = next(node["data"]["code"] for node in output["workflow"]["graph"]["nodes"] if node["id"] == "due")
+    namespace = {}
+    exec(code, namespace)
+    assert namespace["ROTATION_AGENTS"] == [
+        {"name": "sample", "every_minutes": 1440, "offset_minutes": 0, "expected_runtime_minutes": 10},
+    ]

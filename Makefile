@@ -22,7 +22,8 @@ render-dify:
 			name=$$(yq -r '.name' "$$output/agent.yaml"); \
 			gomplate -c .="$$output/agent.yaml" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
 		done < "$$output/definitions.jsonl"; \
-		gomplate -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
+		jq -s 'map(.agent)' "$$output/definitions.jsonl" > "$$output/agents.json"; \
+		gomplate -c agents="$$output/agents.json" -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
 			-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
 
 check-dify:
