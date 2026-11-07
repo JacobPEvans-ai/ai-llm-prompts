@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T22:25:00Z"
+timestamp: "2026-11-07T23:08:31Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -34,6 +34,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 | D10. Version Control | Dify | Updated 2026-10-23 | [D10] |
 | D11. Skills | Dify | Updated 2026-10-26 | [D11] |
 | D12. Agent node | Dify | Updated 2026-10-28 | [D12] |
+| D13. AI Agent or Workflow? How to Choose the Right Approach | Dify | 2026-10-16 | [D13] |
 | L1. Production Best Practices | LiteLLM | Undated official page | [L1] |
 | L2. Router — Load Balancing | LiteLLM | Undated official page | [L2] |
 | L3. Tag Based Routing | LiteLLM | Undated official page | [L3] |
@@ -56,6 +57,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 [D10]: https://docs.dify.ai/en/self-host/use-dify/build/version-control
 [D11]: https://docs.dify.ai/en/self-host/use-dify/build/skills
 [D12]: https://docs.dify.ai/en/cloud/use-dify/nodes/agent
+[D13]: https://www.dify.ai/de/blog/ai-agent-or-workflow-how-to-choose-the-right-approach
 [L1]: https://docs.litellm.ai/docs/proxy/prod
 [L2]: https://docs.litellm.ai/docs/routing
 [L3]: https://docs.litellm.ai/docs/proxy/tag_routing

@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-06T22:25:00Z"
+timestamp: "2026-11-07T23:08:31Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -23,7 +23,9 @@ Local policy is identified separately from upstream requirements.
 
 ## f. Dify agent and workflow construction
 
-- Put flexible execution in agents; coordinate schedules, branches, approvals, and failures in workflows. Validate recurring behavior. [D3]
+- Use workflows for repeatable steps and to own schedules, branches, checks, approvals, and failure handling. Use an agent for bounded
+  recurring work with a clear, evaluable outcome when context must guide selection among approved actions; keep it to the variable
+  step in a mostly fixed process. [D13]
 - Reuse `difyctl` and its official skill; discover commands supported by the installed client/server pair. [D1] [D2] [D7]
 - Pin application and sandbox contracts together. Preserve build snapshots and skill versions for reproducibility. [D5] [D7]
 - Render platform files from the canonical agent definitions and one standard template (local policy); test compatibility paths for newer formats. [D7]
@@ -54,6 +56,7 @@ Local policy is identified separately from upstream requirements.
 [D11]: agent-standards-platform-sources.md
 [D10]: agent-standards-platform-sources.md
 [D12]: agent-standards-platform-sources.md
+[D13]: agent-standards-platform-sources.md
 [A3]: agent-standards-sources.md
 [D8]: agent-standards-platform-sources.md
 [F2]: agent-standards-platform-sources.md

@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T09:33:34Z"
+timestamp: "2026-11-07T23:08:31Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -53,6 +53,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 | G1. Five rules for evaluating agent skills before they bloat your context window | Google Cloud | 2026-11-03 | [G1] |
 | G2. Four evaluation engineering lessons learned from building agent plugins | Google Cloud | 2026-10-16 | [G2] |
 | C1. Trajectories now in LangSmith: A readable view of every agent session | LangChain | 2026-09-24 | [C1] |
+| C2. Context Engineering Starts with Retrieval | LangChain | 2026-10-23 | [C2] |
 | F5. Skill Management in Langfuse | Langfuse | 2026-11-03 | [F5] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
@@ -85,4 +86,5 @@ for Dify, LiteLLM, and Langfuse attribution.
 [G1]: https://cloud.google.com/blog/topics/developers-practitioners/evaluate-agent-skills-before-they-bloat-your-context-window
 [G2]: https://cloud.google.com/blog/topics/developers-practitioners/four-eval-engineering-lessons
 [C1]: https://www.langchain.com/blog/langsmith-trajectories-tracing
+[C2]: https://www.langchain.com/blog/context-engineering-starts-with-retrieval
 [F5]: https://langfuse.com/changelog/2026-11-03-skill-management
