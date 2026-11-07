@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.68.0...v1.69.0) (2026-11-07)
+
+
+### Features
+
+* **agents:** add shared profiles and authoring standards gate ([#309](https://github.com/dryvist/ai-llm-prompts/issues/309)) ([eaa96be](https://github.com/dryvist/ai-llm-prompts/commit/eaa96befcb6d0f4022103438eb60c75bd461d7e8))
+
 ## [1.68.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.67.0...v1.68.0) (2026-11-06)
 
 
