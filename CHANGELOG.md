@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.81.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.80.0...v1.81.0) (2026-11-07)
+
+
+### Features
+
+* **standards:** choose workflow or agent by step, and keep retrieval sources ([#342](https://github.com/dryvist/ai-llm-prompts/issues/342)) ([05120e8](https://github.com/dryvist/ai-llm-prompts/commit/05120e8bd1c4802a0f2e8b203b394b5ec435fbee))
+
 ## [1.80.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.79.0...v1.80.0) (2026-11-07)
 
 
