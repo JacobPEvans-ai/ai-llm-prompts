@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Add (auto-ai-agent)**: Catalog three Hermes operating-profile addenda with source provenance and literal rendering.
+
 * **Update (instructions)**: Add evidence and status fields, authorized rule correction, and single-writer shared memory requirements.
 
 * **Add (applications)**: Catalog the Open WebUI Docling VLM page-parsing prompt with source provenance and literal rendering.
