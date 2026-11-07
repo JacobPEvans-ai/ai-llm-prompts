@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-06T00:00:00Z
+timestamp: 2026-11-07T06:58:50Z
 ---
 
 # Agent definition schema v2
@@ -32,7 +32,7 @@ The following requirements apply to the merged definition unless marked source-o
 | --- | --- | --- |
 | `extends` | string | Source-only profile name; letters, digits and hyphens. |
 | `name` | string | Required; matches the filename, uses lowercase letters, digits and hyphens; excludes `fill` and `-vN` segments. |
-| `description` | string | Required; separate `Use when:` and `Do not use when:` lines with non-empty conditions. |
+| `description` | string | Required; nonempty `Use when:` and `Do not use when:` lines, trigger scenarios and a prompt invocation pointer. |
 | `owner` | string | Required accountable owner. |
 | `tier` | integer | Required: `0` interactive, `1` event-driven, or `2` batch. |
 | `home_platform` | enum | Required: `dify`, `hermes`, `sim`, `langflow`, or `litellm`. |
@@ -58,16 +58,20 @@ Each trigger declares one of these kinds:
 
 | Kind | Fields | Meaning |
 | --- | --- | --- |
-| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; evaluated by the shared rotation driver. |
-| `anchor` | `at: "HH:MM"` | Fixed daily UTC time; odd minute excluding `:15` and `:45`. |
+| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; Tier 0/1 use native schedules; tier 2 uses the driver. |
+| `anchor` | `at: "HH:MM"`, optional `days: [Mon, ..., Sun]` | Fixed UTC time, daily when days is omitted; odd minute excluding `:15` and `:45`. |
 | `event` | `source: <integration>` | An integration webhook, with optional event filters. |
 | `call` | `source: <caller>` | Explicit invocation through the gateway. |
 
 Raw `cron` and `cadence` fields are forbidden outside rendered Dify graph data.
-The renderer owns schedule expressions. Rotation agents expose a webhook entry for
+The renderer owns schedule expressions. Tier 2 rotation agents expose a webhook entry for
 driver calls; tracker events share that entry. The shared driver owns their windows
-and live pace controls. Anchors render a native
-Dify daily schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
+and live pace controls. Tier 0/1 rotations use native schedules; supported intervals are
+minute divisors of 60 of at least two minutes, hour divisors of 24, and one day.
+Native minute schedules omit `:00`, `:15`, `:30`, and `:45` from their compiled
+minute lists. Omitted starts wait for the next scheduled minute, preserving the
+minimum interval; `every: 15m` starts at `:07`, `:22`, `:37`, and `:52`.
+Anchors render a native Dify schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
 Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 
 ```yaml
@@ -85,6 +89,16 @@ leaf values, including inside partially overridden mappings. Lists replace atomi
 It also rejects identical normalized prompt bodies, equal name stems (hyphen and
 underscore word separators normalize identically), and `-vN` name segments.
 Semantic overlap between differently named jobs remains a reviewer judgment.
+
+Every other roster agent named in a prompt body must be declared in `connectors`
+or `peers`, with `a2a.call` in the resolved tools. This applies to all mentions,
+including invocation examples. Reword references that do not call another agent.
+
+New definitions summarize two to four representative trigger scenarios in their source
+`description`. Their canonical prompts contain a `## When to invoke` section with
+worked prose scenarios that connect supplied inputs to the permitted action.
+Keep profile values inherited; invocation guidance belongs to each agent's definition
+and prompt, and the renderer includes the prompt in every supported runtime.
 
 Each eval case declares `category`. Every suite covers `normal`, `malformed`,
 `ambiguous`, `oversized`, `unavailable-source`, and `negative-trigger`, with an input

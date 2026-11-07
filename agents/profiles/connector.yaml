@@ -1,2 +1,21 @@
 kind: connector
 litellm_role: small
+model_policy: {locality: local_only, cloud_fallback: forbidden}
+channels: [caller, langfuse-trace, phoenix-trace]
+callers: verified_gateway_identity_only
+mandate_binding:
+  source: verified_gateway_structured_fields_only
+guards:
+  caller_identity_source: agentgateway
+  require_verified_caller: true
+  require_scoped_mandate: true
+  deny_wins: true
+  deny_unknown_tools_and_operations: true
+  enforce_before_dispatch: true
+  on_error: deny
+  dedupe_before_write: true
+  readback_after_write: true
+  retry_unknown_write_outcome: read_before_retry
+  shadow_mode: {dispatch_writes: false, return_intended_call: true}
+  telemetry:
+    required_fields: [agent, tier, privacy_class, model, accelerator]

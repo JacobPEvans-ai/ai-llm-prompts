@@ -1,6 +1,45 @@
 # Change Log
 
+## 2026-11-07
+
+* **Update (agents)**: Every prompt reference to another roster agent declares a gateway peer and call tool.
+
+* **Update (agents)**: Clerk and shipping handoffs declare gateway peers and call tools; judges validate outbound prompt handoffs.
+
+* **Update (agents)**: Native minute rotation schedules omit quarter-hour starts and preserve minimum intervals.
+
+* **Update (agents)**: Weekly Splunk readers inherit privacy, connector, tool, and trigger settings from one profile.
+
+* **Update (agents)**: Task advisory agents inherit connector, tool, and privacy settings from one profile.
+
+* **Update (prompts)**: Refresh OKF timestamps for the shared context and revised documentation, simplification, and task prompts.
+
+* **Update (agents)**: Consolidated definitions describe trigger scenarios and link to worked invocation examples in their prompts.
+
+* **Update (evals)**: Model dossier fixtures supply dated source snapshots, immutable references, matched measurements, and URLs.
+
+* **Update (evals)**: GitHub proposal cases include transport identity, a scoped mandate, payload, and an unverified-caller refusal.
+
+* **Update (evals)**: Model scouting and benchmarking reference one shared malformed-candidate case.
+
+* **Update (agents)**: Generic trigger workflows pass bounded, redacted event envelopes through native branch aggregation.
+
 ## 2026-11-06
+
+* **Update (agents)**: Fold deferred task intake, documentation stewardship, and simplification review into existing
+  agents; evaluation instructions follow each canonical output contract.
+
+* **Add (agents)**: Add merge, shipping, reconciliation, session closure, promotion review, and metadata advisory procedures.
+
+* **Add (agents)**: Add GitHub and Zammad connector definitions with shared mandate and receipt policies and shadow evals.
+
+* **Add (agents)**: Consolidate operations into alert triage, deep dives, agent audit, PR upkeep, repository maintenance,
+  release promotion, and voice learning; retain standalone patch-grader fixtures.
+
+* **Add (agents)**: Add AI news, model scouting and dossiers, and release digests with shared evaluation boundaries.
+
+* **Add (agents)**: Add the Donna briefs, weekly review, research, and innovation agents with shared report contracts,
+  evaluation cases, and generated runtime exports and catalogs.
 
 * **Update (instructions)**: Reference the canonical delegate brief rules by their cross-package prompt resource identifier.
 

@@ -1,0 +1,12 @@
+name: donna-evening-wrap
+extends: task-advisor
+description: |
+  Use when: the operator needs an evening summary of task progress.
+  Do not use when: the request asks to modify tasks or handle incidents.
+  Typical triggers include completed tasks and unfinished commitments. See "When to invoke" in the agent prompt.
+identity: agent-donna-evening-wrap
+api_key_ref: openbao://agent-key/donna-evening-wrap
+reader: operator
+acted_signal: A listed item is moved or done.
+triggers: [{kind: anchor, at: '23:11'}]
+input: Approved task changes, supplied bounded Slack digest context, operator preferences, UTC time, source availability and delivery state.

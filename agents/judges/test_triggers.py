@@ -26,16 +26,19 @@ def validate_triggers(agent):
         assert kind in ("rotation", "anchor", "event", "call"), "invalid trigger kind"
         if kind == "rotation":
             assert isinstance(trigger.get("every"), str) and re.fullmatch(r"[1-9]\d*[mhd]", trigger["every"]), "invalid every"
-            assert "at" not in trigger, "at is anchor-only"
+            assert "at" not in trigger and "days" not in trigger, "anchor-only fields"
         elif kind == "anchor":
             at = trigger.get("at")
             assert isinstance(at, str) and re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", at), "invalid UTC time"
             minute = int(at[3:])
             assert minute % 2 == 1 and minute not in (15, 45), "anchor minute must be odd and non-quarter"
             assert "every" not in trigger, "every is rotation-only"
+            if "days" in trigger:
+                days = trigger["days"]
+                assert isinstance(days, list) and days and all(day in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun") for day in days) and len(days) == len(set(days)), "invalid anchor days"
         else:
             assert isinstance(trigger.get("source"), str) and trigger["source"].strip(), "trigger source required"
-            assert "at" not in trigger and "every" not in trigger, "unexpected timing field"
+            assert "at" not in trigger and "every" not in trigger and "days" not in trigger, "unexpected timing field"
     assert sum(t["kind"] == "anchor" for t in triggers) <= 1, "one daily anchor per agent"
 
 

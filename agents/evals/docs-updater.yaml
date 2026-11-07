@@ -27,7 +27,7 @@ cases:
           text: "Workers retry a failed job up to two times."
     expected_behavior: >
       Propose a JSON edit to /services/worker.md that updates the retry limit to five, with a reason tied to the
-      merged behavior change.
+      merged behavior change. Apply wrap-up-docs within this mandate; propose page_edits without claiming an edit or delivery.
   - id: tests-only-change
     category: negative-trigger
     input_event_summary:

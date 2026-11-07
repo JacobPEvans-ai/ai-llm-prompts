@@ -125,8 +125,10 @@
           agent-tests = pkgs.runCommand "ai-llm-prompts-agent-tests" {
             nativeBuildInputs = [
               pkgs.gnumake
+              pkgs.git
               pkgs.gomplate
               pkgs.jq
+              pkgs.nodejs
               pkgs.yq
               (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
             ];
@@ -150,8 +152,10 @@
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
+              git
               gomplate
               markdownlint-cli2
+              nodejs
               pre-commit
               yq-go
               (python3.withPackages (ps: [ ps.pytest ps.pyyaml ]))

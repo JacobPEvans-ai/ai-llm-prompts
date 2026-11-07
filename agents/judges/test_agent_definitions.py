@@ -243,7 +243,7 @@ def test_roster_passes_profile_and_authoring_standards():
 
 
 def test_code_editing_agents_use_sandbox_jobs():
-    for name in ("ci-fixer", "docs-updater"):
+    for name in ("pr-keeper", "docs-updater"):
         agent = definition(name)
         assert agent["code_work"] == "sandbox"
 
@@ -251,6 +251,53 @@ def test_code_editing_agents_use_sandbox_jobs():
 def test_connector_integration_ownership_is_unique():
     owners = [agent["owns"] for _, agent in _definitions() if "owns" in agent]
     assert len(owners) == len(set(owners))
+
+
+def _validate_prompt_handoffs(agent, body, roster):
+    """Require gateway peers for every other roster name mentioned in a prompt."""
+    names = "|".join(re.escape(name) for name in sorted(roster, key=len, reverse=True))
+    handoffs = set(re.findall(
+        rf"\b({names})\b",
+        body.lower(),
+    )) - {agent["name"]}
+    declared = set(agent.get("connectors", [])) | set(agent.get("peers", []))
+    assert handoffs <= declared, f"{agent['name']}: undeclared handoff peers: {sorted(handoffs - declared)}"
+    if handoffs:
+        assert "a2a.call" in agent["tools"], f"{agent['name']}: handoffs require a2a.call"
+
+
+@pytest.mark.parametrize("path,agent", _definitions(), ids=lambda item: item.stem if isinstance(item, Path) else None)
+def test_roster_prompt_handoffs_declare_gateway_peers(path, agent):
+    roster = {peer["name"] for _, peer in _definitions()}
+    _validate_prompt_handoffs(agent, _prompt_body(_ROOT / agent["prompt"]), roster)
+
+
+@pytest.mark.parametrize("handoff", [
+    "Ask task-clerk to record the remediation.",
+    "Coordinate with task-clerk to record the remediation.",
+    "Ordinary tasks go to\n task-clerk through A2A.",
+    "Hand off to task-clerk.",
+    "The task-clerk result is available.",
+    "TASK-CLERK supplies a scoped request.",
+])
+def test_prompt_handoff_fixture_rejects_missing_peer(handoff):
+    agent = {"name": "incident-clerk", "tools": ["a2a.call"], "connectors": []}
+    with pytest.raises(AssertionError, match="undeclared handoff peers.*task-clerk"):
+        _validate_prompt_handoffs(agent, handoff, {"incident-clerk", "task-clerk"})
+
+
+@pytest.mark.parametrize("field", ["connectors", "peers"])
+def test_prompt_handoff_requires_call_tool_even_with_declared_peer(field):
+    agent = {"name": "incident-clerk", "tools": [], field: ["task-clerk"]}
+    with pytest.raises(AssertionError, match="handoffs require a2a.call"):
+        _validate_prompt_handoffs(agent, "Ask task-clerk to record it.", {"task-clerk"})
+    agent["tools"] = ["a2a.call"]
+    _validate_prompt_handoffs(agent, "Ask task-clerk to record it.", {"task-clerk"})
+
+
+def test_self_reference_does_not_require_a_peer():
+    agent = {"name": "task-clerk", "tools": [], "connectors": []}
+    _validate_prompt_handoffs(agent, "You are task-clerk.", {"incident-clerk", "task-clerk"})
 
 
 def test_agent_roster_paths_and_prompt_metadata_are_complete():
@@ -398,14 +445,28 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
         for data in [node.get("data", {})]
         if data.get("type") == "trigger-schedule"
     ]
-    triggers = [trigger for trigger in agent["triggers"] if trigger["kind"] == "anchor"]
-    if triggers:
+    anchors = [trigger for trigger in agent["triggers"] if trigger["kind"] == "anchor"]
+    rotations = [trigger for trigger in agent["triggers"] if trigger["kind"] == "rotation"]
+    if anchors:
         assert len(schedules) == 1
-        assert schedules[0]["cron_expression"] == "{} {} * * *".format(*reversed(triggers[0]["at"].split(":")))
+        days = anchors[0].get("days")
+        day_numbers = {day: n for n, day in enumerate(("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"))}
+        day_field = ",".join(str(n) for n in sorted(day_numbers[day] for day in days)) if days else "*"
+        assert schedules[0]["cron_expression"] == "{} {} * * {}".format(
+            *reversed(anchors[0]["at"].split(":")), day_field
+        )
+    elif rotations and agent["tier"] < 2:
+        assert len(schedules) == 1 and schedules[0]["timezone"] == "UTC"
     else:
         assert not schedules
 
-    if agent.get("mcp_servers"):
+    if "dify" not in agent:
+        if agent.get("tools"):
+            assert agent["mode"] == "shadow"
+        assert {node["data"]["type"] for node in nodes} <= {
+            "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "variable-aggregator"
+        }
+    elif agent.get("mcp_servers"):
         expected_tools = {tool.split(".", 1)[0] for tool in agent["tools"]}
         actual_tools = {
             node.get("data", {}).get("tool_name")
@@ -443,3 +504,15 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
         f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
     )
+
+
+def test_pr_keeper_replaces_ci_fixer():
+    agent = definition("pr-keeper")
+    assert agent["code_work"] == "sandbox"
+    assert {"kind": "rotation", "every": "15m"} in agent["triggers"]
+    assert {"kind": "event", "source": "github.check_run"} in agent["triggers"]
+    for path in (
+        "agents/ci-fixer.yaml", "agents/prompts/ci-fixer.md",
+        "agents/evals/ci-fixer.yaml", "agents/dify/ci-fixer.dsl.yml",
+    ):
+        assert not (_ROOT / path).exists()

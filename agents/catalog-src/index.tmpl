@@ -1,0 +1,27 @@
+<!-- Generated from agent definitions. Run make render-index. -->
+# Agent catalog
+
+## Authoring
+
+* [Agent and skill building standards](../auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards.md) - Agent and skill authoring rules.
+
+## Validation
+
+* [Agent evaluations](evals/promptfoo/README.md) - Executable evaluation suites and output contracts.
+* [Dify import](dify/IMPORT.md) - Generated application imports and acceptance checks.
+
+## Roster
+{{ range (datasource "agents") }}
+### [{{ .name }}]({{ .name }}.yaml)
+
+* Tier: {{ .tier }}
+{{- range $trigger := .triggers }}
+* Trigger: {{ $trigger.kind }}{{ with (index $trigger "source") }}: {{ . }}{{ end }}{{ with (index $trigger "every") }}: {{ . }}{{ end }}{{ with (index $trigger "at") }}: {{ . }} UTC{{ end }}{{ with (index $trigger "days") }} ({{ join . ", " }}){{ end }}
+{{- end }}
+{{- with (index . "reader") }}
+* Reader: {{ . }}
+{{- end }}
+{{- with (index . "acted_signal") }}
+* Acted signal: {{ . }}
+{{- end }}
+{{ end -}}

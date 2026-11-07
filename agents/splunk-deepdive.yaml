@@ -1,0 +1,10 @@
+name: splunk-deepdive
+extends: weekly-splunk-reader
+description: |
+  Use when: an index or sourcetype needs a bounded utilization baseline.
+  Do not use when: an alert needs immediate incident triage.
+  Typical triggers include new source baselines and missing utilization signals. See "When to invoke" in the agent prompt.
+reader: private documentation page
+acted_signal: page PR merged
+identity: agent-splunk-deepdive
+api_key_ref: openbao://agent-key/splunk-deepdive

@@ -1,0 +1,18 @@
+name: ship-runner
+extends: interactive
+description: |
+  Use when: an implementation lead explicitly approves delivery of a scoped change.
+  Do not use when: a change lacks approval or needs merging.
+  Typical triggers include approved change delivery and atomic commit grouping. See "When to invoke" in the agent prompt.
+identity: agent-ship-runner
+api_key_ref: openbao://agent-key/ship-runner
+reader: implementation lead
+acted_signal: The lead receives a confirmed pull request handoff.
+triggers: [{kind: call, source: implementation-lead}]
+connectors: [github-clerk]
+peers: [commit-grouper, pr-keeper]
+code_work: sandbox
+tools: [a2a.call, agent-sandbox.jobs]
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/ship/SKILL.md}
+input: Approved diff, repository, worktree, branch, base, expected head, paths, and acceptance commands.

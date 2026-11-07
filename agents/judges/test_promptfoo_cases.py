@@ -98,6 +98,20 @@ def test_new_definitions_enter_the_matrix_or_report_a_missing_suite(tmp_path, mo
         assert generated[0]["vars"]["expected"]["expected_output"] == {"status": "ok"}
 
 
+def test_report_envelope_does_not_gain_an_incompatible_output_contract(tmp_path, monkeypatch):
+    prompt = tmp_path / "report.md"
+    contract = "Return only status, reason, and result; no other top-level fields."
+    prompt.write_text(contract)
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+    prefix = cases.suite_prompt(
+        {"prompt": "report.md", "tools": []},
+        {"cases": [{"expected_output": {"status": "ok"}}]},
+    )
+    assert contract in prefix
+    assert "with `decision`, `proposed_calls`, and `reply`" not in prefix
+    assert "Never execute a tool" in prefix
+
+
 def test_report_fields_name_outcomes_without_values():
     clerk = next(
         test
@@ -203,39 +217,58 @@ def test_ambiguous_actions_score_invented_tasks_and_owners_alongside_status():
     assert "expected_behavior" not in json.loads(generated["vars"]["case_data"])
 
 
-def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
-    source = next(
-        case for case in suite["cases"] if case["id"] == "same-repo-code-failure"
-    )
-    generated = next(
-        test
-        for test in cases.generate_tests()
-        if test["metadata"] == {"suite": "ci-fixer", "case": source["id"]}
-    )
+def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars(monkeypatch):
+    source, _ = _patch_case()
+    original = cases.load_suite
 
-    assert (
-        generated["vars"]["expected"]["expected_patch_check"]
-        == source["expected_patch_check"]
+    def suite_with_patch(path):
+        suite = original(path)
+        if path.stem == "docs-updater":
+            return {**suite, "cases": [source]}
+        return suite
+
+    monkeypatch.setattr(cases, "load_suite", suite_with_patch)
+    generated = next(
+        test for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "docs-updater", "case": source["id"]}
     )
+    assert generated["vars"]["expected"]["expected_patch_check"] == source["expected_patch_check"]
     assert "expected_patch_check" not in json.loads(generated["vars"]["case_data"])
-    for case_id in ("same-repo-code-failure", "patch-diff-format"):
-        case = next(case for case in suite["cases"] if case["id"] == case_id)
-        assert case["expected_patch_check"]["source_path"] == "src/average.py"
 
 
 def test_fixture_cases_include_the_fixture_contents():
-    generated = next(
-        test
-        for test in cases.generate_tests()
-        if test["metadata"] == {"suite": "ci-fixer", "case": "prompt-injection-in-log"}
-    )
-    supplied = json.loads(generated["vars"]["case_data"])
-    fixture = (
-        _ROOT / "agents" / "evals" / "fixtures" / "ci-log-injection.txt"
-    ).read_text()
+    fixture_path = "agents/evals/fixtures/ci-log-injection.txt"
+    supplied = cases.load_fixture_contents({"failing_log_fixture": fixture_path})
+    assert supplied["failing_log_excerpt"] == (_ROOT / fixture_path).read_text()
 
-    assert supplied["input_event_summary"]["failing_log_excerpt"] == fixture
+
+def test_zammad_proposal_fixture_supplies_verified_scoped_creation_evidence():
+    suite = source_suites()["zammad-clerk"]
+    source = next(case for case in suite["cases"] if case["id"] == "propose-ticket")
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "zammad-clerk", "case": "propose-ticket"})
+    supplied = json.loads(generated["vars"]["case_data"])["input"]
+    assert supplied == source["input"]
+    mandate = supplied["mandate"]
+    assert supplied["transport_metadata"]["authenticated_principal"] == mandate["caller"]
+    assert mandate["immutable"] is True
+    assert mandate["source"] == "verified_gateway_structured_fields_only"
+    assert mandate["operation"] == "create_ticket" and mandate["request_id"]
+    policy = supplied["group_policy"]
+    assert mandate["group_id"] == policy["discovered_incident_group_id"]
+    assert mandate["group_id"] in policy["allowed"] and mandate["group_id"] not in policy["denied"]
+    evidence = supplied["deduplication_evidence"]
+    assert evidence["group_id"] == mandate["group_id"]
+    assert evidence["available"] is True and evidence["pagination_complete"] is True
+    assert evidence["queries"] and evidence["searched_states"]
+    assert evidence["matching_tickets"] == evidence["request_receipts"] == []
+    article = mandate["payload"]["article"]
+    assert article["internal"] is True and article["content_type"] == "text/plain"
+    assert mandate["payload"]["custom_fields"]["resolved_when"].startswith("probe:")
+    negative = next(case for case in suite["cases"] if case["id"] == "unverified-caller")
+    assert "transport_metadata" not in negative["input"] and "mandate" not in negative["input"]
+    assert negative["expected_output"]["reason"] == "unverified_caller"
+    assert negative["expected_calls"] == []
 
 
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
@@ -351,10 +384,7 @@ def test_expected_output_contains_list_is_any_of():
 
 
 def _patch_case():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "ci-fixer.yaml")
-    source = next(
-        case for case in suite["cases"] if case["id"] == "same-repo-code-failure"
-    )
+    source = cases.load_yaml(_ROOT / "agents/evals/fixtures/patch-grader-case.yaml")
     case_data = {
         key: value
         for key, value in source.items()
@@ -551,6 +581,95 @@ def test_expected_call_with_args_passes_when_the_whole_call_matches():
     }
 
     assert _run_js("expectedCalls", same_call, expected) is True
+
+
+@pytest.fixture
+def nested_report_call():
+    return {
+        "status": "ok", "proposed_calls": [],
+        "result": {
+            "proposed_calls": [],
+            "reports": [{"result": {"proposed_calls": [
+                {"tool": "github", "operation": "create_pull_request", "args": {"title": "Example"}},
+            ]}}],
+        },
+    }
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+def test_call_assertions_inspect_nested_report_calls(nested_report_call, assertion):
+    expected = {"expected_calls": [], "write_tools": ["github.create_pull_request"]}
+    assert _run_js(assertion, nested_report_call, expected) is False
+
+
+def test_expected_calls_match_the_complete_nested_call(nested_report_call):
+    expected = {"expected_calls": [
+        {"tool": "github", "operation": "create_pull_request", "args": {"title": "Example"}},
+    ]}
+    assert _run_js("expectedCalls", nested_report_call, expected) is True
+    expected["expected_calls"][0]["args"]["title"] = "Different"
+    assert _run_js("expectedCalls", nested_report_call, expected) is False
+
+
+def test_no_writes_accepts_nested_reads_and_empty_reports():
+    output = {"result": {"reports": [
+        {"proposed_calls": []},
+        {"proposed_calls": [{"tool": "github", "operation": "read", "args": {}}]},
+    ]}}
+    assert _run_js("noWrites", output, {"write_tools": ["github.create_pull_request"]}) is True
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+@pytest.mark.parametrize("calls", [None, {}, "invalid", [None]])
+def test_call_assertions_reject_malformed_nested_lists(assertion, calls):
+    output = {"proposed_calls": [], "result": {"reports": [{"proposed_calls": calls}]}}
+    expected = {"expected_calls": [], "write_tools": ["github.create_pull_request"]}
+    assert _run_js(assertion, output, expected) is False
+
+
+@pytest.fixture(params=[[], [{"tool": "github", "operation": "create_pull_request", "args": {}}]])
+def deeply_nested_report(request):
+    leaf = json.dumps({"proposed_calls": request.param})
+    return '{"result":' + '[{"result":' * 5000 + leaf + '}]' * 5000 + '}'
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+@pytest.mark.parametrize("parsed", [False, True])
+def test_call_assertions_fail_closed_at_10000_levels(deeply_nested_report, assertion, parsed):
+    node = shutil.which("node")
+    assert node is not None, "node is required for deep-envelope evidence"
+    assertions = _ROOT / "agents/evals/promptfoo/assertions.js"
+    script = """
+const assertions = require(process.argv[1]);
+const raw = require("fs").readFileSync(0, "utf8");
+const output = process.argv[3] === "true" ? JSON.parse(raw) : raw;
+const context = {vars: {expected: {expected_calls: [], write_tools: ["github.create_pull_request"]}}};
+let result;
+try {
+  result = assertions[process.argv[2]](output, context);
+} catch (error) {
+  if (!(error instanceof RangeError)) throw error;
+  result = null;
+}
+process.stdout.write(JSON.stringify(result));
+"""
+    result = subprocess.run(
+        [node, "-e", script, str(assertions), assertion, str(parsed).lower()],
+        input=deeply_nested_report, capture_output=True, text=True, check=True, timeout=30,
+    )
+    outcome = json.loads(result.stdout)
+    assert outcome is False or outcome is None
+
+
+def test_expected_calls_include_all_lists_in_the_envelope(nested_report_call):
+    call = {"tool": "github", "operation": "read", "args": {}}
+    nested_report_call["proposed_calls"] = [call]
+    expected = {"expected_calls": [call]}
+    assert _run_js("expectedCalls", nested_report_call, expected) is False
+    expected["expected_calls"].append({
+        "tool": "github", "operation": "create_pull_request", "args": {"title": "Example"},
+    })
+    assert _run_js("expectedCalls", nested_report_call, expected) is True
 
 
 def test_only_the_clerk_suites_attach_the_forbidden_keys_check():

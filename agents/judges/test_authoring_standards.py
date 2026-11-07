@@ -7,6 +7,8 @@ import re
 import pytest
 import yaml
 
+from definitions import resolved_records
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CATEGORIES = {"normal", "malformed", "ambiguous", "oversized", "unavailable-source", "negative-trigger"}
@@ -74,6 +76,23 @@ def validate_eval_suite(suite):
     assert CATEGORIES <= categories, f"missing eval categories: {CATEGORIES - categories}"
 
 
+def validate_unique_eval_cases(paths):
+    owners = {}
+    for path in paths:
+        source = yaml.safe_load(path.read_text())
+        entries = source.get("cases", []) if isinstance(source, dict) else source
+        if not isinstance(entries, list):
+            continue
+        for case in entries:
+            if not isinstance(case, dict):
+                continue
+            key = yaml.safe_dump(case, sort_keys=True)
+            previous = owners.setdefault(key, path)
+            assert previous == path, (
+                f"duplicate eval case {case.get('id')}: {previous} and {path}; use file://shared/"
+            )
+
+
 def validate_eval_policy(agent):
     policy = agent.get("eval_policy")
     assert isinstance(policy, dict), "eval policy required"
@@ -125,6 +144,28 @@ def test_lists_replace_atomically_and_booleans_differ_from_numbers():
     assert list(redundant_paths({"tools": ["read"]}, {"tools": ["read"]})) == ["tools"]
 
 
+@pytest.mark.parametrize("name,profile,fields", [
+    (name, "task-advisor", ("connectors", "tools")) for name in (
+        "donna-evening-wrap", "donna-research", "donna-weekly-review",
+        "daily-innovation", "credential-steward", "agent-audit",
+    )
+] + [
+    (name, "weekly-splunk-reader", ("privacy_class", "connectors", "tools", "triggers"))
+    for name in ("voice-learn", "splunk-deepdive")
+])
+def test_shared_profiles_supply_values_and_reject_restatements(name, profile, fields):
+    source = yaml.safe_load((ROOT / "agents" / f"{name}.yaml").read_text())
+    assert source["extends"] == profile
+    record = next(record for record in resolved_records() if record["agent"]["name"] == name)
+    validate_source(source, record["profile"])
+    for field in fields:
+        assert field not in source
+        assert record["agent"][field] == record["profile"][field]
+        restated = {**source, field: record["agent"][field]}
+        with pytest.raises(AssertionError, match=f"redundant profile values:.*{field}"):
+            validate_source(restated, record["profile"])
+
+
 @pytest.mark.parametrize("field", ["extends", "identity", "api_key_ref"])
 def test_source_requires_explicit_references(source_agent, field):
     del source_agent[field]
@@ -141,6 +182,45 @@ def test_source_cannot_restate_conventional_paths(source_agent, field):
 
 def test_positive_and_negative_trigger_lines_pass(source_agent):
     validate_description(source_agent)
+
+
+@pytest.mark.parametrize("name", [
+    "agent-audit",
+    "ai-news",
+    "alert-triage",
+    "credential-steward",
+    "daily-innovation",
+    "donna-evening-wrap",
+    "donna-morning-brief",
+    "donna-research",
+    "donna-weekly-review",
+    "github-clerk",
+    "merge-steward",
+    "model-benchmarker",
+    "model-scout",
+    "plan-reconciler",
+    "pr-keeper",
+    "promotion-review",
+    "release-digest",
+    "release-promoter",
+    "repo-janitor",
+    "session-closer",
+    "ship-runner",
+    "splunk-deepdive",
+    "voice-learn",
+    "zammad-clerk",
+])
+def test_consolidated_agents_describe_triggers_and_worked_invocations(name):
+    source = yaml.safe_load((ROOT / "agents" / f"{name}.yaml").read_text())
+    assert source["extends"]
+    description = source["description"]
+    assert "Typical triggers include " in description
+    assert '"When to invoke"' in description
+    body = (ROOT / "agents/prompts" / f"{name}.md").read_text().split("\n---\n", 1)[1]
+    section = re.search(r"(?ms)^## When to invoke\n(.*?)(?=^## |\Z)", body)
+    assert section, "worked invocation section required"
+    scenarios = re.findall(r"(?m)^- \*\*[^\n]+?\*\* \S[^\n]*$", section[1])
+    assert 2 <= len(scenarios) <= 4, "two to four worked invocation scenarios required"
 
 
 @pytest.mark.parametrize("description", [None, "Use when: checking a draft.", "Do not use when: editing.", "Use when:\nDo not use when:", "Use when:\nDo not use when: editing.", "Use when: checking. Do not use when: editing."])
@@ -166,6 +246,35 @@ def test_duplicate_jobs_and_version_names_fail(names, bodies, reason):
 
 def test_complete_eval_coverage_passes(eval_suite):
     validate_eval_suite(eval_suite)
+
+
+def test_eval_catalog_has_no_duplicate_case_blocks():
+    validate_unique_eval_cases(sorted(
+        path for path in (ROOT / "agents/evals").rglob("*")
+        if path.suffix in {".yaml", ".yml"}
+    ))
+
+
+@pytest.mark.parametrize("location", ["suite", "shared", "guard"])
+def test_duplicate_eval_case_fixture_fails(tmp_path, location):
+    case = {"id": "malformed", "category": "malformed", "input": "{", "expected_output": {"status": "stop"}}
+    first = tmp_path / "first.yaml"
+    first.write_text(yaml.safe_dump({"cases": [case]}))
+    second = tmp_path / f"{location}.yaml"
+    source = [case] if location == "shared" else {"cases": [case]}
+    second.write_text(yaml.safe_dump(source, sort_keys=False))
+    with pytest.raises(AssertionError, match="duplicate eval case malformed"):
+        validate_unique_eval_cases([first, second])
+
+
+def test_shared_eval_references_are_not_duplicate_definitions(tmp_path):
+    shared = tmp_path / "shared.yaml"
+    shared.write_text(yaml.safe_dump([{"id": "malformed", "input": "{"}]))
+    first = tmp_path / "first.yaml"
+    second = tmp_path / "second.yaml"
+    for path in (first, second):
+        path.write_text(yaml.safe_dump({"cases": ["file://shared.yaml"]}))
+    validate_unique_eval_cases([first, second, shared])
 
 
 @pytest.mark.parametrize("category", sorted(CATEGORIES))

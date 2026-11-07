@@ -1,0 +1,86 @@
+fixture_notice: Synthetic public-source snapshots for a shadow evaluation; make no real-world model claims or tool calls.
+run_utc: '2026-11-06T12:00:00Z'
+task: Classify a short document into one of four supplied labels.
+lane: fixture-accelerator
+acceptance: {accuracy_min: 0.90, p95_latency_ms_max: 100, peak_memory_gib_max: 20, parse_failure_rate_max: 0}
+evidence_context:
+  observed_utc: '2026-11-06T11:57:00Z'
+  available: true
+  confidence: high within these synthetic snapshots only
+  configuration: matched_settings
+matched_settings:
+  runtime: fixture-runtime
+  runtime_revision: cccccccccccccccccccccccccccccccccccccccc
+  accelerator: fixture-accelerator
+  accelerator_memory_gib: 24
+  kernels: fixture-kernels-r1
+  tokenizer: tokenizer.json from each immutable upstream revision
+  template: classification-template-r1
+  parser: json-label-parser-r1
+  endpoint: chat/completions with JSON labels; no tool calls
+  input_tokens: 512
+  output_tokens: 32
+  concurrency: 1
+  temperature: 0
+  seed: 7
+  drafter_memory_gib: 0
+  coresident_memory_gib: 0
+artifact_contract:
+  format: GGUF
+  quantization: Q8_0
+  calibration: No calibration dataset required for this fixture format.
+  shards: 1
+  license: Apache-2.0
+candidate:
+  upstream_repository: https://example.org/models/candidate
+  upstream_revision: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  source_date: '2026-10-01'
+  release_date: '2026-10-01'
+  architecture: fixture-decoder
+  intended_task: short-document classification
+  card_url: https://example.org/models/candidate/revision/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/card
+  license_url: https://example.org/models/candidate/revision/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/LICENSE
+  artifact_repository: https://example.org/artifacts/candidate
+  artifact_revision: dddddddddddddddddddddddddddddddddddddddd
+  artifact_url: https://example.org/artifacts/candidate/revision/dddddddddddddddddddddddddddddddddddddddd/manifest
+  filename: candidate-q8_0.gguf
+  conversion_date: '2026-10-02'
+  artifact_source_revision: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  weight_bytes: 4294967296
+incumbent:
+  upstream_repository: https://example.org/models/incumbent
+  upstream_revision: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  source_date: '2026-09-01'
+  release_date: '2026-09-01'
+  architecture: fixture-decoder-baseline
+  intended_task: short-document classification
+  card_url: https://example.org/models/incumbent/revision/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/card
+  license_url: https://example.org/models/incumbent/revision/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/LICENSE
+  artifact_repository: https://example.org/artifacts/incumbent
+  artifact_revision: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  artifact_url: https://example.org/artifacts/incumbent/revision/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee/manifest
+  filename: incumbent-q8_0.gguf
+  conversion_date: '2026-09-02'
+  artifact_source_revision: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  weight_bytes: 5368709120
+runtime_evidence:
+  url: https://example.org/runtime/revision/cccccccccccccccccccccccccccccccccccccccc/compatibility
+  source_date: '2026-11-05'
+  supported: Both supplied artifacts with matched_settings and artifact_contract.
+  limitations: Classification only; no evidence for generation, tools, embeddings, reranking, OCR or guard tasks.
+benchmark_evidence:
+  url: https://example.org/benchmarks/classification-r1/results
+  source_date: '2026-11-05'
+  benchmark_version: classification-r1
+  dataset_revision: ffffffffffffffffffffffffffffffffffffffff
+  samples: 100
+  scaffold: Exact four-label JSON scoring, classification-template-r1 and json-label-parser-r1.
+  fidelity: Published measurements at matched settings, not estimates or preference votes.
+  candidate: {correct: 94, accuracy: 0.94, p95_latency_ms: 55, parse_failure_rate: 0, semantic_failure_rate: 0.06}
+  incumbent: {correct: 92, accuracy: 0.92, p95_latency_ms: 65, parse_failure_rate: 0, semantic_failure_rate: 0.08}
+memory_evidence:
+  url: https://example.org/benchmarks/classification-r1/memory
+  source_date: '2026-11-05'
+  measurement: Published peak device memory, including weights, cache and workspace at matched settings.
+  candidate: {weights_gib: 4, cache_gib: 2, workspace_gib: 1, peak_gib: 7}
+  incumbent: {weights_gib: 5, cache_gib: 2, workspace_gib: 1, peak_gib: 8}

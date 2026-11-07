@@ -37,6 +37,7 @@ cases:
         start_line: 11
         line: 11
         replacement_text: "  const email = normalizeEmail(user.email);"
+    expected_behavior: Apply the declared code-review procedure within the comment-only mandate; never write code or approve.
   - id: ready-for-review-no-change
     category: boundary
     input_event_summary:

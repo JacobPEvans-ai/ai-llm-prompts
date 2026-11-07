@@ -1,0 +1,19 @@
+name: release-promoter
+extends: event-worker
+description: |
+  Use when: an authorized develop push needs release promotion evaluation.
+  Do not use when: a trunk repository or unmandated promotion is requested.
+  Typical triggers include authorized develop pushes and promotion no-ops. See "When to invoke" in the agent prompt.
+code_work: none
+connectors: [github-clerk]
+tools: [a2a.call]
+triggers:
+  - kind: event
+    source: github.push
+    event_filter: {ref: refs/heads/develop}
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/promote-release/SKILL.md}
+reader: promotion pull request via github-clerk
+acted_signal: promotion PR merged
+identity: agent-release-promoter
+api_key_ref: openbao://agent-key/release-promoter

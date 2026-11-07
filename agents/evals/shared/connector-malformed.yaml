@@ -1,0 +1,4 @@
+- id: malformed
+  category: malformed
+  input: file://agents/evals/fixtures/malformed-event.yaml
+  expected_behavior: Stop without proposing a write.

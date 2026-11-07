@@ -1,0 +1,18 @@
+name: donna-morning-brief
+extends: local-batch
+description: |
+  Use when: the operator needs a morning view of personal work.
+  Do not use when: the request asks to change tasks or handle incidents.
+  Typical triggers include near-term decisions and pull request follow-ups. See "When to invoke" in the agent prompt.
+privacy_class: private
+identity: agent-donna-morning-brief
+api_key_ref: openbao://agent-key/donna-morning-brief
+reader: operator
+acted_signal: A listed item changes within 24 hours.
+triggers: [{kind: anchor, at: '12:37'}]
+connectors: [vikunja-clerk, github-clerk]
+peers: [ai-news, release-digest]
+tools: [a2a.call]
+input: >-
+  Approved commitments and task records via vikunja-clerk, scoped PR status via github-clerk,
+  ai-news and release-digest results via A2A, operator preferences, UTC time, source availability and delivery state.

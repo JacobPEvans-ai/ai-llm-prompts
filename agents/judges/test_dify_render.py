@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from definitions import definitions
+from dify_nodes import node_main
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +36,7 @@ def sample_checkout(tmp_path, name="sample"):
     definition = {
         "name": name,
         "home_platform": "dify",
+        "tier": 2,
         "litellm_role": "medium",
         "shared_prefix": "agents/prompts/prefix.md",
         "prompt": "agents/prompts/sample.md",
@@ -135,6 +137,90 @@ def test_anchor_renders_a_daily_utc_schedule(tmp_path):
     assert start["cron_expression"] == "07 06 * * *" and start["timezone"] == "UTC"
 
 
+
+def test_weekly_anchor_renders_days(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{"kind": "anchor", "at": "06:07", "days": ["Mon", "Fri"]}]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert output["workflow"]["graph"]["nodes"][0]["data"]["cron_expression"] == "07 06 * * 1,5"
+
+
+def test_tier1_rotation_uses_native_schedule(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=1, triggers=[{"kind": "rotation", "every": "15m"}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    start = output["workflow"]["graph"]["nodes"][0]["data"]
+    assert start["type"] == "trigger-schedule"
+    assert start["cron_expression"] == "7,22,37,52 * * * *"
+    driver = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    assert '"name": "sample"' not in str(driver)
+
+
+@pytest.mark.parametrize("tier", [0, 1])
+@pytest.mark.parametrize("interval", range(1, 61))
+def test_native_minute_rotations_exclude_quarter_hours(tmp_path, tier, interval):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=tier, triggers=[{"kind": "rotation", "every": f"{interval}m"}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    if interval < 2 or 60 % interval:
+        assert result.returncode != 0
+        assert "native rotation interval cannot be expressed safely as cron" in result.stderr
+        assert not (tmp_path / "agents/dify/sample.dsl.yml").exists()
+        return
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    start = output["workflow"]["graph"]["nodes"][0]["data"]
+    assert start["type"] == "trigger-schedule" and start["timezone"] == "UTC"
+    minute_field, *remaining_fields = start["cron_expression"].split()
+    assert remaining_fields == ["*", "*", "*", "*"]
+    minutes = [int(minute) for minute in minute_field.split(",")]
+    assert 7 in minutes
+    assert all(0 <= minute < 60 for minute in minutes)
+    assert not {0, 15, 30, 45}.intersection(minutes)
+    starts = sorted(minutes)
+    assert all(end - begin >= interval for begin, end in zip(starts, starts[1:] + [starts[0] + 60]))
+
+
+@pytest.mark.parametrize("mode", ["live", None])
+def test_generic_external_tools_require_shadow(tmp_path, mode):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tools=["github.create_pull_request"], mcp_servers=["github"])
+    if mode is not None:
+        definition["mode"] = mode
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "generic workflows with tools must be shadow proposals" in result.stderr
+
+
+def test_generic_shadow_connector_is_proposal_only(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(mode="shadow", tools=["github.create_pull_request"], mcp_servers=["github"])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert {node["data"]["type"] for node in dsl["workflow"]["graph"]["nodes"]} == {"start", "llm", "end"}
+
+
+def test_generic_event_only_renders_webhook(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{"kind": "event", "source": "github.check_run"}]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    nodes = dsl["workflow"]["graph"]["nodes"]
+    assert {node["data"]["type"] for node in nodes} == {"trigger-webhook", "llm", "end", "code", "variable-aggregator"}
+    assert nodes[0]["data"]["method"] == "post"
+
 def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     path, definition = sample_checkout(tmp_path)
     definition["triggers"] = [{"kind": "event", "source": "vikunja"}, {"kind": "rotation", "every": "1d"}]
@@ -148,8 +234,110 @@ def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     assert nodes["start"]["method"] == "post"
     assert nodes["start"]["content_type"] == "application/json"
     edges = [edge for edge in graph["edges"] if edge["source"] == "start"]
-    assert len(edges) == 1 and edges[0]["target"] == "model"
+    assert len(edges) == 1 and edges[0]["target"] == "start-input"
     assert not any(data["type"] in ("start", "trigger-schedule") for data in nodes.values())
+
+
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter"])
+def test_each_event_branch_delivers_bounded_redacted_payload_to_the_model(name):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    graph = dsl["workflow"]["graph"]
+    nodes = {node["id"]: node["data"] for node in graph["nodes"]}
+    aggregate = nodes["trigger-input"]
+    model_input = next(message["text"] for message in nodes["model"]["prompt_template"] if message["role"] == "user")
+    assert "{{#trigger-input.output#}}" in model_input
+    assert aggregate["type"] == "variable-aggregator" and aggregate["output_type"] == "string"
+    payload = {"payload": {"action": "opened", "number": 7}, "scope": {"repository": "example/repo"},
+               "mandate": {"operation": "create_pull_request", "request_id": "req-1"}}
+    for entry, data in nodes.items():
+        if not data["type"].startswith("trigger-"):
+            continue
+        prepare = f"{entry}-input"
+        assert [prepare, "text"] in aggregate["variables"]
+        assert any(edge["source"] == entry and edge["target"] == prepare for edge in graph["edges"])
+        assert any(edge["source"] == prepare and edge["target"] == "trigger-input" for edge in graph["edges"])
+        namespace = {}
+        exec(compile(nodes[prepare]["code"], prepare, "exec"), namespace)
+        main = namespace["main"]
+        if data["type"] == "trigger-schedule":
+            assert json.loads(main(timestamp=123)["text"])["result"] == {"timestamp": 123, "kind": "schedule"}
+            continue
+        assert {"variable": "event", "value_selector": [entry, "_webhook_raw"]} in nodes[prepare]["variables"]
+        text = main(timestamp=123, event={"body": payload, "headers": {"Authorization": "excluded"}})["text"]
+        assert json.loads(text) == {"status": "ok", "reason": "", "result": {"timestamp": 123, "kind": "event", "event": payload}}
+        assert "excluded" not in text
+        secret = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
+        redacted = main(timestamp=123, event={"body": {"description": secret}})["text"]
+        assert secret not in redacted and "[REDACTED]" in redacted
+        for malformed in (None, [], {}, {"body": []}, {"body": "not an object"}):
+            with pytest.raises(ValueError, match="invalid triggering event"):
+                main(timestamp=123, event=malformed)
+        with pytest.raises(ValueError, match="exceeds 30000"):
+            main(timestamp=123, event={"body": {"payload": "x" * 30001}})
+    assert any(edge["source"] == "trigger-input" and edge["target"] == "model" for edge in graph["edges"])
+
+
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter", "repo-janitor"])
+def test_webhook_input_redacts_nested_secret_values_before_serialization(name):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    payload = {
+        "payload": {
+            "action": "opened",
+            "headers": {"aUtHoRiZaTiOn": "fixture-only", "COOKIE": ["fixture-only"]},
+            "items": [{"api_key": "short", "nested": {
+                "ToKeN": 123, "Password": False, "SECRET": {"value": "fixture-only"},
+            }}],
+        },
+        "scope": {"repository": "example/repo"},
+        "mandate": {"operation": "create_pull_request", "request_id": "req-1"},
+        "count": 7, "enabled": True, "optional": None,
+    }
+    expected = {
+        **payload,
+        "payload": {
+            "action": "opened",
+            "headers": {"aUtHoRiZaTiOn": "[REDACTED]", "COOKIE": "[REDACTED]"},
+            "items": [{"api_key": "[REDACTED]", "nested": {
+                "ToKeN": "[REDACTED]", "Password": "[REDACTED]", "SECRET": "[REDACTED]",
+            }}],
+        },
+    }
+    for node in dsl["workflow"]["graph"]["nodes"]:
+        if node["data"]["type"] != "trigger-webhook":
+            continue
+        main = node_main(name, f"{node['id']}-input")
+        text = main(timestamp=123, event={"body": payload})["text"]
+        assert json.loads(text)["result"]["event"] == expected
+        assert "fixture-only" not in text and len(text) <= 30000
+    assert payload["payload"]["items"][0]["api_key"] == "short"
+
+
+@pytest.mark.parametrize("key,masked", [
+    (key, True) for key in (
+        "api_key", "apiKey", "x-api-key", "X-API-Key", "token", "access_token",
+        "refresh_token", "authToken", "my_token", "password", "auth_password",
+        "secret", "client_secret", "secret_id", "authorization", "Proxy-Authorization",
+        "cookie", "Set-Cookie",
+        "accesstoken", "clientsecret", "xapikey", "passwordhash", "sessioncookie", "authtoken",
+    )
+] + [
+    (key, False) for key in (
+        "max_tokens", "prompt_tokens", "completion_tokens", "total_tokens", "input_tokens",
+        "output_tokens", "cache_read_input_tokens", "tokenizer", "tokens_used", "tokencount",
+    )
+])
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter", "repo-janitor"])
+def test_webhook_secret_key_segments_preserve_usage_counters(name, key, masked):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    payload = {"items": [{"nested": {key: 42}}]}
+    for node in dsl["workflow"]["graph"]["nodes"]:
+        if node["data"]["type"] != "trigger-webhook":
+            continue
+        main = node_main(name, f"{node['id']}-input")
+        result = json.loads(main(timestamp=123, event={"body": payload})["text"])
+        actual = result["result"]["event"]["items"][0]["nested"][key]
+        assert actual == ("[REDACTED]" if masked else 42)
+    assert payload["items"][0]["nested"][key] == 42
 
 
 @pytest.mark.parametrize("triggers", [
@@ -238,7 +426,7 @@ def test_rotation_can_also_have_a_fixed_anchor(tmp_path):
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
     assert nodes["start"]["type"] == "trigger-schedule"
     assert nodes["webhook-0"]["type"] == "trigger-webhook"
-    assert graph["edges"][-1]["data"]["sourceType"] == "trigger-webhook"
+    assert any(edge["source"] == "webhook-0" and edge["data"]["sourceType"] == "trigger-webhook" for edge in graph["edges"])
     assert "{{#start.text#}}" not in str(dsl)
 
 

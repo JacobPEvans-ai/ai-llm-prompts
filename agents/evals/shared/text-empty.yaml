@@ -1,0 +1,5 @@
+- id: stop-empty
+  category: malformed
+  input: " "
+  expected_output: {status: stop, result: null}
+  expected_behavior: Stop on empty input and return a null result.

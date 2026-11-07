@@ -1,0 +1,15 @@
+name: promotion-review
+extends: local-batch
+description: |
+  Use when: a candidate agent has evaluation and shadow evidence for a mode review.
+  Do not use when: evidence is incomplete or the agent asks to review itself.
+  Typical triggers include completed shadow windows and live score regressions. See "When to invoke" in the agent prompt.
+identity: agent-promotion-review
+api_key_ref: openbao://agent-key/promotion-review
+reader: supervising lead
+acted_signal: The lead reviews a mode-change pull request or resolves an evidence blocker.
+triggers: [{kind: rotation, every: 1d}]
+connectors: [github-clerk, vikunja-clerk]
+code_work: sandbox
+tools: [a2a.call, agent-sandbox.jobs]
+input: Mandated candidates, exact versions, promptfoo results, seven-day scores, baseline, comparison policy, and receipts.

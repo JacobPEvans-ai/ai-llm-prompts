@@ -12,7 +12,7 @@ The generator and authoring judges expand these references through the same load
 in `agents/evals/shared/text-boundaries.yaml`.
 
 Each suite's static prefix contains its declared shared prefix when that file exists, its canonical prompt, the declared
-tool list, fixed JSON instructions and the names (never the values) of the outcome fields that suite scores. The prefix
+tool list, canonical JSON output instructions and the names (never the values) of the outcome fields that suite scores. The prefix
 is byte-identical across the suite's cases; case data comes last, in the user message. The generator includes
 `shared/homelab.md` because the agent definitions declare that existing file.
 

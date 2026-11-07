@@ -1,0 +1,19 @@
+name: alert-triage
+extends: event-worker
+description: |
+  Use when: an authenticated Splunk or Grafana alert needs incident triage.
+  Do not use when: remediation or an unverified alert is requested.
+  Typical triggers include firing alerts and recovery transitions. See "When to invoke" in the agent prompt.
+privacy_class: private
+code_work: none
+connectors: [splunk-clerk, grafana-clerk, zammad-clerk]
+tools: [a2a.call]
+triggers:
+  - {kind: event, source: splunk.alert}
+  - {kind: event, source: grafana.alert}
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: homelab-ops/skills/monitoring-first/SKILL.md}
+reader: Zammad via zammad-clerk
+acted_signal: ticket updated
+identity: agent-alert-triage
+api_key_ref: openbao://agent-key/alert-triage

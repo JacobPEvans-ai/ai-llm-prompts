@@ -1,0 +1,12 @@
+name: agent-audit
+extends: task-advisor
+description: |
+  Use when: reviewed agent traces and feedback need an improvement proposal.
+  Do not use when: the request needs operational incident response.
+  Typical triggers include score regressions and repeated delivery failures. See "When to invoke" in the agent prompt.
+triggers: [{kind: rotation, every: 12h}]
+reader: Vikunja via vikunja-clerk
+acted_signal: task closed
+identity: agent-agent-audit
+api_key_ref: openbao://agent-key/agent-audit
+input: Supplied authorized trace excerpts, versioned evaluation results, reviewed feedback, observation window, and existing task receipts.

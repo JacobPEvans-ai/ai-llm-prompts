@@ -1,16 +1,40 @@
+<!-- Generated from agent definitions. Run make render-index. -->
 # Agent prompts
 
-* [Action extractor](action-extractor.md) - Summarize notes or a conversation and extract its action items.
-* [CI fixer](ci-fixer.md) - Repair one eligible code defect exposed by a failed check.
-* [Code simplifier](code-simplifier.md) - Review eligible changes for concrete, behavior-preserving simplifications.
-* [Commit grouper](commit-grouper.md) - Group changed paths into topical commits with caller-supplied message prefixes.
-* [Doc contradiction finder](doc-contradiction-finder.md) - Report contradictions between documentation pages after a merged pull request.
-* [Docs updater](docs-updater.md) - Propose safe private-documentation edits from merged pull requests or operator-decided findings.
-* [Plain rewriter](plain-rewriter.md) - Rewrite one draft in plain language and keep every fact.
-* [Shared homelab context](shared/homelab.md) - Static safety and routing context composed into canonical Dify prompts
-  and loaded before Promptfoo agent prompts.
-* [Style gate](style-gate.md) - Check one draft against the style rules and list every violation.
-* [Tag suggester](tag-suggester.md) - Pick tags for one note from a caller-supplied allowed list.
-* [Vikunja Clerk](vikunja-clerk.md) - Read, file, and update tasks within an explicit project mandate.
-* [Vikunja Triage](vikunja-triage.md) - Rank eligible tasks and propose verified comments or completion updates.
-* [Zammad Triage](zammad-triage.md) - Rank authorized tickets and return guarded triage proposals.
+* [Shared homelab context](shared/homelab.md) - Static safety and routing context composed into agent prompts.
+
+* [action-extractor](action-extractor.md)
+* [agent-audit](agent-audit.md)
+* [ai-news](ai-news.md)
+* [alert-triage](alert-triage.md)
+* [code-simplifier](code-simplifier.md)
+* [commit-grouper](commit-grouper.md)
+* [credential-steward](credential-steward.md)
+* [daily-innovation](daily-innovation.md)
+* [doc-contradiction-finder](doc-contradiction-finder.md)
+* [docs-updater](docs-updater.md)
+* [donna-evening-wrap](donna-evening-wrap.md)
+* [donna-morning-brief](donna-morning-brief.md)
+* [donna-research](donna-research.md)
+* [donna-weekly-review](donna-weekly-review.md)
+* [github-clerk](github-clerk.md)
+* [merge-steward](merge-steward.md)
+* [model-benchmarker](model-benchmarker.md)
+* [model-scout](model-scout.md)
+* [plain-rewriter](plain-rewriter.md)
+* [plan-reconciler](plan-reconciler.md)
+* [pr-keeper](pr-keeper.md)
+* [promotion-review](promotion-review.md)
+* [release-digest](release-digest.md)
+* [release-promoter](release-promoter.md)
+* [repo-janitor](repo-janitor.md)
+* [session-closer](session-closer.md)
+* [ship-runner](ship-runner.md)
+* [splunk-deepdive](splunk-deepdive.md)
+* [style-gate](style-gate.md)
+* [tag-suggester](tag-suggester.md)
+* [vikunja-clerk](vikunja-clerk.md)
+* [vikunja-triage](vikunja-triage.md)
+* [voice-learn](voice-learn.md)
+* [zammad-clerk](zammad-clerk.md)
+* [zammad-triage](zammad-triage.md)

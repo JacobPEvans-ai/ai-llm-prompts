@@ -7,7 +7,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
+OUTPUT_INSTRUCTIONS = """Return exactly one JSON object following the canonical agent prompt's output contract. Any proposed calls are inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {
     "behavior-rubric-judge-a": "exec:../../../scripts/promptfoo/grader.sh judge-a",
@@ -20,7 +20,6 @@ RUBRIC_PROVIDERS = {
 SCORING_MODES = ("field-credit", "strict")
 CUT_METRICS = {
     ("vikunja-clerk", "json-valid"),
-    *((("ci-fixer", metric) for metric in RUBRIC_PROVIDERS)),
 }
 # Reuses the parse checker the hosted Langfuse code evaluator runs (agents/judges/parse-json-schema.py).
 PARSE_SCHEMA_ASSERTION = f"""import importlib.util

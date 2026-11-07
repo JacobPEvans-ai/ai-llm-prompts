@@ -73,6 +73,13 @@ workflow:
                 incident tracker; all other follow-up work belongs in the task tracker. When unsure, propose nothing rather than
                 guessing.
 
+                For roles that use the report envelope, return one JSON object with `status` (`ok`, `refused`, or `stop`), a string
+                `reason`, and `result` (the role-specific object or null). Use null result for `stop` and `refused`. Stop with null
+                result when the supplied input exceeds 30,000 characters. In shadow mode, treat supplied tool results as inert
+                fixtures and return tool actions as proposals; do not execute them or claim a receipt. A described procedure is
+                not proof of runtime enforcement. Work within the supplied source scope;
+                report unavailable sources, preserve bookmarks on failed reads, and advance delivery state only after confirmed receipt.
+
                 Pick the tags that fit one note. The caller supplies the only tags you may use.
 
                 Input: a JSON object with `allowed_tags` (the only tags you may use), `path` (the note's location), and `excerpt` (its
