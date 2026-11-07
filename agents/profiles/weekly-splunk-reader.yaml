@@ -1,0 +1,6 @@
+tier: 2
+channels: [langfuse-trace]
+privacy_class: private
+connectors: [splunk-clerk]
+tools: [a2a.call]
+triggers: [{kind: rotation, every: 7d}]

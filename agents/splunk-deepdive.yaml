@@ -1,13 +1,9 @@
 name: splunk-deepdive
-extends: local-batch
+extends: weekly-splunk-reader
 description: |
   Use when: an index or sourcetype needs a bounded utilization baseline.
   Do not use when: an alert needs immediate incident triage.
   Typical triggers include new source baselines and missing utilization signals. See "When to invoke" in the agent prompt.
-privacy_class: private
-connectors: [splunk-clerk]
-tools: [a2a.call]
-triggers: [{kind: rotation, every: 7d}]
 reader: private documentation page
 acted_signal: page PR merged
 identity: agent-splunk-deepdive

@@ -127,16 +127,21 @@ def test_lists_replace_atomically_and_booleans_differ_from_numbers():
     assert list(redundant_paths({"tools": ["read"]}, {"tools": ["read"]})) == ["tools"]
 
 
-@pytest.mark.parametrize("name", [
-    "donna-evening-wrap", "donna-research", "donna-weekly-review",
-    "daily-innovation", "credential-steward", "agent-audit",
+@pytest.mark.parametrize("name,profile,fields", [
+    (name, "task-advisor", ("connectors", "tools")) for name in (
+        "donna-evening-wrap", "donna-research", "donna-weekly-review",
+        "daily-innovation", "credential-steward", "agent-audit",
+    )
+] + [
+    (name, "weekly-splunk-reader", ("privacy_class", "connectors", "tools", "triggers"))
+    for name in ("voice-learn", "splunk-deepdive")
 ])
-def test_task_advisors_inherit_tools_and_reject_restatements(name):
+def test_shared_profiles_supply_values_and_reject_restatements(name, profile, fields):
     source = yaml.safe_load((ROOT / "agents" / f"{name}.yaml").read_text())
-    assert source["extends"] == "task-advisor"
+    assert source["extends"] == profile
     record = next(record for record in resolved_records() if record["agent"]["name"] == name)
     validate_source(source, record["profile"])
-    for field in ("connectors", "tools"):
+    for field in fields:
         assert field not in source
         assert record["agent"][field] == record["profile"][field]
         restated = {**source, field: record["agent"][field]}

@@ -1,13 +1,9 @@
 name: voice-learn
-extends: local-batch
+extends: weekly-splunk-reader
 description: |
   Use when: approved writing corrections support a voice prompt proposal.
   Do not use when: corrections are unapproved or source material is unavailable.
   Typical triggers include recurring approved corrections and provenance checks. See "When to invoke" in the agent prompt.
-privacy_class: private
-connectors: [splunk-clerk]
-tools: [a2a.call]
-triggers: [{kind: rotation, every: 7d}]
 reader: style-gate and plain-rewriter prompts
 acted_signal: draft PR merged
 identity: agent-voice-learn
