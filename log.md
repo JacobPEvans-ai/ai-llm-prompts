@@ -5,6 +5,16 @@
 * **Update (standards)**: Prefer one agent with progressively disclosed skills, and limit optional subagents to measured needs.
 * **Update (agents)**: Add read-only Langfuse score access and deterministic promotion review inputs and cases.
 
+* **Add (agents)**: Add the OpenBao connector definition, prompt, and shadow evaluation for metadata reads and secret-value refusals.
+
+* **Add (agents)**: Add the Proxmox connector definition, prompt, and shadow evaluation for scoped read-only resource state.
+
+* **Add (agents)**: Add the Semaphore connector definition, prompt, and shadow evaluation for allowlisted template runs.
+
+* **Add (agents)**: Add the Splunk connector definition, prompt, and shadow evaluation for bounded read-only searches.
+
+* **Add (agents)**: Add the Slack connector definition, prompt, and shadow evaluation for policy-approved channel posts.
+
 * **Update (auto-ai-agent)**: Render the daily summary's project allowlist from one input.
 
 * **Add (auto-ai-agent)**: Catalog three Hermes operating-profile addenda with source provenance and literal rendering.
