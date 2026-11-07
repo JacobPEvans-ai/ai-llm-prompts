@@ -46,6 +46,24 @@ def test_inline_cases_remain_unchanged():
     assert cases.load_suite(path) == cases.load_yaml(path)
 
 
+@pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])
+def test_shared_connector_malformed_case_reaches_promptfoo(name):
+    path = cases.ROOT / "agents/evals" / f"{name}.yaml"
+    raw = cases.load_yaml(path)
+    assert raw["cases"].count("file://shared/connector-malformed.yaml") == 1
+    suite = cases.load_suite(path)
+    validate_eval_suite(suite)
+    malformed = [case for case in suite["cases"] if case["id"] == "malformed"]
+    assert malformed == cases.load_yaml(path.parent / "shared/connector-malformed.yaml")
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": name, "case": "malformed"})
+    assert json.loads(generated["vars"]["case_data"])["input"] == cases.load_yaml(
+        cases.ROOT / "agents/evals/fixtures/malformed-event.yaml"
+    )
+    rubrics = [assertion for assertion in generated["assert"] if assertion["type"] == "llm-rubric"]
+    assert rubrics and all(assertion["value"] == malformed[0]["expected_behavior"] for assertion in rubrics)
+
+
 @pytest.fixture
 def suite_path(tmp_path, monkeypatch):
     monkeypatch.setattr(cases, "ROOT", tmp_path)
