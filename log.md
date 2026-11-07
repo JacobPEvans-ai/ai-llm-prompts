@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Add read-only Langfuse score access and deterministic promotion review inputs and cases.
+
 * **Update (auto-ai-agent)**: Render the daily summary's project allowlist from one input.
 
 * **Add (auto-ai-agent)**: Catalog three Hermes operating-profile addenda with source provenance and literal rendering.
