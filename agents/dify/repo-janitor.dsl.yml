@@ -196,6 +196,9 @@ workflow:
 
 
             def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
                 # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
                 words = re.split(r"[^a-z0-9]+", key.lower())
                 key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)

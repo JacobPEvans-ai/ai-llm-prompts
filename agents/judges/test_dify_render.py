@@ -318,11 +318,12 @@ def test_webhook_input_redacts_nested_secret_values_before_serialization(name):
         "refresh_token", "authToken", "my_token", "password", "auth_password",
         "secret", "client_secret", "secret_id", "authorization", "Proxy-Authorization",
         "cookie", "Set-Cookie",
+        "accesstoken", "clientsecret", "xapikey", "passwordhash", "sessioncookie", "authtoken",
     )
 ] + [
     (key, False) for key in (
         "max_tokens", "prompt_tokens", "completion_tokens", "total_tokens", "input_tokens",
-        "output_tokens", "cache_read_input_tokens", "tokenizer",
+        "output_tokens", "cache_read_input_tokens", "tokenizer", "tokens_used", "tokencount",
     )
 ])
 @pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter", "repo-janitor"])
