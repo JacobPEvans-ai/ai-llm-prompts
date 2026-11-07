@@ -9,16 +9,22 @@ from test_authoring_standards import validate_eval_suite
 from test_promptfoo_cases import cases
 
 
-@pytest.mark.parametrize("name", ["plain-rewriter", "commit-grouper", "style-gate", "tag-suggester", "action-extractor"])
-def test_shared_boundaries_reach_the_generator_and_coverage_gate(monkeypatch, name):
+@pytest.mark.parametrize("name,shared_file", [
+    ("plain-rewriter", "text-boundaries"), ("commit-grouper", "text-boundaries"),
+    ("style-gate", "text-boundaries"), ("tag-suggester", "text-boundaries"),
+    ("action-extractor", "text-boundaries"), ("vikunja-triage", "triage-boundaries"),
+    ("zammad-triage", "triage-boundaries"),
+])
+def test_shared_boundaries_reach_the_generator_and_coverage_gate(monkeypatch, name, shared_file):
     path = cases.ROOT / "agents" / "evals" / f"{name}.yaml"
     raw = cases.load_yaml(path)
-    reference = "file://shared/text-boundaries.yaml"
+    reference = f"file://shared/{shared_file}.yaml"
     assert raw["cases"].count(reference) == 1
     shared = cases.load_yaml(path.parent / reference.removeprefix("file://"))
     suite = cases.load_suite(path)
     validate_eval_suite(suite)
-    assert suite["cases"] == raw["cases"][:-1] + shared
+    position = raw["cases"].index(reference)
+    assert suite["cases"] == raw["cases"][:position] + shared + raw["cases"][position + 1:]
 
     monkeypatch.setattr(cases, "SUITES", (name,))
     generated = {test["metadata"]["case"]: test for test in cases.generate_tests()}
@@ -26,6 +32,8 @@ def test_shared_boundaries_reach_the_generator_and_coverage_gate(monkeypatch, na
     for case in shared:
         test = generated[case["id"]]
         assert test["vars"]["expected"]["expected_output"] == case["expected_output"]
+        if "expected_calls" in case:
+            assert test["vars"]["expected"]["expected_calls"] == case["expected_calls"]
         assert any(assertion["metric"] == "expected-output" for assertion in test["assert"])
     oversized = json.loads(generated["coverage-oversized"]["vars"]["case_data"])
     assert len(oversized["input_excerpt"]) > 30000

@@ -61,13 +61,7 @@ cases:
     expected_output:
       actions: []
     expected_behavior: Propose no action for incomplete, ambiguous, oversized, or unavailable records; report the input limitation.
-  - id: coverage-oversized
-    category: oversized
-    input_fixture: agents/evals/fixtures/oversized-input.txt
-    expected_calls: []
-    expected_output:
-      actions: []
-    expected_behavior: Propose no action for incomplete, ambiguous, oversized, or unavailable records; report the input limitation.
+  - file://shared/triage-boundaries.yaml
   - id: coverage-unavailable-source
     category: unavailable-source
     tasks: []
