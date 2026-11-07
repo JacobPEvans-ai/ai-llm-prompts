@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.77.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.76.0...v1.77.0) (2026-11-07)
+
+
+### Features
+
+* **dify:** emit rendered workflow manifest ([#332](https://github.com/dryvist/ai-llm-prompts/issues/332)) ([3dc1d89](https://github.com/dryvist/ai-llm-prompts/commit/3dc1d8970c4b86a99bd5450cbdd5da5113d002c1))
+
 ## [1.76.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.75.0...v1.76.0) (2026-11-07)
 
 
