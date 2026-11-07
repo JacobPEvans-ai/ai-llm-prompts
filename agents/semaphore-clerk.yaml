@@ -1,0 +1,28 @@
+name: semaphore-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests a run of an explicitly approved Semaphore template.
+  Do not use when: the template is unapproved or the caller supplies free-form arguments.
+  Typical triggers include a named maintenance template and an approved workflow run. See "When to invoke" in the agent prompt.
+owns: semaphore
+reader: authorized workflow operator
+acted_signal: verified run receipt or actionable blocked result for an approved template
+privacy_class: private
+identity: agent-semaphore-clerk
+api_key_ref: openbao://agent-key/semaphore-clerk
+mcp_servers: [semaphore]
+tools:
+  - semaphore.find_task_by_request_id
+  - semaphore.run_template
+  - semaphore.get_task
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, template_name, parameter_set]
+  write_tools: [semaphore.run_template]
+guards:
+  credential_owner: semaphore-clerk
+  allowed_templates_ref: policy://semaphore-clerk/allowed-templates
+  allowed_parameter_sets_ref: policy://semaphore-clerk/allowed-parameter-sets
+  unknown_or_unscoped_template: refuse
+  parameter_mode: named_policy_set_only
+  free_form_arguments: refuse
