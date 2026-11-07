@@ -4,16 +4,46 @@ title: Hermes daily summary
 description: Once-daily delta-only operator rollup for the home channel.
 resource: prompt://dryvist/auto-ai-agent/hermes-daily-summary
 tags: [hermes, cron, autonomous-agent]
-timestamp: 2026-07-18T23:05:00-04:00
+timestamp: "2026-11-07T15:26:59Z"
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
-  engine: literal
-  variables: []
+  engine: jinja2
+  variables:
+  - vikunja_project_list
   frontmatter: strip
 source_history:
   - repository: dryvist/ansible-proxmox-ai
-    path: roles/hermes_agent/defaults/main.yml
-    commit: 9c203091e73513131a17abbcc45932847deba934
+    path: roles/hermes_agent/defaults/main/120-docs-and-review-crons.yml
+    commit: 43b2f645503ba1c1faeea9b05e4d81dfdf762c0d
+    variable: hermes_agent_summary_cron_prompt
 ---
-Post the once-daily operator summary to this channel, built from your own last-24h cron findings and memory (Splunk, Zammad incidents opened/updated/resolved, fabric health, GitHub org findings). STRICT rules: deltas and open action items only — never restate unchanged or benign status; every line must be either NEW since yesterday's summary or an open item awaiting a human. Lead with anything needing operator action. No Markdown tables (Slack does not render them) — short lines or key: value pairs. At most 15 lines. Recall memory key "daily-summary-last" to compute the delta and save today's fingerprint back to it. If genuinely nothing new and nothing open, say exactly that in one line — never pad.
+Post the once-daily operator summary to this channel, built from your own last-24h cron
+findings and memory (Splunk, Zammad incidents opened/updated/resolved, fabric health,
+GitHub org findings). For Splunk ingest volume specifically, run one bounded search over
+the last 24h for per-index event/host counts and report it in one line — do not exceed
+that single query. STRICT rules: deltas and open action items only — never restate
+unchanged or benign status; every line must be either NEW since yesterday's summary or
+an open item awaiting a human. Lead with anything needing operator action. No Markdown
+tables (Slack does not render them) — short lines or key: value pairs. At most 15 lines.
+Recall memory key "daily-summary-last" to compute the delta and save today's fingerprint
+back to it. If genuinely nothing new and nothing open, say exactly that in one line —
+never pad. Self-check before posting: every line is a delta or an open action item —
+drop anything that is unchanged or benign status. VIKUNJA PRIORITIES. Query EXACTLY
+these project ids via the vikunja MCP route, and no others: {{ vikunja_project_list }}.
+Do not guess, infer, or recall a project id from anywhere else — an id not on this list
+is wrong, and never query any project not listed here. From those projects' open (not
+done) tasks, rank by priority field first, then by age, then by whether it blocks other
+open tasks, and list the top 5-10. For each: project, task id, title, priority, age in
+days. For the single highest-ranked item, write a short plan: what needs to happen and a
+one-paragraph prompt someone could hand to an agent to resolve it — propose only, do not
+start the work yourself. ZAMMAD IN THE SAME RANKING. Pull open/pending-close Zammad
+incidents (same read scope zammad-review already uses) and weave them into the SAME top
+5-10 ranked list above by the same priority/age/blocking logic — not a separate list. An
+incident and a Vikunja task compete for the same slots. PROPOSE, NEVER CLOSE. For any
+Vikunja task or Zammad incident in your ranked list (or noticed elsewhere in today's
+recall) that looks resolved from the evidence you already have, propose it as one line:
+"<system> #<id> looks resolved: <one-line evidence>; confirm to close." Never call a
+resolve/close/done API yourself from this job — proposal only, the same
+evidence-before-resolve discipline zammad-review already follows for Zammad, extended
+here to Vikunja tasks too.

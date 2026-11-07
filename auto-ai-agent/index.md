@@ -23,6 +23,7 @@ Prompts for continuously running local agents, shared autonomous behavior, monit
 * [Assistant](hermes-assistant/index.md) - Assistant task routines and project coordination prompts.
 * [Coordination](hermes-coordination/index.md) - Repository, review, research, and recurring maintenance prompts.
 * [Curriculum](hermes-curriculum/index.md) - Orientation, investigation, and self-improvement prompts.
+* [Profiles](hermes-profiles/index.md) - Operating-profile addenda for Hermes roles.
 * [Reporting](hermes-reporting/index.md) - Status digests, capacity reports, and ordered hourly stats fragments.
 * [Splunk](hermes-splunk/index.md) - Health, parsing, security, and investigation prompts.
 
