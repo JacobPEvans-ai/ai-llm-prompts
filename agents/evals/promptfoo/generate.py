@@ -7,7 +7,6 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk", "vikunja-triage", "zammad-triage")
 OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {
@@ -191,9 +190,8 @@ def generate_tests():
         capture_output=True, text=True, check=True,
     )
     agents = {record["agent"]["name"]: record["agent"] for record in map(json.loads, resolved.stdout.splitlines())}
-    for name in SUITES:
-        agent = agents[name]
-        suite = load_suite(ROOT / "agents" / "evals" / f"{name}.yaml")
+    for name, agent in sorted(agents.items()):
+        suite = load_suite(ROOT / agent["eval_set"])
         static_prefix = suite_prompt(agent, suite)
         writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
         scoring = suite.get("expected_output_scoring", "field-credit")

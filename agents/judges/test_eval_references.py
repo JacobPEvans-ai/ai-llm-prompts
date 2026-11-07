@@ -15,7 +15,7 @@ from test_promptfoo_cases import cases
     ("action-extractor", "text-boundaries"), ("vikunja-triage", "triage-boundaries"),
     ("zammad-triage", "triage-boundaries"),
 ])
-def test_shared_boundaries_reach_the_generator_and_coverage_gate(monkeypatch, name, shared_file):
+def test_shared_boundaries_reach_the_generator_and_coverage_gate(name, shared_file):
     path = cases.ROOT / "agents" / "evals" / f"{name}.yaml"
     raw = cases.load_yaml(path)
     reference = f"file://shared/{shared_file}.yaml"
@@ -26,8 +26,8 @@ def test_shared_boundaries_reach_the_generator_and_coverage_gate(monkeypatch, na
     position = raw["cases"].index(reference)
     assert suite["cases"] == raw["cases"][:position] + shared + raw["cases"][position + 1:]
 
-    monkeypatch.setattr(cases, "SUITES", (name,))
-    generated = {test["metadata"]["case"]: test for test in cases.generate_tests()}
+    generated = {test["metadata"]["case"]: test for test in cases.generate_tests()
+                 if test["metadata"]["suite"] == name}
     assert len(generated) == len(suite["cases"])
     for case in shared:
         test = generated[case["id"]]

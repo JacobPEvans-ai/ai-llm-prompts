@@ -1,8 +1,7 @@
 # Promptfoo agent evaluation matrix
 
-The test generator loads the five source suites directly; the other suites, such as `agents/evals/docs-updater.yaml`,
-are not part of this matrix. Run it from the repository root to check its case and
-assertion counts:
+The test generator loads every resolved agent definition's `eval_set` into the matrix. New definitions participate
+automatically, and missing suites fail generation. Run it from the repository root to check its case and assertion counts:
 
 ```sh
 python3 agents/evals/promptfoo/generate.py
@@ -33,7 +32,7 @@ share of expected keys that match, and `strict` is 1 only when every key matches
 | `luna` | Codex, through `scripts/promptfoo/luna.sh` | an operator-signed-in `codex` CLI |
 | `go-kimi` | OpenCode Go, through `scripts/promptfoo/go-kimi.sh` | an operator-signed-in `opencode` CLI |
 
-Only the four `code-simplifier` behavior-rubric cases use two graders: `behavior-rubric-judge-a` reads
+Cases scored only through `expected_behavior` use two graders: `behavior-rubric-judge-a` reads
 `EVAL_JUDGE_A_BASE_URL` and `EVAL_JUDGE_A_MODEL`, and `behavior-rubric-judge-b` reads
 `EVAL_JUDGE_B_BASE_URL` and `EVAL_JUDGE_B_MODEL`. A judge that needs a key sets `EVAL_JUDGE_A_API_KEY` or
 `EVAL_JUDGE_B_API_KEY`; the grader sends it as a bearer header and never puts it on a command line. Keys come from the
