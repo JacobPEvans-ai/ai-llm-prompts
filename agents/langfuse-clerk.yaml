@@ -1,0 +1,19 @@
+name: langfuse-clerk
+extends: connector
+description: |
+  Use when: a verified caller requests a bounded Langfuse score read.
+  Do not use when: the request asks for writes, trace content, or an unscoped query.
+  Typical triggers include matching candidate scores to a baseline and checking score coverage. See "When to invoke" in the agent prompt.
+owns: langfuse
+reader: verified gateway caller
+acted_signal: verified score report or actionable blocked result
+identity: agent-langfuse-clerk
+api_key_ref: openbao://agent-key/langfuse-clerk
+privacy_class: private
+mcp_servers: [langfuse]
+tools: [langfuse.read_scores]
+guards:
+  credential_owner: langfuse-clerk
+  read_only_operations: [langfuse.read_scores]
+  require_versioned_score_mandate: true
+  omit_trace_content: true
