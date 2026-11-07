@@ -46,13 +46,27 @@ render-dify:
 			gomplate -c .="$$output/agent.yaml" -f "$(CURDIR)/agents/dify-src/agent.tmpl" -o "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"; \
 		done < "$$output/definitions.jsonl"; \
 		jq -s 'map(.agent)' "$$output/definitions.jsonl" > "$$output/agents.json"; \
+		gomplate -t driver="$(CURDIR)/agents/dify-src/rotation.tmpl" \
+			-i '{{ tmpl.Exec "driver-metadata" . }}' > "$$output/driver.json"; \
+		driver=$$(jq -r '.name' "$$output/driver.json"); \
 		gomplate -c agents="$$output/agents.json" -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
-			-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
+			-o "$(abspath $(DIFY_OUTPUT))/$$driver.dsl.yml"; \
+		jq -c '.[] | select(.home_platform == "dify") | {name, mode, tier, kind: "agent"}' \
+			"$$output/agents.json" > "$$output/manifest.jsonl"; \
+		jq -c . "$$output/driver.json" >> "$$output/manifest.jsonl"; \
+		while IFS= read -r entry; do \
+			name=$$(printf '%s\n' "$$entry" | jq -r '.name'); \
+			hash=$$(sha256sum "$(abspath $(DIFY_OUTPUT))/$$name.dsl.yml"); \
+			printf '%s\n' "$$entry" | jq --arg path "agents/dify/$$name.dsl.yml" \
+				--arg sha256 "$${hash%% *}" '. + {path: $$path, sha256: $$sha256}'; \
+		done < "$$output/manifest.jsonl" > "$$output/entries.jsonl"; \
+		jq -s 'sort_by(.name)' "$$output/entries.jsonl" > "$(abspath $(DIFY_OUTPUT))/manifest.json"
 
 check-dify: check-policy-prompts
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/dify.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
 		mkdir "$$output/committed"; \
 		cp "$(AGENTS_ROOT)"/agents/dify/*.dsl.yml "$$output/committed/"; \
+		cp "$(AGENTS_ROOT)/agents/dify/manifest.json" "$$output/committed/"; \
 		$(MAKE) --no-print-directory render-dify DIFY_OUTPUT="$$output/rendered"; \
 		diff -ru "$$output/committed" "$$output/rendered"
 

@@ -1,6 +1,7 @@
 """Exercise the maintained renderer through the same Make targets as CI."""
 
 import ast
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -74,6 +75,32 @@ def test_committed_outputs_match_shared_template(tmp_path):
     assert not list((ROOT / "agents" / "dify-src").glob("*/*.dsl.yml.tmpl"))
 
 
+def test_manifest_covers_rendered_files_with_matching_hashes():
+    manifest = json.loads((ROOT / "agents/dify/manifest.json").read_text())
+    agents = {agent["name"]: agent for _, agent in definitions() if agent["home_platform"] == "dify"}
+    assert [entry["name"] for entry in manifest] == sorted([*agents, "tier2-rotation"])
+    assert {entry["path"] for entry in manifest} == {
+        path.relative_to(ROOT).as_posix() for path in (ROOT / "agents/dify").glob("*.dsl.yml")
+    }
+    for entry in manifest:
+        assert set(entry) == {"name", "path", "sha256", "mode", "tier", "kind"}
+        path = ROOT / entry["path"]
+        assert path.is_file()
+        assert path.name == f"{entry['name']}.dsl.yml"
+        assert entry["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+        if entry["name"] in agents:
+            assert entry["kind"] == "agent"
+            assert entry["mode"] == agents[entry["name"]]["mode"]
+            assert entry["tier"] == agents[entry["name"]]["tier"]
+        else:
+            driver = subprocess.run(
+                ["gomplate", "-t", f"driver={ROOT}/agents/dify-src/rotation.tmpl",
+                 "-i", '{{ tmpl.Exec "driver-metadata" . }}'],
+                capture_output=True, text=True, check=True,
+            )
+            assert {key: entry[key] for key in ("name", "kind", "mode", "tier")} == json.loads(driver.stdout)
+
+
 @pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])
 def test_new_dify_agent_needs_only_definition_and_prompt(tmp_path, name):
     sample_checkout(tmp_path, name)
@@ -97,7 +124,7 @@ def test_non_dify_agent_is_skipped_without_fragments(tmp_path):
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
     assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {
-        "sample.dsl.yml", "tier2-rotation.dsl.yml",
+        "sample.dsl.yml", "tier2-rotation.dsl.yml", "manifest.json",
     }
 
 
