@@ -2,6 +2,9 @@
 
 ## 2026-11-07
 
+* **Update (instructions)**: Extend dated agent authoring standards for delivery reconciliation, skill selection,
+  measured revision gains, evaluation fidelity, judge calibration, and skill tracing.
+
 * **Update (auto-ai-agent)**: Group the Hermes catalog indexes and compose the hourly stats prompt from three ordered fragments.
 
 * **Add (auto-ai-agent)**: Catalog Hermes assistant, coordination, recurring-job, and shared-fragment prompts with source provenance.
