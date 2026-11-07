@@ -1,6 +1,8 @@
 """Exercise the catalog render and drift targets against an isolated roster."""
 
 from pathlib import Path
+import hashlib
+import re
 import subprocess
 
 import yaml
@@ -60,3 +62,40 @@ def test_catalog_drift_check_rejects_changed_output(tmp_path):
     result = make_catalog(tmp_path, "check-index")
     assert result.returncode != 0
     assert "stale catalog" in result.stdout
+
+
+def test_hermes_group_indexes_cover_every_prompt():
+    catalog = ROOT / "auto-ai-agent"
+    indexes = [catalog / "index.md", *catalog.glob("hermes-*/index.md")]
+    linked = []
+    for index in indexes:
+        for target in re.findall(r"\]\(([^)]+)\)", index.read_text()):
+            path = (index.parent / target).resolve()
+            assert path.is_file(), (index, target)
+            linked.append(path)
+    for prompt in catalog.glob("*.md"):
+        if prompt.name == "index.md":
+            continue
+        assert linked.count(prompt.resolve()) == 1, prompt.name
+    for index in indexes[1:]:
+        assert linked.count(index.resolve()) == 1, index
+
+
+def test_hourly_stats_index_reassembles_original_bytes():
+    index = ROOT / "auto-ai-agent/hermes-reporting/index.md"
+    targets = re.findall(r"^\d+\. .*\]\(([^)]+)\)", index.read_text(), re.MULTILINE)
+    assert len(targets) == 3
+    bodies = []
+    for position, target in enumerate(targets, start=1):
+        path = index.parent / target
+        assert path.name == f"hermes-llm-stats-hourly-part{position}.md"
+        opening, metadata, body = path.read_bytes().split(b"---\n", 2)
+        assert opening == b""
+        contract = yaml.safe_load(metadata)
+        assert contract["type"] == "LLM Prompt Fragment"
+        assert contract["render"] == {"engine": "literal", "variables": [], "frontmatter": "strip"}
+        bodies.append(body)
+    # Freeze the original literal body, including separators and its final byte.
+    assert hashlib.sha256(b"".join(bodies)).hexdigest() == (
+        "a87b6c38d9564d22e89cd2b878fffa556933adcebe91d8ec468c416d22260642"
+    )

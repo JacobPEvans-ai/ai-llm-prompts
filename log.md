@@ -2,6 +2,12 @@
 
 ## 2026-11-07
 
+* **Update (auto-ai-agent)**: Group the Hermes catalog indexes and compose the hourly stats prompt from three ordered fragments.
+
+* **Add (auto-ai-agent)**: Catalog Hermes assistant, coordination, recurring-job, and shared-fragment prompts with source provenance.
+
+* **Update (auto-ai-agent)**: Zammad review uses the current bounded lifecycle and weekly metrics prompt.
+
 * **Update (agents)**: Every prompt reference to another roster agent declares a gateway peer and call tool.
 
 * **Update (agents)**: Clerk and shipping handoffs declare gateway peers and call tools; judges validate outbound prompt handoffs.
