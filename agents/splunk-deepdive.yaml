@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: an index or sourcetype needs a bounded utilization baseline.
   Do not use when: an alert needs immediate incident triage.
+  Typical triggers include new source baselines and missing utilization signals. See "When to invoke" in the agent prompt.
 privacy_class: private
 connectors: [splunk-clerk]
 tools: [a2a.call]

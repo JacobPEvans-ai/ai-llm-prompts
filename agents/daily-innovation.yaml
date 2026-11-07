@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: recent work supports a novel, actionable improvement proposal.
   Do not use when: the idea duplicates an open task or prior proposal.
+  Typical triggers include recurring work friction and candidate deduplication. See "When to invoke" in the agent prompt.
 privacy_class: private
 identity: agent-daily-innovation
 api_key_ref: openbao://agent-key/daily-innovation

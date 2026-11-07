@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: the operator needs a weekly review and proposed next moves.
   Do not use when: the request authorizes task changes or incident handling.
+  Typical triggers include weekly commitments and inbox review proposals. See "When to invoke" in the agent prompt.
 privacy_class: private
 identity: agent-donna-weekly-review
 api_key_ref: openbao://agent-key/donna-weekly-review

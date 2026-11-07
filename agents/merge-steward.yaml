@@ -3,6 +3,7 @@ extends: interactive
 description: |
   Use when: a lead explicitly authorizes ready pull requests to be merged.
   Do not use when: a pull request needs repairs or production promotion.
+  Typical triggers include authorized ready pull requests and dependency-ordered merges. See "When to invoke" in the agent prompt.
 identity: agent-merge-steward
 api_key_ref: openbao://agent-key/merge-steward
 reader: implementation lead

@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Consolidated definitions describe trigger scenarios and link to worked invocation examples in their prompts.
+
 * **Update (evals)**: Model dossier fixtures supply dated source snapshots, immutable references, matched measurements, and URLs.
 
 * **Update (evals)**: GitHub proposal cases include transport identity, a scoped mandate, payload, and an unverified-caller refusal.

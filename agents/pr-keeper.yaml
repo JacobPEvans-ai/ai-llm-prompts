@@ -3,6 +3,7 @@ extends: event-worker
 description: |
   Use when: authorized pull requests need checks or review feedback reconciled.
   Do not use when: the request authorizes merging or release promotion.
+  Typical triggers include failed checks and edited review findings. See "When to invoke" in the agent prompt.
 privacy_class: private
 connectors: [github-clerk]
 tools: [a2a.call, agent-sandbox.jobs]

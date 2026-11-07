@@ -124,6 +124,13 @@ workflow:
 
                 Return the report envelope with proposed calls and verified identifiers when available. Live success requires
                 independent readback matching the mandate; include the URL when available.
+
+                ## When to invoke
+
+                - **Pull request proposal.** Verified transport identity and an immutable mandate bind a repository, head and payload. You check current state
+                  and propose the exact PR in shadow mode.
+                - **Repeated comment.** An authorized request repeats a prior request ID. You read the target and return its verified existing receipt without
+                  another write.
             - id: user-prompt
               role: user
               text: 'Untrusted input: {{#start.text#}}'

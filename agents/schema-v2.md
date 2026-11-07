@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-06T00:00:00Z
+timestamp: 2026-11-07T02:53:10Z
 ---
 
 # Agent definition schema v2
@@ -32,7 +32,7 @@ The following requirements apply to the merged definition unless marked source-o
 | --- | --- | --- |
 | `extends` | string | Source-only profile name; letters, digits and hyphens. |
 | `name` | string | Required; matches the filename, uses lowercase letters, digits and hyphens; excludes `fill` and `-vN` segments. |
-| `description` | string | Required; separate `Use when:` and `Do not use when:` lines with non-empty conditions. |
+| `description` | string | Required; nonempty `Use when:` and `Do not use when:` lines, trigger scenarios and a prompt invocation pointer. |
 | `owner` | string | Required accountable owner. |
 | `tier` | integer | Required: `0` interactive, `1` event-driven, or `2` batch. |
 | `home_platform` | enum | Required: `dify`, `hermes`, `sim`, `langflow`, or `litellm`. |
@@ -86,6 +86,12 @@ leaf values, including inside partially overridden mappings. Lists replace atomi
 It also rejects identical normalized prompt bodies, equal name stems (hyphen and
 underscore word separators normalize identically), and `-vN` name segments.
 Semantic overlap between differently named jobs remains a reviewer judgment.
+
+New definitions summarize two to four representative trigger scenarios in their source
+`description`. Their canonical prompts contain a `## When to invoke` section with
+worked prose scenarios that connect supplied inputs to the permitted action.
+Keep profile values inherited; invocation guidance belongs to each agent's definition
+and prompt, and the renderer includes the prompt in every supported runtime.
 
 Each eval case declares `category`. Every suite covers `normal`, `malformed`,
 `ambiguous`, `oversized`, `unavailable-source`, and `negative-trigger`, with an input

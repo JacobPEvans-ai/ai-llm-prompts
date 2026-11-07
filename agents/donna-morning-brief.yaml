@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: the operator needs a morning view of personal work.
   Do not use when: the request asks to change tasks or handle incidents.
+  Typical triggers include near-term decisions and pull request follow-ups. See "When to invoke" in the agent prompt.
 privacy_class: private
 identity: agent-donna-morning-brief
 api_key_ref: openbao://agent-key/donna-morning-brief

@@ -79,6 +79,13 @@ workflow:
                 unavailable source and stop rather than claim complete coverage. Advance delivery state only after a confirmed receipt.
                 Return the report envelope; its result contains the cited news items and their delivery state. A sourced item or a named
                 blocker completes the run.
+
+                ## When to invoke
+
+                - **New announcement.** A configured source publishes an item matching approved interests. You verify its date and provide a citation for
+                  donna-morning-brief.
+                - **Revised report.** A source updates a previously delivered story. You compare its bookmark and delivery ledger, then report only the supported
+                  change.
             - id: user-prompt
               role: user
               text: Run at {{#sys.timestamp#}}.

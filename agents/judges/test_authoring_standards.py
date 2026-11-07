@@ -143,6 +143,45 @@ def test_positive_and_negative_trigger_lines_pass(source_agent):
     validate_description(source_agent)
 
 
+@pytest.mark.parametrize("name", [
+    "agent-audit",
+    "ai-news",
+    "alert-triage",
+    "credential-steward",
+    "daily-innovation",
+    "donna-evening-wrap",
+    "donna-morning-brief",
+    "donna-research",
+    "donna-weekly-review",
+    "github-clerk",
+    "merge-steward",
+    "model-benchmarker",
+    "model-scout",
+    "plan-reconciler",
+    "pr-keeper",
+    "promotion-review",
+    "release-digest",
+    "release-promoter",
+    "repo-janitor",
+    "session-closer",
+    "ship-runner",
+    "splunk-deepdive",
+    "voice-learn",
+    "zammad-clerk",
+])
+def test_consolidated_agents_describe_triggers_and_worked_invocations(name):
+    source = yaml.safe_load((ROOT / "agents" / f"{name}.yaml").read_text())
+    assert source["extends"]
+    description = source["description"]
+    assert "Typical triggers include " in description
+    assert '"When to invoke"' in description
+    body = (ROOT / "agents/prompts" / f"{name}.md").read_text().split("\n---\n", 1)[1]
+    section = re.search(r"(?ms)^## When to invoke\n(.*?)(?=^## |\Z)", body)
+    assert section, "worked invocation section required"
+    scenarios = re.findall(r"(?m)^- \*\*[^\n]+?\*\* \S[^\n]*$", section[1])
+    assert 2 <= len(scenarios) <= 4, "two to four worked invocation scenarios required"
+
+
 @pytest.mark.parametrize("description", [None, "Use when: checking a draft.", "Do not use when: editing.", "Use when:\nDo not use when:", "Use when:\nDo not use when: editing.", "Use when: checking. Do not use when: editing."])
 def test_missing_trigger_lines_fail(description):
     with pytest.raises(AssertionError):

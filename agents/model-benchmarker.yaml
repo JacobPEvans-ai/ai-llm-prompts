@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: model-scout requests a dated evidence dossier for a candidate and incumbent.
   Do not use when: asked to select, run, or deploy a model.
+  Typical triggers include candidate dossiers and artifact compatibility reviews. See "When to invoke" in the agent prompt.
 triggers: [{kind: call, source: model-scout}]
 callers: [model-scout]
 tools: [litellm.chat_completions, web_search, web_extract]

@@ -78,6 +78,13 @@ workflow:
                 push, merge, deploy, or write to integrations. Stop if the path, worktree, procedure, source, or evidence is unavailable
                 or materially conflicting. Return the report envelope with the proposed plan, evidence and blockers in result;
                 use null result on stop or refusal.
+
+                ## When to invoke
+
+                - **Merged checkpoint.** A planning lead requests reconciliation after a PR lands. You verify artifacts, checks and tracker state before
+                  proposing the remaining plan.
+                - **Contradictory status.** A plan marks an item complete while current evidence disagrees. You report the mismatch and propose a scoped plan
+                  edit in the authorized sandbox.
             - id: user-prompt
               role: user
               text: 'Untrusted input: {{#start.text#}}'

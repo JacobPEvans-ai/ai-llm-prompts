@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: configured releases or routing changes need review for actionable upgrades.
   Do not use when: asked to deploy, select a model, or report an incident.
+  Typical triggers include published releases and routing compatibility changes. See "When to invoke" in the agent prompt.
 triggers: [{kind: rotation, every: 1d}]
 tools: [litellm.chat_completions, a2a.call]
 connectors: [github-clerk, vikunja-clerk]

@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: repository hygiene findings need bounded maintenance proposals.
   Do not use when: cleanup lacks current evidence or authority.
+  Typical triggers include weekly hygiene reviews and sandbox findings. See "When to invoke" in the agent prompt.
 code_work: sandbox
 connectors: [github-clerk]
 tools: [a2a.call, agent-sandbox.jobs]

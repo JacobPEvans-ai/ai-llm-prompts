@@ -86,6 +86,12 @@ workflow:
                 A successfully read empty candidate set is an empty result. Return the report envelope; its result contains candidates,
                 dossier requests, catalog proposals and their receipt state. A dossier-backed proposal or a named blocker completes the
                 run. Connector credentials stay with their owners.
+
+                ## When to invoke
+
+                - **Upstream release.** A configured watch source reports a dated candidate. You request a model-benchmarker dossier before proposing any catalog PR.
+                - **Revised artifact.** A watched quantization or benchmark changes. You verify parent age and evidence, deduplicate prior delivery and report
+                  only supported catalog candidates.
             - id: user-prompt
               role: user
               text: Run at {{#sys.timestamp#}}.

@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: approved writing corrections support a voice prompt proposal.
   Do not use when: corrections are unapproved or source material is unavailable.
+  Typical triggers include recurring approved corrections and provenance checks. See "When to invoke" in the agent prompt.
 privacy_class: private
 connectors: [splunk-clerk]
 tools: [a2a.call]

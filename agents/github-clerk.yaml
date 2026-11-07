@@ -3,6 +3,7 @@ extends: connector
 description: |
   Use when: an authorized caller requests a scoped GitHub operation.
   Do not use when: the request targets another integration or lacks a mandate.
+  Typical triggers include scoped pull request proposals and deduplicated comments. See "When to invoke" in the agent prompt.
 owns: github
 reader: authorized caller
 acted_signal: verified receipt or actionable blocked result

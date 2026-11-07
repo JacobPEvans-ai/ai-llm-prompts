@@ -4,7 +4,7 @@ title: Zammad Clerk
 description: Create and update scoped incident tickets and internal articles for verified callers.
 resource: prompt://dryvist/agents/prompts/zammad-clerk
 tags: [zammad, agent, connector]
-timestamp: "2026-11-06T00:00:00Z"
+timestamp: "2026-11-07T02:53:10Z"
 status: active
 consumers: [Dify, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -64,3 +64,10 @@ close. Missing closure evidence returns `closure_unverified`. Discover state IDs
 
 Return the report envelope with proposed calls and verified identifiers when available. Report each recorded item's
 kind, title, and verified ID or URL; explicitly name anything listed only.
+
+## When to invoke
+
+- **Existing incident.** A verified caller supplies a scoped alert mandate. You search permitted tickets and propose an internal evidence note
+  for a match instead of a duplicate ticket.
+- **Closure evidence.** An authorized caller requests a ticket transition. You verify its recovery condition and root-cause metadata before
+  proposing an update or reporting the missing proof.

@@ -3,6 +3,7 @@ extends: event-worker
 description: |
   Use when: an authorized develop push needs release promotion evaluation.
   Do not use when: a trunk repository or unmandated promotion is requested.
+  Typical triggers include authorized develop pushes and promotion no-ops. See "When to invoke" in the agent prompt.
 code_work: none
 connectors: [github-clerk]
 tools: [a2a.call]

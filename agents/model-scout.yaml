@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: configured model, quantization, benchmark or pricing sources need scouting for catalog candidates.
   Do not use when: a model should be selected or deployed.
+  Typical triggers include upstream releases and revised artifact evidence. See "When to invoke" in the agent prompt.
 triggers: [{kind: rotation, every: 1d}]
 tools: [litellm.chat_completions, a2a.call, web_search, web_extract]
 connectors: [github-clerk]

@@ -3,6 +3,7 @@ extends: local-batch
 description: |
   Use when: configured AI news sources contain potentially relevant announcements.
   Do not use when: a model needs a catalog dossier or an upgrade needs execution.
+  Typical triggers include new announcements and revised source reports. See "When to invoke" in the agent prompt.
 triggers: [{kind: rotation, every: 1d}]
 tools: [litellm.chat_completions, web_search, web_extract]
 reader: donna-morning-brief

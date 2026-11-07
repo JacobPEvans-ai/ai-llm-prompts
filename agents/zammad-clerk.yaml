@@ -3,6 +3,7 @@ extends: connector
 description: |
   Use when: an authorized caller requests a scoped incident ticket operation.
   Do not use when: the request targets another integration or lacks a mandate.
+  Typical triggers include incident deduplication and evidence-backed ticket updates. See "When to invoke" in the agent prompt.
 owns: zammad
 reader: authorized incident operator
 acted_signal: verified ticket receipt or actionable blocked result

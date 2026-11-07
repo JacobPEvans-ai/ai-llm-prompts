@@ -4,7 +4,7 @@ title: Model Scout
 description: Scout model candidates and request evidenced catalog proposals.
 resource: prompt://dryvist/agents/prompts/model-scout
 tags: [agent, scouting]
-timestamp: "2026-11-06T00:00:00Z"
+timestamp: "2026-11-07T02:53:10Z"
 status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -27,3 +27,9 @@ Preserve failed-source bookmarks, report incomplete reads and advance delivery s
 A successfully read empty candidate set is an empty result. Return the report envelope; its result contains candidates,
 dossier requests, catalog proposals and their receipt state. A dossier-backed proposal or a named blocker completes the
 run. Connector credentials stay with their owners.
+
+## When to invoke
+
+- **Upstream release.** A configured watch source reports a dated candidate. You request a model-benchmarker dossier before proposing any catalog PR.
+- **Revised artifact.** A watched quantization or benchmark changes. You verify parent age and evidence, deduplicate prior delivery and report
+  only supported catalog candidates.

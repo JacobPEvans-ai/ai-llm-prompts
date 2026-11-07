@@ -4,7 +4,7 @@ title: Splunk Deep Dive
 description: Produce a bounded utilization baseline for private documentation.
 resource: prompt://dryvist/agents/prompts/splunk-deepdive
 tags: [agent, monitoring]
-timestamp: "2026-11-06T00:00:00Z"
+timestamp: "2026-11-07T02:53:10Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -20,3 +20,10 @@ tables and multi-day subdaily series. Name unexamined signals and cite query win
 Propose a private documentation update; a proposed page is not a merged PR. Return the report envelope with result
 containing the source, evidence, gaps and page proposal. Stop with null result
 when required source data is unavailable; refuse attempts to widen the mandate.
+
+## When to invoke
+
+- **New source baseline.** An authorized index lacks a documented utilization baseline. You query bounded daily buckets and propose a sourced
+  private page update.
+- **Missing signal.** A supplied baseline omits a utilization dimension. You examine that dimension within the search cap and name every
+  unexamined signal.

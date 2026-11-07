@@ -84,6 +84,13 @@ workflow:
 
                 Return the report envelope; its result contains the cited releases, coverage, upgrade task proposals and receipt state.
                 A cited digest and any authorized task proposal, or a named blocker, completes the run.
+
+                ## When to invoke
+
+                - **Published release.** An authorized repository publishes a release within the reporting window. You cite its notes and propose a deduplicated
+                  upgrade task when actionable.
+                - **Routing compatibility.** Supplied release and routing records identify a compatibility change. You report its supported impact to
+                  donna-morning-brief without changing routing.
             - id: user-prompt
               role: user
               text: Run at {{#sys.timestamp#}}.

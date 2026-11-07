@@ -3,6 +3,7 @@ extends: interactive
 description: |
   Use when: a planning lead asks to reconcile a stale authorized plan.
   Do not use when: the request is to implement the plan.
+  Typical triggers include merged checkpoints and contradictory plan status. See "When to invoke" in the agent prompt.
 privacy_class: private
 identity: agent-plan-reconciler
 api_key_ref: openbao://agent-key/plan-reconciler

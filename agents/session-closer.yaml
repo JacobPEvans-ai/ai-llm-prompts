@@ -3,6 +3,7 @@ extends: interactive
 description: |
   Use when: an operator requests session status or wrap-up.
   Do not use when: the request is to perform cleanup or promotion.
+  Typical triggers include status snapshots and requested wrap-ups. See "When to invoke" in the agent prompt.
 privacy_class: private
 identity: agent-session-closer
 api_key_ref: openbao://agent-key/session-closer
