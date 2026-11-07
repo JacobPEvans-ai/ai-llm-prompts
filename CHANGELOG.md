@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.70.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.69.1...v1.70.0) (2026-11-07)
+
+
+### Features
+
+* **agents:** consolidate the agent set onto profiles, rotation and anchors ([#313](https://github.com/dryvist/ai-llm-prompts/issues/313)) ([e216646](https://github.com/dryvist/ai-llm-prompts/commit/e216646fdf81fa22898c9336cce05e3ee1129435))
+
 ## [1.69.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.69.0...v1.69.1) (2026-11-07)
 
 
