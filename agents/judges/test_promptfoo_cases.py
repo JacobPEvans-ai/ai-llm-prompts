@@ -154,7 +154,7 @@ def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
     }
 
 
-def test_behavior_only_cases_use_two_independent_rubric_judges():
+def test_behavior_cases_use_two_independent_rubric_judges_alongside_other_assertions():
     tests = cases.generate_tests()
     rubric_assertions = [
         (test, assertion)
@@ -171,7 +171,7 @@ def test_behavior_only_cases_use_two_independent_rubric_judges():
         (name, case["id"])
         for name, suite in source_suites().items()
         for case in suite["cases"]
-        if "expected_behavior" in case and "expected_output" not in case and "expected_calls" not in case
+        if "expected_behavior" in case
         and not case.get("skip") and (name, "behavior-rubric-judge-a") not in cases.CUT_METRICS
     }
     assert len(rubric_assertions) == 2 * len(behavior_cases)
@@ -181,6 +181,26 @@ def test_behavior_only_cases_use_two_independent_rubric_judges():
         assertion["provider"] == expected[assertion["metric"]]
         for _, assertion in rubric_assertions
     )
+
+
+def test_ambiguous_actions_score_invented_tasks_and_owners_alongside_status():
+    source = next(
+        case for case in source_suites()["action-extractor"]["cases"]
+        if case["id"] == "coverage-ambiguous"
+    )
+    generated = next(
+        test for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "action-extractor", "case": source["id"]}
+    )
+
+    assert generated["vars"]["expected"]["expected_output"] == {"status": "ok"}
+    assert any(assertion["metric"] == "expected-output" for assertion in generated["assert"])
+    rubrics = [assertion for assertion in generated["assert"] if assertion["type"] == "llm-rubric"]
+    assert {assertion["provider"] for assertion in rubrics} == set(cases.RUBRIC_PROVIDERS.values())
+    assert all(assertion["value"] == source["expected_behavior"] for assertion in rubrics)
+    assert "result.action_items as an empty array" in source["expected_behavior"]
+    assert "Fail any invented task, owner or due date" in source["expected_behavior"]
+    assert "expected_behavior" not in json.loads(generated["vars"]["case_data"])
 
 
 def test_patch_behavior_check_is_hidden_and_passed_to_expected_vars():

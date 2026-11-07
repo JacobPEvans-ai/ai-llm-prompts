@@ -254,7 +254,7 @@ def generate_tests():
                     "value": f"{ASSERTION_FILE}noWrites",
                     "metric": "no-writes",
                 })
-            if "expected_behavior" in case and "expected_output" not in case and "expected_calls" not in case:
+            if "expected_behavior" in case:
                 assertions.extend({
                     "type": "llm-rubric",
                     "value": case["expected_behavior"],

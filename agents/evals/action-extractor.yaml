@@ -35,7 +35,8 @@ cases:
     input: We should do something about the report, but no one accepts ownership and no deadline is agreed.
     expected_output:
       status: ok
-    expected_behavior: Summarize the uncertainty and return no concrete action items; do not invent an owner or due date.
+    expected_behavior: >-
+      Summarize the uncertainty and return result.action_items as an empty array. Fail any invented task, owner or due date.
 
   - id: coverage-malformed
     category: malformed
