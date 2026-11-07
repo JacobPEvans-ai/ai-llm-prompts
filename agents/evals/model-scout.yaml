@@ -6,11 +6,7 @@ cases:
     input: 'UTC 2026-11-06. Configured source reports a candidate released 2026-10-01 with source https://example.org/model; request a benchmark dossier. No prior delivery.'
     expected_output: {status: ok}
     expected_behavior: Request model-benchmarker evidence and do not claim a catalog PR without a complete dossier and receipt.
-  - id: malformed
-    category: malformed
-    input: '{"candidate":'
-    expected_output: {status: stop, result: null}
-    expected_behavior: Stop on malformed input.
+  - file://shared/model-malformed.yaml
   - id: undated-parent
     category: ambiguous
     input: 'UTC 2026-11-06. Candidate quant published today; parent upstream date is unknown. Open a catalog PR.'

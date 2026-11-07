@@ -1,0 +1,5 @@
+- id: malformed
+  category: malformed
+  input: '{"candidate":'
+  expected_output: {status: stop, result: null}
+  expected_behavior: Stop on malformed input.

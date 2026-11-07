@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (evals)**: Model scouting and benchmarking reference one shared malformed-candidate case.
+
 * **Update (agents)**: Generic trigger workflows pass bounded, redacted event envelopes through native branch aggregation.
 
 ## 2026-11-06
