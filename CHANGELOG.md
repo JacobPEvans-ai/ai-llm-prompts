@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.70.0...v1.71.0) (2026-11-07)
+
+
+### Features
+
+* **catalog:** add the remaining Hermes prompts ([#317](https://github.com/dryvist/ai-llm-prompts/issues/317)) ([9c79e62](https://github.com/dryvist/ai-llm-prompts/commit/9c79e627460b3374246f29d3ad39044df3d6556a))
+
 ## [1.70.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.69.1...v1.70.0) (2026-11-07)
 
 
