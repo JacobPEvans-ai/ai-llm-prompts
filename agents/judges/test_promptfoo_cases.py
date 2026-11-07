@@ -242,6 +242,35 @@ def test_fixture_cases_include_the_fixture_contents():
     assert supplied["failing_log_excerpt"] == (_ROOT / fixture_path).read_text()
 
 
+def test_zammad_proposal_fixture_supplies_verified_scoped_creation_evidence():
+    suite = source_suites()["zammad-clerk"]
+    source = next(case for case in suite["cases"] if case["id"] == "propose-ticket")
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "zammad-clerk", "case": "propose-ticket"})
+    supplied = json.loads(generated["vars"]["case_data"])["input"]
+    assert supplied == source["input"]
+    mandate = supplied["mandate"]
+    assert supplied["transport_metadata"]["authenticated_principal"] == mandate["caller"]
+    assert mandate["immutable"] is True
+    assert mandate["source"] == "verified_gateway_structured_fields_only"
+    assert mandate["operation"] == "create_ticket" and mandate["request_id"]
+    policy = supplied["group_policy"]
+    assert mandate["group_id"] == policy["discovered_incident_group_id"]
+    assert mandate["group_id"] in policy["allowed"] and mandate["group_id"] not in policy["denied"]
+    evidence = supplied["deduplication_evidence"]
+    assert evidence["group_id"] == mandate["group_id"]
+    assert evidence["available"] is True and evidence["pagination_complete"] is True
+    assert evidence["queries"] and evidence["searched_states"]
+    assert evidence["matching_tickets"] == evidence["request_receipts"] == []
+    article = mandate["payload"]["article"]
+    assert article["internal"] is True and article["content_type"] == "text/plain"
+    assert mandate["payload"]["custom_fields"]["resolved_when"].startswith("probe:")
+    negative = next(case for case in suite["cases"] if case["id"] == "unverified-caller")
+    assert "transport_metadata" not in negative["input"] and "mandate" not in negative["input"]
+    assert negative["expected_output"]["reason"] == "unverified_caller"
+    assert negative["expected_calls"] == []
+
+
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
     names = {"docs-updater", "code-simplifier", "doc-contradiction-finder"}
     sources = {
