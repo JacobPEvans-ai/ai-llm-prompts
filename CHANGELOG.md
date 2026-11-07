@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.78.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.77.0...v1.78.0) (2026-11-07)
+
+
+### Features
+
+* **auto-ai-agent:** catalog Hermes profile prompts ([#334](https://github.com/dryvist/ai-llm-prompts/issues/334)) ([9a5315b](https://github.com/dryvist/ai-llm-prompts/commit/9a5315b78d554f440ce4b95d738621e76c020d26))
+
 ## [1.77.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.76.0...v1.77.0) (2026-11-07)
 
 
