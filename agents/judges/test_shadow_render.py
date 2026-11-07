@@ -49,15 +49,7 @@ def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime)
     for path, definition in definitions():
         if runtime not in definition.get("shadows", []) or definition["home_platform"] != "dify":
             continue
-        # Judge independently: every definition read must be present or the agent explicitly skipped.
-        reads = read_tools(definition)
-        if reads:
-            assert f"SKIP | {runtime} | {path.stem} |" in result.stdout
-            for tool in reads:
-                assert tool in result.stdout
-            assert not (tmp_path / f"{path.stem}.json").exists()
-        else:
-            expected.add(f"{path.stem}.json")
+        expected.add(f"{path.stem}.json")
     committed = ROOT / "agents" / runtime
     assert {p.name for p in tmp_path.iterdir()} == expected
     assert {p.name for p in committed.iterdir()} == expected
@@ -71,7 +63,8 @@ def test_committed_exports_match_definitions_and_fresh_render(tmp_path, runtime)
         assert meta["litellm_role"] == definition["litellm_role"]
         assert meta["triggers"] == definition["triggers"]
         assert meta["output_schema"] == definition.get("output_schema")
-        assert read_tools(definition) <= set(meta["tools"])
+        assert meta["agent_tools"] == definition["tools"]
+        assert read_tools(definition) <= set(meta["agent_tools"])
 
 
 def read_tools(definition):
@@ -81,53 +74,20 @@ def read_tools(definition):
 
 @pytest.mark.parametrize("runtime", RUNTIMES)
 @pytest.mark.parametrize("servers", [[], ["unrelated"], ["github"]])
-def test_read_tools_are_never_silently_dropped(tmp_path, runtime, servers):
+def test_declared_read_tools_are_metadata_only(tmp_path, runtime, servers):
     path, definition = sample(tmp_path)
     definition.update(tools=["github.pulls.get", "github.pulls.diff", "github.pulls.create_review"],
                       mcp_servers=servers)
     path.write_text(yaml.safe_dump(definition))
     result = render(runtime, tmp_path)
     assert result.returncode == 0, result.stderr
-    assert f"SKIP | {runtime} | sample |" in result.stdout
-    for tool in read_tools(definition):
-        assert tool in result.stdout
-    assert "github.pulls.create_review" not in result.stdout
-    assert not (tmp_path / "agents" / runtime / "sample.json").exists()
-    if servers != ["github"]:
-        assert "Unbound read-only tools" in result.stdout
-    elif runtime == "langflow":
-        assert "Langflow MCP binding is not read-only" in result.stdout
-        assert "https://docs.langflow.org/mcp-client" in result.stdout
-    else:
-        assert "Sim MCP binding cannot restrict subcommand arguments" in result.stdout
-        assert "https://docs.sim.ai/agents/mcp" in result.stdout
+    meta = metadata(runtime, document(runtime, tmp_path))
+    assert meta["agent_tools"] == definition["tools"]
+    assert read_tools(definition) <= set(meta["agent_tools"])
+    assert meta["tools"] == ["litellm.chat_completions"]
+    assert "github.pulls.create_review" in meta["omitted_tools"]
+    assert "connectors" not in meta
     assert run_make(f"check-{runtime}", f"AGENTS_ROOT={tmp_path}").returncode == 0
-
-
-@pytest.mark.parametrize("runtime", RUNTIMES)
-def test_mixed_mapping_names_only_unbound_tools(tmp_path, runtime):
-    path, definition = sample(tmp_path)
-    definition.update(tools=["vikunja_tasks.list", "github.pulls.diff"], mcp_servers=["vikunja"])
-    path.write_text(yaml.safe_dump(definition))
-    result = render(runtime, tmp_path)
-    assert result.returncode == 0, result.stderr
-    assert "Unbound read-only tools: github.pulls.diff" in result.stdout
-    assert "vikunja_tasks.list" not in result.stdout
-
-
-@pytest.mark.parametrize("runtime", RUNTIMES)
-def test_agent_becomes_eligible_after_read_requirement_is_removed(tmp_path, runtime):
-    path, definition = sample(tmp_path)
-    original = definition["tools"][:]
-    definition["tools"].append("vikunja_tasks.list")
-    definition["mcp_servers"] = ["vikunja"]
-    path.write_text(yaml.safe_dump(definition))
-    assert render(runtime, tmp_path).returncode == 0
-    assert not (tmp_path / "agents" / runtime / "sample.json").exists()
-    definition["tools"] = original
-    path.write_text(yaml.safe_dump(definition))
-    assert render(runtime, tmp_path).returncode == 0
-    assert document(runtime, tmp_path)
 
 
 @pytest.mark.parametrize("runtime", RUNTIMES)
@@ -141,6 +101,7 @@ def test_replay_has_router_only_and_omits_writes_connectors_and_unknown_tools(tm
     assert meta["tier"] == 2
     assert meta["privacy_class"] == "private"
     assert meta["tools"] == ["litellm.chat_completions"]
+    assert meta["agent_tools"] == definition["tools"]
     assert meta["omitted_tools"] == definition["tools"][1:]
     assert meta["results"] == ["langfuse-trace", "phoenix-trace"]
     assert "connectors" not in meta
