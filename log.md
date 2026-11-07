@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Every prompt reference to another roster agent declares a gateway peer and call tool.
+
 * **Update (agents)**: Clerk and shipping handoffs declare gateway peers and call tools; judges validate outbound prompt handoffs.
 
 * **Update (agents)**: Native minute rotation schedules omit quarter-hour starts and preserve minimum intervals.

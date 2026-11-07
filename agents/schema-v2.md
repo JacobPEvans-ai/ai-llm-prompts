@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-07T04:51:46Z
+timestamp: 2026-11-07T06:58:50Z
 ---
 
 # Agent definition schema v2
@@ -89,6 +89,10 @@ leaf values, including inside partially overridden mappings. Lists replace atomi
 It also rejects identical normalized prompt bodies, equal name stems (hyphen and
 underscore word separators normalize identically), and `-vN` name segments.
 Semantic overlap between differently named jobs remains a reviewer judgment.
+
+Every other roster agent named in a prompt body must be declared in `connectors`
+or `peers`, with `a2a.call` in the resolved tools. This applies to all mentions,
+including invocation examples. Reword references that do not call another agent.
 
 New definitions summarize two to four representative trigger scenarios in their source
 `description`. Their canonical prompts contain a `## When to invoke` section with

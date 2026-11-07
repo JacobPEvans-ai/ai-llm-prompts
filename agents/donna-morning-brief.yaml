@@ -11,6 +11,7 @@ reader: operator
 acted_signal: A listed item changes within 24 hours.
 triggers: [{kind: anchor, at: '12:37'}]
 connectors: [vikunja-clerk, github-clerk]
+peers: [ai-news, release-digest]
 tools: [a2a.call]
 input: >-
   Approved commitments and task records via vikunja-clerk, scoped PR status via github-clerk,

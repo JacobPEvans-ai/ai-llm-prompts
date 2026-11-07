@@ -4,7 +4,7 @@ title: Model Benchmarker
 description: Build a dated, source-backed model evidence dossier.
 resource: prompt://dryvist/agents/prompts/model-benchmarker
 tags: [agent, benchmarking]
-timestamp: "2026-11-07T02:53:10Z"
+timestamp: "2026-11-07T06:58:50Z"
 status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -33,7 +33,7 @@ its evidence gaps. A complete dossier or a named blocker completes the run.
 
 ## When to invoke
 
-- **Candidate dossier.** model-scout supplies candidate and incumbent references with dated sources. You compare matched measurements and cite
+- **Candidate dossier.** Your authorized caller supplies candidate and incumbent references with dated sources. You compare matched measurements and cite
   evidence without selecting a model.
 - **Artifact compatibility.** A scouting request includes a converted artifact. You verify its immutable parent, inherited release date, runtime
   support and memory fit or name the evidence gap.

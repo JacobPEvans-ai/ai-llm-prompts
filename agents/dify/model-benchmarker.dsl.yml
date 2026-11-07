@@ -91,7 +91,7 @@ workflow:
 
                 ## When to invoke
 
-                - **Candidate dossier.** model-scout supplies candidate and incumbent references with dated sources. You compare matched measurements and cite
+                - **Candidate dossier.** Your authorized caller supplies candidate and incumbent references with dated sources. You compare matched measurements and cite
                   evidence without selecting a model.
                 - **Artifact compatibility.** A scouting request includes a converted artifact. You verify its immutable parent, inherited release date, runtime
                   support and memory fit or name the evidence gap.

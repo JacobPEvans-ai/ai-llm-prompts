@@ -254,11 +254,11 @@ def test_connector_integration_ownership_is_unique():
 
 
 def _validate_prompt_handoffs(agent, body, roster):
-    """Check explicit outbound handoffs against the resolved gateway roster."""
+    """Require gateway peers for every other roster name mentioned in a prompt."""
     names = "|".join(re.escape(name) for name in sorted(roster, key=len, reverse=True))
     handoffs = set(re.findall(
-        rf"\b(?:ask|call|use|coordinate with|hand off to|handoff to|go to|goes to|through|via)\s+({names})\b",
-        re.sub(r"\s+", " ", body), re.IGNORECASE,
+        rf"\b({names})\b",
+        body.lower(),
     )) - {agent["name"]}
     declared = set(agent.get("connectors", [])) | set(agent.get("peers", []))
     assert handoffs <= declared, f"{agent['name']}: undeclared handoff peers: {sorted(handoffs - declared)}"
@@ -277,6 +277,8 @@ def test_roster_prompt_handoffs_declare_gateway_peers(path, agent):
     "Coordinate with task-clerk to record the remediation.",
     "Ordinary tasks go to\n task-clerk through A2A.",
     "Hand off to task-clerk.",
+    "The task-clerk result is available.",
+    "TASK-CLERK supplies a scoped request.",
 ])
 def test_prompt_handoff_fixture_rejects_missing_peer(handoff):
     agent = {"name": "incident-clerk", "tools": ["a2a.call"], "connectors": []}
@@ -293,9 +295,9 @@ def test_prompt_handoff_requires_call_tool_even_with_declared_peer(field):
     _validate_prompt_handoffs(agent, "Ask task-clerk to record it.", {"task-clerk"})
 
 
-def test_incoming_caller_reference_is_not_an_outbound_handoff():
+def test_self_reference_does_not_require_a_peer():
     agent = {"name": "task-clerk", "tools": [], "connectors": []}
-    _validate_prompt_handoffs(agent, "incident-clerk supplies a scoped request.", {"incident-clerk", "task-clerk"})
+    _validate_prompt_handoffs(agent, "You are task-clerk.", {"incident-clerk", "task-clerk"})
 
 
 def test_agent_roster_paths_and_prompt_metadata_are_complete():

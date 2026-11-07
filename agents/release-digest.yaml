@@ -7,6 +7,7 @@ description: |
 triggers: [{kind: rotation, every: 1d}]
 tools: [litellm.chat_completions, a2a.call]
 connectors: [github-clerk, vikunja-clerk]
+peers: [donna-morning-brief]
 reader: donna-morning-brief
 acted_signal: upgrade task via vikunja-clerk
 identity: agent-release-digest
