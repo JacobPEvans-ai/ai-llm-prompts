@@ -43,7 +43,7 @@ Prompts for continuously running local agents, shared autonomous behavior, monit
 * [Hermes Splunk parsing sweep](hermes-splunk-parsing.md) - Bounded Splunk data-quality monitoring prompt.
 * [Hermes Splunk platform health](hermes-splunk-health.md) - Two-hourly Splunk health review with compact memory baselines.
 * [Hermes Splunk security sweep](hermes-splunk-security.md) - Bounded Splunk security-lens monitoring prompt.
-* [Hermes Zammad review](hermes-zammad-review.md) - Proactive open-incident lifecycle sweep across all Zammad queues.
+* [Hermes zammad review](hermes-zammad-review.md) - Bounded open-incident lifecycle sweep across all Zammad queues.
 * [Hermes Splunk triage](hermes-splunk-triage.md) - Broad bounded Splunk anomaly-sweep prompt.
 * [Hermes Surface](hermes.md) - Canonical Hermes identity, tools, investigation discipline, escalation routing, homelab constraints, and model fabric.
 * [Large-Tier Surface](large-tier.md) - Deep-reasoning and synthesis delta for a staged large-model serving tier.
@@ -61,3 +61,34 @@ Prompts for continuously running local agents, shared autonomous behavior, monit
 ## Shared Global Instructions
 
 * [Shared global instructions](instructions/index.md) - Shared agent instructions delivered to machines through the `instructions` package.
+* [Hermes github maint review](hermes-github-maint-review.md) - Read-only repository maintenance review and delta digest.
+* [Hermes reviewer](hermes-reviewer.md) - Eight-hour self-review of Kanban activity and follow-up cards.
+* [Hermes anomaly hunt](hermes-anomaly-hunt.md) - Bounded anomaly investigation with confirming evidence and follow-up cards.
+* [Hermes docs study](hermes-docs-study.md) - Daily public documentation drift review with bounded follow-up cards.
+* [Hermes ai news](hermes-ai-news.md) - Interest-guided news scouting with retrieved sources and deduplicated suggestions.
+* [Hermes ai news interests](hermes-ai-news-interests.md) - Shared interest seed for the news scouting profile.
+* [Hermes daily innovation](hermes-daily-innovation.md) - Evidence-based improvement proposals recorded in Kanban and the proposal log.
+* [Hermes app seeding](hermes-app-seeding.md) - Bounded application setup with verified completion markers.
+* [Hermes fleet health](hermes-fleet-health.md) - Weekly review of recurring workload outcomes against a recalled baseline.
+* [Hermes assistant exclusion clause](hermes-assistant-exclusion-clause.md) - Shared personal assistant scope boundary for recurring jobs.
+* [Hermes assistant daily brief](hermes-assistant-daily-brief.md) - Daily personal task brief with due items and decisions.
+* [Hermes assistant nudge](hermes-assistant-nudge.md) - Personal task blockers and the decisions needed to advance them.
+* [Hermes assistant task triage](hermes-assistant-task-triage.md) - Read-only personal task project review and proposed dispositions.
+* [Hermes assistant pulse](hermes-assistant-pulse.md) - Deduplicated attention checks for due and newly assigned personal tasks.
+* [Hermes assistant inbox groom](hermes-assistant-inbox-groom.md) - Inbox sorting with next steps and bounded due-date updates.
+* [Hermes assistant evening wrap](hermes-assistant-evening-wrap.md) - Evening summary of completed tasks and the next day.
+* [Hermes assistant research](hermes-assistant-research.md) - One queued personal research question per run with public sources.
+* [Hermes assistant weekly review](hermes-assistant-weekly-review.md) - Weekly personal task review with upcoming decisions.
+* [Hermes pepper card](hermes-pepper-card.md) - Issue-scoped evidence search and one bounded comment.
+* [Hermes pepper intake](hermes-pepper-intake.md) - Bounded issue intake with idempotent Kanban cards.
+* [Hermes pepper digest](hermes-pepper-digest.md) - Weekly evidence and proposed-change digest for the configured destination.
+* [Hermes daily status kanban summary](hermes-daily-status-kanban-summary.md) - Shared board status summary appended to the fabric report.
+* [Hermes pricing diff](hermes-pricing-diff.md) - Weekly public model pricing changes against a saved baseline.
+* [Hermes blocked parent triage digest](hermes-blocked-parent-triage-digest.md) - Daily report of blocked parent cards and waiting children.
+* [Hermes router capacity digest](hermes-router-capacity-digest.md) - Daily router capacity metrics and changes against a recalled baseline.
+* [Hermes backlog sweep](hermes-backlog-sweep.md) - One-incident evidence review with a proposed next step.
+* [Hermes github cache stats](hermes-github-cache-stats.md) - Read-only repository cache usage and churn threshold report.
+* [Hermes model routing review](hermes-model-routing-review.md) - Read-only review of tracked public model routing resources.
+* [Hermes llm stats hourly](hermes-llm-stats-hourly.md) - Hourly model request and token report with bounded queries and memory.
+* [Hermes github route](hermes-github-route.md) - Pull request review request populated from a webhook event.
+* [Hermes repo crawl](hermes-repo-crawl.md) - Triage of new repository crawl findings with scoped pull request updates.
