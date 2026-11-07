@@ -19,7 +19,7 @@ cases:
       path_policy:
         source: policy://openbao-clerk/metadata-paths
         allowed: [kv/metadata/fixture-service]
-      metadata_fixture:
+      metadata_response:
         path: kv/metadata/fixture-service
         versions: [1, 2]
         created_time: "2026-11-01T00:00:00Z"
