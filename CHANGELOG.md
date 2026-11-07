@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.71.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.71.0...v1.71.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **rules:** align dependency automation with shared preset ([46fe268](https://github.com/dryvist/ai-llm-prompts/commit/46fe268aa15382388a5e89173d077400f2d53b77))
+* **rules:** align dependency automation with the shared preset ([#319](https://github.com/dryvist/ai-llm-prompts/issues/319)) ([46fe268](https://github.com/dryvist/ai-llm-prompts/commit/46fe268aa15382388a5e89173d077400f2d53b77))
+
 ## [1.71.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.70.0...v1.71.0) (2026-11-07)
 
 
