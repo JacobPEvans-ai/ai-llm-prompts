@@ -127,6 +127,7 @@
               pkgs.gnumake
               pkgs.gomplate
               pkgs.jq
+              pkgs.nodejs
               pkgs.yq
               (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
             ];
@@ -152,6 +153,7 @@
               gnumake
               gomplate
               markdownlint-cli2
+              nodejs
               pre-commit
               yq-go
               (python3.withPackages (ps: [ ps.pytest ps.pyyaml ]))
