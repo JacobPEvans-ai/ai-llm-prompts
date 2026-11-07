@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-07T02:53:10Z
+timestamp: 2026-11-07T04:51:46Z
 ---
 
 # Agent definition schema v2
@@ -68,6 +68,9 @@ The renderer owns schedule expressions. Tier 2 rotation agents expose a webhook 
 driver calls; tracker events share that entry. The shared driver owns their windows
 and live pace controls. Tier 0/1 rotations use native schedules; supported intervals are
 minute divisors of 60 of at least two minutes, hour divisors of 24, and one day.
+Native minute schedules omit `:00`, `:15`, `:30`, and `:45` from their compiled
+minute lists. Omitted starts wait for the next scheduled minute, preserving the
+minimum interval; `every: 15m` starts at `:07`, `:22`, `:37`, and `:52`.
 Anchors render a native Dify schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
 Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 

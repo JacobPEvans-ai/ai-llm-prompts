@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Native minute rotation schedules omit quarter-hour starts and preserve minimum intervals.
+
 * **Update (agents)**: Weekly Splunk readers inherit privacy, connector, tool, and trigger settings from one profile.
 
 * **Update (agents)**: Task advisory agents inherit connector, tool, and privacy settings from one profile.

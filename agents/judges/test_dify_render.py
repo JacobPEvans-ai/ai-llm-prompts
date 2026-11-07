@@ -162,6 +162,32 @@ def test_tier1_rotation_uses_native_schedule(tmp_path):
     assert '"name": "sample"' not in str(driver)
 
 
+@pytest.mark.parametrize("tier", [0, 1])
+@pytest.mark.parametrize("interval", range(1, 61))
+def test_native_minute_rotations_exclude_quarter_hours(tmp_path, tier, interval):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=tier, triggers=[{"kind": "rotation", "every": f"{interval}m"}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    if interval < 2 or 60 % interval:
+        assert result.returncode != 0
+        assert "native rotation interval cannot be expressed safely as cron" in result.stderr
+        assert not (tmp_path / "agents/dify/sample.dsl.yml").exists()
+        return
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    start = output["workflow"]["graph"]["nodes"][0]["data"]
+    assert start["type"] == "trigger-schedule" and start["timezone"] == "UTC"
+    minute_field, *remaining_fields = start["cron_expression"].split()
+    assert remaining_fields == ["*", "*", "*", "*"]
+    minutes = [int(minute) for minute in minute_field.split(",")]
+    assert 7 in minutes
+    assert all(0 <= minute < 60 for minute in minutes)
+    assert not {0, 15, 30, 45}.intersection(minutes)
+    starts = sorted(minutes)
+    assert all(end - begin >= interval for begin, end in zip(starts, starts[1:] + [starts[0] + 60]))
+
+
 @pytest.mark.parametrize("mode", ["live", None])
 def test_generic_external_tools_require_shadow(tmp_path, mode):
     path, definition = sample_checkout(tmp_path)
