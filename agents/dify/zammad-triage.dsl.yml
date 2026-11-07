@@ -58,7 +58,7 @@ workflow:
   graph:
     edges:
       - data:
-          sourceType: trigger-schedule
+          sourceType: trigger-webhook
           targetType: code
         id: e1
         source: schedule
@@ -95,11 +95,16 @@ workflow:
         type: custom
     nodes:
       - data:
-          cron_expression: 7,17,27,37,47,57 * * * *
-          mode: cron
-          timezone: UTC
-          title: Schedule
-          type: trigger-schedule
+          async_mode: true
+          body: []
+          content_type: application/json
+          headers: []
+          method: post
+          params: []
+          response_body: ""
+          status_code: 200
+          title: zammad webhook
+          type: trigger-webhook
         id: schedule
         position:
           x: 40

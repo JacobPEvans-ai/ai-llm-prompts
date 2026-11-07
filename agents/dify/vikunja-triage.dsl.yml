@@ -86,7 +86,7 @@ workflow:
     edges:
       - data:
           isInIteration: false
-          sourceType: trigger-schedule
+          sourceType: trigger-webhook
           targetType: code
         id: schedule-policy
         source: schedule
@@ -200,14 +200,16 @@ workflow:
         zIndex: 1002
     nodes:
       - data:
-          cron_expression: 2,12,22,32,42,52 * * * *
-          desc: Native Dify scheduled trigger; no user inputs
-          mode: cron
-          selected: false
-          timezone: UTC
-          title: Schedule every ten minutes
-          type: trigger-schedule
-          with sys.timestamp available.: null
+          async_mode: true
+          body: []
+          content_type: application/json
+          headers: []
+          method: post
+          params: []
+          response_body: ""
+          status_code: 200
+          title: vikunja webhook
+          type: trigger-webhook
         height: 54
         id: schedule
         position:

@@ -6,6 +6,10 @@ from pathlib import Path
 import shutil
 import subprocess
 
+import pytest
+import yaml
+
+from test_dify_render import sample_checkout
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SOURCE = _ROOT / "agents" / "evals" / "promptfoo" / "generate.py"
@@ -15,23 +19,33 @@ cases = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(cases)
 
 
+def source_suites():
+    return {
+        path.stem: cases.load_suite(_ROOT / "agents" / "evals" / f"{path.stem}.yaml")
+        for path in (_ROOT / "agents").glob("*.yaml")
+    }
+
+
 def test_generated_cases_have_assertions_and_static_prefixes():
     tests = cases.generate_tests()
-    names = (*cases.SUITES, "vikunja-clerk-parse")
-    counts = {
-        name: sum(test["vars"]["suite"] == name for test in tests) for name in names
+    expected = {
+        (name, case["id"])
+        for name, suite in source_suites().items()
+        for case in suite["cases"]
+        if not case.get("skip")
     }
+    names = {name for name, _ in expected} | {"vikunja-clerk-parse"}
     assertions_file = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
 
-    assert counts == {
-        "ci-fixer": 19,
-        "code-simplifier": 9,
-        "vikunja-clerk": 20,
-        "vikunja-clerk-parse": 19,
-        "vikunja-triage": 5,
-        "zammad-triage": 4,
+    assert {
+        (test["metadata"]["suite"], test["metadata"]["case"])
+        for test in tests if test["metadata"]["suite"] != "vikunja-clerk-parse"
+    } == expected
+    parse_cases = {
+        case["id"] for case in cases.load_suite(_ROOT / "agents/evals/vikunja-clerk.yaml")["cases"]
+        if "expected_parse" in case and not case.get("skip")
     }
-    assert len(tests) == 76
+    assert len(tests) == len(expected) + len(parse_cases)
     assert all(test["assert"] for test in tests)
     assert all(
         any(assertion.get("metric") == "not-truncated" for assertion in test["assert"])
@@ -59,6 +73,29 @@ def test_generated_cases_have_assertions_and_static_prefixes():
         )
         assert has_fields_assertion == has_expected_parse
         assert has_fields_assertion == (test["vars"]["suite"] == "vikunja-clerk-parse")
+
+
+@pytest.mark.parametrize("suite_exists", [True, False])
+def test_new_definitions_enter_the_matrix_or_report_a_missing_suite(tmp_path, monkeypatch, suite_exists):
+    path, agent = sample_checkout(tmp_path, "new-worker")
+    agent.update(tools=[], eval_set="agents/evals/custom-cases.yaml")
+    path.write_text(yaml.safe_dump(agent))
+    shutil.copy(_ROOT / "Makefile", tmp_path / "Makefile")
+    template = tmp_path / "agents/dify-src/agent.tmpl"
+    template.parent.mkdir()
+    shutil.copy(_ROOT / "agents/dify-src/agent.tmpl", template)
+    if suite_exists:
+        suite = tmp_path / agent["eval_set"]
+        suite.parent.mkdir()
+        suite.write_text(yaml.safe_dump({"cases": [{"id": "normal", "input": "sample", "expected_output": {"status": "ok"}}]}))
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+    if not suite_exists:
+        with pytest.raises(RuntimeError, match="Could not parse YAML file.*custom-cases"):
+            cases.generate_tests()
+    else:
+        generated = cases.generate_tests()
+        assert [test["metadata"] for test in generated] == [{"suite": "new-worker", "case": "normal"}]
+        assert generated[0]["vars"]["expected"]["expected_output"] == {"status": "ok"}
 
 
 def test_report_fields_name_outcomes_without_values():
@@ -117,7 +154,7 @@ def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
     }
 
 
-def test_behavior_rubric_uses_two_judges_only_for_three_code_simplifier_cases():
+def test_behavior_only_cases_use_two_independent_rubric_judges():
     tests = cases.generate_tests()
     rubric_assertions = [
         (test, assertion)
@@ -130,12 +167,16 @@ def test_behavior_rubric_uses_two_judges_only_for_three_code_simplifier_cases():
         "behavior-rubric-judge-b": "exec:../../../scripts/promptfoo/grader.sh judge-b",
     }
 
-    # The secret case asserts its output directly, so only the three behavior-only cases keep rubric judges.
-    assert len(rubric_assertions) == 6
+    behavior_cases = {
+        (name, case["id"])
+        for name, suite in source_suites().items()
+        for case in suite["cases"]
+        if "expected_behavior" in case and "expected_output" not in case and "expected_calls" not in case
+        and not case.get("skip") and (name, "behavior-rubric-judge-a") not in cases.CUT_METRICS
+    }
+    assert len(rubric_assertions) == 2 * len(behavior_cases)
+    assert {(test["metadata"]["suite"], test["metadata"]["case"]) for test, _ in rubric_assertions} == behavior_cases
     assert {assertion["metric"] for _, assertion in rubric_assertions} == set(expected)
-    assert all(
-        test["vars"]["suite"] == "code-simplifier" for test, _ in rubric_assertions
-    )
     assert all(
         assertion["provider"] == expected[assertion["metric"]]
         for _, assertion in rubric_assertions
@@ -239,16 +280,13 @@ def test_scoring_mode_comes_from_the_suite():
     modes = {
         test["vars"]["suite"]: test["vars"]["expected"].get("expected_output_scoring")
         for test in cases.generate_tests()
-        if "expected" in test["vars"] and "expected_output" in test["vars"]["expected"]
+        # The generator always sets expected_output ({} when a case has none); count only real outputs.
+        if test["vars"].get("expected", {}).get("expected_output")
     }
 
-    assert modes == {
-        "ci-fixer": "field-credit",
-        "code-simplifier": "field-credit",
-        "vikunja-clerk": "strict",
-        "vikunja-triage": "field-credit",
-        "zammad-triage": "field-credit",
-    }
+    assert modes == {name: suite.get("expected_output_scoring", "field-credit")
+                     for name, suite in source_suites().items()
+                     if any("expected_output" in case and not case.get("skip") for case in suite["cases"])}
 
 
 def test_expected_output_contains_list_is_any_of():
@@ -329,15 +367,15 @@ def test_skip_key_drops_a_case_from_generation(monkeypatch):
         return data
 
     monkeypatch.setattr(cases, "load_yaml", load_with_skip)
-    monkeypatch.setattr(cases, "SUITES", ("vikunja-triage",))
-    generated = [test["metadata"]["case"] for test in cases.generate_tests()]
+    generated = [test["metadata"]["case"] for test in cases.generate_tests()
+                 if test["metadata"]["suite"] == "vikunja-triage"]
 
     assert first_id not in generated
-    assert len(generated) == 4
+    assert len(generated) == 8
 
 
 def test_open_linked_pr_case_is_scored_and_not_skipped():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
+    suite = cases.load_suite(_ROOT / "agents" / "evals" / "vikunja-triage.yaml")
 
     assert not [case["id"] for case in suite["cases"] if case.get("skip")]
     generated = [

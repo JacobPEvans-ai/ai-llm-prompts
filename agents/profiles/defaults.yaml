@@ -1,0 +1,26 @@
+tier: 0
+litellm_role: medium
+triggers: [{kind: call, source: caller, skew_minutes: 0}]
+callers: any
+channels: [caller, langfuse-trace]
+owner: agent-platform
+home_platform: dify
+shadows: [sim, langflow]
+privacy_class: internal
+shared_prefix: agents/prompts/shared/homelab.md
+connectors: []
+code_work: none
+mode: shadow
+memory_scope: none
+mcp_servers: []
+eval_policy:
+  thresholds:
+    correctness_min: 1.0
+    privacy_violations_max: 0
+    latency_ms_max: 43200000
+    cloud_cost_usd_max: 0
+    consequential_failures_max: 0
+  baseline:
+    compare_to: previous_released_version
+    missing_results: block_promotion
+    regression: block_promotion

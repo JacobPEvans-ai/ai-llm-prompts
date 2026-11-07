@@ -7,7 +7,6 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SUITES = ("ci-fixer", "code-simplifier", "vikunja-clerk", "vikunja-triage", "zammad-triage")
 OUTPUT_INSTRUCTIONS = """Return exactly one JSON object with `decision`, `proposed_calls`, and `reply`. Include any additional top-level fields required by the agent prompt. `proposed_calls` is an array of inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Keep `reply` short and return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {
@@ -41,6 +40,24 @@ def load_yaml(path):
             except json.JSONDecodeError:
                 pass
     raise RuntimeError(f"Could not parse YAML file: {path}")
+
+
+def load_suite(path):
+    """Expand Promptfoo-style file:// case lists relative to their owning suite."""
+    suite = load_yaml(path)
+    expanded = []
+    for entry in suite["cases"]:
+        if isinstance(entry, str) and entry.startswith("file://"):
+            source = (path.parent / entry.removeprefix("file://")).resolve()
+            if not source.is_relative_to(ROOT) or not source.is_file():
+                raise ValueError(f"Case reference is missing or outside the repository: {entry}")
+            shared = load_yaml(source)
+            if not isinstance(shared, list) or not all(isinstance(case, dict) for case in shared):
+                raise ValueError(f"Case reference must contain a list of cases: {entry}")
+            expanded.extend(shared)
+        else:
+            expanded.append(entry)
+    return {**suite, "cases": expanded}
 
 
 def prompt_body(path):
@@ -168,9 +185,13 @@ def parse_test(name, case, system, forbidden=()):
 
 def generate_tests():
     tests = []
-    for name in SUITES:
-        agent = load_yaml(ROOT / "agents" / f"{name}.yaml")
-        suite = load_yaml(ROOT / "agents" / "evals" / f"{name}.yaml")
+    resolved = subprocess.run(
+        ["make", "--no-print-directory", "resolve-agents"], cwd=ROOT,
+        capture_output=True, text=True, check=True,
+    )
+    agents = {record["agent"]["name"]: record["agent"] for record in map(json.loads, resolved.stdout.splitlines())}
+    for name, agent in sorted(agents.items()):
+        suite = load_suite(ROOT / agent["eval_set"])
         static_prefix = suite_prompt(agent, suite)
         writable = suite["write_tools"] if "write_tools" in suite else write_tools(agent)
         scoring = suite.get("expected_output_scoring", "field-credit")
@@ -183,7 +204,7 @@ def generate_tests():
             if "expected_parse" in case:
                 tests.append(parse_test(name, case, parse_system, suite.get("forbidden_output_keys", [])))
             case_data = load_fixture_contents({
-                key: value for key, value in case.items() if key != "id" and not key.startswith("expected_")
+                key: value for key, value in case.items() if key not in ("id", "category") and not key.startswith("expected_")
             })
             assertions = [
                 {"type": "javascript", "value": f"{ASSERTION_FILE}jsonValid", "metric": "json-valid"},

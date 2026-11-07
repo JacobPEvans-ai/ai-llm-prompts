@@ -1,35 +1,14 @@
 name: style-gate
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 0
-connectors: []
-code_work: none
-mode: shadow
-prompt: agents/prompts/style-gate.md
-shared_prefix: agents/prompts/shared/homelab.md
-# Model-only agent: its one external call is the router chat completion. It has no MCP or API tools and makes no writes.
-tools: [litellm.chat_completions]
-mcp_servers: []
-privacy_class: internal
-# LiteLLM router role, not a model ID.
-litellm_role: medium
-triggers: [{kind: call, source: caller, skew_minutes: 0}]
-callers: any
-channels: [caller, langfuse-trace]
-memory_scope: none
-eval_set: agents/evals/style-gate.yaml
+extends: interactive
+description: |
+  Use when: a supplied draft or structured text needs style findings.
+  Do not use when: the request needs rewriting or creating new content.
 identity: agent-style-gate
 api_key_ref: openbao://agent-key/style-gate
 input: "One Markdown draft, or a JSON object from another agent whose string values are checked."
 # The Validate reply node also requires result.pass to be true only when findings is empty.
 output_schema:
-  type: object
-  required: [status, reason, result]
-  additionalProperties: false
   properties:
-    status: {enum: [ok, refused, stop]}
-    reason: {type: string}
     result:
       anyOf:
         - {type: "null"}

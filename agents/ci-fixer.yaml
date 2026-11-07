@@ -1,16 +1,9 @@
 name: ci-fixer
-owner: agent-platform
-home_platform: dify
-shadows: [sim, langflow]
-tier: 1
+extends: event-worker
+description: |
+  Use when: an eligible failed check needs a bounded code correction.
+  Do not use when: the check succeeded or the request exceeds the code mandate.
 connectors: [github-clerk]
-code_work: sandbox
-mode: shadow
-# Credential model: per-agent LiteLLM key plus an AppRole that can mint only a
-# short-lived GitHub App installation token for the event repo; Dify holds no
-# PAT or App key.
-prompt: agents/prompts/ci-fixer.md
-shared_prefix: agents/prompts/shared/homelab.md
 tools:
   - github.checks.get_check_run
   - github.checks.list_annotations
@@ -24,10 +17,7 @@ tools:
   - github.git.create_commit
   - github.git.update_ref
   - github.issues.create_comment
-mcp_servers: []
 privacy_class: public
-# LiteLLM router role, not a model ID.
-litellm_role: medium
 triggers:
   - kind: event
     source: github.check_run
@@ -42,14 +32,14 @@ mandate_binding:
   event: check_run
   push_strength: explicit
 channels:
-  shadow: run_record_only
-  live: [github.commit, github.comment]
-memory_scope: none
-eval_set: agents/evals/ci-fixer.yaml
+  live:
+  - github.commit
+  - github.comment
 promotion:
   after_matching_shadow_runs: 30
   against: agents/evals/ci-fixer.yaml # TBD-master
 identity: agent-ci-fixer
+api_key_ref: agent-key/ci-fixer
 secret_ref: agent-key/ci-fixer
 github_token_ref: github-token/ci-fixer
 guards:

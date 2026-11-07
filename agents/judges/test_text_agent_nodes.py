@@ -7,6 +7,8 @@ import pytest
 import yaml
 
 from dify_nodes import node_main
+from definitions import definition
+from test_promptfoo_cases import cases
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -51,12 +53,12 @@ def _run(agent, reply, text):
 
 @pytest.mark.parametrize("agent", _TEXT_AGENTS)
 def test_rendered_schema_equals_the_agent_definition(agent):
-    definition = yaml.safe_load((_AGENTS / f"{agent}.yaml").read_text())
+    resolved = definition(agent)
     dsl = yaml.safe_load((_AGENTS / "dify" / f"{agent}.dsl.yml").read_text())
     code = {node["id"]: node["data"] for node in dsl["workflow"]["graph"]["nodes"]}["validate"]["code"]
     namespace = {}
     exec(compile(code, f"{agent}:validate", "exec"), namespace)
-    assert namespace["SCHEMA"] == definition["output_schema"]
+    assert namespace["SCHEMA"] == resolved["output_schema"]
 
 
 @pytest.mark.parametrize("agent", _TEXT_AGENTS)
@@ -113,7 +115,7 @@ def test_empty_input_stops_before_the_reply_is_used(agent):
 
 @pytest.mark.parametrize("agent", _TEXT_AGENTS)
 def test_eval_suite_covers_normal_refusal_and_stop(agent):
-    suite = yaml.safe_load((_AGENTS / "evals" / f"{agent}.yaml").read_text())
+    suite = cases.load_suite(_AGENTS / "evals" / f"{agent}.yaml")
     assert suite["agent"] == agent
     statuses = {case["expected_output"]["status"] for case in suite["cases"]}
     assert statuses == {"ok", "refused", "stop"}

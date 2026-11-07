@@ -1,0 +1,12 @@
+tools: [litellm.chat_completions]
+output_schema:
+  type: object
+  required: [status, reason, result]
+  additionalProperties: false
+  properties:
+    status: {enum: [ok, refused, stop]}
+    reason: {type: string}
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
