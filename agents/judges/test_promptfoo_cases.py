@@ -627,6 +627,40 @@ def test_call_assertions_reject_malformed_nested_lists(assertion, calls):
     assert _run_js(assertion, output, expected) is False
 
 
+@pytest.fixture(params=[[], [{"tool": "github", "operation": "create_pull_request", "args": {}}]])
+def deeply_nested_report(request):
+    leaf = json.dumps({"proposed_calls": request.param})
+    return '{"result":' + '[{"result":' * 5000 + leaf + '}]' * 5000 + '}'
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+@pytest.mark.parametrize("parsed", [False, True])
+def test_call_assertions_fail_closed_at_10000_levels(deeply_nested_report, assertion, parsed):
+    node = shutil.which("node")
+    assert node is not None, "node is required for deep-envelope evidence"
+    assertions = _ROOT / "agents/evals/promptfoo/assertions.js"
+    script = """
+const assertions = require(process.argv[1]);
+const raw = require("fs").readFileSync(0, "utf8");
+const output = process.argv[3] === "true" ? JSON.parse(raw) : raw;
+const context = {vars: {expected: {expected_calls: [], write_tools: ["github.create_pull_request"]}}};
+let result;
+try {
+  result = assertions[process.argv[2]](output, context);
+} catch (error) {
+  if (!(error instanceof RangeError)) throw error;
+  result = null;
+}
+process.stdout.write(JSON.stringify(result));
+"""
+    result = subprocess.run(
+        [node, "-e", script, str(assertions), assertion, str(parsed).lower()],
+        input=deeply_nested_report, capture_output=True, text=True, check=True, timeout=30,
+    )
+    outcome = json.loads(result.stdout)
+    assert outcome is False or outcome is None
+
+
 def test_expected_calls_include_all_lists_in_the_envelope(nested_report_call):
     call = {"tool": "github", "operation": "read", "args": {}}
     nested_report_call["proposed_calls"] = [call]
