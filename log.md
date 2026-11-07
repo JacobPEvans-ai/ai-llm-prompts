@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Update (standards)**: Prefer one agent with progressively disclosed skills, and limit optional subagents to measured needs.
 * **Update (agents)**: Add read-only Langfuse score access and deterministic promotion review inputs and cases.
 
 * **Update (auto-ai-agent)**: Render the daily summary's project allowlist from one input.
