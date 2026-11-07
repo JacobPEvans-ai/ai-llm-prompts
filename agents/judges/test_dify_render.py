@@ -35,6 +35,7 @@ def sample_checkout(tmp_path, name="sample"):
     definition = {
         "name": name,
         "home_platform": "dify",
+        "tier": 2,
         "litellm_role": "medium",
         "shared_prefix": "agents/prompts/prefix.md",
         "prompt": "agents/prompts/sample.md",
@@ -134,6 +135,30 @@ def test_anchor_renders_a_daily_utc_schedule(tmp_path):
     assert start["type"] == "trigger-schedule"
     assert start["cron_expression"] == "07 06 * * *" and start["timezone"] == "UTC"
 
+
+
+def test_weekly_anchor_renders_days(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{"kind": "anchor", "at": "06:07", "days": ["Mon", "Fri"]}]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert output["workflow"]["graph"]["nodes"][0]["data"]["cron_expression"] == "07 06 * * 1,5"
+
+
+def test_tier1_rotation_uses_native_schedule(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=1, triggers=[{"kind": "rotation", "every": "15m"}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    start = output["workflow"]["graph"]["nodes"][0]["data"]
+    assert start["type"] == "trigger-schedule"
+    assert start["cron_expression"] == "7,22,37,52 * * * *"
+    driver = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    assert '"name": "sample"' not in str(driver)
 
 def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     path, definition = sample_checkout(tmp_path)

@@ -58,16 +58,17 @@ Each trigger declares one of these kinds:
 
 | Kind | Fields | Meaning |
 | --- | --- | --- |
-| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; evaluated by the shared rotation driver. |
-| `anchor` | `at: "HH:MM"` | Fixed daily UTC time; odd minute excluding `:15` and `:45`. |
+| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; Tier 0/1 use native schedules; tier 2 uses the driver. |
+| `anchor` | `at: "HH:MM"`, optional `days: [Mon, ..., Sun]` | Fixed UTC time, daily when days is omitted; odd minute excluding `:15` and `:45`. |
 | `event` | `source: <integration>` | An integration webhook, with optional event filters. |
 | `call` | `source: <caller>` | Explicit invocation through the gateway. |
 
 Raw `cron` and `cadence` fields are forbidden outside rendered Dify graph data.
-The renderer owns schedule expressions. Rotation agents expose a webhook entry for
+The renderer owns schedule expressions. Tier 2 rotation agents expose a webhook entry for
 driver calls; tracker events share that entry. The shared driver owns their windows
-and live pace controls. Anchors render a native
-Dify daily schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
+and live pace controls. Tier 0/1 rotations use native schedules; supported intervals are
+minute divisors of 60 of at least two minutes, hour divisors of 24, and one day.
+Anchors render a native Dify schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
 Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 
 ```yaml

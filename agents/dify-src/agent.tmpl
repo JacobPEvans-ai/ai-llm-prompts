@@ -88,6 +88,7 @@ workflow:
 {{- with (index . "mode") -}}{{- $params = coll.Set "__DIFY_MODE__" . $params -}}{{- end -}}
 {{- $anchors := coll.Slice -}}
 {{- $rotation := false -}}
+{{- $nativeRotation := false -}}
 {{- $webhooks := coll.Slice -}}
 {{- $webhook := dict "type" "trigger-webhook" "title" "Rotation call" "method" "post" "content_type" "application/json" "headers" (coll.Slice) "params" (coll.Slice) "body" (coll.Slice) "async_mode" true "status_code" 200 "response_body" "" -}}
 {{- range (index . "triggers") -}}
@@ -100,14 +101,31 @@ workflow:
   {{- else if eq .kind "rotation" -}}
     {{- test.Assert "invalid rotation interval" (regexp.Match `^[1-9][0-9]*[mhd]$` .every) -}}
     {{- $rotation = true -}}
+    {{- if lt (conv.ToInt (index $ "tier")) 2 -}}
+      {{- $nativeRotation = true -}}
+      {{- $cron := coll.JQ `
+        .every as $every | ($every[:-1] | tonumber) as $n | $every[-1:] as $unit |
+        if $unit == "m" and $n >= 2 and $n <= 60 and (60 % $n == 0) then
+          ([range(7; 60; $n), range(7 - $n; 0; -$n)] | sort | map(tostring) | join(",")) + " * * * *"
+        elif $unit == "h" and $n <= 24 and (24 % $n == 0) then "7 */" + ($n | tostring) + " * * *"
+        elif $unit == "d" and $n == 1 then "7 0 * * *"
+        else error("native rotation interval cannot be expressed safely as cron") end` . -}}
+      {{- $params = coll.Set "__DIFY_TRIGGER_CRON__" $cron $params -}}
+    {{- end -}}
   {{- else if eq .kind "event" -}}
     {{- $webhooks = coll.Append (coll.Merge (dict "title" (printf "%s webhook" .source)) $webhook) $webhooks -}}
   {{- end -}}
 {{- end -}}
+{{- test.Assert "native rotation cannot share an anchor" (not (and $nativeRotation (gt (len $anchors) 0))) -}}
 {{- test.Assert "Dify template supports one anchor" (le (len $anchors) 1) -}}
 {{- range $anchors -}}
   {{- $parts := strings.Split ":" .at -}}
-  {{- $params = coll.Set "__DIFY_TRIGGER_CRON__" (printf "%s %s * * *" (index $parts 1) (index $parts 0)) $params -}}
+  {{- $days := "*" -}}
+  {{- if coll.Has . "days" -}}
+    {{- test.Assert "invalid anchor days" (coll.JQ `.days | type == "array" and length > 0 and all(.[]; IN("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) and (unique | length) == length` .) -}}
+    {{- $days = coll.JQ `[.days[] | {Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0}[.]] | sort | map(tostring) | join(",")` . -}}
+  {{- end -}}
+  {{- $params = coll.Set "__DIFY_TRIGGER_CRON__" (printf "%s %s * * %s" (index $parts 1) (index $parts 0) $days) $params -}}
 {{- end -}}
 {{- with (index . "github_reader") -}}{{- $params = coll.Set "__DIFY_GITHUB_TOKEN_REF__" .github_token_ref $params -}}{{- end -}}
 {{- with (index . "output_schema") -}}
@@ -138,12 +156,12 @@ workflow:
 {{- test.Assert "renderer owns schedules" (eq (coll.JQ `[.. | objects | keys[] | select(. == "cron" or . == "cadence")] | length` .) 0) -}}
 {{- test.Assert "renderer owns cron expressions" (eq (coll.JQ `[.. | objects | select(has("cron_expression")) | .cron_expression | select(. != "__DIFY_TRIGGER_CRON__")] | length` .) 0) -}}
 {{- if or $rotation (gt (len $anchors) 0) -}}
-  {{- if and $rotation (eq (len $webhooks) 0) -}}
+  {{- if and $rotation (not $nativeRotation) (eq (len $webhooks) 0) -}}
     {{- $webhooks = coll.Append $webhook $webhooks -}}
   {{- end -}}
   {{- $start := dict -}}
-  {{- if gt (len $anchors) 0 -}}
-    {{- $start = dict "type" "trigger-schedule" "title" "Daily anchor" "mode" "cron" "cron_expression" (index $params "__DIFY_TRIGGER_CRON__") "timezone" "UTC" -}}
+  {{- if or $nativeRotation (gt (len $anchors) 0) -}}
+    {{- $start = dict "type" "trigger-schedule" "title" "Schedule" "mode" "cron" "cron_expression" (index $params "__DIFY_TRIGGER_CRON__") "timezone" "UTC" -}}
   {{- else -}}
     {{- $start = index $webhooks 0 -}}
     {{- $webhooks = slice $webhooks 1 -}}
