@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T19:42:24Z"
+timestamp: "2026-11-07T23:08:31Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -60,7 +60,8 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
 
 - Use consistent, discoverable action names, constrained input schemas, and structured outputs where supported. [A18]
 - Describe purpose, applicability, parameters, results, and limitations in tool definitions; remove repeated system-prompt instructions. [A13] [A1]
-- Filter and paginate results. Return actionable errors that support correction or identify blockers. [A18]
+- Filter and paginate results; return actionable errors. For retrieval, offload large payloads behind pointers, preserve source URLs
+  and dates with the results, and test that claims cite and match the retrieved material. [A18] [C2]
 - Match tool granularity to client workflows; preserve composability and evaluate convenience tools on realistic tasks. [A18]
 - Annotate read-only, destructive, idempotent, and open-world behavior accurately. Enforce access through permissions and scoped credentials. [A18] [A2]
 - Test with an MCP client or Inspector, then evaluate realistic agent tasks through the interface. [A18]
@@ -109,6 +110,7 @@ Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for sc
 [G1]: agent-standards-sources.md
 [G2]: agent-standards-sources.md
 [C1]: agent-standards-sources.md
+[C2]: agent-standards-sources.md
 [O8]: agent-standards-sources.md
 [F5]: agent-standards-sources.md
 [A20]: https://www.anthropic.com/research/components-of-agent-memory
