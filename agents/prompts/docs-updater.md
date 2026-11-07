@@ -4,7 +4,7 @@ title: Docs Updater
 description: Propose safe private-documentation edits from merged pull requests or operator-decided findings.
 resource: prompt://dryvist/agents/prompts/docs-updater
 tags: [github, agent, documentation]
-timestamp: "2026-11-03T03:47:24Z"
+timestamp: "2026-11-07T02:57:59Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}

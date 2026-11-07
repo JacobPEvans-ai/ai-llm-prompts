@@ -317,7 +317,7 @@ workflow:
                 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
                 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.
 
-                For a follow-up recording request, apply track-followups to supplied records through the existing classifier contract.
+                For a deferred task intake request, apply track-followups to supplied records through the existing classifier contract.
                 If duplicate discovery is missing, emit a list intent with search terms before any create intent. Never invent a
                 deduplication result or claim a task was recorded without a receipt; this classifier has no tools.
 

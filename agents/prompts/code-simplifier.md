@@ -4,7 +4,7 @@ title: Code Simplifier
 description: Review eligible pull requests for concrete, behavior-preserving simplifications.
 resource: prompt://dryvist/agents/prompts/code-simplifier
 tags: [github, agent, code-review]
-timestamp: "2026-11-02T00:00:00Z"
+timestamp: "2026-11-07T02:57:59Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}

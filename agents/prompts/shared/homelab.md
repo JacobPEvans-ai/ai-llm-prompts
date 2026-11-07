@@ -4,7 +4,7 @@ title: Shared Homelab Agent Context
 description: Static safety, privacy, and routing context shared by homelab agents.
 resource: prompt://dryvist/agents/prompts/shared/homelab
 tags: [homelab, agent, shared-prefix]
-timestamp: "2026-11-06T00:00:00Z"
+timestamp: "2026-11-07T02:57:59Z"
 status: active
 consumers: [Dify, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}

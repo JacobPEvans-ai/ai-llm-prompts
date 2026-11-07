@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (prompts)**: Refresh OKF timestamps for the shared context and revised documentation, simplification, and task prompts.
+
 * **Update (agents)**: Consolidated definitions describe trigger scenarios and link to worked invocation examples in their prompts.
 
 * **Update (evals)**: Model dossier fixtures supply dated source snapshots, immutable references, matched measurements, and URLs.
@@ -14,7 +16,7 @@
 
 ## 2026-11-06
 
-* **Update (agents)**: Fold follow-up recording, documentation stewardship, and simplification review into existing
+* **Update (agents)**: Fold deferred task intake, documentation stewardship, and simplification review into existing
   agents; evaluation instructions follow each canonical output contract.
 
 * **Add (agents)**: Add merge, shipping, reconciliation, session closure, promotion review, and metadata advisory procedures.

@@ -4,7 +4,7 @@ title: Vikunja Clerk
 description: Read, file, and update Vikunja tasks in explicitly allowed projects.
 resource: prompt://dryvist/agents/prompts/vikunja-clerk
 tags: [vikunja, agent, task-management]
-timestamp: "2026-11-02T23:11:47Z"
+timestamp: "2026-11-07T02:57:59Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -15,7 +15,7 @@ Handle Vikunja task requests with `vikunja_tasks` operations `list`, `get`, `cre
 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.
 
-For a follow-up recording request, apply track-followups to supplied records through the existing classifier contract.
+For a deferred task intake request, apply track-followups to supplied records through the existing classifier contract.
 If duplicate discovery is missing, emit a list intent with search terms before any create intent. Never invent a
 deduplication result or claim a task was recorded without a receipt; this classifier has no tools.
 
