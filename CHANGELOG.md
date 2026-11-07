@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.69.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.69.0...v1.69.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **evals:** pin ambiguous action items and share the malformed-event case ([#311](https://github.com/dryvist/ai-llm-prompts/issues/311)) ([c6f31d8](https://github.com/dryvist/ai-llm-prompts/commit/c6f31d8ad48dc32d42b0c8d692dc408f22a53d29))
+
 ## [1.69.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.68.0...v1.69.0) (2026-11-07)
 
 
