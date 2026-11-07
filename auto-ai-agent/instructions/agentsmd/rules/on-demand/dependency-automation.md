@@ -30,30 +30,38 @@ repos. Do not re-derive or diverge from it per repo.
 
 | Update | Who opens it | PR cadence | Auto-merge |
 | --- | --- | --- | --- |
-| Minor / patch / digest | Renovate | Sat/Sun only, 7-day release age | **yes**, after required checks |
-| First-party (`JacobPEvans*/**`, `dryvist/**`, `jpe-*/**`) | Renovate | Sat/Sun only, 7-day age | yes, incl. major |
-| Third-party major | Renovate | Sat/Sun only, 30-day age | no — review |
-| `flake.lock` | Renovate nix `lockFileMaintenance` | Sat/Sun only, one PR per repo | yes |
-| Security / CVE | Dependabot security updates | immediate | per the repo's merge rules |
+| Minor / patch / digest / pin / pinDigest | Renovate | Saturday, 7-day release age | **yes**, after required checks |
+| First-party, including majors | Renovate | Saturday, no release-age wait | yes, subject to exceptions below |
+| Trusted-org major | Renovate | Saturday, 7-day age | yes; `dep:review` label |
+| Other third-party major | Renovate | Saturday, 30-day age | yes, after required checks |
+| Claude Code | Renovate | Saturday, no wait except GitHub majors: 7 days | yes, after required checks |
+| `dryvist/**` digest / pin / pinDigest | Renovate | Saturday, no release-age wait | no; bot-PR sweep after checks |
+| Majors in manual-automerge repos | Renovate | Saturday, age by package rule | no; approval required |
+| Lock-file maintenance (except npm / Terraform) | Renovate | Saturday, no release-age hold | yes, after required checks |
+| Security / CVE | Renovate vulnerability alerts | Any time, 1-day release age | yes, after required checks |
 
 ## Rules of thumb
 
-- **Weekdays stay quiet.** No non-security update PR opens Monday–Friday. Security fixes come from
-  Dependabot security updates, enabled per repo in `tofu-github`; no `dependabot.yml` exists, and
-  Renovate `vulnerabilityAlerts` is off.
-- **Native auto-merge.** `platformAutomerge: true`: GitHub merges once required checks pass. There is
-  no sweep workflow.
-- **One `flake.lock` writer.** Renovate's nix `lockFileMaintenance` relocks the whole flake on
-  weekends. No workflow writes another repo's lock file.
+- **Saturday window.** Non-security PRs open Saturday 00:00–05:59 America/Indiana/Indianapolis.
+  Renovate vulnerability alerts may open any time, with a 1-day release-age hold.
+- **Renovate auto-merge.** `platformAutomerge: false`: Renovate squash-merges after required checks.
+  `dryvist/**` digest, pin, and pinDigest updates use the bot-PR auto-merge sweep instead.
+- **Grouped non-majors.** Minor, patch, digest, pin, and pinDigest updates share 1 PR per repo;
+  each major opens its own PR. Generated gh-aw files are excluded.
+- **Lock-file maintenance.** Runs in the Saturday window and auto-merges after checks. Renovate
+  cannot enforce release age for maintenance; npm and Terraform maintenance are disabled.
 - Renovate owns managed-input versions; add missing Renovate coverage instead of hand-bumping or re-pinning.
-- **First-party refs float on major tags.** Actions and reusable workflows from our own orgs use
-  `@vN` (for example `@v1`), never a SHA or `@main`; a release moves the tag, so consumers need no
-  bump PR. Flake inputs use `?ref=vN`; Ansible collections use a range such as `>=1,<2`.
-- **Third-party refs are SHA-pinned** with the exact released version as a trailing comment
-  (`uses: actions/checkout@<sha> # v4.2.2`). If the project publishes no immutable version tag,
-  pick another action or record an explicit exception. Non-`uses:` pins carry an explicit
-  `# renovate:` annotation.
-- **Majors never auto-merge except first-party.** A compatible-looking version is not a compatible API.
+- **First-party has no release-age wait.** `JacobPEvans/**`, `JacobPEvans-*/**`, `dryvist/**`,
+  and `jpe-*/**`, including their GitHub URL forms, auto-merge releases including majors after checks,
+  subject to the digest/pin and manual-automerge exceptions above.
+- **GitHub Actions refs are SHA-pinned.** `dryvist/**` uses a full 40-character commit SHA with a
+  release-tag comment; Renovate updates both. `JacobPEvans/**` and `JacobPEvans-personal/**`
+  reusable workflows instead float on major tags such as `@v1` (`pinDigests: false`).
+- **Later package rules override earlier ones.** Claude Code non-majors have no wait;
+  `anthropics/claude-code` majors take the trusted-org 7-day hold; `@anthropic-ai/claude-code` keeps no wait.
+- **Majors auto-merge after their hold.** Trusted-org majors wait 7 days and receive `dep:review`;
+  other third-party majors wait 30 days. Majors in `dryvist/ansible-*` and `dryvist/nix-ai`
+  never auto-merge and require approval, including first-party majors.
 - **Prefer native Renovate capability over custom scripts/workflows** — debug the config.
 - **Renovate PRs target the repo's default branch.** On git-flow repos that is `develop`; never add a
   repo-level `baseBranches` forcing `main`.
