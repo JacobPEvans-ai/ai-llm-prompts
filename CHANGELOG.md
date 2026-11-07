@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.80.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.79.0...v1.80.0) (2026-11-07)
+
+
+### Features
+
+* **agent-standards:** prefer one agent with progressively disclosed skills ([#340](https://github.com/dryvist/ai-llm-prompts/issues/340)) ([5c9c7af](https://github.com/dryvist/ai-llm-prompts/commit/5c9c7affffe3b13789b8b6077db43b7ace6d692e))
+
 ## [1.79.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.78.0...v1.79.0) (2026-11-07)
 
 
