@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.76.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.75.0...v1.76.0) (2026-11-07)
+
+
+### Features
+
+* **standards:** add evidence and shared memory rules ([#330](https://github.com/dryvist/ai-llm-prompts/issues/330)) ([52c5164](https://github.com/dryvist/ai-llm-prompts/commit/52c5164250a40a68d7df5176e60f783c431d3001))
+
 ## [1.75.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.74.0...v1.75.0) (2026-11-07)
 
 
