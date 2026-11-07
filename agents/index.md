@@ -112,6 +112,13 @@
 * Reader: authorized caller
 * Acted signal: verified receipt or actionable blocked result
 
+### [langfuse-clerk](langfuse-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: verified gateway caller
+* Acted signal: verified score report or actionable blocked result
+
 ### [merge-steward](merge-steward.yaml)
 
 * Tier: 0

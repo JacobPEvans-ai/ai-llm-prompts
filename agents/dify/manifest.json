@@ -120,6 +120,14 @@
     "sha256": "274998538f3d5ef612d1dc1f7b47dec71d3ff397e02362eb4323f91111b955e6"
   },
   {
+    "name": "langfuse-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/langfuse-clerk.dsl.yml",
+    "sha256": "d92126ca47c482538df277d378bdbc57ab39ef6bf260d95c022770ff510deea3"
+  },
+  {
     "name": "merge-steward",
     "mode": "shadow",
     "tier": 0,
