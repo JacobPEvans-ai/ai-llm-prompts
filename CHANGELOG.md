@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.72.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.71.1...v1.72.0) (2026-11-07)
+
+
+### Features
+
+* **rules:** extend dated agent authoring and evaluation standards ([#321](https://github.com/dryvist/ai-llm-prompts/issues/321)) ([7c3e7c8](https://github.com/dryvist/ai-llm-prompts/commit/7c3e7c87cd4ec34b50ef8af06e214ce1f90e7dbc))
+
 ## [1.71.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.71.0...v1.71.1) (2026-11-07)
 
 
