@@ -280,7 +280,8 @@ def test_scoring_mode_comes_from_the_suite():
     modes = {
         test["vars"]["suite"]: test["vars"]["expected"].get("expected_output_scoring")
         for test in cases.generate_tests()
-        if "expected" in test["vars"] and "expected_output" in test["vars"]["expected"]
+        # The generator always sets expected_output ({} when a case has none); count only real outputs.
+        if test["vars"].get("expected", {}).get("expected_output")
     }
 
     assert modes == {name: suite.get("expected_output_scoring", "field-credit")
