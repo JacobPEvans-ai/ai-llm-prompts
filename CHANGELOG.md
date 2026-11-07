@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.73.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.72.0...v1.73.0) (2026-11-07)
+
+
+### Features
+
+* **prompts:** catalog tier-2 load-test request ([#324](https://github.com/dryvist/ai-llm-prompts/issues/324)) ([f1359a2](https://github.com/dryvist/ai-llm-prompts/commit/f1359a24b750d4c7c11b66801cc6602dfdd05c53))
+
 ## [1.72.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.71.1...v1.72.0) (2026-11-07)
 
 
