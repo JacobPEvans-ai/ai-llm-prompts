@@ -3,6 +3,27 @@ AGENTS_ROOT ?= .
 INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/index.md
 PROMPT_INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/prompts/index.md
 PYTEST ?= python3 -m pytest
+AUTOMATION_ROOT ?= automation
+POLICY_PROMPT_OUTPUT ?= $(AUTOMATION_ROOT)
+POLICY_RUBRICS := policy-gate security-review semantic-review leak-review
+.DEFAULT_GOAL := resolve-agents
+
+.PHONY: render-policy-prompts check-policy-prompts $(addprefix render-policy-prompt-,$(POLICY_RUBRICS))
+render-policy-prompts: $(addprefix render-policy-prompt-,$(POLICY_RUBRICS))
+
+$(addprefix render-policy-prompt-,$(POLICY_RUBRICS)): render-policy-prompt-%:
+	@mkdir -p "$(POLICY_PROMPT_OUTPUT)"
+	@gomplate -c .="$(AUTOMATION_ROOT)/policy-gate-src/$*.yaml" \
+		-t rubric="$(AUTOMATION_ROOT)/policy-gate-src/rubric.tmpl" \
+		-i '{{ tmpl.Exec "rubric" (dict "name" "$*" "rubric" .) }}' \
+		-o "$(POLICY_PROMPT_OUTPUT)/ai-workflows-$*.prompt.yml"
+
+check-policy-prompts:
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/policy-prompts.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		mkdir "$$output/committed"; \
+		cp $(foreach name,$(POLICY_RUBRICS),"$(AUTOMATION_ROOT)/ai-workflows-$(name).prompt.yml") "$$output/committed/"; \
+		$(MAKE) --no-print-directory render-policy-prompts POLICY_PROMPT_OUTPUT="$$output/rendered"; \
+		diff -ru "$$output/committed" "$$output/rendered"
 
 .PHONY: resolve-agents render-dify check-dify render-sim check-sim render-langflow check-langflow render-index check-index test
 resolve-agents:
@@ -28,7 +49,7 @@ render-dify:
 		gomplate -c agents="$$output/agents.json" -f "$(CURDIR)/agents/dify-src/rotation.tmpl" \
 			-o "$(abspath $(DIFY_OUTPUT))/tier2-rotation.dsl.yml"
 
-check-dify:
+check-dify: check-policy-prompts
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/dify.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
 		mkdir "$$output/committed"; \
 		cp "$(AGENTS_ROOT)"/agents/dify/*.dsl.yml "$$output/committed/"; \
