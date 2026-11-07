@@ -49,6 +49,13 @@
 * Tier: 0
 * Trigger: call: caller
 
+### [credential-steward](credential-steward.yaml)
+
+* Tier: 2
+* Trigger: rotation: 1d
+* Reader: credential owner
+* Acted signal: The owner schedules or resolves a rotation planning task.
+
 ### [daily-innovation](daily-innovation.yaml)
 
 * Tier: 2
@@ -101,6 +108,13 @@
 * Reader: authorized caller
 * Acted signal: verified receipt or actionable blocked result
 
+### [merge-steward](merge-steward.yaml)
+
+* Tier: 0
+* Trigger: call: implementation-lead
+* Reader: implementation lead
+* Acted signal: Authorized pull requests are merged or their blockers are addressed.
+
 ### [model-benchmarker](model-benchmarker.yaml)
 
 * Tier: 2
@@ -120,6 +134,13 @@
 * Tier: 0
 * Trigger: call: caller
 
+### [plan-reconciler](plan-reconciler.yaml)
+
+* Tier: 0
+* Trigger: call: planning-lead
+* Reader: planning lead
+* Acted signal: The lead acts on the reconciled plan and blockers.
+
 ### [pr-keeper](pr-keeper.yaml)
 
 * Tier: 1
@@ -131,6 +152,13 @@
 * Trigger: rotation: 15m
 * Reader: pull requests via github-clerk
 * Acted signal: required checks green on current head
+
+### [promotion-review](promotion-review.yaml)
+
+* Tier: 2
+* Trigger: rotation: 1d
+* Reader: supervising lead
+* Acted signal: The lead reviews a mode-change pull request or resolves an evidence blocker.
 
 ### [release-digest](release-digest.yaml)
 
@@ -153,6 +181,20 @@
 * Trigger: event: agent-sandbox.finding
 * Reader: agent-sandbox jobs
 * Acted signal: fix PR merged
+
+### [session-closer](session-closer.yaml)
+
+* Tier: 0
+* Trigger: call: operator-or-lead
+* Reader: operator
+* Acted signal: The operator uses the handoff or resolves a reported blocker.
+
+### [ship-runner](ship-runner.yaml)
+
+* Tier: 0
+* Trigger: call: implementation-lead
+* Reader: implementation lead
+* Acted signal: The lead receives a confirmed pull request handoff.
 
 ### [splunk-deepdive](splunk-deepdive.yaml)
 

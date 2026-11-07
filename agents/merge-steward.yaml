@@ -1,0 +1,16 @@
+name: merge-steward
+extends: interactive
+description: |
+  Use when: a lead explicitly authorizes ready pull requests to be merged.
+  Do not use when: a pull request needs repairs or production promotion.
+identity: agent-merge-steward
+api_key_ref: openbao://agent-key/merge-steward
+reader: implementation lead
+acted_signal: Authorized pull requests are merged or their blockers are addressed.
+triggers: [{kind: call, source: implementation-lead}]
+connectors: [github-clerk]
+tools: [a2a.call]
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/pr-sweep/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: github-workflows/skills/merge-pr/SKILL.md}
+input: Authorized repositories, pull requests, heads, dependencies, merge methods, and current readiness evidence.

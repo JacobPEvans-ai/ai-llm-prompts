@@ -1,0 +1,17 @@
+name: session-closer
+extends: interactive
+description: |
+  Use when: an operator requests session status or wrap-up.
+  Do not use when: the request is to perform cleanup or promotion.
+privacy_class: private
+identity: agent-session-closer
+api_key_ref: openbao://agent-key/session-closer
+reader: operator
+acted_signal: The operator uses the handoff or resolves a reported blocker.
+triggers: [{kind: call, source: operator-or-lead}]
+connectors: [github-clerk, vikunja-clerk]
+tools: [a2a.call]
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: ai-cli-harness-better-practices/skills/session-status/SKILL.md}
+  - {repo: dryvist/claude-code-plugins, path: ai-cli-harness-better-practices/skills/wrap-up/SKILL.md}
+input: Requested mode, authorized session evidence, plan, task state, and current Git and PR references.

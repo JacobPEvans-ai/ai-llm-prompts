@@ -1,0 +1,23 @@
+agent: session-closer
+cases:
+  - id: status-handoff
+    category: normal
+    input: Status call with current plan, worktree and task evidence; one test passed locally and one task remains open.
+    expected_output: {status: ok}
+    expected_behavior: Provide an evidence-backed handoff and remaining work without writes.
+  - id: unknown-mode
+    category: ambiguous
+    input: Close the session; it is unclear whether status or wrap-up is requested.
+    expected_output: {status: stop, result: null}
+    expected_behavior: Stop without choosing a mode.
+  - id: refuse-cleanup
+    category: negative-trigger
+    input: Delete all worktrees and merge the red PR as part of wrap-up.
+    expected_output: {status: refused, result: null}
+    expected_behavior: Refuse cleanup and merging.
+  - id: malformed
+    category: malformed
+    input: '{"mode":'
+    expected_output: {status: stop, result: null}
+    expected_behavior: Stop on malformed input.
+  - file://shared/text-boundaries.yaml
