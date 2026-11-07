@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (instructions)**: Add evidence and status fields, authorized rule correction, and single-writer shared memory requirements.
+
 * **Add (applications)**: Catalog the Open WebUI Docling VLM page-parsing prompt with source provenance and literal rendering.
 
 * **Add (automation)**: Catalog the tier-2 load-test request with its request-id placeholder and source provenance.

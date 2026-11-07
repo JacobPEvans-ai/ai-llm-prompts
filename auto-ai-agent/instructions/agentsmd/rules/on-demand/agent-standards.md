@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T09:33:34Z"
+timestamp: "2026-11-07T13:33:21Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -25,6 +25,7 @@ Treat the rules as authoring requirements; verify implementation and delivery se
 
 Resolve source IDs through the dated [authoring source table](agent-standards-sources.md) and
 [platform source table](agent-standards-platform-sources.md). Local policy is identified separately from upstream requirements.
+Memory guidance: Anthropic, *The components of agent memory*, published 2026-11-06. [A20]
 
 ## a. Agent definitions and prompts
 
@@ -33,6 +34,8 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Encode local conventions and costly gotchas; remove discoverable structure and default behavior. Re-evaluate instructions when changing models. [A1] [O1]
 - Define focused roles with explicit tools, Model Context Protocol (MCP) servers, and essential startup skills. [A5]
 - Keep `CLAUDE.md` concise, scope specialized rules to files, and store learned context in memory. [A11]
+- Give each learned or stored rule an evidence reference and a confirmed or unconfirmed status. Define who is authorized to correct or retire a wrong rule and how they check it against its source. [A20]
+- Name one writer per source record in shared memory. Preserve key facts exactly: numbers, names, dates, and links. Concurrent writers append to their own records and never rewrite a shared summary (local write policy). [A20]
 - Treat retrieval and writable memory as instruction inputs. Enforce source, destination, and network limits at runtime; keep preferences read-only. [A2]
 - Retain per-source bookmarks and a delivery ledger. Preserve bookmarks after failed reads; report unavailable sources. [A2]
 - Reconcile with the destination before retrying delivery. Record ambiguous delivery separately; advance bookmarks and ledger only after confirmed receipt. [A2]
@@ -106,3 +109,4 @@ Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for sc
 [C1]: agent-standards-sources.md
 [O8]: agent-standards-sources.md
 [F5]: agent-standards-sources.md
+[A20]: https://www.anthropic.com/research/components-of-agent-memory
