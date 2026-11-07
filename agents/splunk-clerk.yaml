@@ -1,0 +1,28 @@
+name: splunk-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests a bounded read-only Splunk search.
+  Do not use when: the request needs a configuration change or an unbounded search.
+  Typical triggers include an alert investigation and a scoped utilization query. See "When to invoke" in the agent prompt.
+owns: splunk
+reader: authorized monitoring analyst
+acted_signal: verified search results support an authorized alert or investigation decision
+privacy_class: private
+identity: agent-splunk-clerk
+api_key_ref: openbao://agent-key/splunk-clerk
+mcp_servers: [splunk]
+tools:
+  - splunk.search
+  - splunk.get_search_results
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, index, sourcetype, time_range, query]
+  read_tools: [splunk.search, splunk.get_search_results]
+  write_tools: []
+guards:
+  credential_owner: splunk-clerk
+  allowed_indexes_ref: policy://splunk-clerk/allowed-indexes
+  allowed_sourcetypes_ref: policy://splunk-clerk/allowed-sourcetypes
+  read_only_query_grammar_ref: policy://splunk-clerk/read-only-query-grammar
+  unknown_or_unbounded_scope: refuse
+  read_only: true
