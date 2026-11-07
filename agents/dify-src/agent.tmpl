@@ -98,10 +98,10 @@ def main(timestamp, event=None):
         if problem:
             raise ValueError("invalid triggering event")
         result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
-    text = json.dumps({"status": "ok", "reason": "", "result": result})
+    text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
     if len(text) > 30000:
         raise ValueError("trigger input exceeds 30000 characters")
-    return {"text": redact(text)}
+    return {"text": text}
 {{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
 {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}

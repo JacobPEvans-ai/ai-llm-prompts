@@ -139,6 +139,7 @@ workflow:
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
+            SECRET_KEY_RE = re.compile(r"(?i)(?:api[_-]?key|token|authorization|password|secret|cookie)")
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
             # md and py are also country-code TLDs, so only a two-label name such as README.md stays a file reference.
@@ -195,6 +196,12 @@ workflow:
 
 
             def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if SECRET_KEY_RE.fullmatch(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
                 text = SECRET_RE.sub(lambda match: (match.group("label") or "") + REDACTED, text)
                 text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
                 text = IPV6_RE.sub(_redact_ipv6, text)
@@ -277,10 +284,10 @@ workflow:
                     if problem:
                         raise ValueError("invalid triggering event")
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
-                text = json.dumps({"status": "ok", "reason": "", "result": result})
+                text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
                     raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": redact(text)}
+                return {"text": text}
           code_language: python3
           outputs:
             text:

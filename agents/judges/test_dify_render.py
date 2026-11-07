@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from definitions import definitions
+from dify_nodes import node_main
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -248,6 +249,41 @@ def test_each_event_branch_delivers_bounded_redacted_payload_to_the_model(name):
         with pytest.raises(ValueError, match="exceeds 30000"):
             main(timestamp=123, event={"body": {"payload": "x" * 30001}})
     assert any(edge["source"] == "trigger-input" and edge["target"] == "model" for edge in graph["edges"])
+
+
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter", "repo-janitor"])
+def test_webhook_input_redacts_nested_secret_values_before_serialization(name):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    payload = {
+        "payload": {
+            "action": "opened",
+            "headers": {"aUtHoRiZaTiOn": "fixture-only", "COOKIE": ["fixture-only"]},
+            "items": [{"api_key": "short", "nested": {
+                "ToKeN": 123, "Password": False, "SECRET": {"value": "fixture-only"},
+            }}],
+        },
+        "scope": {"repository": "example/repo"},
+        "mandate": {"operation": "create_pull_request", "request_id": "req-1"},
+        "count": 7, "enabled": True, "optional": None,
+    }
+    expected = {
+        **payload,
+        "payload": {
+            "action": "opened",
+            "headers": {"aUtHoRiZaTiOn": "[REDACTED]", "COOKIE": "[REDACTED]"},
+            "items": [{"api_key": "[REDACTED]", "nested": {
+                "ToKeN": "[REDACTED]", "Password": "[REDACTED]", "SECRET": "[REDACTED]",
+            }}],
+        },
+    }
+    for node in dsl["workflow"]["graph"]["nodes"]:
+        if node["data"]["type"] != "trigger-webhook":
+            continue
+        main = node_main(name, f"{node['id']}-input")
+        text = main(timestamp=123, event={"body": payload})["text"]
+        assert json.loads(text)["result"]["event"] == expected
+        assert "fixture-only" not in text and len(text) <= 30000
+    assert payload["payload"]["items"][0]["api_key"] == "short"
 
 
 @pytest.mark.parametrize("triggers", [
