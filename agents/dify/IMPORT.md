@@ -30,6 +30,12 @@ header. `check-dify` renders into a temporary directory and compares the complet
 including headers. CI rejects changed content, missing outputs, and extra outputs. Graph overrides retain the
 existing workflows' behavior; a new definition can render without one.
 
+`render-dify` also writes `agents/dify/manifest.json`, sorted by name. Each entry contains `name`, the repository-relative
+`path`, the rendered file's `sha256`, `kind`, `mode`, and `tier`. Agent entries use `kind: agent` and take `mode` and
+`tier` from the merged definition. Platform-owned workflows use `kind: driver`, `mode: null`, and their render source's
+`tier`. Every `.dsl.yml` appears exactly once. `check-dify` includes the manifest in its byte-for-byte comparison.
+Import consumers can read this manifest at a pinned catalog commit and verify each downloaded DSL against its hash.
+
 To render another checkout's agent definitions and prompts with this checkout's template and helpers:
 
 ```sh

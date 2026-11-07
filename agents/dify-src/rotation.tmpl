@@ -1,6 +1,10 @@
 {{- /* One native scheduler; only tier-2 Dify rotation triggers participate. */ -}}
+{{- define "driver-metadata" -}}
+{{- dict "name" "tier2-rotation" "tier" 2 "mode" nil "kind" "driver" | data.ToJSON -}}
+{{- end -}}
+{{- $driver := tmpl.Exec "driver-metadata" . | data.JSON -}}
 {{- $definitions := .agents -}}
-{{- $agents := coll.JQ `[.[] | select(.home_platform == "dify" and .tier == 2) | [.triggers[]? | select(.kind == "rotation")] as $triggers | select($triggers | length > 0) | {name: .name, every: $triggers[0].every, trigger_count: ($triggers | length), expected_runtime_minutes: (.expected_runtime_minutes // 10)}] | sort_by(.name)` $definitions -}}
+{{- $agents := coll.JQ (printf `[.[] | select(.home_platform == "dify" and .tier == %v) | [.triggers[]? | select(.kind == "rotation")] as $triggers | select($triggers | length > 0) | {name: .name, every: $triggers[0].every, trigger_count: ($triggers | length), expected_runtime_minutes: (.expected_runtime_minutes // 10)}] | sort_by(.name)` $driver.tier) $definitions -}}
 {{- $roster := coll.Slice -}}
 {{- range $i, $agent := $agents -}}
   {{- test.Assert "one rotation trigger per agent is required" (eq (conv.ToInt $agent.trigger_count) 1) -}}
@@ -14,7 +18,7 @@
   {{- $roster = coll.Append (dict "name" $agent.name "every_minutes" $minutes "offset_minutes" $offset "expected_runtime_minutes" $agent.expected_runtime_minutes) $roster -}}
 {{- end -}}
 # Generated from agents/*.yaml, agents/dify-src/rotation.tmpl, and helpers/rotation_due.py; run make render-dify.
-app: {name: tier2-rotation, mode: workflow, description: Dispatch tier-2 rotation windows.}
+app: {name: {{ $driver.name }}, mode: workflow, description: Dispatch tier-2 rotation windows.}
 dependencies: []
 kind: app
 version: 0.7.0
