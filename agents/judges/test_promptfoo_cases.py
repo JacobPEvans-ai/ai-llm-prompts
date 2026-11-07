@@ -238,6 +238,38 @@ def test_fixture_cases_include_the_fixture_contents():
     assert supplied["input_event_summary"]["failing_log_excerpt"] == fixture
 
 
+def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
+    names = {"docs-updater", "code-simplifier", "doc-contradiction-finder"}
+    sources = {
+        name: next(case for case in source_suites()[name]["cases"] if case["id"] == "coverage-malformed")
+        for name in names
+    }
+    references = {case["input_event_summary"] for case in sources.values()}
+    assert references == {"file://agents/evals/fixtures/malformed-event.yaml"}
+    fixture = cases.load_yaml(_ROOT / references.pop().removeprefix("file://"))
+    assert fixture == {"event": "pull_request", "mandate": None, "pull_request_number": "not-an-integer"}
+
+    generated = [test for test in cases.generate_tests()
+                 if test["metadata"]["suite"] in names and test["metadata"]["case"] == "coverage-malformed"]
+    assert len(generated) == len(names)
+    for test in generated:
+        source = sources[test["metadata"]["suite"]]
+        assert json.loads(test["vars"]["case_data"])["input_event_summary"] == fixture
+        assert test["vars"]["expected"]["expected_output"] == source.get("expected_output", {})
+        if "expected_behavior" in source:
+            assert any(assertion["type"] == "llm-rubric" and assertion["value"] == source["expected_behavior"]
+                       for assertion in test["assert"])
+
+
+@pytest.mark.parametrize("reference", [
+    "file://agents/evals/fixtures/missing.yaml",
+    "file://../outside.yaml",
+])
+def test_input_file_references_reject_missing_or_external_files(reference):
+    with pytest.raises(ValueError, match="Fixture is missing or outside the repository"):
+        cases.load_fixture_contents({"input_event_summary": reference})
+
+
 def _run_expected_output(
     output, expected_output, case_data=None, patch_check=None, scoring="field-credit"
 ):

@@ -99,13 +99,16 @@ def load_fixture_contents(value):
     if isinstance(value, dict):
         contents = {}
         for key, item in value.items():
-            if key.endswith("_fixture"):
+            if key.endswith("_fixture") or (isinstance(item, str) and item.startswith("file://")):
                 if not isinstance(item, str):
                     raise ValueError(f"Fixture reference is not a path: {key}")
-                fixture = (ROOT / item).resolve()
+                fixture = (ROOT / item.removeprefix("file://")).resolve()
                 if not fixture.is_relative_to(ROOT) or not fixture.is_file():
                     raise ValueError(f"Fixture is missing or outside the repository: {item}")
-                contents[f"{key.removesuffix('_fixture')}_excerpt"] = fixture.read_text()
+                if key.endswith("_fixture"):
+                    contents[f"{key.removesuffix('_fixture')}_excerpt"] = fixture.read_text()
+                else:
+                    contents[key] = load_yaml(fixture)
             else:
                 contents[key] = load_fixture_contents(item)
         return contents
