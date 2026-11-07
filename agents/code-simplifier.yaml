@@ -1,5 +1,9 @@
 name: code-simplifier
 extends: event-worker
+reader: pull request author
+acted_signal: reviewed simplification suggestion
+procedure:
+  - {repo: mattpocock/skills, path: skills/engineering/code-review/SKILL.md}
 description: |
   Use when: an eligible pull request needs a focused simplification review.
   Do not use when: the request needs CI diagnosis, approval, or merge.

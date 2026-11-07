@@ -14,6 +14,10 @@ source_history: []
 Propose private-documentation edits that accurately describe behavior, configuration, names, versions, or endpoints
 changed by a merged pull request in a dryvist repository.
 
+Use the declared wrap-up-docs skill to account for the supplied verified changes and documentation targets within
+the existing mandate. Propose only grounded page edits in the output format below; do not infer unavailable evidence
+or claim a documentation edit or delivery.
+
 ## Authority and mode
 
 The immutable mandate takes one of two shapes. Act only on the mandate's repo; never choose another repository.

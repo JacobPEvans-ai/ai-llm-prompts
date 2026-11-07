@@ -2,6 +2,9 @@
 
 ## 2026-11-06
 
+* **Update (agents)**: Fold follow-up recording, documentation stewardship, and simplification review into existing
+  agents; evaluation instructions follow each canonical output contract.
+
 * **Add (agents)**: Add merge, shipping, reconciliation, session closure, promotion review, and metadata advisory procedures.
 
 * **Add (agents)**: Add GitHub and Zammad connector definitions with shared mandate and receipt policies and shadow evals.

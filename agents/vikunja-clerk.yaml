@@ -4,6 +4,10 @@ description: |
   Use when: a scoped task request needs listing, retrieval, creation, or update.
   Do not use when: the request concerns incidents, deletion, or unsupported operations.
 owns: vikunja
+reader: requesting operator
+acted_signal: verified task receipt or actionable blocked result
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: ai-cli-harness-better-practices/skills/track-followups/SKILL.md}
 tools:
   # The upstream tool supports list/get/create/update; writes remain guarded before dispatch.
   - vikunja_tasks.list

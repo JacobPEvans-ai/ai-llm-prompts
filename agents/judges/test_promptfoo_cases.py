@@ -98,6 +98,20 @@ def test_new_definitions_enter_the_matrix_or_report_a_missing_suite(tmp_path, mo
         assert generated[0]["vars"]["expected"]["expected_output"] == {"status": "ok"}
 
 
+def test_report_envelope_does_not_gain_an_incompatible_output_contract(tmp_path, monkeypatch):
+    prompt = tmp_path / "report.md"
+    contract = "Return only status, reason, and result; no other top-level fields."
+    prompt.write_text(contract)
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+    prefix = cases.suite_prompt(
+        {"prompt": "report.md", "tools": []},
+        {"cases": [{"expected_output": {"status": "ok"}}]},
+    )
+    assert contract in prefix
+    assert "with `decision`, `proposed_calls`, and `reply`" not in prefix
+    assert "Never execute a tool" in prefix
+
+
 def test_report_fields_name_outcomes_without_values():
     clerk = next(
         test

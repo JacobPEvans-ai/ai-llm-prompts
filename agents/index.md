@@ -43,6 +43,8 @@
 
 * Tier: 1
 * Trigger: event: github.pull_request
+* Reader: pull request author
+* Acted signal: reviewed simplification suggestion
 
 ### [commit-grouper](commit-grouper.yaml)
 
@@ -72,6 +74,8 @@
 
 * Tier: 1
 * Trigger: event: github.pull_request
+* Reader: documentation maintainer
+* Acted signal: reviewed documentation proposal
 
 ### [donna-evening-wrap](donna-evening-wrap.yaml)
 
@@ -217,6 +221,8 @@
 
 * Tier: 0
 * Trigger: call: caller
+* Reader: requesting operator
+* Acted signal: verified task receipt or actionable blocked result
 
 ### [vikunja-triage](vikunja-triage.yaml)
 

@@ -1,5 +1,9 @@
 name: docs-updater
 extends: event-worker
+reader: documentation maintainer
+acted_signal: reviewed documentation proposal
+procedure:
+  - {repo: dryvist/claude-code-plugins, path: ai-cli-harness-better-practices/skills/wrap-up-docs/SKILL.md}
 description: |
   Use when: merged behavior changes need documentation edits.
   Do not use when: the changes affect tests only or lack a documentation mandate.

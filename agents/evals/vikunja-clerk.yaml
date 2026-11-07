@@ -4,6 +4,14 @@ expected_output_scoring: strict
 # The prompt says never to output project_id. A key of that name at any depth of the output fails the case.
 forbidden_output_keys: [project_id]
 cases:
+  - id: followup-deduplication
+    category: normal
+    input: Record a follow-up to update the guide; first search open tasks for guide duplicates.
+    expected_parse: {route: vikunja, operation: list, project_named: false, done: false, category: null, search: guide}
+    structured_fields: {route: vikunja, operation: list, search: guide, done: false}
+    expected_calls: []
+    expected_output: {route: vikunja, operation: list, search: guide}
+    expected_behavior: Emit a list intent to discover duplicates before creation; never claim a tool ran or a task was recorded.
   - id: list-open-tasks
     category: normal
     input: List open tasks.
