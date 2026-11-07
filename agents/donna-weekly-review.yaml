@@ -1,15 +1,12 @@
 name: donna-weekly-review
-extends: local-batch
+extends: task-advisor
 description: |
   Use when: the operator needs a weekly review and proposed next moves.
   Do not use when: the request authorizes task changes or incident handling.
   Typical triggers include weekly commitments and inbox review proposals. See "When to invoke" in the agent prompt.
-privacy_class: private
 identity: agent-donna-weekly-review
 api_key_ref: openbao://agent-key/donna-weekly-review
 reader: operator
 acted_signal: A proposed move is applied.
 triggers: [{kind: anchor, at: '15:31', days: [Sun]}]
-connectors: [vikunja-clerk]
-tools: [a2a.call]
 input: Approved weekly task history, supplied inbox and task-triage intake, operator preferences, UTC time, source availability and delivery state.

@@ -7,6 +7,8 @@ import re
 import pytest
 import yaml
 
+from definitions import resolved_records
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CATEGORIES = {"normal", "malformed", "ambiguous", "oversized", "unavailable-source", "negative-trigger"}
@@ -123,6 +125,23 @@ def test_restatement_fails_including_nested_values(source_agent, inherited):
 def test_lists_replace_atomically_and_booleans_differ_from_numbers():
     assert list(redundant_paths({"tools": ["read"], "enabled": False}, {"tools": ["read", "write"], "enabled": 0})) == []
     assert list(redundant_paths({"tools": ["read"]}, {"tools": ["read"]})) == ["tools"]
+
+
+@pytest.mark.parametrize("name", [
+    "donna-evening-wrap", "donna-research", "donna-weekly-review",
+    "daily-innovation", "credential-steward", "agent-audit",
+])
+def test_task_advisors_inherit_tools_and_reject_restatements(name):
+    source = yaml.safe_load((ROOT / "agents" / f"{name}.yaml").read_text())
+    assert source["extends"] == "task-advisor"
+    record = next(record for record in resolved_records() if record["agent"]["name"] == name)
+    validate_source(source, record["profile"])
+    for field in ("connectors", "tools"):
+        assert field not in source
+        assert record["agent"][field] == record["profile"][field]
+        restated = {**source, field: record["agent"][field]}
+        with pytest.raises(AssertionError, match=f"redundant profile values:.*{field}"):
+            validate_source(restated, record["profile"])
 
 
 @pytest.mark.parametrize("field", ["extends", "identity", "api_key_ref"])

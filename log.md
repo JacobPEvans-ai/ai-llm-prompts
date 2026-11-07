@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Task advisory agents inherit connector, tool, and privacy settings from one profile.
+
 * **Update (prompts)**: Refresh OKF timestamps for the shared context and revised documentation, simplification, and task prompts.
 
 * **Update (agents)**: Consolidated definitions describe trigger scenarios and link to worked invocation examples in their prompts.

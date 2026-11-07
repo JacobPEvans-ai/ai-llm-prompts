@@ -1,0 +1,5 @@
+connectors: [vikunja-clerk]
+tools: [a2a.call]
+privacy_class: private
+tier: 2
+channels: [langfuse-trace]

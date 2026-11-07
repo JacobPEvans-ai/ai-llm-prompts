@@ -1,12 +1,9 @@
 name: agent-audit
-extends: local-batch
+extends: task-advisor
 description: |
   Use when: reviewed agent traces and feedback need an improvement proposal.
   Do not use when: the request needs operational incident response.
   Typical triggers include score regressions and repeated delivery failures. See "When to invoke" in the agent prompt.
-privacy_class: private
-connectors: [vikunja-clerk]
-tools: [a2a.call]
 triggers: [{kind: rotation, every: 12h}]
 reader: Vikunja via vikunja-clerk
 acted_signal: task closed
