@@ -4,6 +4,7 @@ System and user prompt assets consumed by applications and infrastructure servic
 
 ## Prompts
 
+* [Open WebUI Docling VLM](open-webui-docling-vlm.md) - Literal page-parsing prompt for Docling document conversion.
 * [YouTrack issue specialist](youtrack-specialist.md) - Portable issue-domain contract for built-in YouTrack
   operations and verified issue and comment records.
 * [Vikunja task specialist](vikunja-specialist.md) - Portable task-domain contract for native Vikunja
