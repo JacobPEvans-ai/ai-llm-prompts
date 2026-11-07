@@ -253,6 +253,51 @@ def test_connector_integration_ownership_is_unique():
     assert len(owners) == len(set(owners))
 
 
+def _validate_prompt_handoffs(agent, body, roster):
+    """Check explicit outbound handoffs against the resolved gateway roster."""
+    names = "|".join(re.escape(name) for name in sorted(roster, key=len, reverse=True))
+    handoffs = set(re.findall(
+        rf"\b(?:ask|call|use|coordinate with|hand off to|handoff to|go to|goes to|through|via)\s+({names})\b",
+        re.sub(r"\s+", " ", body), re.IGNORECASE,
+    )) - {agent["name"]}
+    declared = set(agent.get("connectors", [])) | set(agent.get("peers", []))
+    assert handoffs <= declared, f"{agent['name']}: undeclared handoff peers: {sorted(handoffs - declared)}"
+    if handoffs:
+        assert "a2a.call" in agent["tools"], f"{agent['name']}: handoffs require a2a.call"
+
+
+@pytest.mark.parametrize("path,agent", _definitions(), ids=lambda item: item.stem if isinstance(item, Path) else None)
+def test_roster_prompt_handoffs_declare_gateway_peers(path, agent):
+    roster = {peer["name"] for _, peer in _definitions()}
+    _validate_prompt_handoffs(agent, _prompt_body(_ROOT / agent["prompt"]), roster)
+
+
+@pytest.mark.parametrize("handoff", [
+    "Ask task-clerk to record the remediation.",
+    "Coordinate with task-clerk to record the remediation.",
+    "Ordinary tasks go to\n task-clerk through A2A.",
+    "Hand off to task-clerk.",
+])
+def test_prompt_handoff_fixture_rejects_missing_peer(handoff):
+    agent = {"name": "incident-clerk", "tools": ["a2a.call"], "connectors": []}
+    with pytest.raises(AssertionError, match="undeclared handoff peers.*task-clerk"):
+        _validate_prompt_handoffs(agent, handoff, {"incident-clerk", "task-clerk"})
+
+
+@pytest.mark.parametrize("field", ["connectors", "peers"])
+def test_prompt_handoff_requires_call_tool_even_with_declared_peer(field):
+    agent = {"name": "incident-clerk", "tools": [], field: ["task-clerk"]}
+    with pytest.raises(AssertionError, match="handoffs require a2a.call"):
+        _validate_prompt_handoffs(agent, "Ask task-clerk to record it.", {"task-clerk"})
+    agent["tools"] = ["a2a.call"]
+    _validate_prompt_handoffs(agent, "Ask task-clerk to record it.", {"task-clerk"})
+
+
+def test_incoming_caller_reference_is_not_an_outbound_handoff():
+    agent = {"name": "task-clerk", "tools": [], "connectors": []}
+    _validate_prompt_handoffs(agent, "incident-clerk supplies a scoped request.", {"incident-clerk", "task-clerk"})
+
+
 def test_agent_roster_paths_and_prompt_metadata_are_complete():
     definitions = _definitions()
     assert definitions

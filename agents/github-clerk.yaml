@@ -10,7 +10,9 @@ acted_signal: verified receipt or actionable blocked result
 identity: agent-github-clerk
 api_key_ref: openbao://agent-key/github-clerk
 mcp_servers: [github]
+connectors: [vikunja-clerk, zammad-clerk]
 tools:
+  - a2a.call
   - github.read
   - github.push_bundle
   - github.create_pull_request

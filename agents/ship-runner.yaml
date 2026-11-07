@@ -10,6 +10,7 @@ reader: implementation lead
 acted_signal: The lead receives a confirmed pull request handoff.
 triggers: [{kind: call, source: implementation-lead}]
 connectors: [github-clerk]
+peers: [commit-grouper]
 code_work: sandbox
 tools: [a2a.call, agent-sandbox.jobs]
 procedure:

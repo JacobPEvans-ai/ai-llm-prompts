@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Clerk and shipping handoffs declare gateway peers and call tools; judges validate outbound prompt handoffs.
+
 * **Update (agents)**: Native minute rotation schedules omit quarter-hour starts and preserve minimum intervals.
 
 * **Update (agents)**: Weekly Splunk readers inherit privacy, connector, tool, and trigger settings from one profile.

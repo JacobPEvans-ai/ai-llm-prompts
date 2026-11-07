@@ -11,7 +11,9 @@ privacy_class: private
 identity: agent-zammad-clerk
 api_key_ref: openbao://agent-key/zammad-clerk
 mcp_servers: [zammad]
+connectors: [vikunja-clerk]
 tools:
+  - a2a.call
   - zammad.search_tickets
   - zammad.get_ticket
   - zammad.get_articles
