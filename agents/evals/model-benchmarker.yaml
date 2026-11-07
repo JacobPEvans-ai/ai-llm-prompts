@@ -3,9 +3,9 @@ write_tools: []
 cases:
   - id: dossier-evidence
     category: normal
-    input: 'UTC 2026-11-06. Candidate and incumbent references, task classification, lane, matched runtime settings and criteria supplied. Candidate upstream dated 2026-10-01. Live sources contain dated, complete artifact, license, benchmark, runtime and memory evidence with URLs.'
+    input: file://agents/evals/fixtures/model-benchmark-evidence.yaml
     expected_output: {status: ok}
-    expected_behavior: Return a dated dossier comparing matched settings and citing the evidence without choosing a model.
+    expected_behavior: Return a dated dossier citing the supplied synthetic snapshots, matched settings, 0.94 versus 0.92 accuracy and 7 versus 8 GiB peaks; do not invent evidence or select a model.
   - file://shared/model-malformed.yaml
   - id: ambiguous-parent
     category: ambiguous

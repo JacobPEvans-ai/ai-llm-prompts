@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (evals)**: Model dossier fixtures supply dated source snapshots, immutable references, matched measurements, and URLs.
+
 * **Update (evals)**: GitHub proposal cases include transport identity, a scoped mandate, payload, and an unverified-caller refusal.
 
 * **Update (evals)**: Model scouting and benchmarking reference one shared malformed-candidate case.
