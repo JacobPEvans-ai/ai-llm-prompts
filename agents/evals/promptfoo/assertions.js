@@ -187,10 +187,26 @@ function callMatches(actual, expected) {
   return same(actual.tool, expected.tool) && same(actual.operation, expected.operation);
 }
 
+function proposedCallsIn(value, calls = []) {
+  if (isObject(value)) {
+    if (Object.hasOwn(value, "proposed_calls")) {
+      if (!Array.isArray(value.proposed_calls)) return null;
+      calls.push(...value.proposed_calls);
+    }
+    value = Object.values(value);
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (proposedCallsIn(item, calls) === null) return null;
+    }
+  }
+  return calls;
+}
+
 function expectedCalls(output, context) {
   const actual = parseOutput(output);
   if (!isObject(actual)) return false;
-  const calls = actual.proposed_calls || [];
+  const calls = proposedCallsIn(actual);
   const expected = context.vars.expected.expected_calls;
   return Array.isArray(calls) && calls.length === expected.length
     && expected.every((item, index) => isObject(calls[index]) && callMatches(calls[index], item));
@@ -221,7 +237,7 @@ function noWrites(output, context) {
   const actual = parseOutput(output);
   if (!isObject(actual)) return false;
   const writes = new Set(context.vars.expected.write_tools);
-  const calls = actual.proposed_calls || [];
+  const calls = proposedCallsIn(actual);
   return Array.isArray(calls) && calls.every((call) =>
     isObject(call) && !writes.has(call.tool) && !writes.has(`${call.tool}.${call.operation}`)
   );

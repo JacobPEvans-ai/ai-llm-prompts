@@ -583,6 +583,61 @@ def test_expected_call_with_args_passes_when_the_whole_call_matches():
     assert _run_js("expectedCalls", same_call, expected) is True
 
 
+@pytest.fixture
+def nested_report_call():
+    return {
+        "status": "ok", "proposed_calls": [],
+        "result": {
+            "proposed_calls": [],
+            "reports": [{"result": {"proposed_calls": [
+                {"tool": "github", "operation": "create_pull_request", "args": {"title": "Example"}},
+            ]}}],
+        },
+    }
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+def test_call_assertions_inspect_nested_report_calls(nested_report_call, assertion):
+    expected = {"expected_calls": [], "write_tools": ["github.create_pull_request"]}
+    assert _run_js(assertion, nested_report_call, expected) is False
+
+
+def test_expected_calls_match_the_complete_nested_call(nested_report_call):
+    expected = {"expected_calls": [
+        {"tool": "github", "operation": "create_pull_request", "args": {"title": "Example"}},
+    ]}
+    assert _run_js("expectedCalls", nested_report_call, expected) is True
+    expected["expected_calls"][0]["args"]["title"] = "Different"
+    assert _run_js("expectedCalls", nested_report_call, expected) is False
+
+
+def test_no_writes_accepts_nested_reads_and_empty_reports():
+    output = {"result": {"reports": [
+        {"proposed_calls": []},
+        {"proposed_calls": [{"tool": "github", "operation": "read", "args": {}}]},
+    ]}}
+    assert _run_js("noWrites", output, {"write_tools": ["github.create_pull_request"]}) is True
+
+
+@pytest.mark.parametrize("assertion", ["expectedCalls", "noWrites"])
+@pytest.mark.parametrize("calls", [None, {}, "invalid", [None]])
+def test_call_assertions_reject_malformed_nested_lists(assertion, calls):
+    output = {"proposed_calls": [], "result": {"reports": [{"proposed_calls": calls}]}}
+    expected = {"expected_calls": [], "write_tools": ["github.create_pull_request"]}
+    assert _run_js(assertion, output, expected) is False
+
+
+def test_expected_calls_include_all_lists_in_the_envelope(nested_report_call):
+    call = {"tool": "github", "operation": "read", "args": {}}
+    nested_report_call["proposed_calls"] = [call]
+    expected = {"expected_calls": [call]}
+    assert _run_js("expectedCalls", nested_report_call, expected) is False
+    expected["expected_calls"].append({
+        "tool": "github", "operation": "create_pull_request", "args": {"title": "Example"},
+    })
+    assert _run_js("expectedCalls", nested_report_call, expected) is True
+
+
 def test_only_the_clerk_suites_attach_the_forbidden_keys_check():
     for test in cases.generate_tests():
         has_check = any(
