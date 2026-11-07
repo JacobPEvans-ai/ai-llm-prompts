@@ -1,7 +1,7 @@
 name: action-extractor
 extends: interactive
 description: |
-  Use when: notes or a transcript need quoted action items.
+  Use when: supplied text needs verbatim task extraction.
   Do not use when: the request needs general advice or invented tasks.
 identity: agent-action-extractor
 api_key_ref: openbao://agent-key/action-extractor
