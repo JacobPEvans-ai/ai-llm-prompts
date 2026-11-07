@@ -46,6 +46,16 @@ def test_inline_cases_remain_unchanged():
     assert cases.load_suite(path) == cases.load_yaml(path)
 
 
+def test_promotion_review_reuses_model_malformed_case():
+    path = cases.ROOT / "agents/evals/promotion-review.yaml"
+    assert "file://shared/model-malformed.yaml" in cases.load_yaml(path)["cases"]
+    suite = cases.load_suite(path)
+    validate_eval_suite(suite)
+    assert next(case for case in suite["cases"] if case["id"] == "malformed") == cases.load_yaml(
+        path.parent / "shared/model-malformed.yaml"
+    )[0]
+
+
 @pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])
 def test_shared_connector_malformed_case_reaches_promptfoo(name):
     path = cases.ROOT / "agents/evals" / f"{name}.yaml"
