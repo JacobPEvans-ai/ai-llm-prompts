@@ -18,7 +18,6 @@
 * [donna-research](donna-research.md)
 * [donna-weekly-review](donna-weekly-review.md)
 * [github-clerk](github-clerk.md)
-* [langfuse-clerk](langfuse-clerk.md)
 * [merge-steward](merge-steward.md)
 * [model-benchmarker](model-benchmarker.md)
 * [model-scout](model-scout.md)

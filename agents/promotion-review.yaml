@@ -9,7 +9,7 @@ api_key_ref: openbao://agent-key/promotion-review
 reader: supervising lead
 acted_signal: The lead reviews a mode-change pull request or resolves an evidence blocker.
 triggers: [{kind: rotation, every: 1d}]
-connectors: [github-clerk, langfuse-clerk, splunk-clerk, vikunja-clerk]
+connectors: [github-clerk, vikunja-clerk]
 code_work: sandbox
 tools: [a2a.call, agent-sandbox.jobs]
-input: Mandated candidate and exact version, complete promptfoo results, seven-day matched Langfuse scores, 14-day acted-signal count, current mode, and delivery receipts.
+input: Mandated candidates, exact versions, promptfoo results, seven-day scores, baseline, comparison policy, and receipts.

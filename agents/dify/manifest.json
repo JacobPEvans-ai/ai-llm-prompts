@@ -120,14 +120,6 @@
     "sha256": "274998538f3d5ef612d1dc1f7b47dec71d3ff397e02362eb4323f91111b955e6"
   },
   {
-    "name": "langfuse-clerk",
-    "mode": "shadow",
-    "tier": 0,
-    "kind": "agent",
-    "path": "agents/dify/langfuse-clerk.dsl.yml",
-    "sha256": "d4a72ab19c8ac370d8ceb94d82e8920251a3d402355e1784d5ebd57adbc017eb"
-  },
-  {
     "name": "merge-steward",
     "mode": "shadow",
     "tier": 0,
@@ -181,7 +173,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/promotion-review.dsl.yml",
-    "sha256": "6e66462692e17fad1012fb09d7a307098e8507a2ba3a5db57ed938d5ffcd8b97"
+    "sha256": "1bd22ea552f70bdaa9d9dbf9e7b96a8086cac2c40d6021d820620e6b3c90ea17"
   },
   {
     "name": "release-digest",
