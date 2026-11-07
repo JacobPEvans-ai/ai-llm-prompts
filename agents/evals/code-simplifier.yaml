@@ -236,10 +236,7 @@ cases:
       code_writes: 0
   - id: coverage-malformed
     category: malformed
-    input_event_summary:
-      event: pull_request
-      mandate: null
-      pull_request_number: not-an-integer
+    input_event_summary: file://agents/evals/fixtures/malformed-event.yaml
     expected_output:
       review_event: none
       comments: []
