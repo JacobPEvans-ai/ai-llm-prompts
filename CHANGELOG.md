@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.75.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.74.0...v1.75.0) (2026-11-07)
+
+
+### Features
+
+* **automation:** add rendered workflow review prompts ([#328](https://github.com/dryvist/ai-llm-prompts/issues/328)) ([7ac6a77](https://github.com/dryvist/ai-llm-prompts/commit/7ac6a77918427109e78e5dd209a5736f4afed2b9))
+
 ## [1.74.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.73.0...v1.74.0) (2026-11-07)
 
 
