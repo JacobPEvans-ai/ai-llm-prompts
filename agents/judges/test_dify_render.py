@@ -312,6 +312,33 @@ def test_webhook_input_redacts_nested_secret_values_before_serialization(name):
     assert payload["payload"]["items"][0]["api_key"] == "short"
 
 
+@pytest.mark.parametrize("key,masked", [
+    (key, True) for key in (
+        "api_key", "apiKey", "x-api-key", "X-API-Key", "token", "access_token",
+        "refresh_token", "authToken", "my_token", "password", "auth_password",
+        "secret", "client_secret", "secret_id", "authorization", "Proxy-Authorization",
+        "cookie", "Set-Cookie",
+    )
+] + [
+    (key, False) for key in (
+        "max_tokens", "prompt_tokens", "completion_tokens", "total_tokens", "input_tokens",
+        "output_tokens", "cache_read_input_tokens", "tokenizer",
+    )
+])
+@pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter", "repo-janitor"])
+def test_webhook_secret_key_segments_preserve_usage_counters(name, key, masked):
+    dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
+    payload = {"items": [{"nested": {key: 42}}]}
+    for node in dsl["workflow"]["graph"]["nodes"]:
+        if node["data"]["type"] != "trigger-webhook":
+            continue
+        main = node_main(name, f"{node['id']}-input")
+        result = json.loads(main(timestamp=123, event={"body": payload})["text"])
+        actual = result["result"]["event"]["items"][0]["nested"][key]
+        assert actual == ("[REDACTED]" if masked else 42)
+    assert payload["items"][0]["nested"][key] == 42
+
+
 @pytest.mark.parametrize("triggers", [
     [{"kind": "anchor", "at": "06:07"}, {"kind": "anchor", "at": "18:17"}],
     [{"kind": "anchor", "at": "06:15"}], [{"kind": "anchor", "at": "06:08"}],

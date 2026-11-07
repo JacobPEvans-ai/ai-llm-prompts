@@ -7,7 +7,7 @@ SECRET_RE = re.compile(
     r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
     r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
 )
-SECRET_KEY_RE = re.compile(r"(?i)(?:api[_-]?key|token|authorization|password|secret|cookie)")
+SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
 HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
 FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
 # md and py are also country-code TLDs, so only a two-label name such as README.md stays a file reference.
@@ -63,9 +63,20 @@ def _redact_host(match):
     return REDACTED
 
 
+def _is_secret_key(key):
+    # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+    words = re.split(r"[^a-z0-9]+", key.lower())
+    key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+    key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+    segments = re.split(r"[^a-z0-9]+", key.lower())
+    return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+        left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+    )
+
+
 def redact(text):
     if isinstance(text, dict):
-        return {key: REDACTED if SECRET_KEY_RE.fullmatch(key) else redact(value) for key, value in text.items()}
+        return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
     if isinstance(text, list):
         return [redact(value) for value in text]
     if not isinstance(text, str):
