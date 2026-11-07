@@ -13,6 +13,7 @@ in GitHub Actions on a GitHub App token — so it and the one fragment it includ
 
 ## Prompts
 
+* [Policy Rubric Sources](policy-gate-src/index.md) - Shared gomplate template, rubric inputs, and render checks.
 * [Policy Gate](ai-workflows-policy-gate.prompt.yml) - Structured pull-request policy checks.
 * [Security Review](ai-workflows-security-review.prompt.yml) - Structured pull-request security review.
 * [Semantic Review](ai-workflows-semantic-review.prompt.yml) - Structured pull-request semantic review.

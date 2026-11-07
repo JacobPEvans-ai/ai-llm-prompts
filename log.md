@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Update (automation)**: Render four workflow review rubrics with one gomplate template and include prompt drift checks in `make check-dify`.
+
 * **Add (automation)**: Catalog seven workflow prompts in the actions/ai-inference YAML prompt-file format.
 
 * **Update (instructions)**: Extend dated agent authoring standards for delivery reconciliation, skill selection,
