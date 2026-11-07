@@ -1,0 +1,14 @@
+name: donna-evening-wrap
+extends: local-batch
+description: |
+  Use when: the operator needs an evening summary of task progress.
+  Do not use when: the request asks to modify tasks or handle incidents.
+privacy_class: private
+identity: agent-donna-evening-wrap
+api_key_ref: openbao://agent-key/donna-evening-wrap
+reader: operator
+acted_signal: A listed item is moved or done.
+triggers: [{kind: anchor, at: '23:11'}]
+connectors: [vikunja-clerk]
+tools: [a2a.call]
+input: Approved task changes, supplied bounded Slack digest context, operator preferences, UTC time, source availability and delivery state.

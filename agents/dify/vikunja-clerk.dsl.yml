@@ -306,6 +306,11 @@ workflow:
                 incident tracker; all other follow-up work belongs in the task tracker. When unsure, propose nothing rather than
                 guessing.
 
+                For roles that use the report envelope, return one JSON object with `status` (`ok`, `refused`, or `stop`), a string
+                `reason`, and `result` (the role-specific object or null). Use null result for `stop` and `refused`. In shadow mode,
+                return tool actions as proposals; do not execute them or claim a receipt. Work within the supplied source scope;
+                report unavailable sources, preserve bookmarks on failed reads, and advance delivery state only after confirmed receipt.
+
                 Handle Vikunja task requests with `vikunja_tasks` operations `list`, `get`, `create`, and `update`. Include task IDs
                 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
                 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.

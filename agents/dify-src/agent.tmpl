@@ -83,6 +83,9 @@ workflow:
 {{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
 {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
+{{- if and (not (coll.Has . "dify")) (coll.Has . "tools") (gt (len .tools) 0) -}}
+  {{- test.Assert "generic workflows with tools must be shadow proposals" (eq (index . "mode") "shadow") -}}
+{{- end -}}
 {{- $prompt := printf "%s\n\n%s" (tmpl.Exec "prompt" .shared_prefix) (tmpl.Exec "prompt" .prompt) -}}
 {{- $params := dict "__DIFY_AGENT_NAME__" .name "__DIFY_LITELLM_ROLE__" .litellm_role -}}
 {{- with (index . "mode") -}}{{- $params = coll.Set "__DIFY_MODE__" . $params -}}{{- end -}}
@@ -155,7 +158,7 @@ workflow:
 {{- with (index . "dify") -}}{{- $dsl = . -}}{{- end -}}
 {{- test.Assert "renderer owns schedules" (eq (coll.JQ `[.. | objects | keys[] | select(. == "cron" or . == "cadence")] | length` .) 0) -}}
 {{- test.Assert "renderer owns cron expressions" (eq (coll.JQ `[.. | objects | select(has("cron_expression")) | .cron_expression | select(. != "__DIFY_TRIGGER_CRON__")] | length` .) 0) -}}
-{{- if or $rotation (gt (len $anchors) 0) -}}
+{{- if or $rotation (gt (len $anchors) 0) (and (not (coll.Has . "dify")) (gt (len $webhooks) 0)) -}}
   {{- if and $rotation (not $nativeRotation) (eq (len $webhooks) 0) -}}
     {{- $webhooks = coll.Append $webhook $webhooks -}}
   {{- end -}}

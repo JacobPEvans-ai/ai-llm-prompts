@@ -398,14 +398,28 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
         for data in [node.get("data", {})]
         if data.get("type") == "trigger-schedule"
     ]
-    triggers = [trigger for trigger in agent["triggers"] if trigger["kind"] == "anchor"]
-    if triggers:
+    anchors = [trigger for trigger in agent["triggers"] if trigger["kind"] == "anchor"]
+    rotations = [trigger for trigger in agent["triggers"] if trigger["kind"] == "rotation"]
+    if anchors:
         assert len(schedules) == 1
-        assert schedules[0]["cron_expression"] == "{} {} * * *".format(*reversed(triggers[0]["at"].split(":")))
+        days = anchors[0].get("days")
+        day_numbers = {day: n for n, day in enumerate(("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"))}
+        day_field = ",".join(str(n) for n in sorted(day_numbers[day] for day in days)) if days else "*"
+        assert schedules[0]["cron_expression"] == "{} {} * * {}".format(
+            *reversed(anchors[0]["at"].split(":")), day_field
+        )
+    elif rotations and agent["tier"] < 2:
+        assert len(schedules) == 1 and schedules[0]["timezone"] == "UTC"
     else:
         assert not schedules
 
-    if agent.get("mcp_servers"):
+    if "dify" not in agent:
+        if agent.get("tools"):
+            assert agent["mode"] == "shadow"
+        assert {node["data"]["type"] for node in nodes} <= {
+            "start", "llm", "end", "trigger-schedule", "trigger-webhook"
+        }
+    elif agent.get("mcp_servers"):
         expected_tools = {tool.split(".", 1)[0] for tool in agent["tools"]}
         actual_tools = {
             node.get("data", {}).get("tool_name")

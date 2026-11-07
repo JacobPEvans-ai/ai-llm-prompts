@@ -1,8 +1,10 @@
 DIFY_OUTPUT ?= agents/dify
 AGENTS_ROOT ?= .
+INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/index.md
+PROMPT_INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/prompts/index.md
 PYTEST ?= python3 -m pytest
 
-.PHONY: resolve-agents render-dify check-dify render-sim check-sim render-langflow check-langflow test
+.PHONY: resolve-agents render-dify check-dify render-sim check-sim render-langflow check-langflow render-index check-index test
 resolve-agents:
 	@set -eu; cd "$(AGENTS_ROOT)"; for definition in agents/*.yaml; do \
 		name=$$(basename "$$definition" .yaml); \
@@ -58,5 +60,18 @@ check-sim check-langflow: check-%:
 		$(MAKE) --no-print-directory render-$* SHADOW_OUTPUT="$$output/rendered"; \
 		diff -ru "$(AGENTS_ROOT)/agents/$*" "$$output/rendered"
 
-test: check-dify check-sim check-langflow
+render-index:
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/catalog.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		$(MAKE) --no-print-directory resolve-agents > "$$output/definitions.jsonl"; \
+		jq -s 'map(.agent) | sort_by(.name)' "$$output/definitions.jsonl" > "$$output/agents.json"; \
+		gomplate -c agents="$$output/agents.json" -f "$(CURDIR)/agents/catalog-src/index.tmpl" -o "$(abspath $(INDEX_OUTPUT))"; \
+		gomplate -c agents="$$output/agents.json" -f "$(CURDIR)/agents/catalog-src/prompts.tmpl" -o "$(abspath $(PROMPT_INDEX_OUTPUT))"
+
+check-index:
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/catalog.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		$(MAKE) --no-print-directory render-index INDEX_OUTPUT="$$output/index.md" PROMPT_INDEX_OUTPUT="$$output/prompts.md"; \
+		diff -u "$(AGENTS_ROOT)/agents/index.md" "$$output/index.md"; \
+		diff -u "$(AGENTS_ROOT)/agents/prompts/index.md" "$$output/prompts.md"
+
+test: check-dify check-sim check-langflow check-index
 	$(PYTEST) -q agents/judges

@@ -1,0 +1,14 @@
+name: donna-research
+extends: local-batch
+description: |
+  Use when: an approved research task needs a sourced finding.
+  Do not use when: no scoped research task exists or the request requires implementation.
+privacy_class: private
+identity: agent-donna-research
+api_key_ref: openbao://agent-key/donna-research
+reader: operator
+acted_signal: The associated Vikunja item is closed or commented on.
+triggers: [{kind: rotation, every: 1d}]
+connectors: [vikunja-clerk]
+tools: [a2a.call]
+input: Approved research task, supplied source records, UTC time, source availability and delivery state.

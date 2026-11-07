@@ -1,0 +1,14 @@
+name: daily-innovation
+extends: local-batch
+description: |
+  Use when: recent work supports a novel, actionable improvement proposal.
+  Do not use when: the idea duplicates an open task or prior proposal.
+privacy_class: private
+identity: agent-daily-innovation
+api_key_ref: openbao://agent-key/daily-innovation
+reader: operator
+acted_signal: One proposed task is accepted or done.
+triggers: [{kind: rotation, every: 1d}]
+connectors: [vikunja-clerk]
+tools: [a2a.call]
+input: Recent findings, prior proposals, approved open tasks, UTC time and source availability.

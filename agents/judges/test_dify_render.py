@@ -160,6 +160,40 @@ def test_tier1_rotation_uses_native_schedule(tmp_path):
     driver = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
     assert '"name": "sample"' not in str(driver)
 
+
+@pytest.mark.parametrize("mode", ["live", None])
+def test_generic_external_tools_require_shadow(tmp_path, mode):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tools=["github.create_pull_request"], mcp_servers=["github"])
+    if mode is not None:
+        definition["mode"] = mode
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "generic workflows with tools must be shadow proposals" in result.stderr
+
+
+def test_generic_shadow_connector_is_proposal_only(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(mode="shadow", tools=["github.create_pull_request"], mcp_servers=["github"])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert {node["data"]["type"] for node in dsl["workflow"]["graph"]["nodes"]} == {"start", "llm", "end"}
+
+
+def test_generic_event_only_renders_webhook(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition["triggers"] = [{"kind": "event", "source": "github.check_run"}]
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    nodes = dsl["workflow"]["graph"]["nodes"]
+    assert [node["data"]["type"] for node in nodes] == ["trigger-webhook", "llm", "end"]
+    assert nodes[0]["data"]["method"] == "post"
+
 def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
     path, definition = sample_checkout(tmp_path)
     definition["triggers"] = [{"kind": "event", "source": "vikunja"}, {"kind": "rotation", "every": "1d"}]

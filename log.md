@@ -2,6 +2,9 @@
 
 ## 2026-11-06
 
+* **Add (agents)**: Add the Donna briefs, weekly review, research, and innovation agents with shared report contracts,
+  evaluation cases, and generated runtime exports and catalogs.
+
 * **Update (instructions)**: Reference the canonical delegate brief rules by their cross-package prompt resource identifier.
 
 * **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.

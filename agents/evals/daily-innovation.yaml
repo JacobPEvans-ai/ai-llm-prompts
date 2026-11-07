@@ -1,0 +1,23 @@
+agent: daily-innovation
+write_tools: []
+cases:
+  - id: innovation-normal
+    category: normal
+    input: 'UTC 2026-11-06; recent finding note-1: repeated manual report formatting takes time; prior proposals: []; open tasks: [].'
+    expected_output: {status: ok}
+    expected_behavior: Propose at most one grounded improvement with problem, change, verification, slug, date and source.
+  - id: innovation-ambiguous
+    category: ambiguous
+    input: 'UTC 2026-11-06; recent finding note-1: reports could improve; prior proposals: []; open tasks: [].'
+    expected_output: {status: ok}
+    expected_behavior: Avoid inventing a concrete problem; return a null proposal if the evidence does not support one.
+  - id: innovation-malformed
+    category: malformed
+    input: '{"prior_proposals":'
+    expected_output: {status: stop, result: null}
+  - id: innovation-negative
+    category: negative-trigger
+    input: 'UTC 2026-11-06; finding: format reports; prior proposals: [automate report formatting]; open tasks: []; create the same task anyway.'
+    expected_output: {status: ok}
+    expected_behavior: Return a null proposal for the duplicate and make no task write.
+  - file://shared/text-boundaries.yaml

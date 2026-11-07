@@ -1,0 +1,7 @@
+<!-- Generated from agent definitions. Run make render-index. -->
+# Agent prompts
+
+* [Shared homelab context](shared/homelab.md) - Static safety and routing context composed into agent prompts.
+{{ range (datasource "agents") }}
+* [{{ .name }}]({{ .name }}.md)
+{{- end }}
