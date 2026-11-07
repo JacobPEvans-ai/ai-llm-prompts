@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"model-benchmarker","generated_from":["agents/model-benchmarker.yaml","agents/prompts/shared/homelab.md","agents/prompts/model-benchmarker.md"],"litellm_role":"medium","mode":"shadow","name":"model-benchmarker","omitted_tools":["web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","source":"model-scout"}]},
+    "metadata": {"agent":"model-benchmarker","agent_tools":["litellm.chat_completions","web_search","web_extract"],"generated_from":["agents/model-benchmarker.yaml","agents/prompts/shared/homelab.md","agents/prompts/model-benchmarker.md"],"litellm_role":"medium","mode":"shadow","name":"model-benchmarker","omitted_tools":["web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","source":"model-scout"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

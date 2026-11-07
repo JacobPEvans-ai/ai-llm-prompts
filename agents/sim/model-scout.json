@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"model-scout","generated_from":["agents/model-scout.yaml","agents/prompts/shared/homelab.md","agents/prompts/model-scout.md"],"litellm_role":"medium","mode":"shadow","name":"model-scout","omitted_tools":["a2a.call","web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"model-scout","agent_tools":["litellm.chat_completions","a2a.call","web_search","web_extract"],"generated_from":["agents/model-scout.yaml","agents/prompts/shared/homelab.md","agents/prompts/model-scout.md"],"litellm_role":"medium","mode":"shadow","name":"model-scout","omitted_tools":["a2a.call","web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

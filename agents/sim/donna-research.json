@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"donna-research","generated_from":["agents/donna-research.yaml","agents/prompts/shared/homelab.md","agents/prompts/donna-research.md"],"litellm_role":"medium","mode":"shadow","name":"donna-research","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"donna-research","agent_tools":["a2a.call"],"generated_from":["agents/donna-research.yaml","agents/prompts/shared/homelab.md","agents/prompts/donna-research.md"],"litellm_role":"medium","mode":"shadow","name":"donna-research","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

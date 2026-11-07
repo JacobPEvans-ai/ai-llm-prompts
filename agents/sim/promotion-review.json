@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"promotion-review","generated_from":["agents/promotion-review.yaml","agents/prompts/shared/homelab.md","agents/prompts/promotion-review.md"],"litellm_role":"medium","mode":"shadow","name":"promotion-review","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"promotion-review","agent_tools":["a2a.call","agent-sandbox.jobs"],"generated_from":["agents/promotion-review.yaml","agents/prompts/shared/homelab.md","agents/prompts/promotion-review.md"],"litellm_role":"medium","mode":"shadow","name":"promotion-review","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

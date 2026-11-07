@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"ship-runner","generated_from":["agents/ship-runner.yaml","agents/prompts/shared/homelab.md","agents/prompts/ship-runner.md"],"litellm_role":"medium","mode":"shadow","name":"ship-runner","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":{"additionalProperties":false,"properties":{"reason":{"type":"string"},"result":{"anyOf":[{"type":"null"},{"type":"object"}]},"status":{"enum":["ok","refused","stop"]}},"required":["status","reason","result"],"type":"object"},"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":0,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","source":"implementation-lead"}]},
+    "metadata": {"agent":"ship-runner","agent_tools":["a2a.call","agent-sandbox.jobs"],"generated_from":["agents/ship-runner.yaml","agents/prompts/shared/homelab.md","agents/prompts/ship-runner.md"],"litellm_role":"medium","mode":"shadow","name":"ship-runner","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":{"additionalProperties":false,"properties":{"reason":{"type":"string"},"result":{"anyOf":[{"type":"null"},{"type":"object"}]},"status":{"enum":["ok","refused","stop"]}},"required":["status","reason","result"],"type":"object"},"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":0,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","source":"implementation-lead"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

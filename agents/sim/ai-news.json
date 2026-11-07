@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"ai-news","generated_from":["agents/ai-news.yaml","agents/prompts/shared/homelab.md","agents/prompts/ai-news.md"],"litellm_role":"medium","mode":"shadow","name":"ai-news","omitted_tools":["web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"ai-news","agent_tools":["litellm.chat_completions","web_search","web_extract"],"generated_from":["agents/ai-news.yaml","agents/prompts/shared/homelab.md","agents/prompts/ai-news.md"],"litellm_role":"medium","mode":"shadow","name":"ai-news","omitted_tools":["web_search","web_extract"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"agent-audit","generated_from":["agents/agent-audit.yaml","agents/prompts/shared/homelab.md","agents/prompts/agent-audit.md"],"litellm_role":"medium","mode":"shadow","name":"agent-audit","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"12h","kind":"rotation"}]},
+    "metadata": {"agent":"agent-audit","agent_tools":["a2a.call"],"generated_from":["agents/agent-audit.yaml","agents/prompts/shared/homelab.md","agents/prompts/agent-audit.md"],"litellm_role":"medium","mode":"shadow","name":"agent-audit","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"12h","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",
