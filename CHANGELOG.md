@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.86.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.85.1...v1.86.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** add skill-script, checkpoint, trace and MCP rate rules ([#368](https://github.com/dryvist/ai-llm-prompts/issues/368)) ([192cc6a](https://github.com/dryvist/ai-llm-prompts/commit/192cc6ad33e7bfd13b5eafda7ed60a84b03c9e02))
+
 ## [1.85.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.85.0...v1.85.1) (2026-11-08)
 
 
