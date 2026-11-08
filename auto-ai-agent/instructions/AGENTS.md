@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/AGENTS"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-08T18:20:00Z"
+timestamp: "2026-11-08T18:45:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -71,15 +71,19 @@ judges results, and merges, fanning every independent task out to subagents in p
 rung that qualifies; among qualifiers, send it to the subscription with the most quota headroom before its reset
 (ZCode 5-hour and weekly, Codex weekly, OpenCode Go monthly). Check `codex-quota` first.
 
-1. **ZCode or Codex Luna**, equal first choices split by sensitivity:
+1. **Router local default or medium capability**, the first step for small, quick, checkable tasks — summarize,
+   extract, classify, reformat, a first pass over a file or log — before any subscription; escalate only after a
+   checked failure.
+2. **ZCode or Codex Luna**, equal first choices split by sensitivity:
    - **ZCode** (latest GLM Flash, `zcode-job` sandbox): obvious, definitely non-sensitive work in public repos.
      Coding and coding-adjacent work only — code, tests, GitHub automation and workflows, code reviews; open-internet
      research needs a separate untrusted, internet-open container. The output is a ready PR; leak-scan it before merge;
      never auto-merge it.
    - **Codex Luna**: anything even remotely sensitive, or any private repo. `xhigh` default, `max` as needed, while
      `codex-quota` exits 0. Never Terra.
-2. **Other subscriptions where they fit**, for example OpenCode Go (`zcode-job --tool opencode`); public work only.
-3. **Haiku `xhigh`**, the explicit last resort: only after rungs 1 and 2 are exhausted or do not qualify, and still
+3. **Other subscriptions where they fit**, for example OpenCode Go (`zcode-job --tool opencode`); public work only,
+   used only while that subscription is at or under its pace for the billing period.
+4. **Haiku `xhigh`**, the explicit last resort: only after rungs 1 to 3 are exhausted or do not qualify, and still
    before the lead does the work itself.
 
 Never Sonnet, Opus, or Fable subagents. Never send secrets, credentials, inventory, or incident content to any executor.

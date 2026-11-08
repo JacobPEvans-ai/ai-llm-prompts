@@ -2,6 +2,10 @@
 
 ## 2026-11-08
 
+* **Update (instructions)**: `AGENTS.md` delegation routing gains a first rung — small, quick, checkable tasks go to
+  the router local default or medium capability before any subscription, escalating only after a checked failure — and
+  other subscriptions such as OpenCode Go are used only while at or under their pace for the billing period.
+
 * **Update (instructions)**: `AGENTS.md` routes delegation by sensitivity — ZCode and Codex Luna are equal first
   choices, other subscriptions fit where they can, and Haiku `xhigh` stays the explicit last resort — and states that
   the lead never does delegable work and fans subagents out in parallel; `model-delegation.md` points at that one order.
