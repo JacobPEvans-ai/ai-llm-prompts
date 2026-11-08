@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/AGENTS"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-04T14:00:00Z"
+timestamp: "2026-11-08T18:00:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -66,19 +66,17 @@ Repo boundaries: `dryvist/ai-llm-prompts` `auto-ai-agent/instructions` (rules, `
 `dryvist/nix-claude-code` `data/permissions` (tool permissions), `dryvist/claude-code-plugins` (commands,
 skills, agents, hooks).
 
-**Delegation routing (binding, the only routing statement).** Route each delegated task to the first rung that qualifies.
-Check `codex-quota` first.
+**Delegation routing (binding, the only routing statement).** The lead never does delegable work itself: it plans,
+judges results, and merges, fanning every independent task out to subagents in parallel. Route each task to the first
+rung that qualifies; check `codex-quota` first (exit 0 means more than 5% left).
 
-1. **Codex**, while `codex-quota` exits 0. Luna only; pick the effort by class:
-   - bulk, reads, triage and standard implementation: Luna `xhigh`.
-   - bulk work that is still somewhat complicated, complex work, plan, and design or architecture review: Luna `max`.
-   - auth, secrets, router, memory and cluster work: Luna `max`. Name `[class: bulk-complex]` in the description.
-   Never Terra, never Luna above `max`.
-2. **zcode-job sandbox**, while Codex is capped. Coding tasks in public repos only; private work never goes to the
-   sandbox. The output is a ready PR. Leak-scan it before merge. Never auto-merge it.
-3. **OpenCode Go**, while Codex is capped. Public-repo coding tasks only.
-4. **Haiku `xhigh`**, the last resort, only when rungs 1 to 3 do not qualify. Private and non-code work goes from Codex
-   straight to this rung.
+1. **ZCode or Codex Luna, equal first choices split by sensitivity.** ZCode (latest GLM Flash, `zcode-job` sandbox):
+   obvious, definitely non-sensitive work in public repos; the output is a ready PR — leak-scan before merge, never
+   auto-merge. Codex Luna: anything even remotely sensitive, or any private repo; `xhigh` default, `max` as needed.
+   Never Terra.
+2. **Other subscriptions where they fit** (for example OpenCode Go via `zcode-job --tool opencode`); public work only.
+3. **Haiku `xhigh`, the last resort** — only after rungs 1 and 2 are exhausted or do not qualify, and still before the
+   lead works solo.
 
 Never Sonnet, Opus, or Fable subagents. Never send secrets, credentials, inventory, or incident content to any executor.
 Antigravity (`agy`, Gemini 3.8 Flash) is a second-opinion reviewer, not an executor. Use it on high-risk diffs in public or

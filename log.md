@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (instructions)**: Route delegation to ZCode or Codex Luna first, split by sensitivity, then other
+  subscriptions, then Haiku as the last resort; the lead never does delegable work itself.
+
 * **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
   chosen by fixed criteria.
 

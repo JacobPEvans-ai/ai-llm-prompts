@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-31T18:17:15Z"
+timestamp: "2026-11-08T18:00:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -34,7 +34,7 @@ If Herdr is not configured or available, state that and use the harness Agent to
 the fallback location; if it is not already authorized, ask before launching work there. Apply the same routing,
 content eligibility, credential, read-only, and approval rules on either path; Herdr does not grant new authority.
 Session start reports `codex-quota`. The routing order is in [AGENTS.md](../../../AGENTS.md), under "Delegation
-routing"; this file covers CLI procedure only. While `codex-quota` exits 0, the delegate must be a Codex model.
+routing"; this file covers CLI procedure only. While `codex-quota` exits 0, Codex Luna qualifies under that order.
 The agent hook denies `codex exec` from a tool shell unless stdin comes from a prompt file.
 
 When a runtime must call the Codex CLI directly (sandbox entrypoints or the router itself), pass the prompt as `-`
