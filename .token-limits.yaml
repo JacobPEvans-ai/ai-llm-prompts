@@ -4,5 +4,6 @@ limits:
   "auto-ai-agent/autonomous-base.md": 850
   "auto-ai-agent/hermes.md": 1000
   "auto-ai-agent/instructions/agentsmd/settings/*.json": 3200
+  "auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards.md": 2400
   "auto-ai-agent/instructions/*": 2200
   "auto-ai-agent/*.md": 1800

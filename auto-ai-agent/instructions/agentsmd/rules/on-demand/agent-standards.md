@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T23:08:31Z"
+timestamp: "2026-11-08T03:49:34Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -64,6 +64,8 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
   and dates with the results, and test that claims cite and match the retrieved material. [A18] [C2]
 - Match tool granularity to client workflows; preserve composability and evaluate convenience tools on realistic tasks. [A18]
 - Annotate read-only, destructive, idempotent, and open-world behavior accurately. Enforce access through permissions and scoped credentials. [A18] [A2]
+- For action-gating hooks, make a failed callback block the protected action where the harness supports it, and test that failure path. [A22]
+- When upgrading the model router to a release that changes MCP credential forwarding, test auth forwarding and team-key tool visibility explicitly before rollout. [L7]
 - Test with an MCP client or Inspector, then evaluate realistic agent tasks through the interface. [A18]
 
 ## d. Evals
@@ -72,6 +74,8 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
 - Sample production tasks and hard cases: malformed, ambiguous, oversized, unavailable-source, and negative-trigger inputs. [A14] [A3]
 - Explain each hard case's intrinsic difficulty independently of current model failures; diagnose saturation, universal failures, and permitted model/effort scaling. [A3]
 - Pair plan-only cases with authorized disposable sandbox execution; grade actual tool arguments, artifacts, and unauthorized effects separately. [G2]
+- Keep fixtures, grading scripts and answer keys outside the agent's reachable workspace during trials, and let a separate verifier inspect artifacts after the agent exits. Efficiency never offsets a failed correctness or security check. [G1]
+- Before adding compiled or persistent memory, compare it with retrieval alone on the same simple-lookup and cross-source tasks. Report accuracy, citation consistency, latency and the full cost of creating and updating the memory. [C3]
 - Preserve assistant-turn boundaries, parallel call batches, and instruction-injection timing; detect actions dispatched before loaded guidance arrives. [G2]
 - Evaluate complete multi-turn sessions across handoffs; deduplicate repeated messages in ordered trajectories and retain the underlying traces. [C1]
 - Check constrained outputs deterministically. Calibrate rubric judges against human-reviewed examples; keep judges distinct from candidates and blind to candidate identity. [A3] [F3]
@@ -115,3 +119,6 @@ Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for sc
 [F5]: agent-standards-sources.md
 [A20]: https://www.anthropic.com/research/components-of-agent-memory
 [A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop
+[A22]: https://github.com/anthropics/claude-code/releases/tag/v2.1.317
+[C3]: https://www.langchain.com/blog/building-agent-memory-openwiki-graphs
+[L7]: https://github.com/BerriAI/litellm/releases/tag/v1.109.0-rc.1
