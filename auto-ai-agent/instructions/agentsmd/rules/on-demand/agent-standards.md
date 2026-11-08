@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T09:27:32Z"
+timestamp: "2026-11-08T11:15:09Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -39,6 +39,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Treat retrieval and writable memory as instruction inputs. Enforce source, destination, and network limits at runtime; keep preferences read-only. [A2]
 - Retain per-source bookmarks and a delivery ledger. Preserve bookmarks after failed reads; report unavailable sources. [A2]
 - Reconcile with the destination before retrying delivery. Record ambiguous delivery separately; advance bookmarks and ledger only after confirmed receipt. [A2]
+- When a safeguard stops a subagent, retry it with a narrower prompt or report the stop; never do the blocked work in the parent. [A23]
 
 ## b. Skills: structure, descriptions, disclosure, scripts, tests
 
@@ -61,6 +62,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Describe purpose, applicability, parameters, results, and limitations in tool definitions; remove repeated system-prompt instructions. [A13] [A1]
 - Filter and paginate results; return actionable errors. For retrieval, offload large payloads behind pointers, preserve source URLs
   and dates with the results, and test that claims cite and match the retrieved material. [A18] [C2]
+- When a credential refresh fails temporarily, return a temporary-unavailable error; ask for re-authorization only when the credential is invalid. [D14]
 - Match tool granularity to client workflows; preserve composability and evaluate convenience tools on realistic tasks. [A18]
 - Annotate read-only, destructive, idempotent, and open-world behavior accurately. Enforce access through permissions and scoped credentials. [A18] [A2]
 - Mark commands that must never run unattended as managed checkpoints that need fresh human approval on every run; never reuse an earlier approval. [O10]
@@ -74,6 +76,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Sample production tasks and hard cases: malformed, ambiguous, oversized, unavailable-source, and negative-trigger inputs. [A14] [A3]
 - Explain each hard case's intrinsic difficulty independently of current model failures; diagnose saturation, universal failures, and permitted model/effort scaling. [A3]
 - Pair plan-only cases with authorized disposable sandbox execution; grade actual tool arguments, artifacts, and unauthorized effects separately. [G2]
+- Give each tool-argument check an explicit comparison mode: exact, case-insensitive, numeric tolerance, or semantic. [G3]
 - Keep fixtures, grading scripts and answer keys outside the agent's reachable workspace during trials, and let a separate verifier inspect artifacts after the agent exits. Efficiency never offsets a failed correctness or security check. [G1]
 - Before adding compiled or persistent memory, compare it with retrieval alone on the same simple-lookup and cross-source tasks. Report accuracy, citation consistency, latency and the full cost of creating and updating the memory. [C3]
 - Preserve assistant-turn boundaries, parallel call batches, and instruction-injection timing; detect actions dispatched before loaded guidance arrives. [G2]

@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T09:27:32Z"
+timestamp: "2026-11-08T11:15:09Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -35,6 +35,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 | D11. Skills | Dify | Updated 2026-10-26 | [D11] |
 | D12. Agent node | Dify | Updated 2026-10-28 | [D12] |
 | D13. AI Agent or Workflow? How to Choose the Right Approach | Dify | 2026-10-16 | [D13] |
+| D14. Dify 1.19.0 release notes | Dify | 2026-11-04 | [D14] |
 | L1. Production Best Practices | LiteLLM | Undated official page | [L1] |
 | L2. Router — Load Balancing | LiteLLM | Undated official page | [L2] |
 | L3. Tag Based Routing | LiteLLM | Undated official page | [L3] |
@@ -42,6 +43,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 | L6. Logging | LiteLLM | Undated official page | [L6] |
 | L7. LiteLLM v1.109.0-rc.1 release notes | LiteLLM | 2026-11-04 | [L7] |
 | L8. LiteLLM v1.106.0 release notes | LiteLLM | 2026-10-17 | [L8] |
+| L9. LiteLLM v1.108.1 release notes | LiteLLM | 2026-11-05 | [L9] |
 | F1. Prompt Version Control | Langfuse | Undated official page | [F1] |
 | F2. Evaluate with Datasets | Langfuse | Undated official page | [F2] |
 | F3. LLM-as-a-Judge | Langfuse | Undated official page | [F3] |
@@ -60,6 +62,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 [D11]: https://docs.dify.ai/en/self-host/use-dify/build/skills
 [D12]: https://docs.dify.ai/en/cloud/use-dify/nodes/agent
 [D13]: https://www.dify.ai/de/blog/ai-agent-or-workflow-how-to-choose-the-right-approach
+[D14]: https://github.com/langgenius/dify/releases/tag/1.19.0
 [L1]: https://docs.litellm.ai/docs/proxy/prod
 [L2]: https://docs.litellm.ai/docs/routing
 [L3]: https://docs.litellm.ai/docs/proxy/tag_routing
@@ -68,6 +71,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 [L6]: https://docs.litellm.ai/docs/proxy/logging
 [L7]: https://github.com/BerriAI/litellm/releases/tag/v1.109.0-rc.1
 [L8]: https://docs.litellm.ai/release_notes/v1.106.0/v1-106-0
+[L9]: https://docs.litellm.ai/release_notes/v1.108.1/v1-108-1
 [F1]: https://langfuse.com/docs/prompt-management/features/prompt-version-control
 [F2]: https://langfuse.com/docs/evaluation/get-started/offline
 [F3]: https://langfuse.com/docs/evaluation/evaluation-methods/llm-as-a-judge
