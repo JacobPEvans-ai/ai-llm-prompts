@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Add (repo)**: Add a root `.gitattributes` applying the built-in union merge driver to the root change log, so
+  concurrent entries from parallel pull requests are kept instead of conflicted.
+
 * **Fix (agents)**: Give code-simplifier a handback decision for requests outside its mandated pull request, and name its
   refusal and handback eval cases by that decision.
 
