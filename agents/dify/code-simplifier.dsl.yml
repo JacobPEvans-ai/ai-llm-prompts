@@ -1269,7 +1269,7 @@ workflow:
                 decision = result.get("decision") if isinstance(result, dict) else None
                 body = result.get("review_body", "") if isinstance(result, dict) else ""
                 status = "proposed"
-                if decision == "refuse" or not isinstance(body, str) or not body or SECRET_RE.search(body):
+                if decision in ("refuse", "handback") or not isinstance(body, str) or not body or SECRET_RE.search(body):
                     status = "refused" if decision == "refuse" or SECRET_RE.search(str(body)) else "handback"
                     body, comments = generic, []
                 valid_comments = []
