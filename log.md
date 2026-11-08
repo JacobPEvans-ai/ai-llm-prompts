@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Add rules for stopped subagents, temporary credential-refresh failures, tool-argument
+  comparison modes in evals, and list-form LiteLLM fallback targets.
+
 * **Update (standards)**: Add rules for skill-script arguments, fresh approval at managed command checkpoints, turn and
   tool attribution in traces, and a shared MCP server request cap.
 
