@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.82.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.0...v1.82.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **agents:** end oversized or invalid trigger input with a refusal ([#346](https://github.com/dryvist/ai-llm-prompts/issues/346)) ([e343f60](https://github.com/dryvist/ai-llm-prompts/commit/e343f607a67ba9f3743fbe5c90fdcf2524cc7da7))
+
 ## [1.82.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.81.0...v1.82.0) (2026-11-08)
 
 
