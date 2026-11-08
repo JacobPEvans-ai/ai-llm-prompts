@@ -2,7 +2,7 @@
 {{- $parts := strings.SplitN "---\n" 3 $source -}}
 {{- $body := index $parts 2 | strings.TrimSpace -}}
 {{- $ruleParts := strings.SplitN "## Rules\n" 2 $body -}}
-{{- $ruleSection := strings.SplitN "\n## " 2 (index $ruleParts 1) -}}
+{{- $ruleSection := strings.SplitN "\n## Inputs\n" 2 (index $ruleParts 1) -}}
 {{- $rules := index $ruleSection 0 | strings.TrimSpace -}}
 {{- $automationRules := $rules | strings.ReplaceAll "diff. Omit" "diff. Return exactly one JSON object matching the supplied schema. Do not emit analysis, prose, or Markdown before or after it. Omit" -}}
 # GitHub prompt file (actions/ai-inference). The model is the workflow's

@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/dep-review.dsl.yml",
-    "sha256": "5df36bcf5ca0638f019e7604fc27257561482d5fe97b7d56fadc6b11ea1b6b16"
+    "sha256": "e380e2dd563bd439d4e5c056fed14c48e31dc149c4fa3020bfc2758f4a598d88"
   },
   {
     "name": "doc-contradiction-finder",
@@ -85,7 +85,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/docs-drift.dsl.yml",
-    "sha256": "86caf61c1c81f3dbfeba0e7c6aba7b7ba0fe1a8170075e374bcceaa055d85359"
+    "sha256": "60e3ae1856929bfd10eca58c3b4849c316f86bd748dbb9e2814fec7651815ab0"
   },
   {
     "name": "docs-updater",

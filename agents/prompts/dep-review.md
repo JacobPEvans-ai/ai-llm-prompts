@@ -4,7 +4,7 @@ title: Dependency Update Risk Review
 description: Assess dependency update risk and prepare an evidence-first advisory.
 resource: prompt://dryvist/agents/prompts/dep-review
 tags: [github, agent, dependencies]
-timestamp: "2026-11-08T10:26:25Z"
+timestamp: "2026-11-08T07:20:10-05:00"
 status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -112,12 +112,13 @@ the risk and confidence in the comment text in this format:
 **Confidence:** <high | medium | low> — <one-line reason>
 ```
 
-In shadow mode, return one inert `a2a.call` proposal to `github-clerk` for the advisory comment, bound to the supplied
-repository, pull request, head SHA, and delivery ID. Never claim that the comment was posted or that the pull request
-was independently verified. Do not propose or claim a GitHub label change; `risk` in the structured result and comment
-is the advisory signal. For missing or malformed required trigger data, use `status: stop` with the fixed missing-input
-reason above. Use `status: refused` only for an event outside this job. Stop with a null result when the combined input
-exceeds 30,000 characters.
+In shadow mode, return one inert `a2a.call` proposal to `github-clerk` for the advisory comment, with `args` containing
+`agent: github-clerk`, `repo`, `pr_number`, `head_sha`, and `delivery_id` copied unchanged from the supplied mandate and
+event, plus `comment` with the report text. Never claim that the comment was posted or that the pull request was
+independently verified. Do not propose or claim a GitHub label change; `risk` in the structured result and comment is the
+advisory signal. For missing or malformed required trigger data, use `status: stop` with the fixed missing-input reason
+above. Use `status: refused` only for an event outside this job. Stop with a null result when the combined input exceeds
+30,000 characters.
 
 ## When to invoke
 
