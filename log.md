@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
+  chosen by fixed criteria.
+
 * **Update (standards)**: Split agent-authoring source records into publisher files while preserving source IDs and links.
 
 * **Update (agents)**: Render and judge MCP servers that expose individual tools: a dotted tool whose prefix is a declared
