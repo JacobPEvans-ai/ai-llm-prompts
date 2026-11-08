@@ -2,6 +2,10 @@
 
 ## 2026-11-08
 
+* **Update (instructions)**: `AGENTS.md` routes delegation by sensitivity — ZCode and Codex Luna are equal first
+  choices, other subscriptions fit where they can, and Haiku `xhigh` stays the explicit last resort — and states that
+  the lead never does delegable work and fans subagents out in parallel; `model-delegation.md` points at that one order.
+
 * **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
   chosen by fixed criteria.
 
