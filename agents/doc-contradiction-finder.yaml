@@ -25,6 +25,8 @@ triggers:
         paths: [auto-ai-agent/instructions/**, agents/prompts/**]
     # The private documentation repository is resolved from the runtime secret store.
     private_repository_env: DOC_FINDER_PRIVATE_REPO
+reader: documentation maintainer
+acted_signal: contradiction fix merged
 mandate_binding:
   required_fields: [repo, pr_number]
   event: pull_request

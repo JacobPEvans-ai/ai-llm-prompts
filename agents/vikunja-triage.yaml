@@ -14,6 +14,8 @@ triggers:
     source: vikunja
   - kind: rotation
     every: 1d
+reader: Vikunja via vikunja-clerk
+acted_signal: proposed task move applied
 memory_scope: hindsight/vikunja-triage
 identity: agent-vikunja-triage
 api_key_ref: openbao://agent-key/vikunja-triage

@@ -219,6 +219,17 @@ def test_a_definition_with_an_empty_roster_field_fails_the_check(field, empty):
     assert _missing_roster_fields(broken) == expected
 
 
+def test_triggered_agents_name_their_reader_and_acted_signal():
+    """An agent started by an event, rotation or anchor names who reads its output and the signal that it was acted on."""
+    offenders = [
+        agent["name"]
+        for _, agent in _definitions()
+        if {trigger.get("kind") for trigger in agent.get("triggers", [])} & {"event", "rotation", "anchor"}
+        and not all(isinstance(agent.get(field), str) and agent[field].strip() for field in ("reader", "acted_signal"))
+    ]
+    assert offenders == [], f"triggered agents must declare reader and acted_signal: {offenders}"
+
+
 @pytest.mark.parametrize("path,agent", _definitions(), ids=lambda item: item.stem if isinstance(item, Path) else None)
 def test_every_definition_conforms_to_v2(path, agent):
     _validate_v2(agent)
