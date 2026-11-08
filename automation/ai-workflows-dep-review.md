@@ -6,7 +6,7 @@ resource: "prompt://dryvist/automation/ai-workflows/dep-review"
 tags:
   - "automation"
   - "ai-workflows"
-timestamp: "2026-08-07T20:30:00-04:00"
+timestamp: "2026-11-08T06:05:00-05:00"
 status: active
 consumers:
   - "JacobPEvans/.github-ai"
