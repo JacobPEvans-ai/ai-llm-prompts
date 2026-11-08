@@ -504,3 +504,88 @@ def test_start_and_trigger_nodes_cannot_coexist(tmp_path):
     result = render_checkout(tmp_path)
     assert result.returncode != 0
     assert "Start node and trigger nodes cannot coexist" in result.stderr
+
+
+def tool_node(server, name, parameters=None):
+    return {"data": {
+        "type": "tool",
+        "provider_type": "mcp",
+        "provider_name": server,
+        "tool_name": name,
+        "tool_parameters": parameters or {},
+    }}
+
+
+def individual_tool_checkout(tmp_path, tools, nodes):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(mcp_servers=["filesystem", "git"], tools=tools)
+    definition["dify"] = {
+        "prompt": "__DIFY_SYSTEM_PROMPT__",
+        "workflow": {"graph": {"nodes": nodes}},
+    }
+    path.write_text(yaml.safe_dump(definition))
+    return path, definition
+
+
+def test_individual_mcp_servers_render_one_node_per_tool(tmp_path):
+    individual_tool_checkout(
+        tmp_path,
+        tools=["filesystem.read_text_file", "git.git_status", "a2a.call"],
+        nodes=[tool_node("filesystem", "read_text_file"), tool_node("git", "git_status")],
+    )
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents" / "dify" / "sample.dsl.yml").read_text())
+    nodes = output["workflow"]["graph"]["nodes"]
+    assert {(node["data"]["provider_name"], node["data"]["tool_name"]) for node in nodes} == {
+        ("filesystem", "read_text_file"),
+        ("git", "git_status"),
+    }
+
+
+def test_undeclared_individual_tool_node_fails(tmp_path):
+    individual_tool_checkout(
+        tmp_path,
+        tools=["filesystem.read_text_file"],
+        nodes=[tool_node("filesystem", "write_file")],
+    )
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "must name an individually declared tool" in result.stderr
+
+
+def test_subcommand_parameter_on_individual_tool_node_fails(tmp_path):
+    individual_tool_checkout(
+        tmp_path,
+        tools=["filesystem.read_text_file"],
+        nodes=[tool_node("filesystem", "read_text_file", {
+            "subcommand": {"type": "constant", "value": "read_text_file"},
+        })],
+    )
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "cannot take a subcommand parameter" in result.stderr
+
+
+def test_declared_individual_tool_without_a_node_fails(tmp_path):
+    individual_tool_checkout(
+        tmp_path,
+        tools=["filesystem.read_text_file", "filesystem.write_file"],
+        nodes=[tool_node("filesystem", "read_text_file")],
+    )
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "must appear on a tool node" in result.stderr
+
+
+def test_subcommand_tools_with_two_prefixes_fail(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(mcp_servers=["vikunja"], tools=["vikunja_tasks.list", "zammad_rest.search"])
+    definition["dify"] = {
+        "prompt": "__DIFY_SYSTEM_PROMPT__",
+        "workflow": {"graph": {"nodes": [tool_node("vikunja", "vikunja_tasks")]}},
+    }
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "must share one MCP tool prefix" in result.stderr
