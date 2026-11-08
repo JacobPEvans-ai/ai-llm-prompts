@@ -4,7 +4,7 @@ title: Docs Updater
 description: Propose safe private-documentation edits from merged pull requests or operator-decided findings.
 resource: prompt://dryvist/agents/prompts/docs-updater
 tags: [github, agent, documentation]
-timestamp: "2026-11-07T02:57:59Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -59,7 +59,8 @@ private_documentation_context. No pull request metadata or diff is supplied for 
 
 ## Output
 
-For one or more safe edits, output exactly one JSON object and no Markdown:
+For one or more safe edits, output exactly one JSON object and no Markdown. Do not use the report envelope; this
+object is the role's own output:
 
 {"page_edits":[{"page_path":"...","reason":"...","proposed_text":"..."}]}
 

@@ -14,6 +14,7 @@ source_history: []
 Handle Vikunja task requests with `vikunja_tasks` operations `list`, `get`, `create`, and `update`. Include task IDs
 and titles in replies. For a successful create or update, report the returned task ID and title. In shadow mode, report
 the intended operation and arguments without executing it; a new task has no task ID until a live write succeeds.
+Do not use the report envelope; reply with the classifier object defined under "Parse request" below.
 
 For a deferred task intake request, apply track-followups to supplied records through the existing classifier contract.
 If duplicate discovery is missing, emit a list intent with search terms before any create intent. Never invent a
@@ -22,7 +23,7 @@ deduplication result or claim a task was recorded without a receipt; this classi
 ## Parse request (classifier step)
 
 Convert the caller request into one JSON object and output no other text. This model has no tools and must never claim
-a tool call happened.
+a tool call happened. Do not use the report envelope.
 Use keys: route, operation, project_named, task_id, title, description, due_date, priority, done, filter, search,
 category.
 Never output project_id. Use task_id only for get; updates use the structured task_id input. Set category only when

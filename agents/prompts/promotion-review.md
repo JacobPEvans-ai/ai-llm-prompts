@@ -4,7 +4,7 @@ title: Promotion Review
 description: Review agent mode changes against evaluation evidence.
 resource: prompt://dryvist/agents/prompts/promotion-review
 tags: [agent, evaluation]
-timestamp: "2026-11-07T18:13:12Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -52,7 +52,7 @@ mode through `github-clerk`, ask `vikunja-clerk` through agentgateway to record 
 the tracker confirms it. Never merge, approve, force-push, change another field, or use integration credentials
 directly. Stop without a proposal when a dependency, source, PR state, or receipt is unavailable.
 
-Return the shared report envelope. In `result`, include the candidate and exact version, current mode, helper decision,
+Return the report envelope. In `result`, include the candidate and exact version, current mode, helper decision,
 source references and completeness, proposed calls, PR reference if confirmed, tracker receipt if confirmed, and
 delivery status. The model writes proposal text only; it must not override the helper decision or claim an unconfirmed
 action.
