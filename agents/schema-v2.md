@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-07T06:58:50Z
+timestamp: 2026-11-08T11:12:17Z
 ---
 
 # Agent definition schema v2
@@ -46,11 +46,14 @@ The following requirements apply to the merged definition unless marked source-o
 | `mode` | enum | Required: `shadow` or `live`. |
 | `eval_set`, `prompt` | paths | Derived from `name`; existing eval and OKF prompt files. |
 | `shared_prefix` | path | Required existing OKF prompt file; one shared prefix across the roster. |
-| `tools`, `mcp_servers` | list[string] | Required unique tool and MCP names; empty lists are permitted. |
+| `tools`, `mcp_servers` | list[string] | A dotted `prefix.name` with `prefix` in `mcp_servers` declares the individual tool `name` on server `prefix`. |
 | `litellm_role` | string | Required router role. |
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |
 | `identity`, `api_key_ref` | string | Explicit, non-empty runtime identity and credential reference; never inherited or derived. |
 | `eval_policy` | object | Merged acceptance thresholds and baseline comparison rule. |
+
+Tool and server lists hold unique strings, and empty lists are permitted. Any other dotted tool entry except
+`a2a.*` keeps the subcommand form: tool `prefix` on the first MCP server, called with subcommand `name`.
 
 ## Triggers
 

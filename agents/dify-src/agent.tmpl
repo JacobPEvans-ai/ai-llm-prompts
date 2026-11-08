@@ -41,6 +41,19 @@
     {{- $sep := "" -}}[{{- range . -}}{{ $sep }}{{ tmpl.Exec "json" . }}{{ $sep = ", " }}{{- end -}}]
   {{- else -}}{{ data.ToJSON . }}{{- end -}}
 {{- end -}}
+{{- /* Dotted tools whose prefix is a declared server name individual MCP tools; other dotted tools except a2a.* are the subcommand form. */ -}}
+{{- define "mcp-classification" -}}
+  {{- coll.JQ `
+    . as $agent |
+    [($agent.tools // [])[] | (index(".")) as $dot | select($dot != null) |
+      {prefix: .[:$dot], name: .[$dot + 1:]}] as $dotted |
+    {
+      individual: [$dotted[] | select(. as $part | ($agent.mcp_servers // []) | index($part.prefix)) |
+        {server: .prefix, tool: .name}],
+      subcommand: [$dotted[] | select(. as $part | ($agent.mcp_servers // []) | index($part.prefix) | not) |
+        select(.prefix != "a2a")]
+    }` . | data.ToJSON -}}
+{{- end -}}
 {{- define "workflow" -}}
 app: {name: __DIFY_AGENT_NAME__, mode: workflow}
 dependencies: []
@@ -168,19 +181,20 @@ def main(timestamp, event=None):
   {{- $params = coll.Set (printf "__DIFY_HELPER_%s__" (strings.ToUpper $name)) $body $params -}}
 {{- end -}}
 {{- with (index . "mcp_servers") -}}
-  {{- $agent := $ -}}
   {{- $params = coll.Set "__DIFY_MCP_SERVER__" (index . 0) $params -}}
+  {{- $classified := tmpl.Exec "mcp-classification" $ | data.JSON -}}
+  {{- $prefixes := coll.Slice -}}
   {{- $operations := coll.Slice -}}
-  {{- range $agent.tools -}}
-    {{- $parts := strings.SplitN "." 2 . -}}
-    {{- if eq (len $parts) 2 -}}
-      {{- $params = coll.Set "__DIFY_TOOL_NAME__" (index $parts 0) $params -}}
-      {{- $operation := index $parts 1 -}}
-      {{- $params = coll.Set (printf "__DIFY_TOOL_OPERATION_%s__" (strings.ToUpper $operation)) $operation $params -}}
-      {{- $operations = coll.Append (printf "'%s'" $operation) $operations -}}
-    {{- end -}}
+  {{- range $classified.subcommand -}}
+    {{- $params = coll.Set "__DIFY_TOOL_NAME__" .prefix $params -}}
+    {{- $params = coll.Set (printf "__DIFY_TOOL_OPERATION_%s__" (strings.ToUpper .name)) .name $params -}}
+    {{- $operations = coll.Append (printf "'%s'" .name) $operations -}}
+    {{- $prefixes = coll.Append .prefix $prefixes -}}
   {{- end -}}
-  {{- $params = coll.Set "__DIFY_TOOL_OPERATIONS__" (printf "{%s}" (join (coll.Sort $operations) ", ")) $params -}}
+  {{- test.Assert "subcommand tools must share one MCP tool prefix" (coll.JQ `unique | length < 2` $prefixes) -}}
+  {{- if $operations -}}
+    {{- $params = coll.Set "__DIFY_TOOL_OPERATIONS__" (printf "{%s}" (join (coll.Sort $operations) ", ")) $params -}}
+  {{- end -}}
 {{- end -}}
 {{- $dsl := tmpl.Exec "workflow" . | data.YAML -}}
 {{- with (index . "dify") -}}{{- $dsl = . -}}{{- end -}}
@@ -259,6 +273,26 @@ def main(timestamp, event=None):
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}
 {{- $source := data.ToJSON $dsl | strings.ReplaceAll "__DIFY_SYSTEM_PROMPT__" "" -}}
 {{- test.Assert "workflow has unresolved Dify parameters" (not (regexp.Match `__DIFY_[A-Z0-9_]+__` $source)) -}}
+{{- with (index . "dify") -}}
+  {{- $classified := tmpl.Exec "mcp-classification" $ | data.JSON -}}
+  {{- $report := dict "graph" $dsl "classified" $classified | coll.JQ `
+    .graph as $graph | .classified as $c |
+    [($graph.workflow.graph.nodes // [])[] |
+      select(.data.type == "tool" and .data.provider_type == "mcp")] as $nodes |
+    [$nodes[] | {server: .data.provider_name, tool: .data.tool_name}] as $pairs |
+    {
+      undeclared: [$pairs[] | select(. as $pair |
+        (($c.individual | map(.server) | index($pair.server)) and
+          (($c.individual | index($pair)) | not)))],
+      subcommand: [$nodes[] | select(. as $node |
+        $c.individual | map(.server) | index($node.data.provider_name)) |
+        select((.data.tool_parameters // {}) | has("subcommand"))],
+      missing: [$c.individual[] | select(. as $pair | ($pairs | index($pair)) | not)]
+    }` -}}
+  {{- test.Assert "MCP tool nodes must name an individually declared tool" (eq (coll.JQ `.undeclared | length` $report) 0) -}}
+  {{- test.Assert "individually declared MCP tools cannot take a subcommand parameter" (eq (coll.JQ `.subcommand | length` $report) 0) -}}
+  {{- test.Assert "every individually declared MCP tool must appear on a tool node" (eq (coll.JQ `.missing | length` $report) 0) -}}
+{{- end -}}
 {{- $dsl = dict "dsl" $dsl "prompt" $prompt | coll.JQ `.prompt as $prompt | .dsl | walk(if type == "string" then split("__DIFY_SYSTEM_PROMPT__") | join($prompt) else . end)` -}}
 # Generated from agents/{{ .name }}.yaml, agents/dify-src/agent.tmpl, and {{ .shared_prefix }} + {{ .prompt }}; edit sources, then run make render-dify.
 {{- /* Quote the YAML 1.1 value indicator for Dify's PyYAML loader. */}}
