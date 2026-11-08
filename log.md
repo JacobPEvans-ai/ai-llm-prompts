@@ -2,6 +2,13 @@
 
 ## 2026-11-08
 
+* **Add (auto-ai-agent)**: `hermes-reporting/status-levels.md` defines the shared green, yellow and red status
+  levels for Hermes report and alert headlines once, with a machine-readable block a role can load.
+
+* **Update (auto-ai-agent)**: Every Hermes status, digest and alert prompt starts its headline with the shared
+  status levels; the service pulse chooses its level from them and turns red only on two consecutive failed
+  probes, and a judge test bans inline status emoji outside the shared file.
+
 * **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
   chosen by fixed criteria.
 

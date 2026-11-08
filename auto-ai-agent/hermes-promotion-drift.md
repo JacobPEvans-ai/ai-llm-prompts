@@ -4,7 +4,7 @@ title: Hermes promotion drift
 description: Daily read-only org sweep that reports each git-flow repo whose develop branch is ahead of main with no promotion PR open; opens no PRs.
 resource: prompt://dryvist/auto-ai-agent/hermes-promotion-drift
 tags: [hermes, cron, autonomous-agent, git-flow]
-timestamp: 2026-10-17T01:30:00-04:00
+timestamp: 2026-11-08T19:00:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -31,5 +31,7 @@ Use your `github-issues` skill with a read token. If a repo's token is missing, 
 - For each drifting repo with no open promotion PR, record the repo, `ahead_by`, up to 5 of the first lines of the unpromoted commit messages, and the oldest unpromoted commit date (UTC).
 
 ## Report
+
+HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 If no repo drifts and no promotion PR is older than 7 days, reply with exactly [SILENT]. Otherwise post one message to the home channel listing each drifting repo (full repo URL, commits ahead, oldest unpromoted commit date, the commit lines), each stale promotion PR (full URL, days open), and each skipped repo with its reason. End the message with one line naming the model id(s) you used.

@@ -4,7 +4,7 @@ title: Hermes Splunk license audit
 description: Two-hourly Splunk audit that reads the admin system messages and health report, learns daily ingest curves, recurring offenders and its own warning threshold in Hindsight between runs.
 resource: prompt://dryvist/auto-ai-agent/hermes-splunk-license
 tags: [hermes, cron, autonomous-agent, splunk]
-timestamp: 2026-09-28T05:10:00-05:00
+timestamp: 2026-11-08T19:00:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -25,5 +25,7 @@ OBSERVE, with `run_splunk_query` only, every search bounded and nothing else: (1
 COMPARE: judge today's usage against the recalled curve for this hour, not only against the quota: project the end-of-day total from the curve and say whether it lands over quota. A new leader in the usage table is a finding; a recurring offender is reported with how many days it has led. Say how old the recalled baseline is.
 
 REPORT exactly once: headline "License <used GB>/<quota GB> today (<percent>), projected <GB> by midnight, <n> system messages, <m> non-green health features", prefixed with "LICENSE WARNING" when usage or the projection crosses your current threshold or a message names the license, and "HEALTH" when any feature is red or yellow. Then every system message (severity, title, one line), every non-green health feature, the top-10 indexes with GB, the top-5 sourcetype/host pairs, one line comparing to the recalled baseline, and, when warning, one line naming the index or sourcetype to throttle first and why. End with ONE line "Learned: <the single most useful thing this run taught you, or 'nothing new'>". Under 25 lines, plain text.
+
+HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 RETAIN (last, always, even on a quiet run): write back to Hindsight, tagged "splunk license", (a) this run's numbers with the current UTC time, (b) the updated ingest curve point for this hour and weekday, (c) the updated offender list with day counts, and (d) any new lesson as one imperative sentence, including a changed warning threshold when the projection has proved the old one wrong two days in a row. A run that ends without retaining is a failed run.

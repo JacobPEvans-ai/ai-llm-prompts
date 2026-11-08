@@ -4,7 +4,7 @@ title: Hermes PR shepherd sweep
 description: "Hourly sweep updates BEHIND agent PRs and reports unresolved PRs; the org workflow arms eligible PRs, and the sweep never merges directly."
 resource: prompt://dryvist/auto-ai-agent/hermes-pr-shepherd-sweep
 tags: [hermes, cron, autonomous-agent, pull-requests]
-timestamp: 2026-11-04T10:10:00-04:00
+timestamp: 2026-11-08T19:00:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -35,5 +35,7 @@ Use your `github-issues` skill with your per-repo write token. If a token is mis
 6. Otherwise, with `CLEAN` or `UNSTABLE` and every check successful: leave auto-merge to the org workflow.
 
 ## Report
+
+HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 If you changed nothing and no PR has waited more than 24 hours, reply with exactly [SILENT]. Otherwise post one message to the home channel. Include updated branches, eligible PRs left to the org workflow, and PRs waiting over 24 hours with their URLs and holding rules. End with one line naming the model id(s) you used.
