@@ -1,6 +1,6 @@
 ---
 name: agent-standards-sources
-description: Dated source attribution for agent, skill, tool, evaluation, and brief standards.
+description: Dated sources for agent, skill, tool, evaluation and brief standards.
 type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
@@ -17,7 +17,7 @@ source_history:
 
 # Agent authoring standards sources
 
-Research cutoff: **2026-11-07**. Titles, publishers, dates, and URLs retain primary-source attribution.
+Research cutoff: **2026-11-07**.
 An undated official page does not establish publication within July–November 2026.
 
 Use these source IDs with the [building standards](agent-standards.md). See the [platform sources](agent-standards-platform-sources.md)
