@@ -4,7 +4,7 @@ title: Vikunja task to pull request
 description: OpenHands prompt that turns one Vikunja webhook task into a ready-for-review pull request.
 resource: prompt://dryvist/automation/openhands-vikunja-ticket-to-pr
 tags: [automation, openhands, vikunja, pull-request]
-timestamp: "2026-11-08T07:35:00Z"
+timestamp: "2026-11-08T07:45:00Z"
 status: staged
 consumers: []
 render:
@@ -55,6 +55,6 @@ You run in a disposable container that is this run's sandbox. Do every edit, Git
 
 The run is complete when step 9 is done, or when step 1 finds another run already handles this event. Then end with exactly one line and nothing after it: `STATUS | Vikunja task <id> | <pull request URL or reason>`.
 
-- `DONE`: a pull request is open and the suite passed. The last field is the pull request URL.
-- `STOP`: the payload, its `time` field or the `repo:` line is missing or malformed, another run already handles this event, the GitHub token cannot read or push, or the suite still fails. The last field is a one-line reason.
+- `DONE`: a pull request is open, the suite passed, and both step 9 writes (the comment and the label change) succeeded. The last field is the pull request URL.
+- `STOP`: the payload, its `time` field or the `repo:` line is missing or malformed, another run already handles this event, the GitHub token cannot read or push, the suite still fails, or a step 9 write failed. The last field is a one-line reason; after a failed step 9 write it names the pull request URL, if one is open, and the write that failed.
 - `REFUSED`: the repository is not on `OPENHANDS_REPO_ALLOWLIST`, or the task asks for something these rules forbid. The last field is a one-line reason.
