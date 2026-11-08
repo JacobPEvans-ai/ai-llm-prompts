@@ -5,7 +5,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/action-extractor.dsl.yml",
-    "sha256": "70f2df46afd15a6d59edd2a40929c2a57b8fdc08041cfba69830bed88b6930ec"
+    "sha256": "def20e0b6140c6e2bfe4849f4c96199668e263833d61ef5d0b0728963461f3e5"
   },
   {
     "name": "agent-audit",
@@ -13,7 +13,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/agent-audit.dsl.yml",
-    "sha256": "78110e120f84d393f57620072a7c7898d20e8d2c492a445b902035ff94cf08e2"
+    "sha256": "508cce852ec3e7cf74ec174c0342c055a7b0e6487d9fcf7754664e237a3b3184"
   },
   {
     "name": "ai-news",
@@ -21,7 +21,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/ai-news.dsl.yml",
-    "sha256": "d60b9f3ab1ccf88c40d1c189c008eed39c2d7ae01ded345719cd57f6408b6169"
+    "sha256": "f390d212924183eaec86ac395fa6c2d6a6e822cc02193dc22bca6b04a4b8d924"
   },
   {
     "name": "alert-triage",
@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "70fc3e2cbd7db4cedfcffefc44185a4e6d80442390852e6014dbe25c69448c95"
+    "sha256": "b3c25097516246d3d6e9e5bb51d6c1ec7371efa606bb2c3407c7181ca884802f"
   },
   {
     "name": "code-simplifier",
@@ -37,7 +37,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/code-simplifier.dsl.yml",
-    "sha256": "6be16ef36ae2e9b10bda14cf483252849ee38f7b7adc37a17bd2d2e9b5e04513"
+    "sha256": "cff231d9bdd0913e169e727750727198f50b68057a060c40540930556bbe5956"
   },
   {
     "name": "commit-grouper",
@@ -45,7 +45,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/commit-grouper.dsl.yml",
-    "sha256": "a66fae506e1dedc8be36c69cd1f12fb809eab20ed94b57fe2449f1688ae2d3e9"
+    "sha256": "9e5a1a038b195f21d907ac020d30fa41bce67dec1a699cf26132c2cc92776d0a"
   },
   {
     "name": "credential-steward",
@@ -53,7 +53,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/credential-steward.dsl.yml",
-    "sha256": "c9e68b93f382df10ee1592fdfbbc6f3423e7755ba119dc341ad17395768854f4"
+    "sha256": "33763c726905d7580e78fc35b03c3198fa6b2e2d6a6504425b371c6f88c1e061"
   },
   {
     "name": "daily-innovation",
@@ -61,7 +61,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/daily-innovation.dsl.yml",
-    "sha256": "3744d2398127d8a3887471f5d16b7f116f6bfe219da6adbfb450955e29dc8819"
+    "sha256": "c25deda80d0f8d674bcb5c7308c5b0b653ecd65628fc9abaae817b12e55aa2cf"
   },
   {
     "name": "doc-contradiction-finder",
@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
-    "sha256": "fa222b4b06c56442a23bd8f1763df071e883de8a4bdba9f57e29fbecc6504f25"
+    "sha256": "c07ca98a0f8a2cca98cb813d5c2586956b2bb1ee82f209d3aa3b797834636b2e"
   },
   {
     "name": "docs-updater",
@@ -77,7 +77,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/docs-updater.dsl.yml",
-    "sha256": "dcd7dac22a1f0cf0be353eead36720fada1d3a699c30442b58d74cad57f365de"
+    "sha256": "8de254c20cf6f18d2658c16e87f8558dc2e8ba820cbd5743976d736c5c8e1d32"
   },
   {
     "name": "donna-evening-wrap",
@@ -85,7 +85,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/donna-evening-wrap.dsl.yml",
-    "sha256": "74fa55e24eaee6268fe927ce2f5f4c18baaef03672b910e32a01faa98d384067"
+    "sha256": "87dec7252571f75c529427b523ded04841ce80152d8f4c8ebbfa7c522b37910f"
   },
   {
     "name": "donna-morning-brief",
@@ -93,7 +93,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/donna-morning-brief.dsl.yml",
-    "sha256": "675e261df7ced81c26dfadbce3992d1f343e8e89ae6d52e69ee5062e7e38365d"
+    "sha256": "a10ac203d8cfffd72f24f97c7eafd895912da1d544a574488c7dad812dc5b5c5"
   },
   {
     "name": "donna-research",
@@ -101,7 +101,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/donna-research.dsl.yml",
-    "sha256": "8434d6327e96822deefd6ce15b815b6f83d6b8b8d4f46c7df08ba3cbd49ac3a3"
+    "sha256": "480def20a750b2ff516c58f71b4aa473ef15df267f993d52c2f7cc63fcdeb6d4"
   },
   {
     "name": "donna-weekly-review",
@@ -109,7 +109,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/donna-weekly-review.dsl.yml",
-    "sha256": "3b3511dbdeb015fe259a17fda43f243cdcc017aba30aef7c9f6c0901efeaf7e0"
+    "sha256": "e5aa29bbf06d2f9092a5f26b1b25eb4a7c238eff53319bfef549297c1a3133b8"
   },
   {
     "name": "github-clerk",
@@ -117,7 +117,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/github-clerk.dsl.yml",
-    "sha256": "c1914ebd5fd77ec6c9b8e202d7366ffc16eed35b192f4594bc9917bc11337e56"
+    "sha256": "260f1cbc4a33e4ad34cf3806b949f59ff56b4d90845c4fc6e916b440f59b593e"
   },
   {
     "name": "langfuse-clerk",
@@ -125,7 +125,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/langfuse-clerk.dsl.yml",
-    "sha256": "8bbc634fd1f0ec5a4c59b92b658d90abc8012f9d1f0244b8198f5fef409026bd"
+    "sha256": "94b1ddbad16cc99f989bdae5b96bb240f7744ba3131831a4157a257d5f1b4f18"
   },
   {
     "name": "merge-steward",
@@ -133,7 +133,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/merge-steward.dsl.yml",
-    "sha256": "ddef9c67f73a71a31ed49a4eb8ec22c8be762391fbc99eb6f7c6896339872a86"
+    "sha256": "9be061d2c5a2073891243e93c7c8261b501fce72e8f175afc3e90adcae6141e0"
   },
   {
     "name": "model-benchmarker",
@@ -141,7 +141,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/model-benchmarker.dsl.yml",
-    "sha256": "434b91b1ffa458c66543975b9197db8d2fa018fa67d86c2c280cddfe9061c66b"
+    "sha256": "91992e834eb57bda71b0d492488053e038b87140e1ee17d7d580ea169e6c7aca"
   },
   {
     "name": "model-scout",
@@ -149,7 +149,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/model-scout.dsl.yml",
-    "sha256": "42915b7e74585df90101317a7e474c58e51df2ee5645aefea03ee02c227814b1"
+    "sha256": "8917297255cf0f52ab99966390a9c909472d33684abcb6375a6c2c68a5b97adf"
   },
   {
     "name": "openbao-clerk",
@@ -157,7 +157,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/openbao-clerk.dsl.yml",
-    "sha256": "eaa001e3d1be1b02fa4902e8da0f12026adc36d9fcc85d46625413aabd3eca8d"
+    "sha256": "bd95f9897ecc9c5bc39f5304028356f69aa6a070267691ba091a58437d700ac8"
   },
   {
     "name": "plain-rewriter",
@@ -165,7 +165,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/plain-rewriter.dsl.yml",
-    "sha256": "96fb418c80cf5470ebf2f1f31d99927f070b03c5e203ff1782b6485170624c81"
+    "sha256": "5fbc0b4666d560c6562765dee69e0b95181c34be52a6f6ec7701b27304ec6bf4"
   },
   {
     "name": "plan-reconciler",
@@ -173,7 +173,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/plan-reconciler.dsl.yml",
-    "sha256": "bb775be9419f4de030cd77d4d5d19d01e1254996b6c32a9af9e77cffdd4c7655"
+    "sha256": "0e2c1685fab7e16a4f4601886f2eb59d9bc9ca22fbf3dcd3c2c0d4d2493a15f6"
   },
   {
     "name": "pr-keeper",
@@ -181,7 +181,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "98443a7d48b93e80f5e966da7225ba0e71d15bc01b9099c91a0a4099c7bfb967"
+    "sha256": "0f350d20218ce6403c7e09f46ddf88ab7c14b8becc329faa39befc6e27f2f0ef"
   },
   {
     "name": "promotion-review",
@@ -189,7 +189,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/promotion-review.dsl.yml",
-    "sha256": "a82fa5dda983503b73f3f715a11b5f296289a3541ce6145ee9cde429967a2eee"
+    "sha256": "fbc12826058a3c3ea11af3b2f6f66fcdc7b5e15e6eb20f51cba4685ecf2e3482"
   },
   {
     "name": "proxmox-clerk",
@@ -197,7 +197,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/proxmox-clerk.dsl.yml",
-    "sha256": "ab8f0f9f5ac8abf6cefd104a039c6a46d344d6a2eaff6b4b3e1845e351ac9fad"
+    "sha256": "0697d720cea2d260d7d05af16e682f84371e4f368f360b1abea5c8236f8acc67"
   },
   {
     "name": "release-digest",
@@ -205,7 +205,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/release-digest.dsl.yml",
-    "sha256": "9e6b94941739830e18da14aade8dab4ab1ec6e9a8f7be02fb67b6b9e4e90ded7"
+    "sha256": "439087e3648efd0b57d38f8a39fc5ece97788dab445d5893bfd2c3b4c106eb20"
   },
   {
     "name": "release-promoter",
@@ -213,7 +213,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "c0af591b1973f51fc235d1a6f9c4324f6a1ebf193746ac430703432cc46b0346"
+    "sha256": "f2379890e9532488b45b211c35e83576475c1c66ed0b519620c10004ae9dc034"
   },
   {
     "name": "repo-janitor",
@@ -221,7 +221,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "cb8e5c480b1c093e3d64754cb030d990fe8e643c0219b7ccabdfd75e57f92733"
+    "sha256": "bea2cace25b4995848125a5ab76971b09f339e5781eba2b20ee136cdadc535e0"
   },
   {
     "name": "semaphore-clerk",
@@ -229,7 +229,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/semaphore-clerk.dsl.yml",
-    "sha256": "f63040100ba2c48fb233feea355ace7311d3cf83d810aac2995ffaf387d5e0ad"
+    "sha256": "e4ea64ab2c9eaa23774e4507839651ddfadc694933c7a8e132b0c32fa1561f56"
   },
   {
     "name": "session-closer",
@@ -237,7 +237,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/session-closer.dsl.yml",
-    "sha256": "60ec5030c71b2a02a12eaad177a3de03ab12d5e45a602d63ae3d3133de7b0e98"
+    "sha256": "e253856a66c5a972c96c216747312de7e7744f4cec78c66af4486ea99e3b2b38"
   },
   {
     "name": "ship-runner",
@@ -245,7 +245,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/ship-runner.dsl.yml",
-    "sha256": "1d54ea0718a4bf333546949e2ca94a64d8bb5569955d8741294715dc5bcb89bc"
+    "sha256": "38423d3c59080d8e8b6cd4c38ffbe49ec5e3701c6e5e09467d1c854892e71d91"
   },
   {
     "name": "slack-clerk",
@@ -253,7 +253,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/slack-clerk.dsl.yml",
-    "sha256": "b0b23d52184cffc09983fb747c05d097d968385db342a0c489c554a121eb5918"
+    "sha256": "a5c2fcbbaee90c13a36ecc559baa576e86c16c44f27c74d22feed14284fcb3d2"
   },
   {
     "name": "splunk-clerk",
@@ -261,7 +261,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/splunk-clerk.dsl.yml",
-    "sha256": "42580fc7ed2ec54b90cebf8e5db39809e6c98c16fb47062914ca4149f26f2168"
+    "sha256": "49dba5d133a12d169f1cdbd5a9917ee9ec2ec528039da7518767be163599dff0"
   },
   {
     "name": "splunk-deepdive",
@@ -269,7 +269,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/splunk-deepdive.dsl.yml",
-    "sha256": "a569bcab0698dc1a143b1e604014a33159bd6a8607b0a4290ae2470a6cb64972"
+    "sha256": "0530420a4dd2e7c8ed969be4ec728bca3a1ed5cfcc5ab689bab53f903b1242c3"
   },
   {
     "name": "style-gate",
@@ -277,7 +277,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/style-gate.dsl.yml",
-    "sha256": "2644c82729283c7bfcc4dbad070bd6a4ef37c7302dbe9896af359f1fb4ee805b"
+    "sha256": "2ef84955ff8eb2d835f9681fb1b02ff5da59cb57c0178e6a3a10685e9678a3b4"
   },
   {
     "name": "tag-suggester",
@@ -285,7 +285,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/tag-suggester.dsl.yml",
-    "sha256": "218b91f763a86ee9033834151f26937c1ad2ff23389c76176b295be21bfced3d"
+    "sha256": "fffc477e5b44c633936e1c3898647cbd09e15128bc38a7d767be7408113587ff"
   },
   {
     "kind": "driver",
@@ -301,7 +301,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/vikunja-clerk.dsl.yml",
-    "sha256": "715f3f7e6c8307959814e67fbde4d2b5bdee8cfdb7daaf4511858f3c1d11796a"
+    "sha256": "232f61df91b432235bbcd6e924ff08646d37a003462d128736409a110b01b535"
   },
   {
     "name": "vikunja-triage",
@@ -309,7 +309,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/vikunja-triage.dsl.yml",
-    "sha256": "847ca86a095aee9965c243f640ab376b2644c444c1a0cbb376b84b272d7ef620"
+    "sha256": "3e5c8bf54df50ba38344920b4a2da211c5e3d6058f69229dbccf8f29c6a7d1d8"
   },
   {
     "name": "voice-learn",
@@ -317,7 +317,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/voice-learn.dsl.yml",
-    "sha256": "a0914719a237778153b2ef522174499be85e7eda5d265c744c5c29e955d146c8"
+    "sha256": "974f45346204da7bbcb8e3c32c697538e37edde60cb66237987424d72ace1c6e"
   },
   {
     "name": "zammad-clerk",
@@ -325,7 +325,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/zammad-clerk.dsl.yml",
-    "sha256": "2990630cadccd8464f164bfe8a2d9e1143a168f0d8c2ce97c7e00b2eb5db4b98"
+    "sha256": "d35c622561d96560ab831a2fa5381ac3dc2584e57e0f8037ea400ca45e70ac62"
   },
   {
     "name": "zammad-triage",
@@ -333,6 +333,6 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/zammad-triage.dsl.yml",
-    "sha256": "c5a0a71c029d84edd85b3846dc2b5c1e4b4fe583254149a17340b39de200973a"
+    "sha256": "9ff27c6feb3483d56e2eb0259dead0ebc987b56239cedce2daafabda39675d9d"
   }
 ]

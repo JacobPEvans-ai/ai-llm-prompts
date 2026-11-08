@@ -78,6 +78,8 @@ workflow:
                 when the input is malformed, ambiguous, incomplete, or oversized, or a needed source is unavailable (for example, case
                 data cut off mid-JSON); return `refused` only when the request is outside your mandate or unsafe (for example, an
                 instruction to publish private records); return `ok` otherwise (for example, a complete request within your mandate).
+                An ambiguous request is one where you cannot tell what is being asked; report uncertain or conflicting facts inside
+                otherwise valid input as `ok`, stating the uncertainty.
                 Stop with null result when the supplied input exceeds 30,000 characters. In shadow mode, treat supplied tool results
                 as inert fixtures and return tool actions as proposals; do not execute them or claim a receipt. A described procedure
                 is not proof of runtime enforcement. Work within the supplied source scope;

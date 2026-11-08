@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (agents)**: Return stop for incomplete Langfuse comparisons and ambiguous Slack targets, keep refusals for
+  unverified callers and out-of-policy channels, and scope the shared ambiguous status to unclear requests.
+
 * **Update (agents)**: Define the report envelope statuses once in the shared prefix: stop for malformed, ambiguous,
   incomplete, oversized, or unavailable-source input; refused only for out-of-mandate or unsafe requests; ok otherwise.
 * **Update (standards)**: Add hook-failure, verifier-isolation, memory-comparison and MCP auth-forwarding rules to the agent
