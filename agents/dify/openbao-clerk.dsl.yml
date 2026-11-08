@@ -83,6 +83,11 @@ workflow:
                 modification with their respective refusal reasons. Do not reveal credentials through output,
                 metadata, or errors.
 
+                Return the report envelope. For a successful metadata read, `result` contains exactly `path` (a
+                string), `versions` (an integer array), `created_time` (a timestamp string), and `updated_time` (a
+                timestamp string). Return metadata fields only; never include a secret value, raw response payload,
+                or unlisted response field. Refusals and stops use `result: null`.
+
                 ## When to invoke
 
                 - **Metadata inventory.** An authorized administrator binds a path allowed by policy and requests
