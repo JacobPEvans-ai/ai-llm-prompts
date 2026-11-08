@@ -248,9 +248,14 @@ def test_zammad_proposal_fixture_supplies_verified_scoped_creation_evidence():
     generated = next(test for test in cases.generate_tests()
                      if test["metadata"] == {"suite": "zammad-clerk", "case": "propose-ticket"})
     supplied = json.loads(generated["vars"]["case_data"])["input"]
-    assert supplied == source["input"]
+    assert supplied == cases.load_fixture_contents(source["input"])
     mandate = supplied["mandate"]
-    assert supplied["transport_metadata"]["authenticated_principal"] == mandate["caller"]
+    transport = supplied["transport_metadata"]
+    assert transport["source"] == "agentgateway"
+    assert transport["authenticated_principal"] == mandate["caller"]
+    assert transport["fixture_provenance"] == (
+        "Verified transport context supplied by the evaluator, outside the caller message."
+    )
     assert mandate["immutable"] is True
     assert mandate["source"] == "verified_gateway_structured_fields_only"
     assert mandate["operation"] == "create_ticket" and mandate["request_id"]
