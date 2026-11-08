@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.90.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.89.0...v1.90.0) (2026-11-08)
+
+
+### Features
+
+* **agents:** add docs-drift and dep-review definitions ([#378](https://github.com/dryvist/ai-llm-prompts/issues/378)) ([1f7c8ca](https://github.com/dryvist/ai-llm-prompts/commit/1f7c8ca7bdcb7e98476935c6fe93051994099f58))
+* **hermes:** lead the service pulse with a green, yellow or red status ([#385](https://github.com/dryvist/ai-llm-prompts/issues/385)) ([5b5be6a](https://github.com/dryvist/ai-llm-prompts/commit/5b5be6ae4a37b558711beeedf41aa42dbfd0c6c0))
+
 ## [1.89.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.88.0...v1.89.0) (2026-11-08)
 
 
