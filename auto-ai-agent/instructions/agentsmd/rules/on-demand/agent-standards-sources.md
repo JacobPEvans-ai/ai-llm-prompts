@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T05:15:03Z"
+timestamp: "2026-11-08T06:02:51Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -59,6 +59,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 | C2. Context Engineering Starts with Retrieval | LangChain | 2026-10-23 | [C2] |
 | C3. Building Evidence-Grounded Agent Memory with OpenWiki and Graphs | LangChain | 2026-10-28 | [C3] |
 | F5. Skill Management in Langfuse | Langfuse | 2026-11-03 | [F5] |
+| F6. See when token usage is missing | Langfuse | 2026-11-06 | [F6] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
 [A2]: https://claude.dev/blog/building-effective-agent-automations/
@@ -96,3 +97,4 @@ for Dify, LiteLLM, and Langfuse attribution.
 [C2]: https://www.langchain.com/blog/context-engineering-starts-with-retrieval
 [C3]: https://www.langchain.com/blog/building-agent-memory-openwiki-graphs
 [F5]: https://langfuse.com/changelog/2026-11-03-skill-management
+[F6]: https://langfuse.com/changelog/2026-11-06-retiring-tokenization
