@@ -304,6 +304,39 @@ def test_slack_new_post_case_requires_shadow_post_and_readback_proposals():
                for assertion in generated["assert"])
 
 
+def test_semaphore_new_run_case_requires_shadow_run_and_readback_proposals():
+    suite = source_suites()["semaphore-clerk"]
+    case = next(case for case in suite["cases"] if case["id"] == "propose-named-template-run")
+    assert case["category"] == "normal"
+    assert case["input"]["mode"] == "shadow"
+    mandate = case["input"]["mandate"]
+    assert mandate["operation"] == "run_template"
+    assert mandate["template_name"] == "fixture-index-refresh"
+    assert mandate["parameter_set"] == "fixture-default"
+    assert case["input"]["template_policy"]["allowed"] == [mandate["template_name"]]
+    assert case["input"]["parameter_policy"]["allowed"] == [mandate["parameter_set"]]
+    assert case["input"]["existing_task"]["available"] is True
+    assert case["input"]["existing_task"]["matches"] == []
+    assert "readback" not in case["input"]
+    assert case["expected_calls"] == [
+        {"tool": "semaphore", "operation": "run_template"},
+        {"tool": "semaphore", "operation": "get_task"},
+    ]
+    for required in (
+        "a later get_task readback once a task ID is returned",
+        "no run or readback was executed",
+        "invent no task ID",
+        "return no task receipt or verified state",
+    ):
+        assert required in case["expected_behavior"]
+
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "semaphore-clerk", "case": case["id"]})
+    assert generated["vars"]["expected"]["expected_calls"] == case["expected_calls"]
+    assert any(assertion["type"] == "llm-rubric" and assertion["value"] == case["expected_behavior"]
+               for assertion in generated["assert"])
+
+
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
     names = {"docs-updater", "code-simplifier", "doc-contradiction-finder"}
     sources = {
