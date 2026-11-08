@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (agents)**: Define the report envelope statuses once in the shared prefix: stop for malformed, ambiguous,
+  incomplete, oversized, or unavailable-source input; refused only for out-of-mandate or unsafe requests; ok otherwise.
+
 * **Update (agents)**: Add shadow proposal cases with readback for the Slack and Semaphore connectors, share connector
   transport fixtures per principal, and define the OpenBao metadata result schema with a deterministic eval check.
 
