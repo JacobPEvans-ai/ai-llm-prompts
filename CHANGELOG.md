@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.82.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.81.0...v1.82.0) (2026-11-08)
+
+
+### Features
+
+* **agents:** add five connector agents ([#344](https://github.com/dryvist/ai-llm-prompts/issues/344)) ([738db49](https://github.com/dryvist/ai-llm-prompts/commit/738db49ed765257978f15ad4e639d0fe8b0e4973))
+
 ## [1.81.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.80.0...v1.81.0) (2026-11-07)
 
 
