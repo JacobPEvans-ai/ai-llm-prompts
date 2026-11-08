@@ -51,6 +51,9 @@ cases:
         source: slack.search_messages
         available: true
         matches: []
+      readback:
+        source: slack.get_message
+        available: true
     expected_calls:
       - {tool: slack, operation: post_message}
       - {tool: slack, operation: get_message}

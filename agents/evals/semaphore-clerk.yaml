@@ -57,6 +57,9 @@ cases:
         source: semaphore.find_task_by_request_id
         available: true
         matches: []
+      readback:
+        source: semaphore.get_task
+        available: true
     expected_calls:
       - {tool: semaphore, operation: run_template}
       - {tool: semaphore, operation: get_task}

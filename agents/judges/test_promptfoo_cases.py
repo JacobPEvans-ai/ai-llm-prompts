@@ -284,7 +284,7 @@ def test_slack_new_post_case_requires_shadow_post_and_readback_proposals():
     assert case["input"]["mandate"]["operation"] == "post_message"
     assert case["input"]["existing_post"]["available"] is True
     assert case["input"]["existing_post"]["matches"] == []
-    assert "readback" not in case["input"]
+    assert case["input"]["readback"] == {"source": "slack.get_message", "available": True}
     assert case["expected_calls"] == [
         {"tool": "slack", "operation": "post_message"},
         {"tool": "slack", "operation": "get_message"},
@@ -317,7 +317,7 @@ def test_semaphore_new_run_case_requires_shadow_run_and_readback_proposals():
     assert case["input"]["parameter_policy"]["allowed"] == [mandate["parameter_set"]]
     assert case["input"]["existing_task"]["available"] is True
     assert case["input"]["existing_task"]["matches"] == []
-    assert "readback" not in case["input"]
+    assert case["input"]["readback"] == {"source": "semaphore.get_task", "available": True}
     assert case["expected_calls"] == [
         {"tool": "semaphore", "operation": "run_template"},
         {"tool": "semaphore", "operation": "get_task"},
