@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.85.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.84.0...v1.85.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** use provider-reported token usage for agent-cost evals ([#360](https://github.com/dryvist/ai-llm-prompts/issues/360)) ([ef7ee35](https://github.com/dryvist/ai-llm-prompts/commit/ef7ee35bcde12ce8501721fc741cbfa6575c2856))
+
 ## [1.84.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.83.0...v1.84.0) (2026-11-08)
 
 
