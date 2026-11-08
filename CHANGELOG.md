@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.84.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.83.0...v1.84.0) (2026-11-08)
+
+
+### Features
+
+* **automation:** add the OpenHands Vikunja ticket-to-PR prompt ([#356](https://github.com/dryvist/ai-llm-prompts/issues/356)) ([1539117](https://github.com/dryvist/ai-llm-prompts/commit/1539117ffba3575228d44ae65a4005665003022a))
+
 ## [1.83.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.2...v1.83.0) (2026-11-08)
 
 
