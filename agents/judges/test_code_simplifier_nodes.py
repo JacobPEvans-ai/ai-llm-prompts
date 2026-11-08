@@ -3,8 +3,8 @@
 Each node runs from its copy in agents/dify/code-simplifier.dsl.yml. The two token parse nodes are covered by
 test_token_nodes.py. No node here receives a token value, so the token-placement rule applies only there.
 Refused cases must return the node's refusal. validate_review falls back to a generic body, with status refused when
-the model refused or the body held a secret, and handback when the reply could not be read. guard_review_write decides
-whether the review is written.
+the model refused or the body held a secret, and handback when the model handed back or the reply could not be read.
+guard_review_write decides whether the review is written.
 """
 
 import json
@@ -298,11 +298,12 @@ def test_validate_review_keeps_a_suggestion_on_a_changed_line():
     "model_text, status",
     [
         (_model([_SUGGESTION], decision="refuse"), "refused"),
+        (_model([_SUGGESTION], decision="handback"), "handback"),
         ("not json", "handback"),
         (json.dumps({"error": "rate limited"}), "handback"),
         (_model([], body=f"key {_SECRET}"), "refused"),
     ],
-    ids=["refused decision", "malformed", "error payload", "secret in body"],
+    ids=["refused decision", "handback decision", "malformed", "error payload", "secret in body"],
 )
 def test_validate_review_falls_back_to_the_generic_review(model_text, status):
     out = _review(model_text)

@@ -4,7 +4,7 @@ title: Code Simplifier
 description: Review eligible pull requests for concrete, behavior-preserving simplifications.
 resource: prompt://dryvist/agents/prompts/code-simplifier
 tags: [github, agent, code-review]
-timestamp: "2026-11-07T02:57:59Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -77,8 +77,10 @@ source write.
 
 ## Output format
 
-Return exactly one JSON object and no Markdown fence. For a review, use decision "review", a concise review_body, and a
+Return exactly one JSON object and no Markdown fence. Do not use the report envelope. For a review, use decision
+"review", a concise review_body, and a
 comments array with path, start_line, line, side, and body fields. Each body contains the reason followed by the GitHub
 suggestion block. For a refusal, use decision "refuse", a reason_code, a generic review_body, and an empty comments
-array. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
+array. For a request outside the mandated repository or pull request, use decision "handback" with the same fields as
+a refusal. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
 proposed artifact stored in the run record; never submit the review externally.

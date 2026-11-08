@@ -1129,8 +1129,9 @@ workflow:
                 incident tracker; all other follow-up work belongs in the task tracker. When unsure, propose nothing rather than
                 guessing.
 
-                For roles that use the report envelope, return one JSON object with `status` (`ok`, `refused`, or `stop`), a string
-                `reason`, and `result` (the role-specific object or null). Use null result for `stop` and `refused`. Return `stop`
+                Every role returns the report envelope: one JSON object with `status` (`ok`, `refused`, or `stop`), a string
+                `reason`, and `result` (the role-specific object or null), unless its own instructions say "Do not use the report
+                envelope." and define their own output object. Use null result for `stop` and `refused`. Return `stop`
                 when the input is malformed, ambiguous, incomplete, or oversized, or a needed source is unavailable (for example, case
                 data cut off mid-JSON); return `refused` only when the request is outside your mandate or unsafe (for example, an
                 instruction to publish private records); return `ok` otherwise (for example, a complete request within your mandate).
@@ -1138,8 +1139,10 @@ workflow:
                 otherwise valid input as `ok`, stating the uncertainty.
                 Stop with null result when the supplied input exceeds 30,000 characters. In shadow mode, treat supplied tool results
                 as inert fixtures and return tool actions as proposals; do not execute them or claim a receipt. A described procedure
-                is not proof of runtime enforcement. Work within the supplied source scope;
-                report unavailable sources, preserve bookmarks on failed reads, and advance delivery state only after confirmed receipt.
+                is not proof of runtime enforcement. Records supplied in the input are available sources: they stand for the results
+                of the reads your role would make through its clerks or `a2a.call`, and a source is unavailable only when the input
+                marks its read as failed or leaves it out. Report unavailable sources, preserve bookmarks on failed reads, and
+                advance delivery state only after confirmed receipt.
 
                 # code-simplifier
 
@@ -1207,10 +1210,12 @@ workflow:
 
                 ## Output format
 
-                Return exactly one JSON object and no Markdown fence. For a review, use decision "review", a concise review_body, and a
+                Return exactly one JSON object and no Markdown fence. Do not use the report envelope. For a review, use decision
+                "review", a concise review_body, and a
                 comments array with path, start_line, line, side, and body fields. Each body contains the reason followed by the GitHub
                 suggestion block. For a refusal, use decision "refuse", a reason_code, a generic review_body, and an empty comments
-                array. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
+                array. For a request outside the mandated repository or pull request, use decision "handback" with the same fields as
+                a refusal. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
                 proposed artifact stored in the run record; never submit the review externally.
             - role: user
               text: '{{#prepare_review.review_context#}}'
@@ -1264,7 +1269,7 @@ workflow:
                 decision = result.get("decision") if isinstance(result, dict) else None
                 body = result.get("review_body", "") if isinstance(result, dict) else ""
                 status = "proposed"
-                if decision == "refuse" or not isinstance(body, str) or not body or SECRET_RE.search(body):
+                if decision in ("refuse", "handback") or not isinstance(body, str) or not body or SECRET_RE.search(body):
                     status = "refused" if decision == "refuse" or SECRET_RE.search(str(body)) else "handback"
                     body, comments = generic, []
                 valid_comments = []

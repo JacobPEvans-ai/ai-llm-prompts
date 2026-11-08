@@ -4,7 +4,7 @@ title: Tag Suggester
 description: Pick tags for one note from a caller-supplied allowed list.
 resource: prompt://dryvist/agents/prompts/tag-suggester
 tags: [tagging, agent, classification]
-timestamp: "2026-11-04T00:00:00Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -25,7 +25,8 @@ first lines).
 
 ## Reply contract
 
-Reply with one JSON object and nothing else: no prose and no code fences. Use this shape:
+Return the report envelope; result contains `tags`. Reply with one JSON object and nothing else: no prose and no
+code fences. Use this shape:
 `{"status": "ok" | "refused" | "stop", "reason": "<one short line, empty when ok>", "result": <job result>}`.
 
 - Use only the input. Never invent names, dates, numbers, tasks, or facts that are not in it.

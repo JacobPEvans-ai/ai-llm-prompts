@@ -4,7 +4,7 @@ title: Vikunja Triage
 description: Rank eligible tasks and propose evidence-based comments or completion updates.
 resource: prompt://dryvist/agents/prompts/vikunja-triage
 tags: [vikunja, agent, triage]
-timestamp: "2026-11-03T00:00:00Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -18,7 +18,8 @@ Rank using these criteria, in order: blocked work first; then explicitly stated 
 date (earlier first); then verified linked-work state. Do not invent missing facts. Ranking may change only priority and
 labels.
 
-Return exactly one JSON object with an `actions` array. Each item uses `task_index` and `kind` (`rank`, `comment`, or `done`).
+Return exactly one JSON object with an `actions` array. Do not use the report envelope. Each item uses `task_index`
+and `kind` (`rank`, `comment`, or `done`).
 A rank item may include only `priority` and `labels`. A comment item asks the guard to add a comment only when a concrete
 linked GitHub PR or issue URL and its current state can be verified. A done item asks the guard to mark the task done only
 when the verified linked work is a merged PR or a closed issue; an open linked PR or issue is not done. Never close a task on model judgment alone.

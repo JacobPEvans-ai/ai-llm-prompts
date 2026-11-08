@@ -4,7 +4,7 @@ title: Doc Contradiction Finder
 description: Report contradictions between documentation pages after a merged pull request. Read-only and shadow-only.
 resource: prompt://dryvist/agents/prompts/doc-contradiction-finder
 tags: [github, agent, documentation, shadow]
-timestamp: "2026-11-03T04:35:24Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -57,7 +57,8 @@ issues, typos, or formatting. Do not summarize the pages.
 
 ## Output
 
-Return JSON only. Output exactly one JSON object with no Markdown and no code fence. Its only key is "findings".
+Return JSON only. Output exactly one JSON object with no Markdown and no code fence. Its only key is "findings". Do
+not use the report envelope.
 
 With at least one finding:
 

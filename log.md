@@ -2,6 +2,14 @@
 
 ## 2026-11-08
 
+* **Fix (agents)**: Give code-simplifier a handback decision for requests outside its mandated pull request, and name its
+  refusal and handback eval cases by that decision.
+
+* **Fix (agents)**: Return stop, not refused, when the Dify trigger gate receives a malformed or oversized event.
+
+* **Update (agents)**: Make the report envelope decidable: every role returns it unless the prompt opts out by name, name
+  each envelope result's fields, and count records supplied in the input as available sources.
+
 * **Update (standards)**: Add an eval rule to use provider-reported token usage for agent-cost evaluations.
 
 * **Fix (instructions)**: Float first-party shared workflow refs on each repository's current major tag.
