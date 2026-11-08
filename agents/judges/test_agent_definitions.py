@@ -225,7 +225,7 @@ def test_triggered_agents_name_their_reader_and_acted_signal():
         agent["name"]
         for _, agent in _definitions()
         if {trigger.get("kind") for trigger in agent.get("triggers", [])} & {"event", "rotation", "anchor"}
-        and not (agent.get("reader") and agent.get("acted_signal"))
+        and not all(isinstance(agent.get(field), str) and agent[field].strip() for field in ("reader", "acted_signal"))
     ]
     assert offenders == [], f"triggered agents must declare reader and acted_signal: {offenders}"
 
