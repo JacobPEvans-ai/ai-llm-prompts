@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.91.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.90.0...v1.91.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** fold in agent guidance published since late October 2026 ([e3cf287](https://github.com/dryvist/ai-llm-prompts/commit/e3cf287b2ec54846f6869d16e68ff21e3643710e))
+* **standards:** fold in agent guidance published since late October 2026 ([#388](https://github.com/dryvist/ai-llm-prompts/issues/388)) ([4319ae6](https://github.com/dryvist/ai-llm-prompts/commit/4319ae6eec516cf7486accb4befaa80e9daf9808))
+
 ## [1.90.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.89.0...v1.90.0) (2026-11-08)
 
 
