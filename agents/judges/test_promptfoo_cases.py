@@ -276,6 +276,34 @@ def test_zammad_proposal_fixture_supplies_verified_scoped_creation_evidence():
     assert negative["expected_calls"] == []
 
 
+def test_slack_new_post_case_requires_shadow_post_and_readback_proposals():
+    suite = source_suites()["slack-clerk"]
+    case = next(case for case in suite["cases"] if case["id"] == "propose-new-channel-message")
+    assert case["category"] == "normal"
+    assert case["input"]["mode"] == "shadow"
+    assert case["input"]["mandate"]["operation"] == "post_message"
+    assert case["input"]["existing_post"]["available"] is True
+    assert case["input"]["existing_post"]["matches"] == []
+    assert "readback" not in case["input"]
+    assert case["expected_calls"] == [
+        {"tool": "slack", "operation": "post_message"},
+        {"tool": "slack", "operation": "get_message"},
+    ]
+    for required in (
+        "no post or readback was executed",
+        "independently verified",
+        "invent no message ID",
+        "return no receipt",
+    ):
+        assert required in case["expected_behavior"]
+
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "slack-clerk", "case": case["id"]})
+    assert generated["vars"]["expected"]["expected_calls"] == case["expected_calls"]
+    assert any(assertion["type"] == "llm-rubric" and assertion["value"] == case["expected_behavior"]
+               for assertion in generated["assert"])
+
+
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
     names = {"docs-updater", "code-simplifier", "doc-contradiction-finder"}
     sources = {
