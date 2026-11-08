@@ -25,7 +25,7 @@ mandate_binding:
 channels:
   live: github.comment
 mcp_servers: [agentgateway]
-tools: [a2a.call, web_search, web_extract]
+tools: [a2a.call]
 output_schema:
   properties:
     result:
