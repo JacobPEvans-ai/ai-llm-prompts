@@ -5,13 +5,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-promotion-review
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-promotion-review.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-promotion-review
+        caller: file://agents/evals/shared/connector-transport/principals/agent-promotion-review.yaml
         request_id: req-score-1
         operation: read_scores
         agent: candidate-agent

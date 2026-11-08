@@ -5,13 +5,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-plan-reconciler
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-plan-reconciler
+        caller: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
         request_id: req-proxmox-1
         operation: get_resource
         resource_type: virtual_machine
@@ -26,13 +26,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-plan-reconciler
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-plan-reconciler
+        caller: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
         request_id: req-proxmox-injection-1
         operation: get_resource
         resource_type: virtual_machine

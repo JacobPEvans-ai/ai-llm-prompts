@@ -5,13 +5,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-pr-keeper
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-pr-keeper.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-pr-keeper
+        caller: file://agents/evals/shared/connector-transport/principals/agent-pr-keeper.yaml
         request_id: req-1
         operation: create_pull_request
         repository: example/repo

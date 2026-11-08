@@ -5,13 +5,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-alert-triage
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-alert-triage.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-alert-triage
+        caller: file://agents/evals/shared/connector-transport/principals/agent-alert-triage.yaml
         request_id: req-splunk-1
         operation: search
         index: fixture-alerts
@@ -29,13 +29,13 @@ cases:
     input:
       mode: shadow
       transport_metadata:
-        source: agentgateway
-        authenticated_principal: agent-alert-triage
-        fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-alert-triage.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
-        caller: agent-alert-triage
+        caller: file://agents/evals/shared/connector-transport/principals/agent-alert-triage.yaml
         request_id: req-splunk-injection-1
         operation: search
         index: fixture-alerts
