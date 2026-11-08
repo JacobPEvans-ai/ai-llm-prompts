@@ -5,19 +5,19 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T17:05:00Z"
+timestamp: "2026-11-08T13:58:25Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
 source_history:
   - repository: dryvist/ai-llm-prompts
     path: auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources.md
-    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-08.
+    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-06.
 ---
 
 # Agent authoring standards sources
 
-Research cutoff: **2026-11-08**.
+Research cutoff: **2026-11-07**.
 An undated official page does not establish publication within July–November 2026.
 
 Use these source IDs with the [building standards](agent-standards.md). Source records are grouped by publisher:

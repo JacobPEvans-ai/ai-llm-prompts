@@ -5,14 +5,14 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T17:05:00Z"
+timestamp: "2026-11-08T13:58:25Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
 source_history:
   - repository: dryvist/ai-llm-prompts
     path: auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards.md
-    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-08.
+    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-06.
 ---
 
 # Agent and skill building standards
@@ -41,8 +41,6 @@ Resolve source IDs through the dated [Anthropic sources](agent-standards-anthrop
 - Retain per-source bookmarks and a delivery ledger. Preserve bookmarks after failed reads; report unavailable sources. [A2]
 - Reconcile with the destination before retrying delivery. Record ambiguous delivery separately; advance bookmarks and ledger only after confirmed receipt. [A2]
 - When a safeguard stops a subagent, retry it with a narrower prompt or report the stop; never do the blocked work in the parent. [A23]
-- Set a subagent's or forked side job's effort explicitly for its job instead of inheriting the session's level. [A24] [A25]
-- Keep a subagent's foreground turn from blocking on a long shell command; run long commands in the background so the prompt cache does not expire while they run. [A25]
 
 ## b. Skills: structure, descriptions, disclosure, scripts, tests
 

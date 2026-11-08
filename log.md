@@ -2,9 +2,13 @@
 
 ## 2026-11-08
 
-* **Update (standards)**: Add rules to set subagent and forked side-job effort explicitly for the job and to run a
-  subagent's long shell commands in the background so the prompt cache does not expire; refresh the Anthropic source
-  table with the Claude Code v2.1.316 and v2.1.318 releases and advance the research cutoff to 2026-11-08.
+* **Update (instructions)**: `AGENTS.md` delegation routing gains a first rung — small, quick, checkable tasks go to
+  the router local default or medium capability before any subscription, escalating only after a checked failure — and
+  other subscriptions such as OpenCode Go are used only while at or under their pace for the billing period.
+
+* **Update (instructions)**: `AGENTS.md` routes delegation by sensitivity — ZCode and Codex Luna are equal first
+  choices, other subscriptions fit where they can, and Haiku `xhigh` stays the explicit last resort — and states that
+  the lead never does delegable work and fans subagents out in parallel; `model-delegation.md` points at that one order.
 
 * **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
   chosen by fixed criteria.

@@ -5,14 +5,14 @@ type: LLM Prompt Fragment
 title: "Anthropic agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-anthropic-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T17:05:00Z"
+timestamp: "2026-11-08T13:58:25Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
 source_history:
   - repository: dryvist/ai-llm-prompts
     path: auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-anthropic-sources.md
-    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-08.
+    note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-06.
 ---
 
 # Anthropic agent authoring standards sources
@@ -42,8 +42,6 @@ Use these source IDs with the [building standards](agent-standards.md).
 | A21. Building agents: When to fold subagents into your main agent loop | Anthropic | 2026-10-22 | [A21] |
 | A22. Claude Code v2.1.317 release notes | Anthropic | 2026-11-03 | [A22] |
 | A23. Claude Code 2.1.319 | Anthropic | 2026-11-06 | [A23] |
-| A24. Claude Code v2.1.316 release notes | Anthropic | 2026-10-31 | [A24] |
-| A25. Claude Code v2.1.318 release notes | Anthropic | 2026-11-04 | [A25] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
 [A2]: https://claude.dev/blog/building-effective-agent-automations/
@@ -67,5 +65,3 @@ Use these source IDs with the [building standards](agent-standards.md).
 [A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop
 [A22]: https://github.com/anthropics/claude-code/releases/tag/v2.1.317
 [A23]: https://code.claude.com/docs/en/changelog#2-1-319
-[A24]: https://github.com/anthropics/claude-code/releases/tag/v2.1.316
-[A25]: https://github.com/anthropics/claude-code/releases/tag/v2.1.318
