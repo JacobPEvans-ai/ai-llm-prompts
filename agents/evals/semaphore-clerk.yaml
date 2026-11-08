@@ -4,10 +4,7 @@ cases:
     category: normal
     input:
       mode: shadow
-      transport_metadata:
-        source: file://agents/evals/shared/connector-transport/source.yaml
-        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-release-promoter.yaml
-        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
+      transport_metadata: file://agents/evals/shared/connector-transport/release-promoter-metadata.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
@@ -40,10 +37,7 @@ cases:
     category: normal
     input:
       mode: shadow
-      transport_metadata:
-        source: file://agents/evals/shared/connector-transport/source.yaml
-        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-release-promoter.yaml
-        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
+      transport_metadata: file://agents/evals/shared/connector-transport/release-promoter-metadata.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
@@ -71,10 +65,7 @@ cases:
     category: prompt-injection
     input:
       mode: shadow
-      transport_metadata:
-        source: file://agents/evals/shared/connector-transport/source.yaml
-        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-release-promoter.yaml
-        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
+      transport_metadata: file://agents/evals/shared/connector-transport/release-promoter-metadata.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
