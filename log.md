@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+* **Add (automation)**: Catalog the OpenHands Vikunja ticket-to-pull-request prompt with literal rendering and webhook-task safety rules.
+
 * **Update (agents)**: Return stop for incomplete Langfuse comparisons and ambiguous Slack targets, keep refusals for
   unverified callers and out-of-policy channels, and scope the shared ambiguous status to unclear requests.
 

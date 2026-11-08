@@ -54,6 +54,7 @@ in GitHub Actions on a GitHub App token — so it and the one fragment it includ
 * [Daily Malicious Code Scan](daily-malicious-code-scan.md) - Reviews recent code changes for malicious behavior and supply-chain compromise indicators.
 * [Dependabot PR Bundler](dependabot-pr-bundler.md) - Bundles compatible dependency security updates into tested draft pull requests.
 * [GitHub Agentic Workflows Reference Template](gh-aw-reference-template.md) - Historical, non-production example of the retired GH-AW workflow format.
+* [Vikunja task to pull request](openhands-vikunja-ticket-to-pr.md) - OpenHands prompt that turns one Vikunja task into a ready-for-review pull request.
 * [Public Docs Updater](public-docs-updater.md) - Reviews recent public repository activity and prepares one safe documentation update.
 * [Repository Health Audit](repo-health-audit.md) - Audits repository automation, security, and maintenance health and files structured findings.
 * [Bot PR Merge](bot-pr-merge.md) - Retired 2026-08-06. Security triage and allowlisted bot pull-request merge routine prompt.
