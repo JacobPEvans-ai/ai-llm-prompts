@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.82.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.1...v1.82.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **agents:** build refused envelopes with shared helper ([e872047](https://github.com/dryvist/ai-llm-prompts/commit/e8720474bb0ecdfea465ab6afbaa8c3ec278e52d))
+* **agents:** build refused envelopes with the shared helper ([#349](https://github.com/dryvist/ai-llm-prompts/issues/349)) ([e872047](https://github.com/dryvist/ai-llm-prompts/commit/e8720474bb0ecdfea465ab6afbaa8c3ec278e52d))
+
 ## [1.82.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.0...v1.82.1) (2026-11-08)
 
 
