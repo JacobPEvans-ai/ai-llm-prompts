@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T11:15:09Z"
+timestamp: "2026-11-08T12:17:14Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
