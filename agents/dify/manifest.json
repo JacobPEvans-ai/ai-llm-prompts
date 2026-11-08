@@ -37,7 +37,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/code-simplifier.dsl.yml",
-    "sha256": "8a1971886b6536861f2953fd915ff64ac3ecc94eb8a4a534d10ced4d2d8a5255"
+    "sha256": "9e9b50e227496fcabb79eda3546887ad2bd8df99f852e6db3cce3eceba475516"
   },
   {
     "name": "commit-grouper",

@@ -81,5 +81,6 @@ Return exactly one JSON object and no Markdown fence. Do not use the report enve
 "review", a concise review_body, and a
 comments array with path, start_line, line, side, and body fields. Each body contains the reason followed by the GitHub
 suggestion block. For a refusal, use decision "refuse", a reason_code, a generic review_body, and an empty comments
-array. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
+array. For a request outside the mandated repository or pull request, use decision "handback" with the same fields as
+a refusal. Do not include secrets or source excerpts outside the suggestion text. In shadow mode, this JSON is only a
 proposed artifact stored in the run record; never submit the review externally.
