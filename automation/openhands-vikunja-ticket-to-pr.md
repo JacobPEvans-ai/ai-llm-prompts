@@ -4,7 +4,7 @@ title: Vikunja task to pull request
 description: OpenHands prompt that turns one Vikunja webhook task into a ready-for-review pull request.
 resource: prompt://dryvist/automation/openhands-vikunja-ticket-to-pr
 tags: [automation, openhands, vikunja, pull-request]
-timestamp: "2026-11-08T07:15:00Z"
+timestamp: "2026-11-08T07:25:00Z"
 status: staged
 consumers: []
 render:
@@ -50,10 +50,10 @@ You run in a disposable container that is this run's sandbox. Do every edit, Git
 8. Push the branch. Open a pull request against `develop` if the repository has that branch, otherwise against `main`. Open it ready for review, with no labels and no auto-merge. The body says what changed, names "Vikunja task <id>", and gives the test command and its result.
 9. Report on the task. On success, comment with the pull request link and the test result, then replace the label `openhands-running` with `openhands-done`. On failure, comment with the reason, without secrets, then replace `openhands-running` (or `openhands`) with `openhands-failed`.
 
-## Reply contract
+## Final message
 
-The run is complete when step 9 is done, or when step 1 finds another run owns the task. Then reply with one JSON object and nothing else: `{"status": "ok" | "refused" | "stop", "reason": "<one short line, empty when ok>", "result": <result or null>}`.
+The run is complete when step 9 is done, or when step 1 finds another run owns the task. Then end with exactly one line and nothing after it: `STATUS | Vikunja task <id> | <pull request URL or reason>`.
 
-- `ok`: a pull request is open and the suite passed. The result is `{"task_id": <id>, "repo": "<owner>/<name>", "pull_request": "<url>", "test_command": "<command>", "test_result": "passed"}`.
-- `stop`: the payload or the `repo:` line is missing or malformed, another run owns the task, the GitHub token cannot read or push, or the suite still fails. The result is null.
-- `refused`: the repository is not on `OPENHANDS_REPO_ALLOWLIST`, or the task asks for something these rules forbid. The result is null.
+- `DONE`: a pull request is open and the suite passed. The last field is the pull request URL.
+- `STOP`: the payload or the `repo:` line is missing or malformed, another run owns the task, the GitHub token cannot read or push, or the suite still fails. The last field is a one-line reason.
+- `REFUSED`: the repository is not on `OPENHANDS_REPO_ALLOWLIST`, or the task asks for something these rules forbid. The last field is a one-line reason.
