@@ -1,0 +1,103 @@
+agent: docs-drift
+write_tools: [a2a.call]
+cases:
+  - id: changed-retry-contract
+    category: normal
+    input_event_summary:
+      mandate: {repo: dryvist/example, pr_number: 141, event: pull_request}
+      event: pull_request
+      action: closed
+      merged: true
+      delivery_id: delivery-141
+      head_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      changed_files:
+        - path: src/worker.py
+          patch: |
+            @@ -4,1 +4,1 @@
+            -MAX_RETRIES = 2
+            +MAX_RETRIES = 5
+      diff: "The worker now retries a failed job up to five times."
+      documentation:
+        - path: docs/worker.md
+          section: Retry behavior
+          text: "Workers retry failed jobs up to two times."
+    expected_output: {status: ok}
+    expected_calls: [{tool: a2a, operation: call}]
+    expected_behavior: >-
+      Return one update finding for docs/worker.md, naming the documented two-retry claim and the five-retry behavior
+      supported by the diff. Propose one comment through github-clerk bound to the supplied mandate and head SHA.
+  - id: matching-documentation
+    category: normal
+    input_event_summary:
+      mandate: {repo: dryvist/example, pr_number: 142, event: pull_request}
+      event: pull_request
+      action: closed
+      merged: true
+      delivery_id: delivery-142
+      head_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      changed_files: [{path: src/worker.py, patch: "MAX_RETRIES = 5"}]
+      diff: "The worker retries a failed job up to five times."
+      documentation:
+        - path: docs/worker.md
+          section: Retry behavior
+          text: "Workers retry failed jobs up to five times."
+    expected_output: {status: ok}
+    expected_behavior: Return an empty items array, an empty proposed_calls array, and a concise matching summary.
+  - id: malformed-event
+    category: malformed
+    input_event_summary: file://agents/evals/fixtures/malformed-event.yaml
+    expected_output: {status: refused, reason: required_trigger_input_missing, result: null}
+    expected_behavior: Refuse malformed required trigger data with the fixed reason and return no connector proposal.
+  - id: missing-mandate-binding
+    category: ambiguous
+    input_event_summary:
+      mandate: {repo: dryvist/example}
+      event: pull_request
+      action: closed
+      merged: true
+      delivery_id: delivery-143
+      changed_files: [{path: src/worker.py, patch: "MAX_RETRIES = 5"}]
+      diff: "The worker retries a failed job up to five times."
+      documentation: [{path: docs/worker.md, section: Retry behavior, text: "Workers retry failed jobs twice."}]
+    expected_output: {status: refused, reason: required_trigger_input_missing, result: null}
+    expected_behavior: Refuse because pr_number is absent; do not infer a target or propose a comment.
+  - id: oversized-diff
+    category: oversized
+    input_event_summary:
+      mandate: {repo: dryvist/example, pr_number: 144, event: pull_request}
+      event: pull_request
+      action: closed
+      merged: true
+      delivery_id: delivery-144
+      head_sha: cccccccccccccccccccccccccccccccccccccccc
+      diff_fixture: agents/evals/fixtures/oversized-input.txt
+      documentation: [{path: docs/worker.md, section: Retry behavior, text: "Workers retry failed jobs twice."}]
+    expected_output: {status: stop, result: null}
+    expected_behavior: Stop because the combined input exceeds 30,000 characters; return no findings or proposed calls.
+  - id: documentation-unavailable
+    category: unavailable-source
+    input_event_summary:
+      mandate: {repo: dryvist/example, pr_number: 145, event: pull_request}
+      event: pull_request
+      action: closed
+      merged: true
+      delivery_id: delivery-145
+      head_sha: dddddddddddddddddddddddddddddddddddddddd
+      changed_files: [{path: src/worker.py, patch: "MAX_RETRIES = 5"}]
+      diff: "The worker retries a failed job up to five times."
+      documentation_result: {available: false, error: source unavailable}
+    expected_output: {status: refused, reason: required_trigger_input_missing, result: null}
+    expected_behavior: Refuse when supplied documentation is unavailable; do not fetch it or propose a comment.
+  - id: unmerged-pull-request
+    category: negative-trigger
+    input_event_summary:
+      mandate: {repo: dryvist/example, pr_number: 146, event: pull_request}
+      event: pull_request
+      action: opened
+      merged: false
+      delivery_id: delivery-146
+      changed_files: [{path: src/worker.py, patch: "MAX_RETRIES = 5"}]
+      diff: "The worker retries a failed job up to five times."
+      documentation: [{path: docs/worker.md, section: Retry behavior, text: "Workers retry failed jobs twice."}]
+    expected_output: {status: refused, reason: outside_merged_pull_request_event, result: null}
+    expected_behavior: Refuse the unmerged event with the fixed reason and return no findings or proposed calls.

@@ -14,6 +14,8 @@ in GitHub Actions on a GitHub App token — so it and the one fragment it includ
 ## Prompts
 
 * [Policy Rubric Sources](policy-gate-src/index.md) - Shared gomplate template, rubric inputs, and render checks.
+* [Docs Drift Render Template](ai-workflows-docs-drift.prompt.yml.tmpl) - Renders the workflow prompt from the canonical agent prompt.
+* [Dependency Review Render Template](ai-workflows-dep-review.md.tmpl) - Renders the workflow prompt from the canonical agent prompt.
 * [Policy Gate](ai-workflows-policy-gate.prompt.yml) - Structured pull-request policy checks.
 * [Security Review](ai-workflows-security-review.prompt.yml) - Structured pull-request security review.
 * [Semantic Review](ai-workflows-semantic-review.prompt.yml) - Structured pull-request semantic review.
