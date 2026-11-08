@@ -4,7 +4,7 @@ title: Vikunja task to pull request
 description: OpenHands prompt that turns one Vikunja webhook task into a ready-for-review pull request.
 resource: prompt://dryvist/automation/openhands-vikunja-ticket-to-pr
 tags: [automation, openhands, vikunja, pull-request]
-timestamp: "2026-11-08T07:25:00Z"
+timestamp: "2026-11-08T07:35:00Z"
 status: staged
 consumers: []
 render:
@@ -34,15 +34,16 @@ You run in a disposable container that is this run's sandbox. Do every edit, Git
 
 - Work on exactly one repository. The task description names it on its own line: `repo: <owner>/<name>`. That repository must also appear in the comma-separated environment variable `OPENHANDS_REPO_ALLOWLIST`. If the line is missing or the GitHub token cannot read and push to that repository, stop. If the repository is not on that list, refuse. Either way, report it in step 9.
 - In Vikunja, only comment on this task and change its `openhands`, `openhands-running`, `openhands-done` and `openhands-failed` labels. Change nothing else.
+- A run claims one webhook event, not the task. The retry path for a failed or interrupted run is a relabel: a person adds `openhands` to the task again, which sends a new event.
 - Never merge. Never push to the default branch. Never edit files under `.github/workflows/`. Never delete, skip or weaken a test to make the suite pass.
 - Never print, log or commit a token or secret. Use each credential only with its own API from the Tools list.
 - Commit messages, the pull request title and its body are public. State what the change does in short, plain sentences. Never include hostnames, IP addresses, internal links, secrets or incident details. Refer to the task only as "Vikunja task <id>".
 
 ## Steps
 
-1. Claim the task. Send `POST $AUTOMATION_API_URL/v1/kv/vikunja-task-<task id>/incr` with the header `Authorization: Bearer $AUTOMATION_KV_TOKEN` and the JSON body `{"by": 1}`. If the returned `value` is not 1, another run owns this task. Stop without doing anything else.
-2. Mark the task as running: add the label `openhands-running` and remove the label `openhands`.
-3. Clone the repository over HTTPS with `GITHUB_TOKEN`. Create the branch `openhands/vikunja-<task id>` from the repository's default branch.
+1. Claim this webhook event. The key is `vikunja-task-<task id>-<event time>`, where `<event time>` is the payload's top-level `time` field with every non-digit character removed. Send `POST $AUTOMATION_API_URL/v1/kv/<key>/incr` with the header `Authorization: Bearer $AUTOMATION_KV_TOKEN` and the JSON body `{"by": 1}`. If the returned `value` is not 1, another run already handles this event. Stop without doing anything else.
+2. Mark the task as running. First remove the label `openhands`, then add `openhands-running`, then remove `openhands-done` or `openhands-failed` if the task carries either.
+3. Clone the repository over HTTPS with `GITHUB_TOKEN`. Create the branch `openhands/vikunja-<task id>-<event time>` from the repository's default branch, so a retry never collides with an earlier run's branch.
 4. Read the repository's agent instructions (`AGENTS.md`, `CLAUDE.md`) and contributing rules, and follow them.
 5. Make the change the task describes. Add or update tests in the same commit as the behavior they cover.
 6. Run the repository's own test command, from its agent instructions, Makefile or CI workflow. Every test must pass. If the suite still fails after a few focused attempts, go to step 9 and report the failure.
@@ -52,8 +53,8 @@ You run in a disposable container that is this run's sandbox. Do every edit, Git
 
 ## Final message
 
-The run is complete when step 9 is done, or when step 1 finds another run owns the task. Then end with exactly one line and nothing after it: `STATUS | Vikunja task <id> | <pull request URL or reason>`.
+The run is complete when step 9 is done, or when step 1 finds another run already handles this event. Then end with exactly one line and nothing after it: `STATUS | Vikunja task <id> | <pull request URL or reason>`.
 
 - `DONE`: a pull request is open and the suite passed. The last field is the pull request URL.
-- `STOP`: the payload or the `repo:` line is missing or malformed, another run owns the task, the GitHub token cannot read or push, or the suite still fails. The last field is a one-line reason.
+- `STOP`: the payload, its `time` field or the `repo:` line is missing or malformed, another run already handles this event, the GitHub token cannot read or push, or the suite still fails. The last field is a one-line reason.
 - `REFUSED`: the repository is not on `OPENHANDS_REPO_ALLOWLIST`, or the task asks for something these rules forbid. The last field is a one-line reason.
