@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.89.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.88.0...v1.89.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** split the agent standards sources by publisher ([#383](https://github.com/dryvist/ai-llm-prompts/issues/383)) ([e174b6c](https://github.com/dryvist/ai-llm-prompts/commit/e174b6ce4ebaf5f898c902c51a5bca831925066e))
+
 ## [1.88.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.87.0...v1.88.0) (2026-11-08)
 
 
