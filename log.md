@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+* **Fix (agents)**: Return stop, not refused, when the Dify trigger gate receives a malformed or oversized event.
+
 * **Update (agents)**: Make the report envelope decidable: every role returns it unless the prompt opts out by name, name
   each envelope result's fields, and count records supplied in the input as available sources.
 

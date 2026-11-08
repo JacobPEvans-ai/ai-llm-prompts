@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "693ff438289207c61f1b42e57f114722c04685b3fccaab24a0dc39b158711798"
+    "sha256": "b41813969d91dd45efb732cebf688ca2e472ce1c1242a2b25eb3fe24ffffa9be"
   },
   {
     "name": "code-simplifier",
@@ -181,7 +181,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "e972528248b898e2871cd21a6243308a4246b083864385a318eac0c897dc2c13"
+    "sha256": "5394a44ca25d3b4916c856471438a0dcb791c800d4a0b97a2d9201fdeeb09eca"
   },
   {
     "name": "promotion-review",
@@ -213,7 +213,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "9b23d290bb8c936ac02583e263da3def5d55c48ba89b833de86dc782a70dad1d"
+    "sha256": "e3726afd74b2c1598c7920936bf3edf408796aa31a1cb7e3c340044607b1bec7"
   },
   {
     "name": "repo-janitor",
@@ -221,7 +221,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "d0281347ca71b5d04acd8fa25d7501011962015abf0b4676204d9fb67231f58e"
+    "sha256": "2f0ef30bcbb3094e2598bd68e903274696197e23bc4ffcf32102d7b071e03633"
   },
   {
     "name": "semaphore-clerk",

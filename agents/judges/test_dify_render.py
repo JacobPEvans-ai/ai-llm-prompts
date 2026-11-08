@@ -327,12 +327,12 @@ def test_each_event_branch_refuses_bad_input_before_the_model(name):
             output = main(timestamp=123, event=malformed)
             assert output["stop"] is True
             assert json.loads(output["text"]) == {
-                "status": "refused", "reason": "invalid triggering event", "result": None,
+                "status": "stop", "reason": "invalid triggering event", "result": None,
             }
         output = main(timestamp=123, event={"body": {"payload": "x" * 30001}})
         assert output["stop"] is True
         assert json.loads(output["text"]) == {
-            "status": "refused", "reason": "trigger input exceeds 30000 characters", "result": None,
+            "status": "stop", "reason": "trigger input exceeds 30000 characters", "result": None,
         }
     assert saw_webhook
     assert any(edge["source"] == "trigger-input" and edge["target"] == "model" for edge in graph["edges"])
