@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-11-08
+
+* **Update (agents)**: Add shadow proposal cases with readback for the Slack and Semaphore connectors, share connector
+  transport fixtures per principal, and define the OpenBao metadata result schema with a deterministic eval check.
+
 ## 2026-11-07
 
 * **Update (standards)**: Prefer one agent with progressively disclosed skills, and limit optional subagents to measured needs.
