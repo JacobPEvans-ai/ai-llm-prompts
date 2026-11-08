@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-08T11:12:17Z
+timestamp: 2026-11-08T12:26:44Z
 ---
 
 # Agent definition schema v2
@@ -46,14 +46,15 @@ The following requirements apply to the merged definition unless marked source-o
 | `mode` | enum | Required: `shadow` or `live`. |
 | `eval_set`, `prompt` | paths | Derived from `name`; existing eval and OKF prompt files. |
 | `shared_prefix` | path | Required existing OKF prompt file; one shared prefix across the roster. |
-| `tools`, `mcp_servers` | list[string] | A dotted `prefix.name` is an individual tool if `prefix` is in `mcp_servers`, else (except `a2a.*`) a subcommand. |
+| `tools`, `mcp_servers` | list[string] | With `mcp_servers`, `prefix.name` names tool `name` if `prefix` is listed, else (not `a2a.*`) a subcommand. |
 | `litellm_role` | string | Required router role. |
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |
 | `identity`, `api_key_ref` | string | Explicit, non-empty runtime identity and credential reference; never inherited or derived. |
 | `eval_policy` | object | Merged acceptance thresholds and baseline comparison rule. |
 
-Tool and server lists hold unique strings, and empty lists are permitted. Any other dotted tool entry except
-`a2a.*` keeps the subcommand form: tool `prefix` on the first MCP server, called with subcommand `name`.
+Tool and server lists hold unique strings, and empty lists are permitted. Any other dotted entry except `a2a.*` keeps
+the subcommand form: tool `prefix` on the first MCP server, called with subcommand `name`. An entry without a dot
+names a tool of that name on the first MCP server. Without `mcp_servers`, no entry is an MCP tool.
 
 ## Triggers
 

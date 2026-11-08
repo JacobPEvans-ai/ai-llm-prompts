@@ -484,9 +484,9 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
             (prefix, name) for prefix, name in dotted if prefix in servers
         } | {
             (servers[0], prefix)
-            for prefix, name in dotted
+            for prefix, _ in dotted
             if prefix not in servers and prefix != "a2a"
-        }
+        } | {(servers[0], tool) for tool in agent["tools"] if "." not in tool}
         actual_tools = {
             (data.get("provider_name"), data.get("tool_name"))
             for node in nodes
