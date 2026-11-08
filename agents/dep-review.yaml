@@ -1,0 +1,48 @@
+name: dep-review
+extends: github-pr-review
+reader: dependency pull request maintainer
+acted_signal: dependency pull request merged or closed after advisory review
+description: |
+  Use when: a dependency bot opens a pull request with dependency updates.
+  Do not use when: the event is not a verified dependency-bot update or required evidence is invalid.
+  Typical triggers include routine patch updates, major updates with migrations, and grouped dependency updates. See "When to invoke" in the agent prompt.
+identity: agent-dep-review
+api_key_ref: openbao://agent-key/dep-review
+triggers:
+  - kind: event
+    source: github.pull_request
+    skew_minutes: 0
+    event_filter:
+      event: pull_request
+      action: [opened]
+output_schema:
+  properties:
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
+          required: [risk, confidence, advisory, proposed_calls]
+          additionalProperties: false
+          properties:
+            risk: {enum: [low, medium, high]}
+            confidence: {enum: [high, medium, low]}
+            advisory:
+              type: object
+              required: [verdict, breaking_changes, required_migrations, repo_impact, signals]
+              additionalProperties: false
+              properties:
+                verdict: {type: string}
+                breaking_changes: {type: array, items: {type: string}}
+                required_migrations: {type: array, items: {type: string}}
+                repo_impact: {type: array, items: {type: string}}
+                signals: {type: array, items: {type: string}}
+            proposed_calls:
+              type: array
+              items:
+                type: object
+                required: [tool, operation, args]
+                additionalProperties: false
+                properties:
+                  tool: {enum: [a2a]}
+                  operation: {enum: [call]}
+                  args: {type: object}

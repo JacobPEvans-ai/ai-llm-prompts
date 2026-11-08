@@ -65,12 +65,26 @@
 * Reader: operator
 * Acted signal: One proposed task is accepted or done.
 
+### [dep-review](dep-review.yaml)
+
+* Tier: 1
+* Trigger: event: github.pull_request
+* Reader: dependency pull request maintainer
+* Acted signal: dependency pull request merged or closed after advisory review
+
 ### [doc-contradiction-finder](doc-contradiction-finder.yaml)
 
 * Tier: 1
 * Trigger: event: github.pull_request
 * Reader: documentation maintainer
 * Acted signal: contradiction fix merged
+
+### [docs-drift](docs-drift.yaml)
+
+* Tier: 1
+* Trigger: event: github.pull_request
+* Reader: documentation maintainer
+* Acted signal: documentation correction pull request merged
 
 ### [docs-updater](docs-updater.yaml)
 

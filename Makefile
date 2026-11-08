@@ -6,6 +6,8 @@ PYTEST ?= python3 -m pytest
 AUTOMATION_ROOT ?= automation
 POLICY_PROMPT_OUTPUT ?= $(AUTOMATION_ROOT)
 POLICY_RUBRICS := policy-gate security-review semantic-review leak-review
+GITHUB_AGENT_PROMPT_OUTPUT ?= $(AUTOMATION_ROOT)
+GITHUB_AGENT_PROMPT_FILES := ai-workflows-docs-drift.prompt.yml ai-workflows-dep-review.md
 .DEFAULT_GOAL := resolve-agents
 
 .PHONY: render-policy-prompts check-policy-prompts $(addprefix render-policy-prompt-,$(POLICY_RUBRICS))
@@ -23,6 +25,26 @@ check-policy-prompts:
 		mkdir "$$output/committed"; \
 		cp $(foreach name,$(POLICY_RUBRICS),"$(AUTOMATION_ROOT)/ai-workflows-$(name).prompt.yml") "$$output/committed/"; \
 		$(MAKE) --no-print-directory render-policy-prompts POLICY_PROMPT_OUTPUT="$$output/rendered"; \
+		diff -ru "$$output/committed" "$$output/rendered"
+
+.PHONY: render-github-agent-prompts check-github-agent-prompts render-github-agent-prompt-docs-drift render-github-agent-prompt-dep-review
+render-github-agent-prompts: render-github-agent-prompt-docs-drift render-github-agent-prompt-dep-review
+
+render-github-agent-prompt-docs-drift:
+	@mkdir -p "$(GITHUB_AGENT_PROMPT_OUTPUT)"
+	@gomplate -f "$(AUTOMATION_ROOT)/ai-workflows-docs-drift.prompt.yml.tmpl" \
+		-o "$(GITHUB_AGENT_PROMPT_OUTPUT)/ai-workflows-docs-drift.prompt.yml"
+
+render-github-agent-prompt-dep-review:
+	@mkdir -p "$(GITHUB_AGENT_PROMPT_OUTPUT)"
+	@gomplate -f "$(AUTOMATION_ROOT)/ai-workflows-dep-review.md.tmpl" \
+		-o "$(GITHUB_AGENT_PROMPT_OUTPUT)/ai-workflows-dep-review.md"
+
+check-github-agent-prompts:
+	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/github-agent-prompts.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
+		mkdir "$$output/committed"; \
+		cp $(foreach file,$(GITHUB_AGENT_PROMPT_FILES),"$(AUTOMATION_ROOT)/$(file)") "$$output/committed/"; \
+		$(MAKE) --no-print-directory render-github-agent-prompts GITHUB_AGENT_PROMPT_OUTPUT="$$output/rendered"; \
 		diff -ru "$$output/committed" "$$output/rendered"
 
 .PHONY: resolve-agents render-dify check-dify render-sim check-sim render-langflow check-langflow render-index check-index test
@@ -62,7 +84,7 @@ render-dify:
 		done < "$$output/manifest.jsonl" > "$$output/entries.jsonl"; \
 		jq -s 'sort_by(.name)' "$$output/entries.jsonl" > "$(abspath $(DIFY_OUTPUT))/manifest.json"
 
-check-dify: check-policy-prompts
+check-dify: check-policy-prompts check-github-agent-prompts
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/dify.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
 		mkdir "$$output/committed"; \
 		cp "$(AGENTS_ROOT)"/agents/dify/*.dsl.yml "$$output/committed/"; \

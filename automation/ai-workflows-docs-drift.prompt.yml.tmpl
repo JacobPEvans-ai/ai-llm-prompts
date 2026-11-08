@@ -1,0 +1,78 @@
+{{- $source := file.Read "agents/prompts/docs-drift.md" -}}
+{{- $parts := strings.SplitN "---\n" 3 $source -}}
+{{- $body := index $parts 2 | strings.TrimSpace -}}
+{{- $ruleParts := strings.SplitN "## Rules\n" 2 $body -}}
+{{- $ruleSection := strings.SplitN "\n## " 2 (index $ruleParts 1) -}}
+{{- $rules := index $ruleSection 0 | strings.TrimSpace -}}
+{{- $automationRules := $rules | strings.ReplaceAll "diff. Omit" "diff. Return exactly one JSON object matching the supplied schema. Do not emit analysis, prose, or Markdown before or after it. Omit" -}}
+# GitHub prompt file (actions/ai-inference). The model is the workflow's
+# `model` input, a router role alias; it is deliberately not set here.
+messages:
+  - role: system
+    content: |-
+{{ $automationRules | strings.Indent 6 " " }}
+  - role: user
+    content: |-
+      CHANGED FILES:
+      {{"{{changed}}"}}
+
+      DIFF:
+      {{"{{diff}}"}}
+
+      DOCUMENTATION:
+      {{"{{docs}}"}}
+responseFormat: json_schema
+jsonSchema: |-
+  {
+    "name": "docs_drift",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "doc": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "claim": {
+                "type": "string"
+              },
+              "contradicted_by": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "update",
+                  "add",
+                  "none"
+                ]
+              }
+            },
+            "required": [
+              "doc",
+              "section",
+              "claim",
+              "contradicted_by",
+              "action"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "summary"
+      ],
+      "additionalProperties": false
+    }
+  }

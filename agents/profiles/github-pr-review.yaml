@@ -1,0 +1,12 @@
+tier: 1
+privacy_class: private
+connectors: [github-clerk]
+channels:
+  shadow: run_record_only
+  live: github.comment
+mandate_binding:
+  required_fields: [repo, pr_number]
+  event: pull_request
+  write_tools: [a2a.call]
+tools: [a2a.call]
+mcp_servers: [agentgateway]
