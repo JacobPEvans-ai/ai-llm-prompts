@@ -181,8 +181,15 @@ function notTruncated(output, context) {
   };
 }
 
-// An expected call with no `args` checks only its tool and operation. One with `args` compares the whole call.
+// An expected call without args checks only tool and operation; args_include checks a subset; args compares the whole call.
 function callMatches(actual, expected) {
+  if ("args_include" in expected) {
+    if (!same(actual.tool, expected.tool) || !same(actual.operation, expected.operation)
+      || !isObject(actual.args) || !isObject(expected.args_include)) return false;
+    return Object.entries(expected.args_include).every(([key, value]) =>
+      Object.hasOwn(actual.args, key) && same(actual.args[key], value)
+    );
+  }
   if ("args" in expected) return same(actual, expected);
   return same(actual.tool, expected.tool) && same(actual.operation, expected.operation);
 }

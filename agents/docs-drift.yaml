@@ -1,0 +1,42 @@
+name: docs-drift
+extends: github-pr-review
+reader: documentation maintainer
+acted_signal: documentation correction pull request merged
+description: |
+  Use when: a merged pull request may contradict or leave documented behavior unstated.
+  Do not use when: a pull request is open, documentation is being authored, or source evidence is unavailable.
+  Typical triggers include a merged configuration change or a merged behavior change. See "When to invoke" in the agent prompt.
+input: Verified merged pull request mandate, bounded diff, changed files, and related documentation excerpts.
+identity: agent-docs-drift
+api_key_ref: openbao://agent-key/docs-drift
+triggers:
+  - kind: event
+    source: github.pull_request
+    skew_minutes: 0
+    event_filter:
+      event: pull_request
+      action: [closed]
+      merged: true
+output_schema:
+  properties:
+    result:
+      anyOf:
+        - {type: "null"}
+        - type: object
+          required: [items, summary, proposed_calls]
+          additionalProperties: false
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                required: [doc, section, claim, contradicted_by, action]
+                additionalProperties: false
+                properties:
+                  doc: {type: string}
+                  section: {type: string}
+                  claim: {type: string}
+                  contradicted_by: {type: string}
+                  action: {enum: [update, add, none]}
+            summary: {type: string}
+            proposed_calls: {}

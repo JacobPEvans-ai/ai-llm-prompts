@@ -1,0 +1,31 @@
+tier: 1
+privacy_class: private
+connectors: [github-clerk]
+channels:
+  shadow: run_record_only
+  live: github.comment
+mandate_binding:
+  required_fields: [repo, pr_number]
+  event: pull_request
+  write_tools: [a2a.call]
+tools: [a2a.call]
+mcp_servers: [agentgateway]
+output_schema:
+  type: object
+  required: [status, reason, result]
+  additionalProperties: false
+  properties:
+    status: {enum: [ok, refused, stop]}
+    reason: {type: string}
+    result:
+      properties:
+        proposed_calls:
+          type: array
+          items:
+            type: object
+            required: [tool, operation, args]
+            additionalProperties: false
+            properties:
+              tool: {enum: [a2a]}
+              operation: {enum: [call]}
+              args: {type: object}

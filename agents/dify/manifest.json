@@ -64,12 +64,28 @@
     "sha256": "b6bba1d5a444e8cbe611319f6623378f09ab6f842d7cf9447b0e1b3abfe7c02c"
   },
   {
+    "name": "dep-review",
+    "mode": "shadow",
+    "tier": 1,
+    "kind": "agent",
+    "path": "agents/dify/dep-review.dsl.yml",
+    "sha256": "e380e2dd563bd439d4e5c056fed14c48e31dc149c4fa3020bfc2758f4a598d88"
+  },
+  {
     "name": "doc-contradiction-finder",
     "mode": "shadow",
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
     "sha256": "19671c2626d72589c778429e934d087772659c4a12dd085a659843553b48207e"
+  },
+  {
+    "name": "docs-drift",
+    "mode": "shadow",
+    "tier": 1,
+    "kind": "agent",
+    "path": "agents/dify/docs-drift.dsl.yml",
+    "sha256": "60e3ae1856929bfd10eca58c3b4849c316f86bd748dbb9e2814fec7651815ab0"
   },
   {
     "name": "docs-updater",

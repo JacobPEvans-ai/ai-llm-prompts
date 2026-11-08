@@ -709,6 +709,67 @@ def test_expected_call_with_args_passes_when_the_whole_call_matches():
     assert _run_js("expectedCalls", same_call, expected) is True
 
 
+def test_expected_call_args_include_allows_extra_actual_args():
+    expected = {"expected_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args_include": {"agent": "github-clerk", "head_sha": "a" * 40},
+    }]}
+    output = {"proposed_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args": {
+            "agent": "github-clerk",
+            "head_sha": "a" * 40,
+            "repo": "dryvist/example",
+            "comment": "Report text",
+        },
+    }]}
+
+    assert _run_js("expectedCalls", output, expected) is True
+
+
+def test_expected_call_args_include_rejects_a_wrong_head_sha():
+    expected = {"expected_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args_include": {"head_sha": "a" * 40},
+    }]}
+    output = {"proposed_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args": {"head_sha": "b" * 40},
+    }]}
+
+    assert _run_js("expectedCalls", output, expected) is False
+
+
+def test_expected_call_args_include_rejects_a_missing_listed_key():
+    expected = {"expected_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args_include": {"delivery_id": "delivery-141"},
+    }]}
+    output = {"proposed_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args": {"agent": "github-clerk"},
+    }]}
+
+    assert _run_js("expectedCalls", output, expected) is False
+
+
+def test_expected_call_args_include_rejects_absent_args():
+    expected = {"expected_calls": [{
+        "tool": "a2a",
+        "operation": "call",
+        "args_include": {"agent": "github-clerk"},
+    }]}
+    output = {"proposed_calls": [{"tool": "a2a", "operation": "call"}]}
+
+    assert _run_js("expectedCalls", output, expected) is False
+
+
 @pytest.fixture
 def nested_report_call():
     return {
