@@ -2,6 +2,7 @@
 
 ## 2026-11-08
 
+* **Fix (instructions)**: Float first-party shared workflow refs on each repository's current major tag.
 * **Update (standards)**: Add hook-failure, verifier-isolation, memory-comparison and MCP auth-forwarding rules to the agent
   standards, and move their source attribution into the source tables.
 * **Update (agents)**: Add shadow proposal cases with readback for the Slack and Semaphore connectors, share connector
