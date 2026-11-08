@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (agents)**: Stop on incomplete or unavailable required input and reserve refusals for out-of-scope events; add
+  credential and out-of-sandbox edit evaluation cases.
+
 * **Fix (agents)**: Give code-simplifier a handback decision for requests outside its mandated pull request, and name its
   refusal and handback eval cases by that decision.
 
@@ -29,6 +32,18 @@
 
 ## 2026-11-07
 
+* **Update (agents)**: Limit GitHub review agents to forwarded event evidence and fixed refusals for missing inputs.
+
+* **Update (automation)**: Render dependency review inspection and risk criteria from the shared agent prompt.
+
+* **Update (automation)**: Compose the documentation-drift workflow prompt from canonical agent rules while preserving consumer inputs and outputs.
+
+* **Update (automation)**: Render the dependency review prompt from its canonical agent prompt and retain its envsubst inputs.
+
+* **Update (automation)**: Render the docs-drift workflow prompt from its canonical agent prompt and check it for drift.
+
+* **Add (agents)**: Add dep-review as a shadow GitHub agent with a canonical prompt and regression cases.
+* **Add (agents)**: Add docs-drift as a shadow GitHub agent with a canonical prompt and regression cases.
 * **Update (standards)**: Prefer one agent with progressively disclosed skills, and limit optional subagents to measured needs.
 * **Update (agents)**: Add read-only Langfuse score access and deterministic promotion review inputs and cases.
 
