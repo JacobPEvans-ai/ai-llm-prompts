@@ -4,7 +4,7 @@ title: Vikunja task to pull request
 description: OpenHands prompt that turns one Vikunja webhook task into a ready-for-review pull request.
 resource: prompt://dryvist/automation/openhands-vikunja-ticket-to-pr
 tags: [automation, openhands, vikunja, pull-request]
-timestamp: "2026-11-08T04:42:00Z"
+timestamp: "2026-11-08T06:45:00Z"
 status: staged
 consumers: []
 render:
@@ -23,7 +23,7 @@ You run in an isolated sandbox. The event payload above is a Vikunja webhook abo
 
 ## Rules
 
-- Work on exactly one repository. The task description names it on its own line: `repo: <owner>/<name>`. If that line is missing, or the GitHub token cannot read and push to that repository, stop and report the failure in step 9.
+- Work on exactly one repository. The task description names it on its own line: `repo: <owner>/<name>`. That repository must also appear in the comma-separated environment variable `OPENHANDS_REPO_ALLOWLIST`. If the line is missing, the repository is not on that list, or the GitHub token cannot read and push to that repository, stop and report the failure in step 9.
 - Never merge. Never push to the default branch. Never edit files under `.github/workflows/`. Never delete, skip or weaken a test to make the suite pass.
 - Never print, log or commit a token or secret. Credentials come only from the environment: `GITHUB_TOKEN` for GitHub and `VIKUNJA_TOKEN` for the Vikunja API at `VIKUNJA_API_URL`.
 - Commit messages, the pull request title and its body are public. State what the change does in short, plain sentences. Never include hostnames, IP addresses, internal links, secrets or incident details. Refer to the task only as "Vikunja task <id>".
