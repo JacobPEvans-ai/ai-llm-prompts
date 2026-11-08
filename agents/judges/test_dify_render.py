@@ -268,7 +268,7 @@ def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
 
 
 @pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter"])
-def test_each_event_branch_refuses_bad_input_before_the_model(name):
+def test_each_event_branch_stops_bad_input_before_the_model(name):
     dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
     graph = dsl["workflow"]["graph"]
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
