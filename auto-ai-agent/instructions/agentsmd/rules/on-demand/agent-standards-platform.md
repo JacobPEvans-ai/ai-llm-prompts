@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T23:08:31Z"
+timestamp: "2026-11-08T09:27:32Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -42,6 +42,7 @@ Local policy is identified separately from upstream requirements.
 - Expose stable model-group names with centrally configured deployments. Bound timeouts, retries, and fallback chains; test workload behavior. [L2]
 - Start with `simple-shuffle` unless measurements justify another strategy; share routing state and rate-limit counters through Redis across instances. [L1]
 - Assign scoped application keys to teams; define model access, budgets, reset periods, and rate limits. [L4] [L5]
+- Set a server-level `rpm` on each MCP Gateway server so all its callers share one request cap. [L8]
 - Enable tag filtering explicitly. Test plain-tag OR, required-tag AND, exclusions, untagged requests, and unknown tags. [L3]
 - Separate attribution tags from routing intent; migrate callers deliberately when adopting routing prefixes. [L3]
 - Enforce hard routing boundaries independently of fail-open tag exclusions; test fallbacks against the same constraints. [L3]
@@ -66,3 +67,4 @@ Local policy is identified separately from upstream requirements.
 [L5]: agent-standards-platform-sources.md
 [L3]: agent-standards-platform-sources.md
 [L6]: agent-standards-platform-sources.md
+[L8]: agent-standards-platform-sources.md

@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T06:02:51Z"
+timestamp: "2026-11-08T09:27:32Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -49,6 +49,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Keep the body below the recommended 500 lines. Link references directly from `SKILL.md`; add navigation to long references. [A12]
 - Keep prerequisites, authority limits, and stop conditions available when loaded alone; disclose optional detail progressively (local policy). [A12]
 - Prefer instructions and existing native tools. Include executable resources only for warranted deterministic work; document dependencies and errors. [O3] [A12]
+- Run skill scripts from validated paths with an argument list, never from a shell command string. [G3]
 - Set invocation policy per harness: Claude `disable-model-invocation` and Codex `agents/openai.yaml`. Verify both behaviors. [A6] [O3]
 - Test triggering and execution separately with positive and negative prompts. Compare outputs against no skill or the previous version. [O3] [A16]
 - Reject revisions with no measured gain over the previous version; consider skills with no measured gain over no skill for retirement (local acceptance policy). [G1] [A3]
@@ -62,6 +63,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
   and dates with the results, and test that claims cite and match the retrieved material. [A18] [C2]
 - Match tool granularity to client workflows; preserve composability and evaluate convenience tools on realistic tasks. [A18]
 - Annotate read-only, destructive, idempotent, and open-world behavior accurately. Enforce access through permissions and scoped credentials. [A18] [A2]
+- Mark commands that must never run unattended as managed checkpoints that need fresh human approval on every run; never reuse an earlier approval. [O10]
 - For action-gating hooks, make a failed callback block the protected action where the harness supports it, and test that failure path. [A22]
 - When upgrading the model router to a release that changes MCP credential forwarding, test auth forwarding and team-key tool visibility explicitly before rollout. [L7]
 - Test with an MCP client or Inspector, then evaluate realistic agent tasks through the interface. [A18]
@@ -83,7 +85,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Compare baselines and report uncertainty. Hold test cases outside optimizer context; reject gains within noise. [A3]
 - Record dataset and prompt versions, model and evaluator configurations, and trace-linked results. Gate promotion on regression checks. [F1] [F2]
 - For agent-cost evaluations, use provider-reported token usage or submitted costs; report missing usage separately from a missing model price, and never fill either gap with an estimate. [F6]
-- Trace available skills, exact loaded versions, and loaded resource paths; link observations to the canonical skill revision without creating another source of truth. [F5]
+- Trace available skills, exact loaded versions, and loaded resource paths, and attribute each span to its turn, tool call, and skill; link observations to the canonical skill revision without creating another source of truth. [F5] [O9]
 - Continue sampled production evaluation; feed reviewed failures into datasets while protecting held-out answers. [F2] [F3] [A3]
 
 ## e. Coding-agent briefs
