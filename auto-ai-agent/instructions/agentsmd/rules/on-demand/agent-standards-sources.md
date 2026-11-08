@@ -57,7 +57,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 | G2. Four evaluation engineering lessons learned from building agent plugins | Google Cloud | 2026-10-16 | [G2] |
 | C1. Trajectories now in LangSmith: A readable view of every agent session | LangChain | 2026-09-24 | [C1] |
 | C2. Context Engineering Starts with Retrieval | LangChain | 2026-10-23 | [C2] |
-| C3. How to build evidence-grounded agent memory with OpenWiki and Graphs | LangChain | 2026-10-28 | [C3] |
+| C3. Building Evidence-Grounded Agent Memory with OpenWiki and Graphs | LangChain | 2026-10-28 | [C3] |
 | F5. Skill Management in Langfuse | Langfuse | 2026-11-03 | [F5] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
