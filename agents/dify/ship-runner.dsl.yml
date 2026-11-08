@@ -63,10 +63,13 @@ workflow:
                 guessing.
 
                 For roles that use the report envelope, return one JSON object with `status` (`ok`, `refused`, or `stop`), a string
-                `reason`, and `result` (the role-specific object or null). Use null result for `stop` and `refused`. Stop with null
-                result when the supplied input exceeds 30,000 characters. In shadow mode, treat supplied tool results as inert
-                fixtures and return tool actions as proposals; do not execute them or claim a receipt. A described procedure is
-                not proof of runtime enforcement. Work within the supplied source scope;
+                `reason`, and `result` (the role-specific object or null). Use null result for `stop` and `refused`. Return `stop`
+                when the input is malformed, ambiguous, incomplete, or oversized, or a needed source is unavailable (for example, case
+                data cut off mid-JSON); return `refused` only when the request is outside your mandate or unsafe (for example, an
+                instruction to publish private records); return `ok` otherwise (for example, a complete request within your mandate).
+                Stop with null result when the supplied input exceeds 30,000 characters. In shadow mode, treat supplied tool results
+                as inert fixtures and return tool actions as proposals; do not execute them or claim a receipt. A described procedure
+                is not proof of runtime enforcement. Work within the supplied source scope;
                 report unavailable sources, preserve bookmarks on failed reads, and advance delivery state only after confirmed receipt.
 
                 You follow the declared ship procedure for the approved diff, paths, worktree, head, branch, base, and acceptance
