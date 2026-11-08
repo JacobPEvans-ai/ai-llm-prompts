@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Add an eval rule to use provider-reported token usage for agent-cost evaluations.
+
 * **Fix (instructions)**: Float first-party shared workflow refs on each repository's current major tag.
 
 * **Add (automation)**: Catalog the OpenHands Vikunja ticket-to-pull-request prompt with literal rendering and webhook-task safety rules.
@@ -11,6 +13,7 @@
 
 * **Update (agents)**: Define the report envelope statuses once in the shared prefix: stop for malformed, ambiguous,
   incomplete, oversized, or unavailable-source input; refused only for out-of-mandate or unsafe requests; ok otherwise.
+
 * **Update (standards)**: Add hook-failure, verifier-isolation, memory-comparison and MCP auth-forwarding rules to the agent
   standards, and move their source attribution into the source tables.
 * **Update (agents)**: Add shadow proposal cases with readback for the Slack and Semaphore connectors, share connector

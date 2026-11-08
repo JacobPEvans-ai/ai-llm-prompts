@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T05:00:01Z"
+timestamp: "2026-11-08T06:02:51Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -82,6 +82,7 @@ Resolve source IDs through the dated [authoring source table](agent-standards-so
 - Replay shared fixtures through existing direct-tool, controlled-loop, and installed-harness runners; locate guidance/tool-availability differences before editing instructions. [O8]
 - Compare baselines and report uncertainty. Hold test cases outside optimizer context; reject gains within noise. [A3]
 - Record dataset and prompt versions, model and evaluator configurations, and trace-linked results. Gate promotion on regression checks. [F1] [F2]
+- For agent-cost evaluations, use provider-reported token usage or submitted costs; report missing usage separately from a missing model price, and never fill either gap with an estimate. [F6]
 - Trace available skills, exact loaded versions, and loaded resource paths; link observations to the canonical skill revision without creating another source of truth. [F5]
 - Continue sampled production evaluation; feed reviewed failures into datasets while protecting held-out answers. [F2] [F3] [A3]
 
