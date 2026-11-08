@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/AGENTS"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-08T18:45:00Z"
+timestamp: "2026-11-08T19:01:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -68,12 +68,13 @@ skills, agents, hooks).
 
 **Delegation routing (binding, the only routing statement).** The lead never does delegable work itself: it plans,
 judges results, and merges, fanning every independent task out to subagents in parallel. Route each task to the first
-rung that qualifies; among qualifiers, send it to the subscription with the most quota headroom before its reset
-(ZCode 5-hour and weekly, Codex weekly, OpenCode Go monthly). Check `codex-quota` first.
+rung that qualifies; among qualifiers, look up each quota at decision time and send it to the subscription with the
+most headroom against its pace for the period (ZCode 5-hour and weekly, Codex weekly, OpenCode Go monthly).
 
 1. **Router local default or medium capability**, the first step for small, quick, checkable tasks — summarize,
    extract, classify, reformat, a first pass over a file or log — before any subscription; escalate only after a
-   checked failure.
+   checked failure. A failed local call is never just abandoned: a subagent finds what went wrong and what to
+   improve, and at least one medium leg accepts the local model's native maximum context.
 2. **ZCode or Codex Luna**, equal first choices split by sensitivity:
    - **ZCode** (latest GLM Flash, `zcode-job` sandbox): obvious, definitely non-sensitive work in public repos.
      Coding and coding-adjacent work only — code, tests, GitHub automation and workflows, code reviews; open-internet
@@ -81,8 +82,7 @@ rung that qualifies; among qualifiers, send it to the subscription with the most
      never auto-merge it.
    - **Codex Luna**: anything even remotely sensitive, or any private repo. `xhigh` default, `max` as needed, while
      `codex-quota` exits 0. Never Terra.
-3. **Other subscriptions where they fit**, for example OpenCode Go (`zcode-job --tool opencode`); public work only,
-   used only while that subscription is at or under its pace for the billing period.
+3. **Other subscriptions where they fit**, for example OpenCode Go (`zcode-job --tool opencode`); public work only.
 4. **Haiku `xhigh`**, the explicit last resort: only after rungs 1 to 3 are exhausted or do not qualify, and still
    before the lead does the work itself.
 
