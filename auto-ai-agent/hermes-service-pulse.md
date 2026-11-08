@@ -4,7 +4,7 @@ title: Hermes service pulse
 description: Hourly service pulse that keeps a compact memory baseline and reads its open-incident baseline from operator configuration.
 resource: prompt://dryvist/auto-ai-agent/hermes-service-pulse
 tags: [hermes, cron, autonomous-agent]
-timestamp: 2026-10-30T18:18:59Z
+timestamp: 2026-11-08T16:05:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -26,6 +26,8 @@ OBSERVE, with a strict budget of at most 8 terminal calls, curl only, each `curl
 
 COMPARE: judge every observation against its applicable baseline. For open incidents, use the configured baseline, not a remembered value. A value that differs from baseline is a finding; a value on the flaky list that failed once is "flapping", not "down", until it fails on two consecutive pulses. Name what changed since the last pulse and how old that pulse is. Mark unavailable observations unknown.
 
-REPORT exactly once: headline "Service pulse <UTC time>: N/M health endpoints healthy, router readiness <status> (db <status>), Z open incidents (H high)". Count only configured health endpoints in N/M; report reachability-only results and unknown values separately. Follow with one line per observation and its differing baseline, one line "Since last pulse (<age>): <what changed, or 'no change'>", and one line "Learned: <the single most useful thing this run taught you, or 'nothing new'>". Under 15 lines, plain text.
+STATUS COLOUR: start the headline with exactly one of these three emoji, so the reader knows the state before reading a word. 🟢 every configured health endpoint returned HTTP 200, router readiness is healthy with db connected, open incidents are at or below the configured baseline, and nothing else differs from baseline. 🟡 anything unverified, unknown or flapping, a value that differs from baseline without an outage, or open incidents above the configured baseline. 🔴 any configured health endpoint unhealthy (HTTP 5xx or no answer) on two consecutive pulses, or router readiness not healthy. Pick the worst colour that applies; never omit it and never use another colour.
+
+REPORT exactly once: headline "<colour> Service pulse <UTC time>: N/M health endpoints healthy, router readiness <status> (db <status>), Z open incidents (H high)". Count only configured health endpoints in N/M; report reachability-only results and unknown values separately. Follow with one line per observation and its differing baseline, one line "Since last pulse (<age>): <what changed, or 'no change'>", and one line "Learned: <the single most useful thing this run taught you, or 'nothing new'>". Under 15 lines, plain text.
 
 RETAIN (last, always, even when nothing changed): save the current UTC time, values, service baselines, configured incident baseline separately from the observed total, short flaky list and one useful lesson. Move a service baseline only after three consecutive pulses; add a flaky endpoint after its first self-recovery and drop it after 24 clean hours. If the selected external provider supplies retain tools, use those available tools. With built-in memory, use the available `memory` tool to add or patch one compact service-pulse entry containing only the latest snapshot, not the entire history. If no memory tool is available or the update fails, report the run as incomplete; never invent a tool.
