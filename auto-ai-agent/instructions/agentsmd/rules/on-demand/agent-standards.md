@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T11:15:09Z"
+timestamp: "2026-11-08T13:58:25Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -23,7 +23,8 @@ Treat the rules as authoring requirements; verify implementation and delivery se
 
 ## Sources
 
-Resolve source IDs through the dated [authoring source table](agent-standards-sources.md) and
+Resolve source IDs through the dated [Anthropic sources](agent-standards-anthropic-sources.md),
+[OpenAI sources](agent-standards-openai-sources.md), [ecosystem sources](agent-standards-ecosystem-sources.md), and
 [platform source table](agent-standards-platform-sources.md). Local policy is identified separately from upstream requirements.
 
 ## a. Agent definitions and prompts
