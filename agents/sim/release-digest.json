@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"release-digest","generated_from":["agents/release-digest.yaml","agents/prompts/shared/homelab.md","agents/prompts/release-digest.md"],"litellm_role":"medium","mode":"shadow","name":"release-digest","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"release-digest","agent_tools":["litellm.chat_completions","a2a.call"],"generated_from":["agents/release-digest.yaml","agents/prompts/shared/homelab.md","agents/prompts/release-digest.md"],"litellm_role":"medium","mode":"shadow","name":"release-digest","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"1d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

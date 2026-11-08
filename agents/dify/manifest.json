@@ -152,6 +152,14 @@
     "sha256": "880d699ffd23ae67d27c5c337dd6ae0c677d6e8281b202ce68fc4d7770a8c110"
   },
   {
+    "name": "openbao-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/openbao-clerk.dsl.yml",
+    "sha256": "9dccaf76b45688e3fbc0e031ec4a0ccbfd1726108b9ddc3368cad93531628826"
+  },
+  {
     "name": "plain-rewriter",
     "mode": "shadow",
     "tier": 0,
@@ -184,6 +192,14 @@
     "sha256": "6e66462692e17fad1012fb09d7a307098e8507a2ba3a5db57ed938d5ffcd8b97"
   },
   {
+    "name": "proxmox-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/proxmox-clerk.dsl.yml",
+    "sha256": "784b259639748a0e49498d2e411ec052f345884dc78b981b6d5230495e3cf21e"
+  },
+  {
     "name": "release-digest",
     "mode": "shadow",
     "tier": 2,
@@ -208,6 +224,14 @@
     "sha256": "58fb71aef8b0fb8490f05c39b3a7948a1ee7fbb11f896fafa3037becbcf1c161"
   },
   {
+    "name": "semaphore-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/semaphore-clerk.dsl.yml",
+    "sha256": "27e7c0f618830bbdf16555aa85a96254117ba4e5ff6f621aefdd85bd7bede4ef"
+  },
+  {
     "name": "session-closer",
     "mode": "shadow",
     "tier": 0,
@@ -222,6 +246,22 @@
     "kind": "agent",
     "path": "agents/dify/ship-runner.dsl.yml",
     "sha256": "b2de9152740f42d2f51767a62afcbaf5e51ef53f578a2cc8066ae08fa9441188"
+  },
+  {
+    "name": "slack-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/slack-clerk.dsl.yml",
+    "sha256": "b5b41fde18c9a4b9218aa5a7e83616913f98a51ada9620b77f97e702237a367e"
+  },
+  {
+    "name": "splunk-clerk",
+    "mode": "shadow",
+    "tier": 0,
+    "kind": "agent",
+    "path": "agents/dify/splunk-clerk.dsl.yml",
+    "sha256": "e7ee7508a1171dc7095c5db4ab7ea23f761c32fbde9f429b99a3e1de63dfbf4f"
   },
   {
     "name": "splunk-deepdive",

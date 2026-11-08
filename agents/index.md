@@ -140,6 +140,13 @@
 * Reader: model-benchmarker
 * Acted signal: catalog PR via github-clerk
 
+### [openbao-clerk](openbao-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized secret administrator
+* Acted signal: verified metadata supports an access or rotation review decision
+
 ### [plain-rewriter](plain-rewriter.yaml)
 
 * Tier: 0
@@ -171,6 +178,13 @@
 * Reader: supervising lead
 * Acted signal: The lead reviews a mode-change pull request or resolves an evidence blocker.
 
+### [proxmox-clerk](proxmox-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized virtualization operator
+* Acted signal: verified resource state supports the caller's maintenance or capacity decision
+
 ### [release-digest](release-digest.yaml)
 
 * Tier: 2
@@ -193,6 +207,13 @@
 * Reader: agent-sandbox jobs
 * Acted signal: fix PR merged
 
+### [semaphore-clerk](semaphore-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized workflow operator
+* Acted signal: verified run receipt or actionable blocked result for an approved template
+
 ### [session-closer](session-closer.yaml)
 
 * Tier: 0
@@ -206,6 +227,20 @@
 * Trigger: call: implementation-lead
 * Reader: implementation lead
 * Acted signal: The lead receives a confirmed pull request handoff.
+
+### [slack-clerk](slack-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized Slack channel operator
+* Acted signal: verified receipt for a message in an approved channel or an actionable blocked result
+
+### [splunk-clerk](splunk-clerk.yaml)
+
+* Tier: 0
+* Trigger: call: caller
+* Reader: authorized monitoring analyst
+* Acted signal: verified search results support an authorized alert or investigation decision
 
 ### [splunk-deepdive](splunk-deepdive.yaml)
 

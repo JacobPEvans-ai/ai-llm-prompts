@@ -1,0 +1,27 @@
+name: slack-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests a scoped message post in a named, approved Slack channel.
+  Do not use when: the channel is outside policy or the request asks for another Slack operation.
+  Typical triggers include an approved alert notice and a named-channel status message. See "When to invoke" in the agent prompt.
+owns: slack
+reader: authorized Slack channel operator
+acted_signal: verified receipt for a message in an approved channel or an actionable blocked result
+privacy_class: private
+identity: agent-slack-clerk
+api_key_ref: openbao://agent-key/slack-clerk
+mcp_servers: [slack]
+tools:
+  - slack.search_messages
+  - slack.get_message
+  - slack.post_message
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, channel, payload]
+  write_tools: [slack.post_message]
+guards:
+  credential_owner: slack-clerk
+  allowed_channels_ref: policy://slack-clerk/allowed-channels
+  denied_channels_ref: policy://slack-clerk/denied-channels
+  unknown_or_unscoped_channel: refuse
+  destinations: {named_channels_only: true, direct_messages: refuse}

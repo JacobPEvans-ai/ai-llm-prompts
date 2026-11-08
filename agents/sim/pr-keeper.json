@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"pr-keeper","generated_from":["agents/pr-keeper.yaml","agents/prompts/shared/homelab.md","agents/prompts/pr-keeper.md"],"litellm_role":"medium","mode":"shadow","name":"pr-keeper","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"github.pull_request"},{"kind":"event","source":"github.check_run"},{"kind":"event","source":"github.pull_request_review"},{"kind":"event","source":"github.pull_request_review_comment"},{"kind":"event","source":"github.issue_comment"},{"every":"15m","kind":"rotation"}]},
+    "metadata": {"agent":"pr-keeper","agent_tools":["a2a.call","agent-sandbox.jobs"],"generated_from":["agents/pr-keeper.yaml","agents/prompts/shared/homelab.md","agents/prompts/pr-keeper.md"],"litellm_role":"medium","mode":"shadow","name":"pr-keeper","omitted_tools":["a2a.call","agent-sandbox.jobs"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"github.pull_request"},{"kind":"event","source":"github.check_run"},{"kind":"event","source":"github.pull_request_review"},{"kind":"event","source":"github.pull_request_review_comment"},{"kind":"event","source":"github.issue_comment"},{"every":"15m","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

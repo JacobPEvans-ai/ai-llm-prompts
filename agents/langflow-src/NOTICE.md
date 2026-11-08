@@ -18,10 +18,10 @@ The flow consumes replay text through TextInput and terminates at the model resp
 integration output component. Source trigger declarations and omitted integration tools are retained in `data.metadata`;
 triggers are replay descriptors and do not activate subscriptions or schedules.
 
-The shared eligibility projection in `../sim-src/shared.tmpl` skips definitions with unbound read-only tools.
-It also skips every definition requiring mapped MCP tools: `Langflow MCP binding is not read-only`.
-The native MCP Toolset exposes tool arguments, including mutable task `subcommand` values. A read-only shadow
-identity with gateway grants is separate follow-up work. Each check prints skipped agents, tools, and source URLs.
+The shared projection in `../sim-src/shared.tmpl` preserves each definition's tool names in shadow metadata.
+Langflow exports bind only the LiteLLM model component; they contain no MCP or connector tool components. The native
+MCP Toolset exposes tool arguments, including mutable task `subcommand` values, so declared tools remain descriptive
+metadata and do not create runtime access.
 
 Trace delivery uses the runtime and router's configured Langfuse/Phoenix tracing. Import, execution, routing policy,
 and trace receipt require runtime acceptance separately from offline render checks.

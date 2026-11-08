@@ -1,0 +1,27 @@
+name: proxmox-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests scoped Proxmox resource inventory or state.
+  Do not use when: the request requires a resource change or an unscoped lookup.
+  Typical triggers include a resource inventory check and a maintenance-state review. See "When to invoke" in the agent prompt.
+owns: proxmox
+reader: authorized virtualization operator
+acted_signal: verified resource state supports the caller's maintenance or capacity decision
+privacy_class: private
+identity: agent-proxmox-clerk
+api_key_ref: openbao://agent-key/proxmox-clerk
+mcp_servers: [proxmox]
+tools:
+  - proxmox.list_resources
+  - proxmox.get_resource
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, resource_type, resource_id]
+  read_tools: [proxmox.list_resources, proxmox.get_resource]
+  write_tools: []
+guards:
+  credential_owner: proxmox-clerk
+  allowed_resource_scope_ref: policy://proxmox-clerk/allowed-resource-scope
+  denied_resource_scope_ref: policy://proxmox-clerk/denied-resource-scope
+  unknown_or_unscoped_resource: refuse
+  read_only: true

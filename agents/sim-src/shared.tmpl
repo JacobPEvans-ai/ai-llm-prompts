@@ -1,41 +1,17 @@
 {{- /* Shared shadow policy and definition projection for both runtime templates. */ -}}
-{{- define "shadow-read-tools" -}}
-  {{- .tools | coll.JQ `[.[] | select(test("\\.(get|list|search|diff|download|fetch|read|query|lookup)(_[a-z0-9_]+)?$"))]` | data.ToJSON -}}
-{{- end -}}
 {{- define "shadow-eligibility" -}}
-  {{- $agent := .definition -}}
-  {{- $reads := tmpl.Exec "shadow-read-tools" $agent | data.JSONArray -}}
-  {{- $unbound := coll.Slice -}}
-  {{- range $reads -}}
-    {{- $namespace := index (strings.SplitN "." 2 .) 0 -}}
-    {{- $bound := false -}}
-    {{- range (index $agent "mcp_servers") -}}
-      {{- if or (eq . $namespace) (strings.HasPrefix (printf "%s_" .) $namespace) -}}{{- $bound = true -}}{{- end -}}
-    {{- end -}}
-    {{- if not $bound -}}{{- $unbound = coll.Append . $unbound -}}{{- end -}}
-  {{- end -}}
-  {{- if gt (len $unbound) 0 -}}
-    Unbound read-only tools: {{ join $unbound ", " }}
-  {{- else if gt (len $reads) 0 -}}
-    {{- if eq .runtime "langflow" -}}
-      Langflow MCP binding is not read-only: {{ join $reads ", " }}; https://docs.langflow.org/mcp-client
-    {{- else -}}
-      Sim MCP binding cannot restrict subcommand arguments: {{ join $reads ", " }}; https://docs.sim.ai/agents/mcp
-    {{- end -}}
-  {{- end -}}
+  {{- /* Shadow flows preserve declared tool names as metadata and bind no MCP tools. */ -}}
 {{- end -}}
 {{- define "shadow-metadata" -}}
   {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
   {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
-  {{- /* Read tools require a read-only MCP binding; never silently omit one. */ -}}
-  {{- test.Assert "read-only tools require an eligible MCP binding" (eq (len (tmpl.Exec "shadow-read-tools" . | data.JSONArray)) 0) -}}
   {{- $omitted := coll.Slice -}}
   {{- range .tools -}}
     {{- if ne . "litellm.chat_completions" -}}{{- $omitted = coll.Append . $omitted -}}{{- end -}}
   {{- end -}}
   {{- dict "agent" .name "mode" "shadow" "tier" .tier "privacy_class" .privacy_class
       "litellm_role" .litellm_role "tools" (coll.Slice "litellm.chat_completions")
-      "omitted_tools" $omitted "triggers" .triggers "output_schema" (index . "output_schema")
+      "agent_tools" .tools "omitted_tools" $omitted "triggers" .triggers "output_schema" (index . "output_schema")
       "results" (coll.Slice "langfuse-trace" "phoenix-trace")
       "generated_from" (coll.Slice (printf "agents/%s.yaml" .name) .shared_prefix .prompt)
       | data.ToJSON -}}

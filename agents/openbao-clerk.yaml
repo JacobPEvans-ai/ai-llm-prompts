@@ -1,0 +1,28 @@
+name: openbao-clerk
+extends: connector
+description: |
+  Use when: an authorized caller requests metadata for an allowlisted OpenBao path.
+  Do not use when: the request asks for a secret value, a credential, or a policy change.
+  Typical triggers include a metadata inventory and a credential-rotation review. See "When to invoke" in the agent prompt.
+owns: openbao
+reader: authorized secret administrator
+acted_signal: verified metadata supports an access or rotation review decision
+privacy_class: private
+identity: agent-openbao-clerk
+api_key_ref: openbao://agent-key/openbao-clerk
+mcp_servers: [openbao]
+tools:
+  - openbao.list_secret_metadata
+  - openbao.get_secret_metadata
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, metadata_path, version]
+  read_tools: [openbao.list_secret_metadata, openbao.get_secret_metadata]
+  write_tools: []
+guards:
+  credential_owner: openbao-clerk
+  allowed_metadata_paths_ref: policy://openbao-clerk/metadata-paths
+  unknown_or_unscoped_path: refuse
+  secret_values: refuse
+  credential_minting: refuse
+  policy_changes: refuse

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"alert-triage","generated_from":["agents/alert-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/alert-triage.md"],"litellm_role":"medium","mode":"shadow","name":"alert-triage","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"splunk.alert"},{"kind":"event","source":"grafana.alert"}]},
+    "metadata": {"agent":"alert-triage","agent_tools":["a2a.call"],"generated_from":["agents/alert-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/alert-triage.md"],"litellm_role":"medium","mode":"shadow","name":"alert-triage","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"splunk.alert"},{"kind":"event","source":"grafana.alert"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

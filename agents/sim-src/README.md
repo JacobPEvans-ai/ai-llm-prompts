@@ -9,17 +9,11 @@ variable before import. Agent names are uppercased with hyphens replaced by unde
 The request carries agent, tier, privacy class, and shadow mode metadata. Model and accelerator attribution come from
 the router's configured tracing. Langfuse/Phoenix trace delivery requires runtime acceptance.
 
-`shared.tmpl` provides the common shadow metadata and chat request for both runtime templates. Prompt loading reuses
-the Dify template's named `prompt` template. Write, connector, and unknown tools are listed in `omitted_tools`.
-Read-only tools are never silently omitted: eligibility is computed from each definition before rendering.
-The check targets print each skipped agent and its unbound read-only tools. Definitions with mapped read tools are
-also skipped until a read-only shadow identity has gateway grants.
-
-Sim's native MCP access policy restricts exact operation names, but does not inspect arguments. The definition
-contract used by Dify binds the tool namespace and passes the operation as an argument (`subcommand` for task tools).
-Selecting that namespace therefore permits write subcommands too. Sim skips these agents with a source-linked
-reason. Langflow likewise skips agents requiring MCP tools with the reason `Langflow MCP binding is not read-only`.
-Agents without read-tool requirements render normally; eligibility is recalculated on every render.
+`shared.tmpl` provides common shadow metadata and the chat request for both runtime templates. Prompt loading reuses
+the Dify template's named `prompt` template. `agent_tools` preserves the full definition tool list for shadow review;
+`omitted_tools` identifies definition tools that the shadow runtime does not bind. The runtime `tools` list contains
+only the LiteLLM chat request. Sim and Langflow do not receive MCP or connector bindings, regardless of the source
+tool names, and every selected Dify-home definition renders as a shadow replay.
 
 Import format and native block references, accessed 2026-11-06:
 

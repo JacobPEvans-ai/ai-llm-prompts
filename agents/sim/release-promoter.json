@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"release-promoter","generated_from":["agents/release-promoter.yaml","agents/prompts/shared/homelab.md","agents/prompts/release-promoter.md"],"litellm_role":"medium","mode":"shadow","name":"release-promoter","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"event_filter":{"ref":"refs/heads/develop"},"kind":"event","source":"github.push"}]},
+    "metadata": {"agent":"release-promoter","agent_tools":["a2a.call"],"generated_from":["agents/release-promoter.yaml","agents/prompts/shared/homelab.md","agents/prompts/release-promoter.md"],"litellm_role":"medium","mode":"shadow","name":"release-promoter","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":1,"tools":["litellm.chat_completions"],"triggers":[{"event_filter":{"ref":"refs/heads/develop"},"kind":"event","source":"github.push"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

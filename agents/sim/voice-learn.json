@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"voice-learn","generated_from":["agents/voice-learn.yaml","agents/prompts/shared/homelab.md","agents/prompts/voice-learn.md"],"litellm_role":"medium","mode":"shadow","name":"voice-learn","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"7d","kind":"rotation"}]},
+    "metadata": {"agent":"voice-learn","agent_tools":["a2a.call"],"generated_from":["agents/voice-learn.yaml","agents/prompts/shared/homelab.md","agents/prompts/voice-learn.md"],"litellm_role":"medium","mode":"shadow","name":"voice-learn","omitted_tools":["a2a.call"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"every":"7d","kind":"rotation"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",
