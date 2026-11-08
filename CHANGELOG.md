@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.87.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.86.0...v1.87.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** add rules for stopped subagents, refresh failures, argument checks and fallbacks ([#379](https://github.com/dryvist/ai-llm-prompts/issues/379)) ([815fa3c](https://github.com/dryvist/ai-llm-prompts/commit/815fa3c6061ab1d454c4e875426fa405235b19fb))
+
 ## [1.86.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.85.1...v1.86.0) (2026-11-08)
 
 
