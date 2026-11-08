@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.85.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.85.0...v1.85.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **agents:** decidable report envelope, supplied sources, stop at the trigger gate ([#366](https://github.com/dryvist/ai-llm-prompts/issues/366)) ([7afaa00](https://github.com/dryvist/ai-llm-prompts/commit/7afaa00b182705a7f3617a9f6269d799cb9a1254))
+* **agents:** name the reader and acted signal of the triggered agents ([#371](https://github.com/dryvist/ai-llm-prompts/issues/371)) ([bc4ffb9](https://github.com/dryvist/ai-llm-prompts/commit/bc4ffb9cfb4ca041d1bb497ae809217725a49160))
+
 ## [1.85.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.84.0...v1.85.0) (2026-11-08)
 
 
