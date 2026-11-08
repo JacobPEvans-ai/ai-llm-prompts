@@ -1,0 +1,2 @@
+# Concurrent change-log entries from parallel PRs are kept, not conflicted, by the built-in union driver.
+/log.md merge=union
