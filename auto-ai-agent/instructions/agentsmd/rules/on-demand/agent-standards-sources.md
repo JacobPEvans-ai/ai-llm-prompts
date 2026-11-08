@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T23:08:31Z"
+timestamp: "2026-11-08T05:15:03Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -43,6 +43,9 @@ for Dify, LiteLLM, and Langfuse attribution.
 | A17. Plugin Development Toolkit | Anthropic | Undated official source page | [A17] |
 | A18. mcp-builder | Anthropic | Undated official source page | [A18] |
 | A19. Anthropic Skills installation | Anthropic | Undated official source page | [A19] |
+| A20. The components of agent memory | Anthropic | 2026-11-06 | [A20] |
+| A21. Building agents: When to fold subagents into your main agent loop | Anthropic | 2026-10-22 | [A21] |
+| A22. Claude Code v2.1.317 release notes | Anthropic | 2026-11-03 | [A22] |
 | O1. Rethinking skills and prompts for GPT-6 Astra | OpenAI | 2026-09-11 | [O1] |
 | O2. Custom instructions with AGENTS.md | OpenAI | Undated official page | [O2] |
 | O3. Build skills | OpenAI | Undated official page | [O3] |
@@ -54,6 +57,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 | G2. Four evaluation engineering lessons learned from building agent plugins | Google Cloud | 2026-10-16 | [G2] |
 | C1. Trajectories now in LangSmith: A readable view of every agent session | LangChain | 2026-09-24 | [C1] |
 | C2. Context Engineering Starts with Retrieval | LangChain | 2026-10-23 | [C2] |
+| C3. Building Evidence-Grounded Agent Memory with OpenWiki and Graphs | LangChain | 2026-10-28 | [C3] |
 | F5. Skill Management in Langfuse | Langfuse | 2026-11-03 | [F5] |
 
 [A1]: https://claude.dev/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models/
@@ -75,6 +79,9 @@ for Dify, LiteLLM, and Langfuse attribution.
 [A17]: https://github.com/anthropics/claude-plugins-official/tree/main/plugins/plugin-dev
 [A18]: https://github.com/anthropics/skills/blob/main/skills/mcp-builder/SKILL.md
 [A19]: https://github.com/anthropics/skills
+[A20]: https://www.anthropic.com/research/components-of-agent-memory
+[A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop
+[A22]: https://github.com/anthropics/claude-code/releases/tag/v2.1.317
 [O1]: https://learn.chatgpt.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
 [O2]: https://learn.chatgpt.com/docs/agent-configuration/agents-md
 [O3]: https://learn.chatgpt.com/docs/build-skills
@@ -87,4 +94,5 @@ for Dify, LiteLLM, and Langfuse attribution.
 [G2]: https://cloud.google.com/blog/topics/developers-practitioners/four-eval-engineering-lessons
 [C1]: https://www.langchain.com/blog/langsmith-trajectories-tracing
 [C2]: https://www.langchain.com/blog/context-engineering-starts-with-retrieval
+[C3]: https://www.langchain.com/blog/building-agent-memory-openwiki-graphs
 [F5]: https://langfuse.com/changelog/2026-11-03-skill-management

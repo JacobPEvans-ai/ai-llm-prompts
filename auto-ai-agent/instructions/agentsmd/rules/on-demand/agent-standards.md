@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Agent and skill building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T23:08:31Z"
+timestamp: "2026-11-08T05:00:01Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -25,8 +25,6 @@ Treat the rules as authoring requirements; verify implementation and delivery se
 
 Resolve source IDs through the dated [authoring source table](agent-standards-sources.md) and
 [platform source table](agent-standards-platform-sources.md). Local policy is identified separately from upstream requirements.
-Memory guidance: Anthropic, *The components of agent memory*, published 2026-11-06. [A20]
-Subagent guidance: Anthropic, *Building agents: When to fold subagents into your main agent loop*, published 2026-10-22. [A21]
 
 ## a. Agent definitions and prompts
 
@@ -64,6 +62,8 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
   and dates with the results, and test that claims cite and match the retrieved material. [A18] [C2]
 - Match tool granularity to client workflows; preserve composability and evaluate convenience tools on realistic tasks. [A18]
 - Annotate read-only, destructive, idempotent, and open-world behavior accurately. Enforce access through permissions and scoped credentials. [A18] [A2]
+- For action-gating hooks, make a failed callback block the protected action where the harness supports it, and test that failure path. [A22]
+- When upgrading the model router to a release that changes MCP credential forwarding, test auth forwarding and team-key tool visibility explicitly before rollout. [L7]
 - Test with an MCP client or Inspector, then evaluate realistic agent tasks through the interface. [A18]
 
 ## d. Evals
@@ -72,6 +72,8 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
 - Sample production tasks and hard cases: malformed, ambiguous, oversized, unavailable-source, and negative-trigger inputs. [A14] [A3]
 - Explain each hard case's intrinsic difficulty independently of current model failures; diagnose saturation, universal failures, and permitted model/effort scaling. [A3]
 - Pair plan-only cases with authorized disposable sandbox execution; grade actual tool arguments, artifacts, and unauthorized effects separately. [G2]
+- Keep fixtures, grading scripts and answer keys outside the agent's reachable workspace during trials, and let a separate verifier inspect artifacts after the agent exits. Efficiency never offsets a failed correctness or security check. [G1]
+- Before adding compiled or persistent memory, compare it with retrieval alone on the same simple-lookup and cross-source tasks. Report accuracy, citation consistency, latency and the full cost of creating and updating the memory. [C3]
 - Preserve assistant-turn boundaries, parallel call batches, and instruction-injection timing; detect actions dispatched before loaded guidance arrives. [G2]
 - Evaluate complete multi-turn sessions across handoffs; deduplicate repeated messages in ordered trajectories and retain the underlying traces. [C1]
 - Check constrained outputs deterministically. Calibrate rubric judges against human-reviewed examples; keep judges distinct from candidates and blind to candidate identity. [A3] [F3]
@@ -86,32 +88,3 @@ Subagent guidance: Anthropic, *Building agents: When to fold subagents into your
 ## e. Coding-agent briefs
 
 Follow `prompt://dryvist/auto-ai-agent/claude-code/rules/brief-delegates` for scope, authority, stops, verification, and evidence reporting.
-
-[A4]: agent-standards-sources.md
-[A5]: agent-standards-sources.md
-[O7]: agent-standards-sources.md
-[A1]: agent-standards-sources.md
-[O1]: agent-standards-sources.md
-[A11]: agent-standards-sources.md
-[A2]: agent-standards-sources.md
-[A15]: agent-standards-sources.md
-[O3]: agent-standards-sources.md
-[A12]: agent-standards-sources.md
-[A6]: agent-standards-sources.md
-[A16]: agent-standards-sources.md
-[A18]: agent-standards-sources.md
-[A13]: agent-standards-sources.md
-[A14]: agent-standards-sources.md
-[A3]: agent-standards-sources.md
-[F3]: agent-standards-platform-sources.md
-[F1]: agent-standards-platform-sources.md
-[F2]: agent-standards-platform-sources.md
-[D3]: agent-standards-platform-sources.md
-[G1]: agent-standards-sources.md
-[G2]: agent-standards-sources.md
-[C1]: agent-standards-sources.md
-[C2]: agent-standards-sources.md
-[O8]: agent-standards-sources.md
-[F5]: agent-standards-sources.md
-[A20]: https://www.anthropic.com/research/components-of-agent-memory
-[A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop

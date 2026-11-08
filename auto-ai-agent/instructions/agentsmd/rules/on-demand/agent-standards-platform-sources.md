@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-07T23:08:31Z"
+timestamp: "2026-11-08T05:00:01Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -40,6 +40,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 | L3. Tag Based Routing | LiteLLM | Undated official page | [L3] |
 | L4. Virtual Keys / Setting Team Budgets | LiteLLM | Undated official pages | [Keys][L4], [teams][L5] |
 | L6. Logging | LiteLLM | Undated official page | [L6] |
+| L7. LiteLLM v1.109.0-rc.1 release notes | LiteLLM | 2026-11-04 | [L7] |
 | F1. Prompt Version Control | Langfuse | Undated official page | [F1] |
 | F2. Evaluate with Datasets | Langfuse | Undated official page | [F2] |
 | F3. LLM-as-a-Judge | Langfuse | Undated official page | [F3] |
@@ -64,6 +65,7 @@ Use these source IDs with the [building standards](agent-standards.md) and [plat
 [L4]: https://docs.litellm.ai/docs/proxy/virtual_keys
 [L5]: https://docs.litellm.ai/docs/proxy/team_budgets
 [L6]: https://docs.litellm.ai/docs/proxy/logging
+[L7]: https://github.com/BerriAI/litellm/releases/tag/v1.109.0-rc.1
 [F1]: https://langfuse.com/docs/prompt-management/features/prompt-version-control
 [F2]: https://langfuse.com/docs/evaluation/get-started/offline
 [F3]: https://langfuse.com/docs/evaluation/evaluation-methods/llm-as-a-judge
