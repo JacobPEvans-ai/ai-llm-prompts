@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Add rules for skill-script arguments, fresh approval at managed command checkpoints, turn and
+  tool attribution in traces, and a shared MCP server request cap.
+
 * **Update (standards)**: Add an eval rule to use provider-reported token usage for agent-cost evaluations.
 
 * **Fix (instructions)**: Float first-party shared workflow refs on each repository's current major tag.
