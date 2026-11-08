@@ -46,7 +46,7 @@ The following requirements apply to the merged definition unless marked source-o
 | `mode` | enum | Required: `shadow` or `live`. |
 | `eval_set`, `prompt` | paths | Derived from `name`; existing eval and OKF prompt files. |
 | `shared_prefix` | path | Required existing OKF prompt file; one shared prefix across the roster. |
-| `tools`, `mcp_servers` | list[string] | A dotted `prefix.name` with `prefix` in `mcp_servers` declares the individual tool `name` on server `prefix`. |
+| `tools`, `mcp_servers` | list[string] | A dotted `prefix.name` is an individual tool if `prefix` is in `mcp_servers`, else (except `a2a.*`) a subcommand. |
 | `litellm_role` | string | Required router role. |
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |
 | `identity`, `api_key_ref` | string | Explicit, non-empty runtime identity and credential reference; never inherited or derived. |
