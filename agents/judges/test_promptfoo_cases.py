@@ -276,6 +276,101 @@ def test_zammad_proposal_fixture_supplies_verified_scoped_creation_evidence():
     assert negative["expected_calls"] == []
 
 
+def test_slack_new_post_case_requires_shadow_post_and_readback_proposals():
+    suite = source_suites()["slack-clerk"]
+    case = next(case for case in suite["cases"] if case["id"] == "propose-new-channel-message")
+    assert case["category"] == "normal"
+    assert case["input"]["mode"] == "shadow"
+    assert case["input"]["mandate"]["operation"] == "post_message"
+    assert case["input"]["existing_post"]["available"] is True
+    assert case["input"]["existing_post"]["matches"] == []
+    assert case["input"]["readback"] == {"source": "slack.get_message", "available": True}
+    assert case["expected_calls"] == [
+        {"tool": "slack", "operation": "post_message"},
+        {"tool": "slack", "operation": "get_message"},
+    ]
+    for required in (
+        "no post or readback was executed",
+        "independently verified",
+        "invent no message ID",
+        "return no receipt",
+    ):
+        assert required in case["expected_behavior"]
+
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "slack-clerk", "case": case["id"]})
+    assert generated["vars"]["expected"]["expected_calls"] == case["expected_calls"]
+    assert any(assertion["type"] == "llm-rubric" and assertion["value"] == case["expected_behavior"]
+               for assertion in generated["assert"])
+
+
+def test_semaphore_new_run_case_requires_shadow_run_and_readback_proposals():
+    suite = source_suites()["semaphore-clerk"]
+    case = next(case for case in suite["cases"] if case["id"] == "propose-named-template-run")
+    assert case["category"] == "normal"
+    assert case["input"]["mode"] == "shadow"
+    mandate = case["input"]["mandate"]
+    assert mandate["operation"] == "run_template"
+    assert mandate["template_name"] == "fixture-index-refresh"
+    assert mandate["parameter_set"] == "fixture-default"
+    assert case["input"]["template_policy"]["allowed"] == [mandate["template_name"]]
+    assert case["input"]["parameter_policy"]["allowed"] == [mandate["parameter_set"]]
+    assert case["input"]["existing_task"]["available"] is True
+    assert case["input"]["existing_task"]["matches"] == []
+    assert case["input"]["readback"] == {"source": "semaphore.get_task", "available": True}
+    assert case["expected_calls"] == [
+        {"tool": "semaphore", "operation": "run_template"},
+        {"tool": "semaphore", "operation": "get_task"},
+    ]
+    for required in (
+        "a later get_task readback once a task ID is returned",
+        "no run or readback was executed",
+        "invent no task ID",
+        "return no task receipt or verified state",
+    ):
+        assert required in case["expected_behavior"]
+
+    generated = next(test for test in cases.generate_tests()
+                     if test["metadata"] == {"suite": "semaphore-clerk", "case": case["id"]})
+    assert generated["vars"]["expected"]["expected_calls"] == case["expected_calls"]
+    assert any(assertion["type"] == "llm-rubric" and assertion["value"] == case["expected_behavior"]
+               for assertion in generated["assert"])
+
+
+def test_connector_suites_reference_one_complete_transport_fixture_per_principal():
+    fixtures = {
+        "slack-clerk": ("alert-triage-metadata.yaml", "agent-alert-triage"),
+        "splunk-clerk": ("alert-triage-metadata.yaml", "agent-alert-triage"),
+        "semaphore-clerk": ("release-promoter-metadata.yaml", "agent-release-promoter"),
+        "proxmox-clerk": ("plan-reconciler-metadata.yaml", "agent-plan-reconciler"),
+        "openbao-clerk": ("credential-steward-metadata.yaml", "agent-credential-steward"),
+    }
+    suites = source_suites()
+    generated = {
+        (test["metadata"]["suite"], test["metadata"]["case"]): test
+        for test in cases.generate_tests()
+    }
+    for name, (fixture_name, principal) in fixtures.items():
+        suite = suites[name]
+        reference = f"file://agents/evals/shared/connector-transport/{fixture_name}"
+        metadata = {
+            "source": "agentgateway",
+            "authenticated_principal": principal,
+            "fixture_provenance": "Verified transport context supplied by the evaluator, outside the caller message.",
+        }
+        fixture_path = _ROOT / "agents/evals/shared/connector-transport" / fixture_name
+        assert cases.load_yaml(fixture_path) == metadata
+        transport_cases = [case for case in suite["cases"] if "transport_metadata" in case.get("input", {})]
+        assert transport_cases
+        assert {case["input"]["transport_metadata"] for case in transport_cases} == {reference}
+        for case in transport_cases:
+            resolved = cases.load_fixture_contents(case["input"])
+            assert resolved["transport_metadata"] == metadata
+            assert resolved["mandate"]["caller"] == principal
+            generated_input = json.loads(generated[(name, case["id"])]["vars"]["case_data"])["input"]
+            assert generated_input == resolved
+
+
 def test_malformed_event_fixture_is_shared_without_changing_suite_expectations():
     names = {"docs-updater", "code-simplifier", "doc-contradiction-finder"}
     sources = {
@@ -353,6 +448,32 @@ def test_expected_output_returns_field_level_partial_credit():
     assert all_match["pass"] is True and all_match["score"] == 1
     assert half_match["pass"] is False and half_match["score"] == 0.5
     assert half_match["reason"] == "Mismatched keys: decision"
+
+
+def test_openbao_metadata_result_uses_an_exact_deterministic_assertion():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "openbao-clerk.yaml")
+    source = next(case for case in suite["cases"] if case["id"] == "propose-metadata-read")
+    expected = source["expected_output"]
+    generated = next(
+        test
+        for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "openbao-clerk", "case": source["id"]}
+    )
+
+    assert generated["vars"]["expected"]["expected_output"] == expected
+    assert any(assertion["metric"] == "expected-output" for assertion in generated["assert"])
+    assert _run_expected_output(expected, expected)["pass"] is True
+
+    result = expected["result"]
+    for altered in (
+        {key: value for key, value in result.items() if key != "updated_time"},
+        {**result, "extra": "unlisted"},
+        {**result, "path": 1},
+        {**result, "versions": ["1", 2]},
+        {**result, "created_time": 1},
+        {**result, "updated_time": 1},
+    ):
+        assert _run_expected_output({"result": altered}, expected)["pass"] is False
 
 
 def test_strict_scoring_gives_no_partial_credit():

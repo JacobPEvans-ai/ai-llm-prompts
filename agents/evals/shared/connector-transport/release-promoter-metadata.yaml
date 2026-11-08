@@ -1,0 +1,3 @@
+source: agentgateway
+authenticated_principal: agent-release-promoter
+fixture_provenance: Verified transport context supplied by the evaluator, outside the caller message.
