@@ -450,6 +450,32 @@ def test_expected_output_returns_field_level_partial_credit():
     assert half_match["reason"] == "Mismatched keys: decision"
 
 
+def test_openbao_metadata_result_uses_an_exact_deterministic_assertion():
+    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "openbao-clerk.yaml")
+    source = next(case for case in suite["cases"] if case["id"] == "propose-metadata-read")
+    expected = source["expected_output"]
+    generated = next(
+        test
+        for test in cases.generate_tests()
+        if test["metadata"] == {"suite": "openbao-clerk", "case": source["id"]}
+    )
+
+    assert generated["vars"]["expected"]["expected_output"] == expected
+    assert any(assertion["metric"] == "expected-output" for assertion in generated["assert"])
+    assert _run_expected_output(expected, expected)["pass"] is True
+
+    result = expected["result"]
+    for altered in (
+        {key: value for key, value in result.items() if key != "updated_time"},
+        {**result, "extra": "unlisted"},
+        {**result, "path": 1},
+        {**result, "versions": ["1", 2]},
+        {**result, "created_time": 1},
+        {**result, "updated_time": 1},
+    ):
+        assert _run_expected_output({"result": altered}, expected)["pass"] is False
+
+
 def test_strict_scoring_gives_no_partial_credit():
     expected = {"refused": True, "reason_contains": ["Zammad"]}
 
