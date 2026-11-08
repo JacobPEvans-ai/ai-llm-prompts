@@ -130,14 +130,14 @@
               pkgs.jq
               pkgs.nodejs
               pkgs.yq
-              (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pyyaml ]))
+              (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [ pytest pytest-xdist pyyaml ]))
             ];
           } ''
             cp -R ${self}/. source
             chmod -R u+w source
             cd source
             make check-dify
-            python3 -m pytest -q agents/judges
+            python3 -m pytest -q -n "$NIX_BUILD_CORES" agents/judges
             touch $out
           '';
           okf = assert nixpkgs.lib.all validPrompt promptFiles;
