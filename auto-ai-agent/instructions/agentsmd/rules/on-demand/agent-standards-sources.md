@@ -22,5 +22,5 @@ An undated official page does not establish publication within July–November 2
 
 Use these source IDs with the [building standards](agent-standards.md). Source records are grouped by publisher:
 [Anthropic](agent-standards-anthropic-sources.md), [OpenAI](agent-standards-openai-sources.md), and
-[ecosystem publishers](agent-standards-ecosystem-sources.md). See the [platform sources](agent-standards-platform-sources.md)
-for Dify, LiteLLM, and Langfuse attribution.
+[ecosystem publishers](agent-standards-ecosystem-sources.md). Langfuse records F5–F6 are in the ecosystem file; see the
+[platform sources](agent-standards-platform-sources.md) for Dify and LiteLLM attribution.

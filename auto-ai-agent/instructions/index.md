@@ -20,7 +20,10 @@ layout.
 * [Claude Projects brief](agentsmd/projects-brief.md) - Shared agent instruction file.
 * [Agent Notifications](agentsmd/rules/agent-notifications.md) - Shared agent instruction file.
 * [Agent and skill building standards](agentsmd/rules/on-demand/agent-standards.md) - Source-cited rules for agents, skills, and platform integrations.
-* [Agent authoring standards sources](agentsmd/rules/on-demand/agent-standards-sources.md) - Dated authoring source table.
+* [Agent authoring standards sources](agentsmd/rules/on-demand/agent-standards-sources.md) - Index of the dated authoring source files.
+* [Anthropic authoring sources](agentsmd/rules/on-demand/agent-standards-anthropic-sources.md) - Dated Anthropic source records.
+* [OpenAI authoring sources](agentsmd/rules/on-demand/agent-standards-openai-sources.md) - Dated OpenAI source records.
+* [Ecosystem authoring sources](agentsmd/rules/on-demand/agent-standards-ecosystem-sources.md) - Dated ecosystem source records, including Langfuse.
 * [Platform integration building standards](agentsmd/rules/on-demand/agent-standards-platform.md) - Dify and LiteLLM rules f–g.
 * [Platform integration standards sources](agentsmd/rules/on-demand/agent-standards-platform-sources.md) - Dated platform source table.
 * [CI Resilience](agentsmd/rules/on-demand/ci-resilience.md) - Shared agent instruction file.
