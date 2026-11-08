@@ -4,7 +4,7 @@ title: Vikunja Clerk
 description: Read, file, and update Vikunja tasks in explicitly allowed projects.
 resource: prompt://dryvist/agents/prompts/vikunja-clerk
 tags: [vikunja, agent, task-management]
-timestamp: "2026-11-07T02:57:59Z"
+timestamp: "2026-11-08T08:00:00Z"
 status: active
 consumers: [Dify]
 render: {engine: literal, variables: [], frontmatter: strip}
