@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Add rules for skill-script arguments, fresh approval at managed command checkpoints, turn and
+  tool attribution in traces, and a shared MCP server request cap.
+
 * **Fix (agents)**: Name the reader and acted signal of vikunja-triage, zammad-triage and doc-contradiction-finder, and
   require both for every agent that an event, rotation or anchor starts.
 
