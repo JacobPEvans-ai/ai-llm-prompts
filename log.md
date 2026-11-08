@@ -2,6 +2,10 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Add rules to set subagent and forked side-job effort explicitly for the job and to run a
+  subagent's long shell commands in the background so the prompt cache does not expire; refresh the Anthropic source
+  table with the Claude Code v2.1.316 and v2.1.318 releases and advance the research cutoff to 2026-11-08.
+
 * **Update (auto-ai-agent)**: `hermes-service-pulse.md` starts its headline with a green, yellow or red status emoji
   chosen by fixed criteria.
 
