@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Fix (agents)**: Name the reader and acted signal of vikunja-triage, zammad-triage and doc-contradiction-finder, and
+  require both for every agent that an event, rotation or anchor starts.
+
 * **Fix (agents)**: Give code-simplifier a handback decision for requests outside its mandated pull request, and name its
   refusal and handback eval cases by that decision.
 

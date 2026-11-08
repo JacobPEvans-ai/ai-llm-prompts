@@ -69,6 +69,8 @@
 
 * Tier: 1
 * Trigger: event: github.pull_request
+* Reader: documentation maintainer
+* Acted signal: contradiction fix merged
 
 ### [docs-updater](docs-updater.yaml)
 
@@ -271,6 +273,8 @@
 * Tier: 2
 * Trigger: event: vikunja
 * Trigger: rotation: 1d
+* Reader: Vikunja via vikunja-clerk
+* Acted signal: proposed task move applied
 
 ### [voice-learn](voice-learn.yaml)
 
@@ -291,3 +295,5 @@
 * Tier: 2
 * Trigger: event: zammad
 * Trigger: rotation: 1d
+* Reader: Zammad via zammad-clerk
+* Acted signal: ticket state changes

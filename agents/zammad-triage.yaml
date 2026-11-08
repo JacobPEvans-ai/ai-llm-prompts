@@ -11,6 +11,8 @@ triggers:
     source: zammad
   - kind: rotation
     every: 1d
+reader: Zammad via zammad-clerk
+acted_signal: ticket state changes
 memory_scope: hindsight/zammad-triage
 identity: agent-zammad-triage
 api_key_ref: openbao://agent-key/zammad-triage
