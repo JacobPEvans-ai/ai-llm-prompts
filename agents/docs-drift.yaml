@@ -39,13 +39,4 @@ output_schema:
                   contradicted_by: {type: string}
                   action: {enum: [update, add, none]}
             summary: {type: string}
-            proposed_calls:
-              type: array
-              items:
-                type: object
-                required: [tool, operation, args]
-                additionalProperties: false
-                properties:
-                  tool: {enum: [a2a]}
-                  operation: {enum: [call]}
-                  args: {type: object}
+            proposed_calls: {}

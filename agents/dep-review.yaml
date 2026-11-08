@@ -36,13 +36,4 @@ output_schema:
                 required_migrations: {type: array, items: {type: string}}
                 repo_impact: {type: array, items: {type: string}}
                 signals: {type: array, items: {type: string}}
-            proposed_calls:
-              type: array
-              items:
-                type: object
-                required: [tool, operation, args]
-                additionalProperties: false
-                properties:
-                  tool: {enum: [a2a]}
-                  operation: {enum: [call]}
-                  args: {type: object}
+            proposed_calls: {}
