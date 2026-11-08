@@ -74,55 +74,163 @@ workflow:
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: start-aggregate
+          targetType: if-else
+        id: start-input-gate
         source: start-input
         sourceHandle: source
-        target: trigger-input
+        target: start-input-gate
         targetHandle: target
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: webhook-0-aggregate
+          targetType: if-else
+        id: webhook-0-input-gate
         source: webhook-0-input
         sourceHandle: source
-        target: trigger-input
+        target: webhook-0-input-gate
         targetHandle: target
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: webhook-1-aggregate
+          targetType: if-else
+        id: webhook-1-input-gate
         source: webhook-1-input
         sourceHandle: source
-        target: trigger-input
+        target: webhook-1-input-gate
         targetHandle: target
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: webhook-2-aggregate
+          targetType: if-else
+        id: webhook-2-input-gate
         source: webhook-2-input
         sourceHandle: source
-        target: trigger-input
+        target: webhook-2-input-gate
         targetHandle: target
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: webhook-3-aggregate
+          targetType: if-else
+        id: webhook-3-input-gate
         source: webhook-3-input
         sourceHandle: source
-        target: trigger-input
+        target: webhook-3-input-gate
         targetHandle: target
         type: custom
       - data:
           sourceType: code
-          targetType: variable-aggregator
-        id: webhook-4-aggregate
+          targetType: if-else
+        id: webhook-4-input-gate
         source: webhook-4-input
         sourceHandle: source
+        target: webhook-4-input-gate
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: start-input-refused
+        source: start-input-gate
+        sourceHandle: stop
+        target: start-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: webhook-0-input-refused
+        source: webhook-0-input-gate
+        sourceHandle: stop
+        target: webhook-0-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: webhook-1-input-refused
+        source: webhook-1-input-gate
+        sourceHandle: stop
+        target: webhook-1-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: webhook-2-input-refused
+        source: webhook-2-input-gate
+        sourceHandle: stop
+        target: webhook-2-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: webhook-3-input-refused
+        source: webhook-3-input-gate
+        sourceHandle: stop
+        target: webhook-3-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: webhook-4-input-refused
+        source: webhook-4-input-gate
+        sourceHandle: stop
+        target: webhook-4-input-refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: start-input-continue
+        source: start-input-gate
+        sourceHandle: "false"
+        target: trigger-input
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: webhook-0-input-continue
+        source: webhook-0-input-gate
+        sourceHandle: "false"
+        target: trigger-input
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: webhook-1-input-continue
+        source: webhook-1-input-gate
+        sourceHandle: "false"
+        target: trigger-input
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: webhook-2-input-continue
+        source: webhook-2-input-gate
+        sourceHandle: "false"
+        target: trigger-input
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: webhook-3-input-continue
+        source: webhook-3-input-gate
+        sourceHandle: "false"
+        target: trigger-input
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: variable-aggregator
+        id: webhook-4-input-continue
+        source: webhook-4-input-gate
+        sourceHandle: "false"
         target: trigger-input
         targetHandle: target
         type: custom
@@ -462,19 +570,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if False:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -654,19 +768,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -850,19 +970,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -1046,19 +1172,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -1242,19 +1374,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -1438,19 +1576,25 @@ workflow:
                 return reply, None
 
 
+            def refused_envelope(reason):
+                return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        raise ValueError("invalid triggering event")
+                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    raise ValueError("trigger input exceeds 30000 characters")
-                return {"text": text}
+                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                return {"text": text, "stop": False}
           code_language: python3
           outputs:
+            stop:
+              type: boolean
             text:
               type: string
           title: Bound and redact trigger input
@@ -1468,6 +1612,198 @@ workflow:
         position:
           x: 140
           "y": 300
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: start-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - start-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: start-input-gate
+        position:
+          x: 240
+          "y": 100
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: webhook-0-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - webhook-0-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: webhook-0-input-gate
+        position:
+          x: 240
+          "y": 280
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: webhook-1-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - webhook-1-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: webhook-1-input-gate
+        position:
+          x: 240
+          "y": 460
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: webhook-2-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - webhook-2-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: webhook-2-input-gate
+        position:
+          x: 240
+          "y": 640
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: webhook-3-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - webhook-3-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: webhook-3-input-gate
+        position:
+          x: 240
+          "y": 820
+        type: custom
+      - data:
+          cases:
+            - case_id: stop
+              conditions:
+                - comparison_operator: is
+                  id: webhook-4-input-stop
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - webhook-4-input
+                    - stop
+              logical_operator: and
+          title: Stop refused trigger input?
+          type: if-else
+        id: webhook-4-input-gate
+        position:
+          x: 240
+          "y": 1000
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - start-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: start-input-refused
+        position:
+          x: 440
+          "y": 100
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - webhook-0-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: webhook-0-input-refused
+        position:
+          x: 440
+          "y": 280
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - webhook-1-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: webhook-1-input-refused
+        position:
+          x: 440
+          "y": 460
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - webhook-2-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: webhook-2-input-refused
+        position:
+          x: 440
+          "y": 640
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - webhook-3-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: webhook-3-input-refused
+        position:
+          x: 440
+          "y": 820
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - webhook-4-input
+                - text
+              variable: text
+          title: Refuse trigger input
+          type: end
+        id: webhook-4-input-refused
+        position:
+          x: 440
+          "y": 1000
         type: custom
       - data:
           output_type: string

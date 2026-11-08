@@ -245,7 +245,9 @@ def test_generic_event_only_renders_webhook(tmp_path):
     assert result.returncode == 0, result.stderr
     dsl = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
     nodes = dsl["workflow"]["graph"]["nodes"]
-    assert {node["data"]["type"] for node in nodes} == {"trigger-webhook", "llm", "end", "code", "variable-aggregator"}
+    assert {node["data"]["type"] for node in nodes} == {
+        "trigger-webhook", "llm", "end", "code", "if-else", "variable-aggregator",
+    }
     assert nodes[0]["data"]["method"] == "post"
 
 def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
@@ -266,7 +268,7 @@ def test_event_and_rotation_share_a_native_webhook_entry(tmp_path):
 
 
 @pytest.mark.parametrize("name", ["pr-keeper", "alert-triage", "release-promoter"])
-def test_each_event_branch_delivers_bounded_redacted_payload_to_the_model(name):
+def test_each_event_branch_refuses_bad_input_before_the_model(name):
     dsl = yaml.safe_load((ROOT / "agents/dify" / f"{name}.dsl.yml").read_text())
     graph = dsl["workflow"]["graph"]
     nodes = {node["id"]: node["data"] for node in graph["nodes"]}
@@ -276,31 +278,59 @@ def test_each_event_branch_delivers_bounded_redacted_payload_to_the_model(name):
     assert aggregate["type"] == "variable-aggregator" and aggregate["output_type"] == "string"
     payload = {"payload": {"action": "opened", "number": 7}, "scope": {"repository": "example/repo"},
                "mandate": {"operation": "create_pull_request", "request_id": "req-1"}}
+    saw_webhook = False
     for entry, data in nodes.items():
         if not data["type"].startswith("trigger-"):
             continue
         prepare = f"{entry}-input"
+        gate = f"{prepare}-gate"
+        refused = f"{prepare}-refused"
         assert [prepare, "text"] in aggregate["variables"]
         assert any(edge["source"] == entry and edge["target"] == prepare for edge in graph["edges"])
-        assert any(edge["source"] == prepare and edge["target"] == "trigger-input" for edge in graph["edges"])
+        assert nodes[prepare]["outputs"] == {"text": {"type": "string"}, "stop": {"type": "boolean"}}
+        assert nodes[gate]["type"] == "if-else"
+        stop_condition = nodes[gate]["cases"][0]["conditions"][0]
+        assert stop_condition["variable_selector"] == [prepare, "stop"]
+        assert stop_condition["varType"] == "boolean" and stop_condition["value"] is True
+        assert nodes[refused]["type"] == "end"
+        assert nodes[refused]["outputs"] == [{"variable": "text", "value_selector": [prepare, "text"]}]
+        assert any(edge["source"] == prepare and edge["target"] == gate for edge in graph["edges"])
+        assert any(edge["source"] == gate and edge["sourceHandle"] == "stop" and edge["target"] == refused
+                   for edge in graph["edges"])
+        assert any(edge["source"] == gate and edge["sourceHandle"] == "false" and edge["target"] == "trigger-input"
+                   for edge in graph["edges"])
+        assert not any(edge["source"] == gate and edge["target"] == "model" for edge in graph["edges"])
+        assert not any(edge["source"] == refused for edge in graph["edges"])
         namespace = {}
         exec(compile(nodes[prepare]["code"], prepare, "exec"), namespace)
         main = namespace["main"]
         if data["type"] == "trigger-schedule":
-            assert json.loads(main(timestamp=123)["text"])["result"] == {"timestamp": 123, "kind": "schedule"}
+            output = main(timestamp=123)
+            assert output["stop"] is False
+            assert json.loads(output["text"])["result"] == {"timestamp": 123, "kind": "schedule"}
             continue
+        saw_webhook = True
         assert {"variable": "event", "value_selector": [entry, "_webhook_raw"]} in nodes[prepare]["variables"]
-        text = main(timestamp=123, event={"body": payload, "headers": {"Authorization": "excluded"}})["text"]
+        output = main(timestamp=123, event={"body": payload, "headers": {"Authorization": "excluded"}})
+        assert output["stop"] is False
+        text = output["text"]
         assert json.loads(text) == {"status": "ok", "reason": "", "result": {"timestamp": 123, "kind": "event", "event": payload}}
         assert "excluded" not in text
         secret = "AKIA" + "ABCDEFGH" + "IJKLMNOP"
         redacted = main(timestamp=123, event={"body": {"description": secret}})["text"]
         assert secret not in redacted and "[REDACTED]" in redacted
         for malformed in (None, [], {}, {"body": []}, {"body": "not an object"}):
-            with pytest.raises(ValueError, match="invalid triggering event"):
-                main(timestamp=123, event=malformed)
-        with pytest.raises(ValueError, match="exceeds 30000"):
-            main(timestamp=123, event={"body": {"payload": "x" * 30001}})
+            output = main(timestamp=123, event=malformed)
+            assert output["stop"] is True
+            assert json.loads(output["text"]) == {
+                "status": "refused", "reason": "invalid triggering event", "result": None,
+            }
+        output = main(timestamp=123, event={"body": {"payload": "x" * 30001}})
+        assert output["stop"] is True
+        assert json.loads(output["text"]) == {
+            "status": "refused", "reason": "trigger input exceeds 30000 characters", "result": None,
+        }
+    assert saw_webhook
     assert any(edge["source"] == "trigger-input" and edge["target"] == "model" for edge in graph["edges"])
 
 
