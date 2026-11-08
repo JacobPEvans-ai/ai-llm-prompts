@@ -478,11 +478,20 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
             "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "if-else", "variable-aggregator"
         }
     elif agent.get("mcp_servers"):
-        expected_tools = {tool.split(".", 1)[0] for tool in agent["tools"]}
+        servers = agent["mcp_servers"]
+        dotted = [tool.split(".", 1) for tool in agent["tools"] if "." in tool]
+        expected_tools = {
+            (prefix, name) for prefix, name in dotted if prefix in servers
+        } | {
+            (servers[0], prefix)
+            for prefix, name in dotted
+            if prefix not in servers and prefix != "a2a"
+        }
         actual_tools = {
-            node.get("data", {}).get("tool_name")
+            (data.get("provider_name"), data.get("tool_name"))
             for node in nodes
-            if node.get("data", {}).get("type") == "tool"
+            for data in [node.get("data", {})]
+            if data.get("type") == "tool"
         }
         assert actual_tools == expected_tools
 

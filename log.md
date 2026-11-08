@@ -2,6 +2,9 @@
 
 ## 2026-11-08
 
+* **Update (agents)**: Render and judge MCP servers that expose individual tools: a dotted tool whose prefix is a declared
+  server becomes one tool node per tool, while subcommand-form entries must share a single tool prefix.
+
 * **Add (repo)**: Add a root `.gitattributes` applying the built-in union merge driver to the root change log, so
   concurrent entries from parallel pull requests are kept instead of conflicted.
 
