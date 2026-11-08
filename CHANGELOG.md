@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.83.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.2...v1.83.0) (2026-11-08)
+
+
+### Features
+
+* **standards:** add hook-failure, verifier isolation, memory comparison and MCP auth checks ([#352](https://github.com/dryvist/ai-llm-prompts/issues/352)) ([cba05f4](https://github.com/dryvist/ai-llm-prompts/commit/cba05f4e643ef1d076483c3f073dade8da807922))
+
+
+### Bug Fixes
+
+* **agents:** define stop versus refused once for every agent ([#357](https://github.com/dryvist/ai-llm-prompts/issues/357)) ([13e97b6](https://github.com/dryvist/ai-llm-prompts/commit/13e97b64841ebe82c15a7ffc9d573af010a00a9a))
+* **agents:** tighten the connector evals and the OpenBao result schema ([#351](https://github.com/dryvist/ai-llm-prompts/issues/351)) ([9906971](https://github.com/dryvist/ai-llm-prompts/commit/990697126d256d7cb0ea1781b75d70683529eaee))
+
 ## [1.82.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.82.1...v1.82.2) (2026-11-08)
 
 
