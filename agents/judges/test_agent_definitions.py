@@ -464,7 +464,7 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
         if agent.get("tools"):
             assert agent["mode"] == "shadow"
         assert {node["data"]["type"] for node in nodes} <= {
-            "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "variable-aggregator"
+            "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "if-else", "variable-aggregator"
         }
     elif agent.get("mcp_servers"):
         expected_tools = {tool.split(".", 1)[0] for tool in agent["tools"]}

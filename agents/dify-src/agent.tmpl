@@ -91,17 +91,21 @@ __DIFY_HELPER_JSON_FENCE__
 __DIFY_HELPER_ENVELOPE__
 
 
+def refused_envelope(reason):
+    return json.dumps({"status": "refused", "reason": reason, "result": None})
+
+
 def main(timestamp, event=None):
     result = {"timestamp": timestamp, "kind": "schedule"}
     if __TRIGGER_EVENT__:
         problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
         if problem:
-            raise ValueError("invalid triggering event")
+            return {"text": refused_envelope("invalid triggering event"), "stop": True}
         result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
     text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
     if len(text) > 30000:
-        raise ValueError("trigger input exceeds 30000 characters")
-    return {"text": text}
+        return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+    return {"text": text, "stop": False}
 {{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
 {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
@@ -213,7 +217,17 @@ def main(timestamp, event=None):
             code: ($code | split("__TRIGGER_EVENT__") | join(if $event then "True" else "False" end)),
             variables: ([{variable: "timestamp", value_selector: ["sys", "timestamp"]}] +
               if .data.type == "trigger-webhook" then [{variable: "event", value_selector: [.id, "_webhook_raw"]}] else [] end),
-            outputs: {text: {type: "string"}}}
+            outputs: {text: {type: "string"}, stop: {type: "boolean"}}}
+        }] |
+        .nodes += [($entries | to_entries[]) | .key as $i | .value as $entry | {
+          id: ($entry.id + "-input-gate"), type: "custom", position: {x: 240, y: (100 + (180 * $i))},
+          data: {title: "Stop refused trigger input?", type: "if-else", cases: [{case_id: "stop", logical_operator: "and",
+            conditions: [{id: ($entry.id + "-input-stop"), variable_selector: [($entry.id + "-input"), "stop"],
+              varType: "boolean", comparison_operator: "is", value: true}]}]}
+        }] |
+        .nodes += [($entries | to_entries[]) | .key as $i | .value as $entry | {
+          id: ($entry.id + "-input-refused"), type: "custom", position: {x: 440, y: (100 + (180 * $i))},
+          data: {title: "Refuse trigger input", type: "end", outputs: [{variable: "text", value_selector: [($entry.id + "-input"), "text"]}]}
         }] |
         .nodes += [{id: "trigger-input", type: "custom", position: {x: 240, y: 300}, data: {
           title: "Trigger input", type: "variable-aggregator", output_type: "string",
@@ -222,8 +236,12 @@ def main(timestamp, event=None):
         .edges = [.edges[] | select(.source as $id | all($entries[]; .id != $id))] +
           [$entries[] | {id: (.id + "-input"), source: .id, sourceHandle: "source", target: (.id + "-input"),
             targetHandle: "target", type: "custom", data: {sourceType: .data.type, targetType: "code"}}] +
-          [$entries[] | {id: (.id + "-aggregate"), source: (.id + "-input"), sourceHandle: "source", target: "trigger-input",
-            targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "variable-aggregator"}}] +
+          [$entries[] | {id: (.id + "-input-gate"), source: (.id + "-input"), sourceHandle: "source", target: (.id + "-input-gate"),
+            targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "if-else"}}] +
+          [$entries[] | {id: (.id + "-input-refused"), source: (.id + "-input-gate"), sourceHandle: "stop", target: (.id + "-input-refused"),
+            targetHandle: "target", type: "custom", data: {sourceType: "if-else", targetType: "end"}}] +
+          [$entries[] | {id: (.id + "-input-continue"), source: (.id + "-input-gate"), sourceHandle: "false", target: "trigger-input",
+            targetHandle: "target", type: "custom", data: {sourceType: "if-else", targetType: "variable-aggregator"}}] +
           [{id: "trigger-model", source: "trigger-input", sourceHandle: "source", target: "model", targetHandle: "target",
             type: "custom", data: {sourceType: "variable-aggregator", targetType: "llm"}}] |
         (.nodes[] | select(.data.type == "llm") | .data.prompt_template[] | select(.role == "user") | .text) =
