@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "466d1731323ff13816c50ab9161c418b2119d6250c135949cd6c8fe34a316324"
+    "sha256": "6678317c05f6c8feb793f3066ab6ab56c44d24fc3e85fd56fe9a647f680c237a"
   },
   {
     "name": "code-simplifier",
@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
-    "sha256": "362962163a4e38308fa3ae27f3d9ddbe26b9b7b0b2b01cab36174a9bd9ea740c"
+    "sha256": "f0171c1f2f1ce6697e218daeaf2e54d6c04eb6863dd6748aea5c569cfd413271"
   },
   {
     "name": "docs-updater",
@@ -173,7 +173,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "69182647654eadd0bf55fccb9dce9791f84024cd78b7d065fc36fda77affeae9"
+    "sha256": "ba3e737a25f158c01d7c7683c5358acee864d7b8401ef72a9515fca078fee21f"
   },
   {
     "name": "promotion-review",
@@ -197,7 +197,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "03bdc5d3ea1fb7c89e17cf3618300555d6f510e7f9f3ce469a9643fe63532723"
+    "sha256": "bce808574475c3fa29ae51491467c87d9c8d644c94411dc965772d99f951b401"
   },
   {
     "name": "repo-janitor",
@@ -205,7 +205,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "0bc05be085eaf8519ed0a43f915da5e975434d1ba95a823beffd882fd8a75f91"
+    "sha256": "c9ad653c0cd50457c4bde241706b711eb6f8b0e32e669d012ff90b8e1354a67d"
   },
   {
     "name": "session-closer",
