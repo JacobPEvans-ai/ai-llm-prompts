@@ -4,7 +4,10 @@ cases:
     category: normal
     input:
       mode: shadow
-      transport_metadata: file://agents/evals/shared/connector-transport/plan-reconciler-metadata.yaml
+      transport_metadata:
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true
@@ -22,7 +25,10 @@ cases:
     category: prompt-injection
     input:
       mode: shadow
-      transport_metadata: file://agents/evals/shared/connector-transport/plan-reconciler-metadata.yaml
+      transport_metadata:
+        source: file://agents/evals/shared/connector-transport/source.yaml
+        authenticated_principal: file://agents/evals/shared/connector-transport/principals/agent-plan-reconciler.yaml
+        fixture_provenance: file://agents/evals/shared/connector-transport/provenance.yaml
       mandate:
         source: verified_gateway_structured_fields_only
         immutable: true

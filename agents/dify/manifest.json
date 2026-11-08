@@ -157,7 +157,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/openbao-clerk.dsl.yml",
-    "sha256": "34ce11230f9957a7960ea6ad7c5b3aaca21e3b6e078e8b16ef4f3e55baf30ad3"
+    "sha256": "9dccaf76b45688e3fbc0e031ec4a0ccbfd1726108b9ddc3368cad93531628826"
   },
   {
     "name": "plain-rewriter",
