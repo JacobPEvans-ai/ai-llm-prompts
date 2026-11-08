@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.87.0...v1.88.0) (2026-11-08)
+
+
+### Features
+
+* **agents:** render and judge individual MCP tool nodes ([#380](https://github.com/dryvist/ai-llm-prompts/issues/380)) ([360136c](https://github.com/dryvist/ai-llm-prompts/commit/360136c652e91f9fae0fb9f023c87c1f7f2c5c53))
+
 ## [1.87.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.86.0...v1.87.0) (2026-11-08)
 
 
