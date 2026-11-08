@@ -5,7 +5,7 @@ type: LLM Prompt Fragment
 title: "Platform integration building standards"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T09:27:32Z"
+timestamp: "2026-11-08T11:15:09Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -40,6 +40,7 @@ Local policy is identified separately from upstream requirements.
 ## g. LiteLLM routing and configuration
 
 - Expose stable model-group names with centrally configured deployments. Bound timeouts, retries, and fallback chains; test workload behavior. [L2]
+- Write every fallback target as a list; LiteLLM v1.108.1 and later refuse to start on a string target. [L9]
 - Start with `simple-shuffle` unless measurements justify another strategy; share routing state and rate-limit counters through Redis across instances. [L1]
 - Assign scoped application keys to teams; define model access, budgets, reset periods, and rate limits. [L4] [L5]
 - Set a server-level `rpm` on each MCP Gateway server so all its callers share one request cap. [L8]
@@ -58,6 +59,7 @@ Local policy is identified separately from upstream requirements.
 [D10]: agent-standards-platform-sources.md
 [D12]: agent-standards-platform-sources.md
 [D13]: agent-standards-platform-sources.md
+[D14]: agent-standards-platform-sources.md
 [A3]: agent-standards-sources.md
 [D8]: agent-standards-platform-sources.md
 [F2]: agent-standards-platform-sources.md
@@ -68,3 +70,4 @@ Local policy is identified separately from upstream requirements.
 [L3]: agent-standards-platform-sources.md
 [L6]: agent-standards-platform-sources.md
 [L8]: agent-standards-platform-sources.md
+[L9]: agent-standards-platform-sources.md

@@ -1,11 +1,11 @@
 ---
 name: agent-standards-sources
-description: Dated source attribution for agent, skill, tool, evaluation, and brief standards.
+description: Dated sources for agent, skill, tool, evaluation and brief standards.
 type: LLM Prompt Fragment
 title: "Agent authoring standards sources"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-sources"
 tags: [shared-instructions, agent-standards, skill-authoring]
-timestamp: "2026-11-08T09:27:32Z"
+timestamp: "2026-11-08T12:17:14Z"
 status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
@@ -17,7 +17,7 @@ source_history:
 
 # Agent authoring standards sources
 
-Research cutoff: **2026-11-07**. Titles, publishers, dates, and URLs retain primary-source attribution.
+Research cutoff: **2026-11-07**.
 An undated official page does not establish publication within July–November 2026.
 
 Use these source IDs with the [building standards](agent-standards.md). See the [platform sources](agent-standards-platform-sources.md)
@@ -46,6 +46,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 | A20. The components of agent memory | Anthropic | 2026-11-06 | [A20] |
 | A21. Building agents: When to fold subagents into your main agent loop | Anthropic | 2026-10-22 | [A21] |
 | A22. Claude Code v2.1.317 release notes | Anthropic | 2026-11-03 | [A22] |
+| A23. Claude Code 2.1.319 | Anthropic | 2026-11-06 | [A23] |
 | O1. Rethinking skills and prompts for GPT-6 Astra | OpenAI | 2026-09-11 | [O1] |
 | O2. Custom instructions with AGENTS.md | OpenAI | Undated official page | [O2] |
 | O3. Build skills | OpenAI | Undated official page | [O3] |
@@ -86,6 +87,7 @@ for Dify, LiteLLM, and Langfuse attribution.
 [A20]: https://www.anthropic.com/research/components-of-agent-memory
 [A21]: https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop
 [A22]: https://github.com/anthropics/claude-code/releases/tag/v2.1.317
+[A23]: https://code.claude.com/docs/en/changelog#2-1-319
 [O1]: https://learn.chatgpt.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
 [O2]: https://learn.chatgpt.com/docs/agent-configuration/agents-md
 [O3]: https://learn.chatgpt.com/docs/build-skills
