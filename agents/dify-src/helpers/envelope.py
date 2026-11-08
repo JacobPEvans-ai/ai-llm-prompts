@@ -1,3 +1,7 @@
+def build_envelope(status, reason, result):
+    return {"status": status, "reason": reason, "result": result}
+
+
 def schema_problem(value, schema, path="reply"):
     # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
     if "anyOf" in schema:

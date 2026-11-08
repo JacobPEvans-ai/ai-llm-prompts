@@ -5,7 +5,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/action-extractor.dsl.yml",
-    "sha256": "3649015e9f56c535c0b5f4000ac975a10516af83547957ce140b3e22ad5f315b"
+    "sha256": "55b6c276625685ecc455e581abfd640065e1d6f255abd6e34df0fb469f44a084"
   },
   {
     "name": "agent-audit",
@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "6678317c05f6c8feb793f3066ab6ab56c44d24fc3e85fd56fe9a647f680c237a"
+    "sha256": "23cb5cf16cb3d72db6c8b27993a342422a6acd202ae97ea66500d8dbd2a8335d"
   },
   {
     "name": "code-simplifier",
@@ -45,7 +45,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/commit-grouper.dsl.yml",
-    "sha256": "bfacf6a2555c6a82c283bc07aad2f2940cea85588aa5b7fb99dddb8889fcd7b2"
+    "sha256": "077c817c06614be8a53fdf9a18191926166c8fdd8341f2b6456f04113f395fac"
   },
   {
     "name": "credential-steward",
@@ -165,7 +165,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/plain-rewriter.dsl.yml",
-    "sha256": "8fb079dfecda811c3625de5638e555ca67da88edda8b8c9f035611d2be73283f"
+    "sha256": "4a1a3f6fc1055b833f2047271467194ef132f1c9fa9bd0facb56d5c6a6d781f2"
   },
   {
     "name": "plan-reconciler",
@@ -181,7 +181,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "ba3e737a25f158c01d7c7683c5358acee864d7b8401ef72a9515fca078fee21f"
+    "sha256": "7f6897a4961f57ac3eed20daabf4769d7ccdb07e8320304083fdc97c6b86db02"
   },
   {
     "name": "promotion-review",
@@ -213,7 +213,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "bce808574475c3fa29ae51491467c87d9c8d644c94411dc965772d99f951b401"
+    "sha256": "e5617bcf64aec353c42331687e87f791143b0e745a03fafe88e5410482d9bb5a"
   },
   {
     "name": "repo-janitor",
@@ -221,7 +221,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "c9ad653c0cd50457c4bde241706b711eb6f8b0e32e669d012ff90b8e1354a67d"
+    "sha256": "9e8892066b3c4d0025cde15326f703aab9110b5ce67f850deee271f6ae8c190a"
   },
   {
     "name": "semaphore-clerk",
@@ -277,7 +277,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/style-gate.dsl.yml",
-    "sha256": "4b7f6b1ee1ef6a863227fda5bcf0ab9f140a9b530a58e2a4bec048bc171cb0fe"
+    "sha256": "cc09ca2c231ab20a5335b5c51ce0d32977e78debf0ee103cba24f683b6fa096f"
   },
   {
     "name": "tag-suggester",
@@ -285,7 +285,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/tag-suggester.dsl.yml",
-    "sha256": "9bc3424b6598820bd48413e8b5459dd4367c3965600a6615e608e561b19a7482"
+    "sha256": "b67939cc83360a7fedc2f3db406ed81de5e660d38d318bca93afc8e3709e3b9f"
   },
   {
     "kind": "driver",

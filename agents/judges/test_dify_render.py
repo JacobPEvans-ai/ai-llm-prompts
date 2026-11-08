@@ -303,6 +303,10 @@ def test_each_event_branch_refuses_bad_input_before_the_model(name):
         assert not any(edge["source"] == refused for edge in graph["edges"])
         namespace = {}
         exec(compile(nodes[prepare]["code"], prepare, "exec"), namespace)
+        assert "def refused_envelope" not in nodes[prepare]["code"]
+        assert namespace["build_envelope"]("refused", "invalid triggering event", None) == {
+            "status": "refused", "reason": "invalid triggering event", "result": None,
+        }
         main = namespace["main"]
         if data["type"] == "trigger-schedule":
             output = main(timestamp=123)

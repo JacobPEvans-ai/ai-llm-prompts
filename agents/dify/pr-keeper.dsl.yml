@@ -517,6 +517,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -570,20 +574,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if False:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:
@@ -715,6 +721,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -768,20 +778,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:
@@ -917,6 +929,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -970,20 +986,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:
@@ -1119,6 +1137,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -1172,20 +1194,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:
@@ -1321,6 +1345,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -1374,20 +1402,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:
@@ -1523,6 +1553,10 @@ workflow:
                     return body
                 return value
 
+            def build_envelope(status, reason, result):
+                return {"status": status, "reason": reason, "result": result}
+
+
             def schema_problem(value, schema, path="reply"):
                 # Check the JSON Schema subset that agent output_schema blocks use. Return None when the value fits, else a reason.
                 if "anyOf" in schema:
@@ -1576,20 +1610,22 @@ workflow:
                 return reply, None
 
 
-            def refused_envelope(reason):
-                return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
             def main(timestamp, event=None):
                 result = {"timestamp": timestamp, "kind": "schedule"}
                 if True:
                     problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
                     if problem:
-                        return {"text": refused_envelope("invalid triggering event"), "stop": True}
+                        return {
+                            "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                            "stop": True,
+                        }
                     result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
                 text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
                 if len(text) > 30000:
-                    return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+                    return {
+                        "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+                        "stop": True,
+                    }
                 return {"text": text, "stop": False}
           code_language: python3
           outputs:

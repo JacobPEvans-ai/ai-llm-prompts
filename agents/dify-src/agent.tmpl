@@ -91,20 +91,22 @@ __DIFY_HELPER_JSON_FENCE__
 __DIFY_HELPER_ENVELOPE__
 
 
-def refused_envelope(reason):
-    return json.dumps({"status": "refused", "reason": reason, "result": None})
-
-
 def main(timestamp, event=None):
     result = {"timestamp": timestamp, "kind": "schedule"}
     if __TRIGGER_EVENT__:
         problem = schema_problem(event, {"type": "object", "required": ["body"], "properties": {"body": {"type": "object"}}})
         if problem:
-            return {"text": refused_envelope("invalid triggering event"), "stop": True}
+            return {
+                "text": json.dumps(build_envelope("refused", "invalid triggering event", None)),
+                "stop": True,
+            }
         result = {"timestamp": timestamp, "kind": "event", "event": event["body"]}
     text = json.dumps(redact({"status": "ok", "reason": "", "result": result}))
     if len(text) > 30000:
-        return {"text": refused_envelope("trigger input exceeds 30000 characters"), "stop": True}
+        return {
+            "text": json.dumps(build_envelope("refused", "trigger input exceeds 30000 characters", None)),
+            "stop": True,
+        }
     return {"text": text, "stop": False}
 {{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
