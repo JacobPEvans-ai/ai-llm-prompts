@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+* **Update (standards)**: Split agent-authoring source records into publisher files while preserving source IDs and links.
+
 * **Update (agents)**: Render and judge MCP servers that expose individual tools: a dotted tool whose prefix is a declared
   server becomes one tool node per tool, while subcommand-form entries must share a single tool prefix.
 
