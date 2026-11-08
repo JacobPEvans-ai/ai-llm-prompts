@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T08:44:13-04:00"
+timestamp: "2026-11-08T06:29:38Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -28,7 +28,8 @@ caller and every template repository. Never patch one repo and leave the class a
 ## Rules
 
 1. **First-party shared workflow refs float on the major tag.** Call a reusable workflow from
-   `JacobPEvans/.github` or `JacobPEvans/.github-ai` at `@v1`, with no trailing version comment.
+   `JacobPEvans/.github` or `JacobPEvans/.github-ai` at that repository's current major tag
+   (for example `@v1` or `@v2`), with no trailing version comment.
    Renovate keeps these refs on the major tag. Third-party actions stay pinned by commit SHA,
    bumped by Renovate's digest manager.
 2. **An unmapped path runs the full suite.** A path-scope selector never fails on a path it doesn't know, and never

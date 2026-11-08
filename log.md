@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+* **Fix (instructions)**: Float first-party shared workflow refs on each repository's current major tag.
+
 * **Add (automation)**: Catalog the OpenHands Vikunja ticket-to-pull-request prompt with literal rendering and webhook-task safety rules.
 
 * **Update (agents)**: Return stop for incomplete Langfuse comparisons and ambiguous Slack targets, keep refusals for
