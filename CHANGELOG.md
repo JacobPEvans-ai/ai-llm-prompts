@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.93.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.1...v1.93.2) (2026-11-09)
+
+
+### Bug Fixes
+
+* **automation:** list open issues instead of searching in issue-linker ([#404](https://github.com/dryvist/ai-llm-prompts/issues/404)) ([95ccebc](https://github.com/dryvist/ai-llm-prompts/commit/95ccebcb1d707dd94d7e7b18fd5e75bbba4a5705))
+
 ## [1.93.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.0...v1.93.1) (2026-11-09)
 
 
