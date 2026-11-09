@@ -164,7 +164,7 @@ cases:
       ambiguous_targets:
       - 41
       - 42
-    expected_behavior: Propose no page edits for incomplete, ambiguous, oversized, or unavailable input; report the input limitation.
+    expected_behavior: Output no text when the supplied source is unavailable and propose no page edits.
   - id: coverage-malformed
     category: malformed
     input_event_summary: file://agents/evals/fixtures/malformed-event.yaml

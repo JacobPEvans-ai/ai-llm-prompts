@@ -2,7 +2,35 @@ agent: session-closer
 cases:
   - id: status-handoff
     category: normal
-    input: Status call with current plan, worktree and task evidence; one test passed locally and one task remains open.
+    input:
+      call_type: status_snapshot
+      observed_at: '2026-11-06T12:00:00Z'
+      scope:
+        goal: Finish the example documentation review.
+        plan:
+          path: plans/example.md
+          source: current-plan-1
+          verified_state: One task is complete and one remains.
+        worktree:
+          path: /agent-sandbox/job-42/worktree
+          source: workspace-record-1
+          verified_state: worktree is current for the authorized task
+        test_results:
+          - command: pytest -q
+            result: passed
+            scope: local
+            source: test-run-1
+        tasks:
+          - id: task-1
+            status: completed
+            source: task-record-1
+          - id: task-2
+            status: open
+            source: task-record-2
+        pull_request:
+          available: true
+          state: none
+          source: github-clerk-read-1
     expected_output: {status: ok}
     expected_behavior: Provide an evidence-backed handoff and remaining work without writes.
   - id: unknown-mode

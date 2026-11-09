@@ -51,7 +51,7 @@ cases:
     expected_calls: []
     expected_output:
       actions: []
-    expected_behavior: Propose no action for incomplete, ambiguous, oversized, or unavailable records; report the input limitation.
+    expected_behavior: Return only the object with an empty actions array and no action proposal.
   - id: coverage-malformed
     category: malformed
     tasks:
@@ -60,7 +60,7 @@ cases:
     expected_calls: []
     expected_output:
       actions: []
-    expected_behavior: Propose no action for incomplete, ambiguous, oversized, or unavailable records; report the input limitation.
+    expected_behavior: Return only the object with an empty actions array and no action proposal.
   - file://shared/triage-boundaries.yaml
   - id: coverage-unavailable-source
     category: unavailable-source

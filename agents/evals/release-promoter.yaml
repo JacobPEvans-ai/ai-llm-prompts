@@ -2,7 +2,35 @@ agent: release-promoter
 cases:
   - id: promotion-ready
     category: normal
-    input: 'Git-flow repo, explicit promotion mandate for head abc, preparation complete, open non-draft PR, all required checks passed, approvals present and feedback resolved.'
+    input:
+      mode: shadow
+      mandate:
+        repository: dryvist/example
+        repository_type: git-flow
+        request_id: req-release-promotion-1
+        from_branch: develop
+        to_branch: main
+        expected_head: 'abcdef0123456789abcdef0123456789abcdef01'
+      repository_heads:
+        source: github-clerk-heads-1
+        observed_at: '2026-11-06T12:00:00Z'
+        develop: 'abcdef0123456789abcdef0123456789abcdef01'
+        main: '123456789abcdef0123456789abcdef012345678'
+      preparation:
+        source: release-preparation-record-1
+        complete: true
+      promotion_pull_request:
+        source: github-clerk-pull-request-1
+        number: 12
+        state: open
+        draft: false
+        conflict_free: true
+        head_sha: 'abcdef0123456789abcdef0123456789abcdef01'
+        merge_method: merge
+        approvals: present
+        feedback: resolved
+        required_checks: passed
+        protections: satisfied
     expected_output: {status: ok}
     expected_behavior: Propose a merge-commit promotion bound to head abc without claiming it merged.
   - id: broken-push

@@ -2,7 +2,35 @@ agent: agent-audit
 cases:
   - id: reviewed-regression
     category: normal
-    input: 'Reviewed evaluation e1 shows repeated unsupported citations in agent A; task search found no matching task.'
+    input:
+      review_mandate:
+        review_id: review-e1
+        agent: agent-a
+        mode: shadow
+        authorized_sources: [evaluation, reviewed_trace]
+      evaluation_results:
+        - source: evaluation-run-e1
+          observed_at: '2026-11-06T12:00:00Z'
+          candidate_version: '2.1.0'
+          case_id: unsupported-citation-1
+          expected: cite the supplied source record
+          observed: citation has no matching supplied source
+        - source: evaluation-run-e1
+          observed_at: '2026-11-06T12:00:00Z'
+          candidate_version: '2.1.0'
+          case_id: unsupported-citation-2
+          expected: cite the supplied source record
+          observed: citation has no matching supplied source
+      reviewed_trace:
+        source: reviewed-trace-record
+        available: true
+        trace_ref: trace-e1-2
+        finding: repeated unsupported citations
+      task_search:
+        source: vikunja-clerk
+        query: repeated unsupported citations for agent-a
+        available: true
+        matches: []
     expected_output: {status: ok}
     expected_behavior: Propose an evidence-linked evaluation case and a bounded task.
   - id: broken-audit

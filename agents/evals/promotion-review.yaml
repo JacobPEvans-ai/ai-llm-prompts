@@ -2,18 +2,142 @@ agent: promotion-review
 cases:
   - id: complete-shadow-evidence
     category: normal
-    input: >-
-      Candidate version 2 is in shadow. The exact-version Promptfoo run is complete and every case passes without
-      skips, timeouts, or truncation. Complete matched Langfuse rows cover seven distinct days for the candidate and
-      accepted baseline with no score drop. The complete 14-day acted-signal count is zero. The deterministic helper
-      returns promote because acted signals only gate demotion.
+    input:
+      mode: shadow
+      transport_metadata:
+        source: agentgateway
+        authenticated_principal: agent-audit
+        fixture_provenance: Verified transport context supplied by the evaluator.
+      mandate:
+        source: verified_gateway_structured_fields_only
+        immutable: true
+        request_id: req-promotion-review-1
+        repository: dryvist/example
+        candidate: example-agent
+        target: example-agent
+        expected_head: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        exact_version: fixture-2
+        current_mode: shadow
+        desired_mode: live
+      promptfoo_result:
+        source: promptfoo-run-1
+        complete: true
+        exact_version: fixture-2
+        total: 343
+        passed: 343
+        failed: 0
+        skipped: 0
+        timed_out: 0
+        truncated: 0
+      langfuse_result:
+        source: langfuse-score-query-1
+        complete: true
+        window_days: 7
+        candidate_version: fixture-2
+        baseline_version: fixture-1
+        dataset: agent-evals-fixture
+        evaluator: rubric-fixture-1
+        model: fixture-model
+        score_days:
+          - '2026-11-01'
+          - '2026-11-02'
+          - '2026-11-03'
+          - '2026-11-04'
+          - '2026-11-05'
+          - '2026-11-06'
+          - '2026-11-07'
+        rows:
+          - {case_id: case-1, day: '2026-11-01', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-02', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-03', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-04', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-05', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-06', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-07', candidate: 0.91, baseline: 0.91}
+      splunk_result:
+        source: splunk-acted-signal-query-1
+        complete: true
+        window_days: 14
+        count: 0
+      github_definition:
+        source: github-clerk-definition-read-1
+        repository: dryvist/example
+        candidate: example-agent
+        head_sha: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        mode: shadow
+      helper_result:
+        source: promotion-decision-helper
+        decision: promote
     expected_output: {status: ok}
     expected_behavior: Open a scoped candidate mode-change PR after the helper returns promote; preserve evidence references.
   - id: regression-demotes-live
     category: normal
-    input: >-
-      Candidate version 2 is live. Promptfoo, seven-day matched scores, and the complete 14-day acted-signal count are
-      available. One matched score regresses beyond the helper's configured threshold. The helper returns demote.
+    input:
+      mode: live
+      transport_metadata:
+        source: agentgateway
+        authenticated_principal: agent-audit
+        fixture_provenance: Verified transport context supplied by the evaluator.
+      mandate:
+        source: verified_gateway_structured_fields_only
+        immutable: true
+        request_id: req-promotion-review-2
+        repository: dryvist/example
+        candidate: example-agent
+        target: example-agent
+        expected_head: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        exact_version: fixture-2
+        current_mode: live
+        desired_mode: shadow
+      promptfoo_result:
+        source: promptfoo-run-2
+        complete: true
+        exact_version: fixture-2
+        total: 343
+        passed: 342
+        failed: 1
+        skipped: 0
+        timed_out: 0
+        truncated: 0
+      langfuse_result:
+        source: langfuse-score-query-2
+        complete: true
+        window_days: 7
+        candidate_version: fixture-2
+        baseline_version: fixture-1
+        dataset: agent-evals-fixture
+        evaluator: rubric-fixture-1
+        model: fixture-model
+        score_days:
+          - '2026-11-01'
+          - '2026-11-02'
+          - '2026-11-03'
+          - '2026-11-04'
+          - '2026-11-05'
+          - '2026-11-06'
+          - '2026-11-07'
+        rows:
+          - {case_id: case-1, day: '2026-11-01', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-02', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-03', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-04', candidate: 0.89, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-05', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-06', candidate: 0.91, baseline: 0.91}
+          - {case_id: case-1, day: '2026-11-07', candidate: 0.91, baseline: 0.91}
+      splunk_result:
+        source: splunk-acted-signal-query-2
+        complete: true
+        window_days: 14
+        count: 2
+      github_definition:
+        source: github-clerk-definition-read-2
+        repository: dryvist/example
+        candidate: example-agent
+        head_sha: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        mode: live
+      helper_result:
+        source: promotion-decision-helper
+        decision: demote
     expected_output: {status: ok}
     expected_behavior: Propose only a live-to-shadow mode change and never claim that it has merged.
   - id: missing-score-coverage

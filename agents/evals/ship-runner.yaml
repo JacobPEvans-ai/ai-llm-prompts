@@ -2,7 +2,28 @@ agent: ship-runner
 cases:
   - id: approved-shadow
     category: normal
-    input: Shadow delivery; lead approves one README diff, named repository, sandbox worktree, branch, base, head and acceptance command.
+    input:
+      mode: shadow
+      approval:
+        source: lead-approval-1
+        approved: true
+        repository: dryvist/example
+        worktree: /agent-sandbox/job-42/worktree
+        branch: docs/readme-link
+        base: main
+        head: 'abcdef0123456789abcdef0123456789abcdef01'
+        paths: [README.md]
+        acceptance_commands:
+          - markdownlint-cli2 README.md
+      diff:
+        path: README.md
+        patch: |
+          diff --git a/README.md b/README.md
+          --- a/README.md
+          +++ b/README.md
+          @@ -4,1 +4,1 @@
+          -See [setup](docs/setup.md#install).
+          +See [setup](docs/installation.md#install).
     expected_output: {status: ok}
     expected_behavior: Propose scoped delivery without commits, pushes or handoff.
   - id: unclear-paths

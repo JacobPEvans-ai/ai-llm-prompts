@@ -3,7 +3,38 @@ write_tools: []
 cases:
   - id: morning-normal
     category: normal
-    input: 'UTC 2026-11-06T12:37:00Z; task-1: Renew book today; PR-1: review requested today; ai-news result news-1: new release needs operator decision today; release-digest result release-1: no relevant releases; preferences: {}'
+    input:
+      observed_at: '2026-11-06T12:37:00Z'
+      approved_commitments:
+        available: true
+        records:
+          - id: task-1
+            title: Renew book
+            status: open
+            due_date: '2026-11-06'
+            source: vikunja-task-1
+      pull_request_status:
+        available: true
+        records:
+          - id: PR-1
+            repository: dryvist/example
+            number: 1
+            review_requested: true
+            review_due: '2026-11-06'
+            source: github-pr-1
+      ai_news_result:
+        available: true
+        records:
+          - id: news-1
+            summary: A new release needs an operator decision today.
+            source: ai-news-result-1
+      release_digest_result:
+        available: true
+        records:
+          - id: release-1
+            summary: No relevant releases.
+            source: release-digest-result-1
+      preferences: {}
     expected_output: {status: ok}
     expected_behavior: Cite news-1 and PR-1, and provide the evidenced next steps to decide on the news and review the PR.
   - id: morning-ambiguous
