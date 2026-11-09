@@ -2,6 +2,11 @@
 
 ## 2026-11-09
 
+* **Fix (auto-ai-agent)**: The Hermes surface gains one cron tool rule — a cron run never runs an inline `-c`/`-e`
+  script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
+  per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
+  rule outside the surface.
+
 * **Feat (rules)**: Status posts put one component and one metric on each line, each led by a green, yellow or red status.
 
 * **Feat (agents)**: Run action-extractor, commit-grouper, plain-rewriter, style-gate and tag-suggester on the small
