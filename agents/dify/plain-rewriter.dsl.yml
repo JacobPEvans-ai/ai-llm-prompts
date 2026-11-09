@@ -62,7 +62,7 @@ workflow:
             completion_params:
               temperature: 0
             mode: chat
-            name: medium
+            name: small
             provider: langgenius/openai_api_compatible/openai_api_compatible
           prompt_config:
             jinja2_variables: []
