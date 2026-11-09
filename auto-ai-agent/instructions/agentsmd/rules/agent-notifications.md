@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/agent-noti
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T08:44:13-04:00"
+timestamp: "2026-11-09T16:11:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -36,5 +36,6 @@ for the same budget.
 - **Tone**: actionable fact first, no preamble, no filler acknowledgments, no restating the question, no "I've
   gone ahead and...". See [[soul]] for the interactive-session equivalent. Match urgency to severity; follow
   [[technical-writing]] for prose.
+- **Status lines**: in any multi-facet status (KPI bumps, reports, digests), put one component and one metric on each line, and start each line with 🟢 on target, 🟡 behind, or 🔴 failing or unmeasured.
 
 Gateway-to-channel mapping is environment-specific, in the operator's own local files.
