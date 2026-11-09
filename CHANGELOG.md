@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.93.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.92.0...v1.93.0) (2026-11-09)
+
+
+### Features
+
+* **agent:** zcode run j-18b3b2c5d856acb0 ([fee478e](https://github.com/dryvist/ai-llm-prompts/commit/fee478eda6ff315604e501398b07ce822e5a2243))
+
+
+### Bug Fixes
+
+* **agents:** state eval-required behaviours in four prompts and the eval generator ([#399](https://github.com/dryvist/ai-llm-prompts/issues/399)) ([fee478e](https://github.com/dryvist/ai-llm-prompts/commit/fee478eda6ff315604e501398b07ce822e5a2243))
+
 ## [1.92.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.91.0...v1.92.0) (2026-11-09)
 
 
