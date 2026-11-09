@@ -18,6 +18,16 @@
 
 ## 2026-11-08
 
+* **Add (auto-ai-agent)**: `hermes-reporting/status-levels.md` defines the shared green, yellow and red status
+  levels for Hermes report and alert headlines once, with a machine-readable block a role can load.
+
+* **Update (auto-ai-agent)**: The direct-cron reporting footers carry the green, yellow and red status markers inline
+  in one HEADLINE LEVEL line, because the cron runtime appends only the footer body to the job prompt and the model
+  never reads the referenced shared file; the service pulse chooses its level from those footer markers and turns red
+  only on two consecutive failed probes; judge tests rebuild the expected footer line from the machine-readable block
+  in `hermes-reporting/status-levels.md` so the footers cannot drift from it, and that file stays the canonical
+  machine-readable source.
+
 * **Update (instructions)**: `AGENTS.md` picks the qualifier subscription dynamically — each quota is looked up at
   decision time and the most headroom against its period pace wins, with no hard-coded pause — and after the
   local-first step a failed local call gets a subagent to find what went wrong and what to improve, and at least one

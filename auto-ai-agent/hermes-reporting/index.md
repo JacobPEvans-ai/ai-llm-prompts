@@ -1,5 +1,6 @@
 # Hermes reporting prompts
 
+* [Hermes reporting status levels](status-levels.md) - Shared green, yellow and red status levels for Hermes report and alert headlines.
 * [Hermes daily fabric status](../hermes-daily-fabric-status.md) - Hourly AI-fabric status and delta-reporting prompt.
 * [Hermes daily summary](../hermes-daily-summary.md) - Once-daily delta-only operator rollup for the home channel.
 * [Hermes digest: anomaly hunt](../hermes-digest-anomaly-hunt.md) - Twice-daily auto-delivered unmonitored-pattern anomaly hunt.
