@@ -1,0 +1,66 @@
+name: youtrack-clerk
+extends: connector
+description: |
+  Use when: a verified caller needs a scoped YouTrack issue read, creation, comment, update, or evidence-backed resolution.
+  Do not use when: the mandate is missing, the project is unscoped, or the operation is unsupported or destructive.
+  Typical triggers include duplicate-safe filing, scoped issue updates, and evidence-backed resolution. See "When to invoke" in the agent prompt.
+owns: youtrack
+reader: authorized requesting caller
+acted_signal: readback-verified issue receipt or actionable refusal
+privacy_class: private
+identity: agent-youtrack-clerk
+api_key_ref: openbao://agent-key/youtrack-clerk
+tier: 1
+mcp_servers: [youtrack]
+tools:
+  - youtrack.get_issue
+  - youtrack.search_issues
+  - youtrack.get_issue_comments
+  - youtrack.get_issue_fields_schema
+  - youtrack.get_project
+  - youtrack.find_projects
+  - youtrack.create_issue
+  - youtrack.update_issue
+  - youtrack.add_issue_comment
+mandate_binding:
+  immutable: true
+  from_fields: [caller, request_id, operation, project_id, issue_id, payload]
+  write_tools: [youtrack.create_issue, youtrack.update_issue, youtrack.add_issue_comment]
+guards:
+  credential_owner: youtrack-clerk
+  allowed_projects_ref: policy://youtrack-clerk/allowed-projects
+  denied_projects_ref: policy://youtrack-clerk/denied-projects
+  allowed_actions_ref: policy://youtrack-clerk/allowed-actions
+  allowed_states_ref: policy://youtrack-clerk/allowed-states
+  unknown_or_unscoped_project: refuse
+  denied_projects_never_written: true
+  project_id_change: refuse
+  unlisted_state: refuse
+  denied_states: ["won't fix", obsolete, duplicate, cancelled, canceled]
+  comments: {format: markdown, visibility: mandate_if_present}
+  closure: {require_condition: true, require_evidence: true, require_evidence_date: true}
+  youtrack:
+    tool_allowlist:
+      - get_issue
+      - search_issues
+      - get_issue_comments
+      - get_issue_fields_schema
+      - get_project
+      - find_projects
+      - create_issue
+      - update_issue
+      - add_issue_comment
+    deny_operations:
+      - "*article*"
+      - "*tag*"
+      - "*link*"
+      - "*work*"
+      - "*assignee*"
+      - "*draft*"
+      - "*delete*"
+      - "*cancel*"
+      - "*bulk*"
+      - "*admin*"
+    deny_unknown_tools_and_operations: true
+    enforce_before_dispatch: true
+    on_error: deny

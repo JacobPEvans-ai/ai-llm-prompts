@@ -297,6 +297,13 @@
 * Reader: style-gate and plain-rewriter prompts
 * Acted signal: draft PR merged
 
+### [youtrack-clerk](youtrack-clerk.yaml)
+
+* Tier: 1
+* Trigger: call: caller
+* Reader: authorized requesting caller
+* Acted signal: readback-verified issue receipt or actionable refusal
+
 ### [zammad-clerk](zammad-clerk.yaml)
 
 * Tier: 0
