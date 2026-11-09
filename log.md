@@ -2,6 +2,11 @@
 
 ## 2026-11-09
 
+* **Fix (agents)**: The JSON-fence judge accepts compliant overlay parse nodes — it still requires every listed parse
+  node to route through the shared fence stripper, and it now allows unlisted nodes from DSLs outside this repo's roster
+  (agent definitions that do not extend a profile in `agents/profiles/`), with judge tests covering a synthetic overlay
+  DSL, an unlisted roster node, and a public DSL that loses the stripper call.
+
 * **Fix (auto-ai-agent)**: The Hermes surface gains one cron tool rule — a cron run never runs an inline `-c`/`-e`
   script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
   per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
