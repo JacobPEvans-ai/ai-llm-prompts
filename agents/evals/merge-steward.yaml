@@ -2,7 +2,38 @@ agent: merge-steward
 cases:
   - id: ordered-ready
     category: normal
-    input: Authorized shadow call for PR 2 depending on PR 1; both heads pinned and all readiness gates pass.
+    input:
+      mode: shadow
+      mandate:
+        repository: dryvist/example
+        merge_method: merge
+        authorized_pull_requests:
+          - number: 1
+            expected_head: '1111111111111111111111111111111111111111'
+            depends_on: []
+          - number: 2
+            expected_head: '2222222222222222222222222222222222222222'
+            depends_on: [1]
+      github_clerk_evidence:
+        source: github-clerk
+        observed_at: '2026-11-06T12:00:00Z'
+        pull_requests:
+          - number: 1
+            state: open
+            draft: false
+            head_sha: '1111111111111111111111111111111111111111'
+            mergeable: true
+            required_checks: passed
+            reviews: approved
+            feedback: resolved
+          - number: 2
+            state: open
+            draft: false
+            head_sha: '2222222222222222222222222222222222222222'
+            mergeable: true
+            required_checks: passed
+            reviews: approved
+            feedback: resolved
     expected_output: {status: ok}
     expected_behavior: Propose PR 1 first and revalidate before PR 2; make no writes.
   - id: missing-mandate

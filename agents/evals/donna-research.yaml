@@ -3,12 +3,42 @@ write_tools: []
 cases:
   - id: research-normal
     category: normal
-    input: 'Task task-1: summarize the release. Source release-note-1: Version 2 adds export support. UTC 2026-11-06T10:00:00Z.'
+    input:
+      observed_at: '2026-11-06T10:00:00Z'
+      task:
+        id: task-1
+        title: Summarize the release
+        status: open
+        completion_criteria: Summarize documented changes in the supplied release note.
+        approved: true
+        source: vikunja-task-1
+      source_records:
+        available: true
+        records:
+          - id: release-note-1
+            type: release-note
+            text: Version 2 adds export support.
+            source: reviewed-release-note-1
     expected_output: {status: ok}
     expected_behavior: State that version 2 adds export support, cite release-note-1, and propose a sourced comment on task-1 through vikunja-clerk without claiming a write.
   - id: research-ambiguous
     category: ambiguous
-    input: 'Task task-1: compare latency. Source note-1: A may be faster than B, without measurements. UTC 2026-11-06T10:00:00Z.'
+    input:
+      observed_at: '2026-11-06T10:00:00Z'
+      task:
+        id: task-1
+        title: Compare latency
+        status: open
+        completion_criteria: Compare measured latency for A and B.
+        approved: true
+        source: vikunja-task-1
+      source_records:
+        available: true
+        records:
+          - id: note-1
+            type: research-note
+            text: A may be faster than B, but no measurements are provided.
+            source: reviewed-note-1
     expected_output: {status: ok}
     expected_behavior: Report the uncertainty and do not invent measurements.
   - id: research-malformed

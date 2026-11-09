@@ -32,7 +32,10 @@ cases:
 
   - id: coverage-ambiguous
     category: ambiguous
-    input: We should do something about the report, but no one accepts ownership and no deadline is agreed.
+    input: |
+      MY NOTES
+      We should review the report, but nobody accepted ownership and no deadline was agreed.
+      The group did not make a concrete commitment or assign an action item.
     expected_output:
       status: ok
     expected_behavior: >-

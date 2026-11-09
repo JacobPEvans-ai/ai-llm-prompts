@@ -23,7 +23,13 @@ cases:
         permission_changes: false
         new_transitive_dependencies: false
         provenance: established package; source repository matches
-        diff: "One parsing fix; no native code, binaries, or new dependencies."
+        diff: |
+          diff --git a/src/parser.py b/src/parser.py
+          --- a/src/parser.py
+          +++ b/src/parser.py
+          @@ -1 +1 @@
+          -def parse(value): return value.strip()
+          +def parse(value): return value.strip() or None
         repository_usage: [{path: app/worker.py, use: parses bounded job metadata}]
     expected_output: {status: ok}
     expected_calls: [{tool: a2a, operation: call, args_include: {agent: github-clerk, repo: dryvist/example, pr_number: 201, head_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, delivery_id: delivery-201}}]
@@ -66,7 +72,21 @@ cases:
       head_sha: cccccccccccccccccccccccccccccccccccccccc
       update_type: patch
       dependency_updates: [{name: example-library, old_version: 1.2.3, new_version: 2.0.0}]
-      evidence: {changelog: "No release notes supplied.", diff: "Large structural change; install behavior unclear."}
+      evidence:
+        changelog: "No release notes supplied."
+        diff: |
+          diff --git a/src/parser.py b/src/parser.py
+          --- a/src/parser.py
+          +++ b/src/parser.py
+          @@ -1,2 +1,6 @@
+          -def parse(value):
+          -    return str(value).strip()
+          +class Parser:
+          +    def __init__(self, strict=True):
+          +        self.strict = strict
+          +
+          +    def parse(self, value):
+          +        return str(value).strip()
     expected_output: {status: ok}
     expected_calls: [{tool: a2a, operation: call, args_include: {agent: github-clerk, repo: dryvist/example, pr_number: 203, head_sha: cccccccccccccccccccccccccccccccccccccccc, delivery_id: delivery-203}}]
     expected_behavior: >-
@@ -95,7 +115,15 @@ cases:
       head_sha: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
       update_type: minor
       dependency_updates: [{name: example-library, old_version: 1.2.3, new_version: 1.3.0}]
-      diff: "Bounded patch-version change; release and use-site evidence are unavailable."
+      diff: |
+        diff --git a/src/export.py b/src/export.py
+        new file mode 100644
+        --- /dev/null
+        +++ b/src/export.py
+        @@ -0,0 +1,3 @@
+        +def export_records(records):
+        +    return [record for record in records if record]
+        +
       evidence:
         changelog_result: {available: false, error: release source unavailable}
         repository_usage_result: {available: false}

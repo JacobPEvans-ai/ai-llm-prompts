@@ -8,7 +8,20 @@ cases:
     expected_behavior: Report task-1 completed and task-2 open, including the deferred review from msg-1, with source references.
   - id: evening-ambiguous
     category: ambiguous
-    input: 'UTC 2026-11-06T23:11:00Z; task-1 Review report was discussed but its completion is unknown; preferences: {}'
+    input:
+      observed_at: '2026-11-06T23:11:00Z'
+      approved_task_changes:
+        available: true
+        records:
+          - task_id: task-1
+            title: Review report
+            status: unknown
+            detail: The report was discussed; the record does not confirm completion.
+            source: task-history-record-1
+      slack_digest_context:
+        available: true
+        records: []
+      preferences: {}
     expected_output: {status: ok}
     expected_behavior: Do not claim the report was completed.
   - id: evening-malformed

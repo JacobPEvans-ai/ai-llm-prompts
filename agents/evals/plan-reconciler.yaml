@@ -2,7 +2,24 @@ agent: plan-reconciler
 cases:
   - id: reconcile-evidence
     category: normal
-    input: Shadow call for an authorized plan and worktree; current evidence says task A passed locally, task B is unfinished, and no PR exists.
+    input:
+      mode: shadow
+      mandate:
+        plan_id: plan-example-1
+        plan_path: plans/example.md
+        worktree: /agent-sandbox/job-42/worktree
+        authorized: true
+      observed_at: '2026-11-06T12:00:00Z'
+      evidence:
+        - source: local-test-run
+          reference: artifact://job-42/check-task-a
+          verified_state: task A passed locally
+        - source: task-tracker-record
+          reference: task-example-b
+          verified_state: task B remains unfinished
+        - source: github-clerk
+          reference: repo-example/pull-requests
+          verified_state: no pull request exists
     expected_output: {status: ok}
     expected_behavior: Propose a reconciled plan distinguishing local proof and remaining work without editing.
   - id: unclear-plan

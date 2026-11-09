@@ -3,12 +3,56 @@ write_tools: []
 cases:
   - id: weekly-normal
     category: normal
-    input: 'UTC 2026-11-08T15:31:00Z; weekly history: task-1 report completed; task-2 book remains open and is due tomorrow; inbox intake inbox-1: appointment needs scheduling; task-triage intake triage-1: task-2 remains open; preferences: {}'
+    input:
+      observed_at: '2026-11-08T15:31:00Z'
+      approved_task_history:
+        available: true
+        records:
+          - id: task-1
+            title: Review report
+            status: completed
+            completed_at: '2026-11-05T16:00:00Z'
+            source: task-history-1
+          - id: task-2
+            title: Renew book
+            status: open
+            due_date: '2026-11-09'
+            source: task-history-2
+      inbox_intake:
+        available: true
+        records:
+          - id: inbox-1
+            summary: Appointment needs scheduling.
+            source: inbox-record-1
+      task_triage_intake:
+        available: true
+        records:
+          - id: triage-1
+            task_id: task-2
+            status: open
+            source: task-triage-record-1
+      preferences: {}
     expected_output: {status: ok}
     expected_behavior: Cite the tasks and inbox intake; suggest next moves for the book and appointment without claiming they were applied.
   - id: weekly-ambiguous
     category: ambiguous
-    input: 'UTC 2026-11-08T15:31:00Z; weekly history: task-1 report discussed, status unknown; preferences: {}'
+    input:
+      observed_at: '2026-11-08T15:31:00Z'
+      approved_task_history:
+        available: true
+        records:
+          - id: task-1
+            title: Review report
+            status: unknown
+            detail: The report was discussed, but no completion status is recorded.
+            source: task-history-1
+      inbox_intake:
+        available: true
+        records: []
+      task_triage_intake:
+        available: true
+        records: []
+      preferences: {}
     expected_output: {status: ok}
     expected_behavior: Preserve uncertainty and do not invent completion or a specific move.
   - id: weekly-malformed

@@ -22,7 +22,14 @@ cases:
 
   - id: coverage-ambiguous
     category: ambiguous
-    input: The draft says the worker retries twice and later says it retries five times. Neither statement is marked current.
+    input: |
+      # Retry policy
+
+      The worker retries twice.
+
+      ## Implementation notes
+
+      The worker retries five times. Neither statement is marked as current.
     expected_output:
       status: ok
     expected_behavior: Keep both conflicting retry counts and do not decide which is current.
