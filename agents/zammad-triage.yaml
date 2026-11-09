@@ -205,6 +205,7 @@ dify:
           prompt_config:
             jinja2_variables: []
           title: Triage
+          context: {enabled: false, variable_selector: []}
           type: llm
         id: triage
         position: {x: 640, y: 300}

@@ -80,6 +80,8 @@ workflow:
         data:
           title: Agent
           type: llm
+          # Dify's LLM node schema requires context; without it every run fails graph validation.
+          context: {enabled: false, variable_selector: []}
           model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
           prompt_template:
             - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
