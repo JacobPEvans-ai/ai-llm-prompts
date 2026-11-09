@@ -2,6 +2,8 @@
 
 ## 2026-11-09
 
+* **Feat (rules)**: Status posts put one component and one metric on each line, each led by a green, yellow or red status.
+
 * **Feat (agents)**: Run action-extractor, commit-grouper, plain-rewriter, style-gate and tag-suggester on the small
   role.
 * **Fix (evals)**: The shared promptfoo output instruction now forbids claiming a readback, receipt, dedup result, or
