@@ -1,5 +1,6 @@
 name: plain-rewriter
 extends: interactive
+litellm_role: small
 description: |
   Use when: a supplied draft needs a plain-language rewrite.
   Do not use when: the request needs new facts or a different task.

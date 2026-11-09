@@ -1,5 +1,6 @@
 name: tag-suggester
 extends: interactive
+litellm_role: small
 description: |
   Use when: a note needs tags from a supplied allowed list.
   Do not use when: the request needs new tags outside that list.
