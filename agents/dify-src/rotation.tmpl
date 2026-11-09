@@ -1,6 +1,8 @@
 {{- /* One native scheduler; only tier-2 Dify rotation triggers participate. */ -}}
 {{- define "driver-metadata" -}}
-{{- dict "name" "tier2-rotation" "tier" 2 "mode" nil "kind" "driver" | data.ToJSON -}}
+{{- $name := getenv "ROTATION_DRIVER_NAME" -}}
+{{- test.Assert "the rotation driver name must come from ROTATION_DRIVER_NAME as 3-63 lowercase letters, digits, or hyphens" (regexp.Match `^[a-z0-9-]{3,63}$` $name) -}}
+{{- dict "name" $name "tier" 2 "mode" nil "kind" "driver" | data.ToJSON -}}
 {{- end -}}
 {{- $driver := tmpl.Exec "driver-metadata" . | data.JSON -}}
 {{- $definitions := .agents -}}

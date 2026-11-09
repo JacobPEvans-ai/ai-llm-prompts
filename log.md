@@ -6,6 +6,9 @@
   script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
   per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
   rule outside the surface.
+* **Feat (agents)**: The Dify rotation driver's app name is a render input — `make render-dify` takes it
+  from the `ROTATION_DRIVER_NAME` make variable (default `tier2-rotation`), so an overlay can render its
+  own driver beside the public one.
 
 * **Feat (agents)**: Add `youtrack-clerk`, a connector for scoped issue reads, creates, comments, updates and
   evidence-backed resolution, with readback evals and rendered catalog entries.
