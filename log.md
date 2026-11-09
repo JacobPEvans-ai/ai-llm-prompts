@@ -2,6 +2,14 @@
 
 ## 2026-11-08
 
+* **Add (auto-ai-agent)**: `hermes-reporting/status-levels.md` defines the shared green, yellow and red status
+  levels for Hermes report and alert headlines once, with a machine-readable block a role can load.
+
+* **Update (auto-ai-agent)**: The direct-cron reporting footers state the headline status-level requirement once,
+  pointing at the shared `hermes-reporting/status-levels.md` definitions instead of restating them; the individual
+  Hermes prompts carry no copy of it, the service pulse chooses its level from the shared levels and turns red only
+  on two consecutive failed probes, and judge tests keep the requirement out of every prompt a footer is appended to.
+
 * **Update (instructions)**: `AGENTS.md` picks the qualifier subscription dynamically — each quota is looked up at
   decision time and the most headroom against its period pace wins, with no hard-coded pause — and after the
   local-first step a failed local call gets a subagent to find what went wrong and what to improve, and at least one
