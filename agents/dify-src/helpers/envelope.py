@@ -21,7 +21,7 @@ def schema_problem(value, schema, path="reply"):
         properties = schema.get("properties", {})
         extra = [key for key in value if key not in properties]
         if extra and schema.get("additionalProperties") is False:
-            return f"{path} has unexpected {', '.join(sorted(extra))}"
+            return f"{path} has {len(extra)} unexpected properties"
         for key, child in properties.items():
             if key in value:
                 problem = schema_problem(value[key], child, f"{path}.{key}")
