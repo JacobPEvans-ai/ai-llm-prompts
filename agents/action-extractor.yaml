@@ -86,7 +86,6 @@ dify:
           prompt_config:
             jinja2_variables: []
           title: Extract actions
-          context: {enabled: false, variable_selector: []}
           type: llm
         id: model
         position: {x: 340, y: 300}

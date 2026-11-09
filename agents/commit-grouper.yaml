@@ -84,7 +84,6 @@ dify:
           prompt_config:
             jinja2_variables: []
           title: Group changes
-          context: {enabled: false, variable_selector: []}
           type: llm
         id: model
         position: {x: 340, y: 300}

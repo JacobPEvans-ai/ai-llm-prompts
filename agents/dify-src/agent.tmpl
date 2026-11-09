@@ -80,8 +80,6 @@ workflow:
         data:
           title: Agent
           type: llm
-          # Dify's LLM node schema requires context; without it every run fails graph validation.
-          context: {enabled: false, variable_selector: []}
           model: {completion_params: {temperature: 0}, mode: chat, name: __DIFY_LITELLM_ROLE__, provider: langgenius/openai_api_compatible/openai_api_compatible}
           prompt_template:
             - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
@@ -200,6 +198,8 @@ def main(timestamp, event=None):
 {{- end -}}
 {{- $dsl := tmpl.Exec "workflow" . | data.YAML -}}
 {{- with (index . "dify") -}}{{- $dsl = . -}}{{- end -}}
+{{- /* Dify's LLM node schema requires context: every LLM node gets the disabled default unless it sets its own. */ -}}
+{{- $dsl = coll.JQ `(.workflow.graph.nodes[]? | select(.data.type == "llm") | .data) |= ({context: {enabled: false, variable_selector: []}} + .)` $dsl -}}
 {{- test.Assert "renderer owns schedules" (eq (coll.JQ `[.. | objects | keys[] | select(. == "cron" or . == "cadence")] | length` .) 0) -}}
 {{- test.Assert "renderer owns cron expressions" (eq (coll.JQ `[.. | objects | select(has("cron_expression")) | .cron_expression | select(. != "__DIFY_TRIGGER_CRON__")] | length` .) 0) -}}
 {{- if or $rotation (gt (len $anchors) 0) (and (not (coll.Has . "dify")) (gt (len $webhooks) 0)) -}}
