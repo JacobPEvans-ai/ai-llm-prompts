@@ -341,7 +341,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/youtrack-clerk.dsl.yml",
-    "sha256": "1ed2f74c23c86d388e01ea449808316f3ce919dc601fa312eb9e16dde2b12e80"
+    "sha256": "92c0fc9296d62736024bf17e4f257cea32d50649781f9ecc6b02095e7375975b"
   },
   {
     "name": "zammad-clerk",
