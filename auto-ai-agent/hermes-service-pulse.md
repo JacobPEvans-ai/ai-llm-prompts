@@ -4,7 +4,7 @@ title: Hermes service pulse
 description: Hourly service pulse that keeps a compact memory baseline and reads its open-incident baseline from operator configuration.
 resource: prompt://dryvist/auto-ai-agent/hermes-service-pulse
 tags: [hermes, cron, autonomous-agent]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: 2026-11-09T00:00:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -26,7 +26,7 @@ OBSERVE, with a strict budget of at most 8 terminal calls, curl only, each `curl
 
 COMPARE: judge every observation against its applicable baseline. For open incidents, use the configured baseline, not a remembered value. A value that differs from baseline is a finding; a value on the flaky list that failed once is "flapping", not "down", until it fails on two consecutive pulses. Name what changed since the last pulse and how old that pulse is. Mark unavailable observations unknown.
 
-STATUS LEVEL: start the headline with exactly one status level from the shared Hermes status levels (auto-ai-agent/hermes-reporting/status-levels.md), so the reader knows the state before reading a word. green: every configured health endpoint returned HTTP 200, router readiness is healthy with db connected, open incidents are at or below the configured baseline, and nothing else differs from baseline. yellow: anything unverified, unknown or flapping, a value that differs from baseline without an outage, or open incidents above the configured baseline. red: any configured health endpoint unhealthy (HTTP 5xx or no answer), or router readiness not healthy, on two consecutive pulses. Pick the worst level that applies; never omit it and never use another status emoji.
+STATUS LEVEL: start the headline with exactly one status level from the HEADLINE LEVEL markers in the reporting contract below, so the reader knows the state before reading a word. green: every configured health endpoint returned HTTP 200, router readiness is healthy with db connected, open incidents are at or below the configured baseline, and nothing else differs from baseline. yellow: anything unverified, unknown or flapping, a value that differs from baseline without an outage, or open incidents above the configured baseline. red: any configured health endpoint unhealthy (HTTP 5xx or no answer), or router readiness not healthy, on two consecutive pulses. Pick the worst level that applies; never omit it and never use another status emoji.
 
 REPORT exactly once: headline "<level> Service pulse <UTC time>: N/M health endpoints healthy, router readiness <status> (db <status>), Z open incidents (H high)". Count only configured health endpoints in N/M; report reachability-only results and unknown values separately. Follow with one line per observation and its differing baseline, one line "Since last pulse (<age>): <what changed, or 'no change'>", and one line "Learned: <the single most useful thing this run taught you, or 'nothing new'>". Under 15 lines, plain text.
 

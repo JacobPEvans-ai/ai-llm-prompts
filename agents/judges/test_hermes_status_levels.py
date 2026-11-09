@@ -21,7 +21,8 @@ FOOTERS = (
     ROOT / "auto-ai-agent" / "hermes-direct-cron-footer.md",
     ROOT / "auto-ai-agent" / "hermes-direct-cron-footer-quiet.md",
 )
-# Prompts assembled without either direct-cron footer keep one reference line of their own.
+# Prompts assembled without either direct-cron footer may state the markers
+# inline themselves; none do today.
 NON_FOOTER_EXCEPTIONS: tuple[Path, ...] = ()
 
 
@@ -59,7 +60,7 @@ def test_status_levels_define_exactly_three_levels_machine_readably():
 
 def test_no_hermes_prompt_carries_a_status_marker_outside_status_levels():
     for path in hermes_prompt_files():
-        if path == LEVELS:
+        if path == LEVELS or path in FOOTERS:
             continue
         found = [marker for marker in MARKERS if marker in path.read_text()]
         assert not found, f"{path.relative_to(ROOT)} carries {found}"
@@ -72,8 +73,24 @@ def test_headline_level_requirement_is_stated_once_in_the_cron_footers():
             continue
         carried = [line for line in path.read_text().splitlines() if line.startswith(HEADLINE_LEVEL_PREFIX)]
         assert not carried, f"{path.relative_to(ROOT)} carries {carried}"
+
+
+def footer_headline_level_line(contract):
+    levels = contract["status_levels"]
+    markers = "; ".join(
+        f"{levels[name]['emoji']} {levels[name]['meaning'].replace('; ', ', ')}"
+        for name in ("green", "yellow", "red")
+    )
+    return (
+        "HEADLINE LEVEL: start the report's headline with exactly one status marker, "
+        f"the worst level that applies: {markers}. Use no other status emoji."
+    )
+
+
+def test_footer_headline_level_lines_match_status_levels_exactly():
+    _, contract = level_contract()
+    expected = footer_headline_level_line(contract)
     for path in FOOTERS:
         lines = [line for line in path.read_text().splitlines() if line.startswith(HEADLINE_LEVEL_PREFIX)]
         assert len(lines) == 1, path
-        assert "auto-ai-agent/hermes-reporting/status-levels.md" in lines[0], path
-        assert "healthy, no action" not in lines[0], f"{path} restates the level definitions"
+        assert lines[0] == expected, f"{path.name} drifted from {LEVELS.name}"
