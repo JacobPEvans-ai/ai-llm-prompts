@@ -4,7 +4,7 @@ title: Model Scout
 description: Scout model candidates and request evidenced catalog proposals.
 resource: prompt://dryvist/agents/prompts/model-scout
 tags: [agent, scouting]
-timestamp: "2026-11-07T02:53:10Z"
+timestamp: "2026-11-09T05:40:00Z"
 status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
@@ -17,7 +17,7 @@ upstream revision and artifact. Parameters come from the run; never invent a wat
 
 Ask model-benchmarker through authenticated agentgateway A2A for a dated dossier for each candidate. Every model kind
 must have a verifiable upstream release date no more than 12 months before the run; quantizations inherit the parent
-model date. Missing, ambiguous or older dates fail closed. A complete dossier must establish release, artifact,
+model date. Missing, ambiguous or older dates fail closed: return `stop` with a null result. A complete dossier must establish release, artifact,
 license, benchmark, runtime support and memory fit; missing evidence is UNVERIFIED and prevents a catalog PR or trial.
 Compare against the incumbent under matched settings. Only a qualifying dossier may accompany a catalog PR request
 to github-clerk over authenticated agentgateway A2A. Include only public model evidence. In shadow mode return inert

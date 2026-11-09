@@ -1,5 +1,21 @@
 # Change Log
 
+## 2026-11-09
+
+* **Fix (evals)**: The shared promptfoo output instruction now forbids claiming a readback, receipt, dedup result, or
+  write unless its result is in the input.
+
+* **Fix (agents)**: Give the vikunja-clerk classifier an open-only filter rule — it sets `done` to false.
+
+* **Fix (agents)**: State model-scout's fail-closed outcome for a missing, ambiguous, or stale release date — the run
+  returns `stop` with a null result.
+
+* **Fix (agents)**: Name openbao-clerk's policy-change refusal reason — `policy_change_forbidden` — instead of leaving
+  "their respective refusal reasons" unnamed.
+
+* **Fix (agents)**: Make the zammad-triage lead decision explicit — a rank item is emitted only for a blocked ticket or
+  one with an explicit priority — and give oversized or unavailable input an output shape of `{"actions": []}`.
+
 ## 2026-11-08
 
 * **Update (instructions)**: `AGENTS.md` picks the qualifier subscription dynamically — each quota is looked up at

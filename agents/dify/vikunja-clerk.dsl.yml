@@ -338,7 +338,7 @@ workflow:
                 category.
                 Never output project_id. Use task_id only for get; updates use the structured task_id input. Set category only when
                 explicitly supplied by the caller; otherwise use null.
-                priority must be a number or null; done must be a boolean or null.
+                priority must be a number or null; done must be a boolean or null. An open-only filter sets done to false.
                 Set route to zammad for incidents, outages, security findings, and weaknesses. Otherwise set route to vikunja.
                 operation must be one requested Vikunja operation or the exact unsupported operation requested. Do not invent a
                 missing operation.

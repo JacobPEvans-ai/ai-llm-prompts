@@ -7,7 +7,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT_INSTRUCTIONS = """Return exactly one JSON object following the canonical agent prompt's output contract. Any proposed calls are inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Return no Markdown."""
+OUTPUT_INSTRUCTIONS = """Return exactly one JSON object following the canonical agent prompt's output contract. Any proposed calls are inert objects with `tool`, `operation`, and `args`; split dotted tool identifiers at their final period into `tool` and `operation`. Never execute a tool or claim that a tool ran. Never say a readback, receipt, dedup result, or write happened unless its result is in the input. Return no Markdown."""
 ASSERTION_FILE = "file://assertions.js:"
 RUBRIC_PROVIDERS = {
     "behavior-rubric-judge-a": "exec:../../../scripts/promptfoo/grader.sh judge-a",

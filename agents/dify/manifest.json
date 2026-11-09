@@ -165,7 +165,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/model-scout.dsl.yml",
-    "sha256": "5dbba78c564a44bed9946cee4b1efd8328ab3e61897183c5c7753315817b11b2"
+    "sha256": "dc7aa58653d8cdf813ff1fe90a3e54d1294609f2c0b19e3746b5dfda5588df4d"
   },
   {
     "name": "openbao-clerk",
@@ -173,7 +173,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/openbao-clerk.dsl.yml",
-    "sha256": "e326838a9ccd4aba9ed00e84f496567493cafbaf06949463263942838bc7e727"
+    "sha256": "ace5728cb25e9ceba8bd9e15d25839be9e461b979cf97bd6e547a12798d3d56c"
   },
   {
     "name": "plain-rewriter",
@@ -317,7 +317,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/vikunja-clerk.dsl.yml",
-    "sha256": "c95dbe07601bb91fd7159a64798b1ca3e17d9a35fbd52b45e346ca291336b0ba"
+    "sha256": "07b72f2198b26438c6e340ca7172cbaf861990f1623d5bdef0741a703d5e702e"
   },
   {
     "name": "vikunja-triage",
@@ -349,6 +349,6 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/zammad-triage.dsl.yml",
-    "sha256": "48c93517903dedb22a7baa4d19aabc691cf81fbc0f3b4a4596197365dc296a84"
+    "sha256": "89fb05f61abb99d210fa096b3642e5b5d90e882a9cca1920659e6fb451c11250"
   }
 ]
