@@ -44,6 +44,9 @@ workflow:
           "y": 300
         type: custom
       - data:
+          context:
+            enabled: false
+            variable_selector: []
           model:
             completion_params:
               temperature: 0

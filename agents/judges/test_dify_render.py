@@ -112,6 +112,7 @@ def test_new_dify_agent_needs_only_definition_and_prompt(tmp_path, name):
     nodes = dsl["workflow"]["graph"]["nodes"]
     model = next(node["data"] for node in nodes if node["data"]["type"] == "llm")
     assert model["model"]["name"] == "medium"
+    assert model["context"] == {"enabled": False, "variable_selector": []}
     assert model["prompt_template"][0]["text"] == (
         'Shared prefix.\n\nUntrusted {{ file.Read "outside.md" }}.'
     )
