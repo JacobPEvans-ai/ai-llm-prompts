@@ -70,8 +70,10 @@ Each trigger declares one of these kinds:
 Raw `cron` and `cadence` fields are forbidden outside rendered Dify graph data.
 The renderer owns schedule expressions. Tier 2 rotation agents expose a webhook entry for
 driver calls; tracker events share that entry. The shared driver owns their windows
-and live pace controls. Tier 0/1 rotations use native schedules; supported intervals are
-minute divisors of 60 of at least two minutes, hour divisors of 24, and one day.
+and live pace controls. The driver's Dify app name is the `ROTATION_DRIVER_NAME` make variable,
+3 to 63 lowercase letters, digits, or hyphens (default `tier2-rotation`), so an overlay can
+render its own driver beside the public one. Tier 0/1 rotations use native schedules; supported
+intervals are minute divisors of 60 of at least two minutes, hour divisors of 24, and one day.
 Native minute schedules omit `:00`, `:15`, `:30`, and `:45` from their compiled
 minute lists. Omitted starts wait for the next scheduled minute, preserving the
 minimum interval; `every: 15m` starts at `:07`, `:22`, `:37`, and `:52`.

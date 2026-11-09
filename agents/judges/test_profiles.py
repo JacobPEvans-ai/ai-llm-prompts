@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from definitions import resolve_records
-from test_dify_render import sample_checkout, render_checkout
+from test_dify_render import driver_dsl, sample_checkout, render_checkout
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def test_rotation_driver_uses_inherited_tier_and_triggers(profiled_checkout, tmp
     path.write_text(yaml.safe_dump(agent))
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
-    output = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    output = yaml.safe_load(driver_dsl(tmp_path).read_text())
     code = next(node["data"]["code"] for node in output["workflow"]["graph"]["nodes"] if node["id"] == "due")
     namespace = {}
     exec(code, namespace)
