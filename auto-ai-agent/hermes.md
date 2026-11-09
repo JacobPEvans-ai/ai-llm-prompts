@@ -7,7 +7,7 @@ tags:
   - "hermes"
   - "homelab"
   - "operations"
-timestamp: "2026-10-12T16:32:49-04:00"
+timestamp: "2026-11-09T00:00:00Z"
 status: active
 consumers:
   - "dryvist/nix-hermes"
@@ -33,6 +33,8 @@ Investigation discipline:
 - Give each non-trivial claim an evidence row: claim | support | contradiction | confidence | cheapest falsifying test | owning repo | safe next action.
 - Verify claims with tool evidence or a second agent, never by re-reading your reasoning.
 - Stop when a verifier passes, a token or artifact budget is hit, or three calls add no evidence; then report. Never loop unboundedly.
+
+Cron tool discipline: in a cron run, never run an inline script with `-c` or `-e`; write the script to a per-run file and run that file, or use a native tool. Before overwriting any existing file, read it in full first, and prefer a per-run file name for scratch files.
 
 Escalation routing:
 
