@@ -6,7 +6,7 @@ resource: "prompt://dryvist/automation/ai-workflows/issue-linker"
 tags:
   - "automation"
   - "ai-workflows"
-timestamp: "2026-07-18T16:40:00-04:00"
+timestamp: "2026-11-09T06:00:00-04:00"
 status: active
 consumers:
   - "JacobPEvans/.github-ai"
@@ -40,8 +40,8 @@ Extract: the problem being solved, files changed, keywords from title/descriptio
 
 ## Step 2: Search for Related Issues
 
-- `gh issue list --state open --limit 50` — all open issues
-- `gh search issues "repo:$GITHUB_REPOSITORY state:open <keywords>"` — targeted search
+- List every open issue with `gh issue list --state open --limit 200 --json number,title,body,labels`, then compare each issue against the PR locally.
+Never use `gh search` or `--search` — the GitHub search API is denied.
 For EACH open issue, compare its title, body, and acceptance criteria against the PR changes.
 Classify each as: RESOLVED (PR fully addresses all criteria), RELATED (partial overlap), or UNRELATED.
 
