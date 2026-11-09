@@ -336,6 +336,14 @@
     "sha256": "c10bde0ab7bd9f9301cecfa4bc7f0ab4f2db466f88809d6f13c588fa2be2ba28"
   },
   {
+    "name": "youtrack-clerk",
+    "mode": "shadow",
+    "tier": 1,
+    "kind": "agent",
+    "path": "agents/dify/youtrack-clerk.dsl.yml",
+    "sha256": "1ed2f74c23c86d388e01ea449808316f3ce919dc601fa312eb9e16dde2b12e80"
+  },
+  {
     "name": "zammad-clerk",
     "mode": "shadow",
     "tier": 0,
