@@ -2,6 +2,13 @@
 
 ## 2026-11-09
 
+* **Fix (agents)**: The JSON-fence judge accepts compliant overlay parse nodes — it still requires every listed parse
+  node to route through the shared fence stripper, and it now decides roster membership by the `shared_prefix` each
+  agent definition resolves through its `extends` chain: definitions resolving to the prefix declared in
+  `agents/profiles/defaults.yaml` must keep every parse node on the hard-coded list, definitions resolving to a
+  different profile-declared prefix are overlay DSLs whose compliant nodes may sit outside it, and orphan DSLs or
+  chains without a resolved prefix fail.
+
 * **Fix (auto-ai-agent)**: The Hermes surface gains one cron tool rule — a cron run never runs an inline `-c`/`-e`
   script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
   per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
