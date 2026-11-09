@@ -4,7 +4,7 @@ title: Hermes release watch
 description: Daily digest of recent releases for tracked dependencies.
 resource: prompt://dryvist/auto-ai-agent/hermes-release-watch
 tags: [hermes, cron, releases, dependencies]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: 2026-10-04T01:46:15Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -30,8 +30,6 @@ Post at most 10 bullets, prioritizing security fixes and changes with clear oper
 each bullet:
 
 `Tool old→new: why it matters — <release URL>`
-
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 Keep each reason concise and factual, and include the direct release URL. If no release qualifies, output only the bare
 marker `[SILENT]`.

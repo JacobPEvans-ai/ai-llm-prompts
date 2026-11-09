@@ -4,7 +4,7 @@ title: Hermes daily summary
 description: Once-daily delta-only operator rollup for the home channel.
 resource: prompt://dryvist/auto-ai-agent/hermes-daily-summary
 tags: [hermes, cron, autonomous-agent]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: "2026-11-07T15:26:59Z"
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -18,8 +18,6 @@ source_history:
     commit: 43b2f645503ba1c1faeea9b05e4d81dfdf762c0d
     variable: hermes_agent_summary_cron_prompt
 ---
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
-
 Post the once-daily operator summary to this channel, built from your own last-24h cron
 findings and memory (Splunk, Zammad incidents opened/updated/resolved, fabric health,
 GitHub org findings). For Splunk ingest volume specifically, run one bounded search over

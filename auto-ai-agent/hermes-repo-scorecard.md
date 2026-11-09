@@ -4,7 +4,7 @@ title: Hermes repo scorecard
 description: Weekly weighted 0-100 repo-health scorecard for the dryvist org with week-over-week deltas.
 resource: prompt://dryvist/auto-ai-agent/hermes-repo-scorecard
 tags: [hermes, cron, autonomous-agent, github]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: 2026-08-07T20:00:00-04:00
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -52,7 +52,5 @@ If every repo's score is unchanged since the last run, post only a one-line upda
 - The count of repos scored and the count skipped, if any.
 
 Slack does not render Markdown tables — put the columnar parts in a fenced code block so the numbers stay aligned. Lead with what changed. Do not re-dump the full repo list every week.
-
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 If a finding needs human action beyond reporting — a repo whose CI has been failing for multiple runs, say — file it as a Vikunja task (`vikunja_tasks`) rather than only mentioning it in Slack. Never open a GitHub issue. If the finding is incident-shaped (e.g. a live security exposure), open a Zammad ticket instead. End every delivered message with one line naming the model id(s) you used.

@@ -7,7 +7,7 @@ tags:
 - hermes
 - autonomous-agent
 - cron
-timestamp: 2026-11-08T19:00:00Z
+timestamp: '2026-11-07T07:35:00Z'
 status: active
 consumers:
 - dryvist/ansible-proxmox-ai
@@ -27,7 +27,5 @@ MEMORY. Never use the built-in `memory` tool in any turn. On a report run, first
 TOOL CALLS. Call each tool directly, one tool per call; never batch calls. Do not use `execute_code`, `terminal` or file-search tools. Do not use `tool_call` batching. Do not look up sourcetypes with a catalog tool; use remembered queries. Make at most 25 tool calls in total, including memory and Splunk calls. At call 20, stop gathering and prepare the final report.
 
 FEEDBACK. Feedback turns are separate from report runs. Operators react to your report or reply in its thread. A later turn such as "reaction:added:👍", "reaction:added:👎" or any other emoji, or a human reply, is feedback on that report. Make ONE `hindsight_retain` call with `content` beginning `LLM-STATS-HOURLY-FEEDBACK` followed by the UTC date-hour and the dated operator guidance naming the report sections; pass `tags: ["llm-stats"]`; then answer with one short acknowledgement. A thumbs up means keep doing that; a thumbs down or a critical reply means change it. Follow `LLM-STATS-HOURLY-FEEDBACK` entries over these defaults.
-
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 FORMAT. Slack mrkdwn, scannable: a one-line headline with the single most important change, then short sections with numbers, host names and deltas, then one "Gaps:" line for unavailable current metrics. No preamble, no sign-off, no restating this task. Finish within 15 minutes, including automatic report delivery and memory updates. Stop querying by minute 10 and reserve the final 5 minutes to synthesize the report and save memory before writing the final response. You only observe and report: never change, restart or reconfigure anything.

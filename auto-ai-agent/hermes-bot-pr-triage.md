@@ -4,7 +4,7 @@ title: Hermes bot PR triage
 description: Delta-aware bot-PR security triage that labels and escalates dependency PRs but never merges, plus a once-daily stale-open-PR report.
 resource: prompt://dryvist/auto-ai-agent/hermes-bot-pr-triage
 tags: [hermes, cron, autonomous-agent, security]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: 2026-10-11T00:00:00-04:00
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -80,7 +80,5 @@ report is one click, not a lookup. Save today's UTC date to
 - Escalate every high (failed the gate for any reason except age) and every critical alert to Slack: `@here` for high, `<!here>` for critical, with CVE/GHSA, severity, repo, and link. Dedupe with memory key `bot-pr-triage-cooldown` — skip an alert already escalated in the last 3 days. Collect escalations into one combined message.
 - Cap labels at 5 per run; escalations are uncapped.
 - Include the stale-PR report (if not skipped above) in the same message as its own section, even when the security triage found nothing.
-
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 If nothing cleared a gate, nothing needs escalation, and the stale-PR report was skipped (already reported today), reply with exactly [SILENT]. Otherwise post the combined Slack message (labels added, escalations, stale-PR report) to the home channel and save updated cooldowns to memory. End every delivered message with one line naming the model id(s) you used.

@@ -16,6 +16,13 @@ EXPECTED = {
 RULE = "a report starts with exactly one marker, the worst level that applies"
 FORBIDDEN = (":warning:", ":rotating_light:", ":white_check_mark:")
 MARKERS = tuple(marker for triple in EXPECTED.values() for marker in triple[:2]) + FORBIDDEN
+HEADLINE_LEVEL_PREFIX = "HEADLINE LEVEL:"
+FOOTERS = (
+    ROOT / "auto-ai-agent" / "hermes-direct-cron-footer.md",
+    ROOT / "auto-ai-agent" / "hermes-direct-cron-footer-quiet.md",
+)
+# Prompts assembled without either direct-cron footer keep one reference line of their own.
+NON_FOOTER_EXCEPTIONS: tuple[Path, ...] = ()
 
 
 def level_contract():
@@ -56,3 +63,17 @@ def test_no_hermes_prompt_carries_a_status_marker_outside_status_levels():
             continue
         found = [marker for marker in MARKERS if marker in path.read_text()]
         assert not found, f"{path.relative_to(ROOT)} carries {found}"
+
+
+def test_headline_level_requirement_is_stated_once_in_the_cron_footers():
+    allowed = {LEVELS, *FOOTERS, *NON_FOOTER_EXCEPTIONS}
+    for path in hermes_prompt_files():
+        if path in allowed:
+            continue
+        carried = [line for line in path.read_text().splitlines() if line.startswith(HEADLINE_LEVEL_PREFIX)]
+        assert not carried, f"{path.relative_to(ROOT)} carries {carried}"
+    for path in FOOTERS:
+        lines = [line for line in path.read_text().splitlines() if line.startswith(HEADLINE_LEVEL_PREFIX)]
+        assert len(lines) == 1, path
+        assert "auto-ai-agent/hermes-reporting/status-levels.md" in lines[0], path
+        assert "healthy, no action" not in lines[0], f"{path} restates the level definitions"

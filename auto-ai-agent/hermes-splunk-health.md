@@ -4,7 +4,7 @@ title: Hermes Splunk platform health
 description: Two-hourly review of Splunk platform health, retaining compact baselines and known noise between runs.
 resource: prompt://dryvist/auto-ai-agent/hermes-splunk-health
 tags: [hermes, cron, autonomous-agent, splunk]
-timestamp: 2026-11-08T19:00:00Z
+timestamp: 2026-10-30T18:18:59Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
@@ -35,7 +35,5 @@ If something looks off, keep pulling the thread until you know the cause or know
 JUDGE against your baselines and memory. A finding is anything new, anything escalating, or any license problem: a warning, a violation day, or a projection over quota. Known noise is skipped unless it got worse. Give each finding a number, the time it started, the likely cause and the query that shows it.
 
 REPORT: if nothing is new or escalating and there is no license problem, reply with exactly [SILENT]. Otherwise send one message with the headline "Splunk health: <n> findings", prefixed with "LICENSE WARNING" when any finding is a license problem. Then list the findings worst first, one line each: what, numbers, since when, and the cause or the next step to confirm it. Add one license line (used GB / quota GB today, projected GB by midnight) and end with ONE line "Learned: <the single most useful thing this run taught you, or 'nothing new'>". Keep it under 25 lines of plain text.
-
-HEADLINE LEVEL: start the report's headline with exactly one shared Hermes status level from auto-ai-agent/hermes-reporting/status-levels.md: green (healthy, no action), yellow (degraded, unverified, flapping or above baseline; look when convenient), red (failing or down; act now) - pick the worst level that applies, and use no other status emoji.
 
 RETAIN (last, always, even on a silent run): save this run's UTC time, open issues with first-seen and trend, updated baselines and license curve point, short known-noise list with reasons, and one useful lesson. If the selected external provider supplies retain tools, use those available tools. With built-in memory, use the available `memory` tool to add or patch one compact Splunk-health entry containing only the latest snapshot, not the entire history. If no memory tool is available or the update fails, report the run as incomplete; never invent a tool.

@@ -97,5 +97,5 @@ def test_hourly_stats_index_reassembles_original_bytes():
         bodies.append(body)
     # Freeze the original literal body, including separators and its final byte.
     assert hashlib.sha256(b"".join(bodies)).hexdigest() == (
-        "a3f57ba93b3ee2818288d30c5819e13fd6934da2e50e37f376747928c4039aef"
+        "a87b6c38d9564d22e89cd2b878fffa556933adcebe91d8ec468c416d22260642"
     )
