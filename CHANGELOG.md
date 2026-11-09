@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.94.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.2...v1.94.0) (2026-11-09)
+
+
+### Features
+
+* **hermes:** one status-levels source for report markers ([#387](https://github.com/dryvist/ai-llm-prompts/issues/387)) ([c38fd3f](https://github.com/dryvist/ai-llm-prompts/commit/c38fd3fbd311a203ee2ee21196d6e7e04779c448))
+
 ## [1.93.2](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.1...v1.93.2) (2026-11-09)
 
 
