@@ -10,6 +10,10 @@
 * **Feat (agents)**: Add `youtrack-clerk`, a connector for scoped issue reads, creates, comments, updates and
   evidence-backed resolution, with readback evals and rendered catalog entries.
 
+* **Fix (agents)**: The shared Dify report-envelope helper states unexpected reply properties as a count in its rejection
+  reason, so no reason ever repeats key names or values a reply can choose, and the judge suite plants a unique marker in
+  an otherwise valid reply to assert no returned reason echoes it.
+
 * **Feat (rules)**: Status posts put one component and one metric on each line, each led by a green, yellow or red status.
 
 * **Feat (agents)**: Run action-extractor, commit-grouper, plain-rewriter, style-gate and tag-suggester on the small
