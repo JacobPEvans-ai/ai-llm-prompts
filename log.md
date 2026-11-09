@@ -6,6 +6,9 @@
   script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
   per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
   rule outside the surface.
+* **Feat (agents)**: Accept an overlay roster's prefix, manifest, and parse suites — the judges require one shared
+  prefix per profile family, additional `agents/dify/manifest.<roster>.json` manifests that together cover every
+  rendered DSL exactly once, and derive `<agent>-parse` suites from every eval suite with `expected_parse` cases.
 
 * **Feat (rules)**: Status posts put one component and one metric on each line, each led by a green, yellow or red status.
 

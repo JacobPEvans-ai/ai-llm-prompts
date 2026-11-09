@@ -311,11 +311,16 @@ def test_self_reference_does_not_require_a_peer():
     _validate_prompt_handoffs(agent, "You are task-clerk.", {"incident-clerk", "task-clerk"})
 
 
-def test_agent_roster_paths_and_prompt_metadata_are_complete():
-    definitions = _definitions()
+def _profile_family(agent):
+    """Definitions resolving through the same top-level `extends` profile chain share a family;
+    a definition without a profile is its own family."""
+    return agent.get("extends") or f"definition:{agent['name']}"
+
+
+def _roster_paths_and_prompt_metadata(definitions):
     assert definitions
 
-    shared_prefixes = set()
+    family_prefixes = {}
     for path, agent in definitions:
         assert isinstance(agent, dict), f"{path.name} must contain a YAML mapping"
         missing = _missing_roster_fields(agent)
@@ -327,13 +332,44 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
                 f"{path.name} {field} does not name a file: {agent[field]}"
             )
 
-        shared_prefixes.add(agent["shared_prefix"])
         _prompt_body(_ROOT / agent["prompt"])
+        family_prefixes.setdefault(_profile_family(agent), set()).add(agent["shared_prefix"])
 
-    assert len(shared_prefixes) == 1, (
-        f"agents use different shared prefixes: {sorted(shared_prefixes)}"
-    )
-    _prompt_body(_ROOT / next(iter(shared_prefixes)))
+    for family, shared_prefixes in family_prefixes.items():
+        assert len(shared_prefixes) == 1, (
+            f"{family} profile family uses different shared prefixes: {sorted(shared_prefixes)}"
+        )
+    for shared_prefix in sorted(set().union(*family_prefixes.values())):
+        _prompt_body(_ROOT / shared_prefix)
+    return {family: next(iter(prefixes)) for family, prefixes in family_prefixes.items()}
+
+
+def test_agent_roster_paths_and_prompt_metadata_are_complete():
+    _roster_paths_and_prompt_metadata(_definitions())
+
+
+def _family_fixture(name, extends, shared_prefix):
+    agent = dict(definition("vikunja-triage"))
+    agent.update(name=name, extends=extends, shared_prefix=shared_prefix)
+    return Path(f"{name}.yaml"), agent
+
+
+def test_a_definition_in_another_profile_family_may_use_its_own_shared_prefix():
+    base = _family_fixture("sample-clerk", "connector", "agents/prompts/shared/homelab.md")
+    overlay = _family_fixture("overlay-clerk", "overlay", "agents/prompts/vikunja-clerk.md")
+    families = _roster_paths_and_prompt_metadata([base, overlay])
+
+    assert families == {
+        "connector": "agents/prompts/shared/homelab.md",
+        "overlay": "agents/prompts/vikunja-clerk.md",
+    }
+
+
+def test_two_definitions_in_one_profile_family_with_different_prefixes_fail():
+    first = _family_fixture("sample-clerk", "connector", "agents/prompts/shared/homelab.md")
+    second = _family_fixture("overlay-clerk", "connector", "agents/prompts/vikunja-clerk.md")
+    with pytest.raises(AssertionError, match="connector profile family uses different shared prefixes"):
+        _roster_paths_and_prompt_metadata([first, second])
 
 
 def _key_references(value):
