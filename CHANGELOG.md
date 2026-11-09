@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.98.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.97.0...v1.98.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** add youtrack-clerk, the issue tracker connector ([#419](https://github.com/dryvist/ai-llm-prompts/issues/419)) ([49f0236](https://github.com/dryvist/ai-llm-prompts/commit/49f0236b5b19ed2b40d03c6e4be377e540995de8))
+
 ## [1.97.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.96.0...v1.97.0) (2026-11-09)
 
 
