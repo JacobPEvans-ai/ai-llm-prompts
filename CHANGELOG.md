@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.99.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.1...v1.99.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** take the rotation driver name as a render input ([#418](https://github.com/dryvist/ai-llm-prompts/issues/418)) ([6858b68](https://github.com/dryvist/ai-llm-prompts/commit/6858b68886398d5c011c33334372411be31b863a))
+
 ## [1.98.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.0...v1.98.1) (2026-11-09)
 
 
