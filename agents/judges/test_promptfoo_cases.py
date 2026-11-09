@@ -26,23 +26,36 @@ def source_suites():
     }
 
 
+def parse_suite_names(suites):
+    """Every eval suite with unskipped expected_parse cases also yields a <agent>-parse suite."""
+    return {
+        f"{name}-parse"
+        for name, suite in suites.items()
+        if any("expected_parse" in case and not case.get("skip") for case in suite["cases"])
+    }
+
+
 def test_generated_cases_have_assertions_and_static_prefixes():
     tests = cases.generate_tests()
+    suites = source_suites()
     expected = {
         (name, case["id"])
-        for name, suite in source_suites().items()
+        for name, suite in suites.items()
         for case in suite["cases"]
         if not case.get("skip")
     }
-    names = {name for name, _ in expected} | {"vikunja-clerk-parse"}
+    parse_suites = parse_suite_names(suites)
+    names = {name for name, _ in expected} | parse_suites
     assertions_file = _ROOT / "agents" / "evals" / "promptfoo" / "assertions.js"
 
     assert {
         (test["metadata"]["suite"], test["metadata"]["case"])
-        for test in tests if test["metadata"]["suite"] != "vikunja-clerk-parse"
+        for test in tests if test["metadata"]["suite"] not in parse_suites
     } == expected
     parse_cases = {
-        case["id"] for case in cases.load_suite(_ROOT / "agents/evals/vikunja-clerk.yaml")["cases"]
+        (name, case["id"])
+        for name, suite in suites.items()
+        for case in suite["cases"]
         if "expected_parse" in case and not case.get("skip")
     }
     assert len(tests) == len(expected) + len(parse_cases)
@@ -72,7 +85,7 @@ def test_generated_cases_have_assertions_and_static_prefixes():
             for assertion in test["assert"]
         )
         assert has_fields_assertion == has_expected_parse
-        assert has_fields_assertion == (test["vars"]["suite"] == "vikunja-clerk-parse")
+        assert has_fields_assertion == (test["vars"]["suite"] in parse_suites)
 
 
 @pytest.mark.parametrize("suite_exists", [True, False])
@@ -96,6 +109,77 @@ def test_new_definitions_enter_the_matrix_or_report_a_missing_suite(tmp_path, mo
         generated = cases.generate_tests()
         assert [test["metadata"] for test in generated] == [{"suite": "new-worker", "case": "normal"}]
         assert generated[0]["vars"]["expected"]["expected_output"] == {"status": "ok"}
+
+
+def test_a_second_connector_suite_yields_its_own_parse_suite(tmp_path, monkeypatch):
+    path, agent = sample_checkout(tmp_path, "sample-clerk")
+    agent.update(tools=[], eval_set="agents/evals/sample-clerk.yaml")
+    path.write_text(yaml.safe_dump(agent))
+    shutil.copy(_ROOT / "Makefile", tmp_path / "Makefile")
+    template = tmp_path / "agents/dify-src/agent.tmpl"
+    template.parent.mkdir()
+    shutil.copy(_ROOT / "agents/dify-src/agent.tmpl", template)
+    parse_prompt = "Parse the untrusted request.\nUse keys: route, operation"
+    dsl = tmp_path / "agents/dify/sample-clerk.dsl.yml"
+    dsl.write_text(yaml.safe_dump({
+        "app": {"name": "sample-clerk"},
+        "workflow": {"graph": {"nodes": [{
+            "id": "parse",
+            "data": {
+                "type": "llm",
+                "title": "Parse request",
+                "prompt_template": [{"role": "system", "text": parse_prompt}],
+            },
+        }]}},
+    }))
+    suite = tmp_path / agent["eval_set"]
+    suite.parent.mkdir()
+    suite.write_text(yaml.safe_dump({"cases": [{
+        "id": "parse-request",
+        "input": {"message": "create a task", "mode": "shadow"},
+        "expected_parse": {"route": "sample", "operation": "create", "project_named": False},
+    }]}))
+    assert parse_suite_names({"sample-clerk": cases.load_suite(suite)}) == {"sample-clerk-parse"}
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+
+    generated = cases.generate_tests()
+    parse_test = next(test for test in generated if test["metadata"]["suite"] == "sample-clerk-parse")
+    assert parse_test["metadata"]["case"] == "parse-request"
+    assert parse_test["vars"]["expected"]["expected_parse"] == {
+        "route": "sample", "operation": "create", "project_named": False,
+    }
+    assert parse_test["vars"]["case_data"] == {"message": "create a task", "mode": "shadow"}
+    assert parse_test["vars"]["static_prefix"] == parse_prompt
+    assert {a["metric"] for a in parse_test["assert"]} == {
+        "json-valid",
+        "not-truncated",
+        "expected-fields-match",
+        "parse-json-schema-valid",
+    }
+
+
+def test_a_suite_with_only_skipped_parse_cases_needs_no_dsl(tmp_path, monkeypatch):
+    path, agent = sample_checkout(tmp_path, "sample-clerk")
+    agent.update(tools=[], eval_set="agents/evals/sample-clerk.yaml")
+    path.write_text(yaml.safe_dump(agent))
+    shutil.copy(_ROOT / "Makefile", tmp_path / "Makefile")
+    template = tmp_path / "agents/dify-src/agent.tmpl"
+    template.parent.mkdir()
+    shutil.copy(_ROOT / "agents/dify-src/agent.tmpl", template)
+    suite = tmp_path / agent["eval_set"]
+    suite.parent.mkdir()
+    suite.write_text(yaml.safe_dump({"cases": [{
+        "id": "parse-request",
+        "input": {"message": "create a task", "mode": "shadow"},
+        "expected_parse": {"route": "sample", "operation": "create", "project_named": False},
+        "skip": "the parse step has no rendered DSL yet",
+    }]}))
+    assert parse_suite_names({"sample-clerk": cases.load_suite(suite)}) == set()
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+
+    generated = cases.generate_tests()
+    assert not [test for test in generated if test["vars"]["suite"].endswith("-parse")]
+    assert not (tmp_path / "agents/dify/sample-clerk.dsl.yml").exists()
 
 
 def test_report_envelope_does_not_gain_an_incompatible_output_contract(tmp_path, monkeypatch):
@@ -146,26 +230,37 @@ def test_sample_assertions_and_values_come_from_suite_yaml():
     )
 
 
-def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input():
-    suite = cases.load_yaml(_ROOT / "agents" / "evals" / "vikunja-clerk.yaml")
-    source = suite["cases"][0]
+def _parse_suite_rosters():
+    return {
+        name: suite for name, suite in source_suites().items()
+        if f"{name}-parse" in parse_suite_names({name: suite})
+    }
+
+
+@pytest.mark.parametrize("name", sorted(_parse_suite_rosters()))
+def test_expected_parse_scores_the_dsl_parse_step_on_the_raw_input(name):
+    suite = _parse_suite_rosters()[name]
+    source = next(
+        case for case in suite["cases"] if "expected_parse" in case and not case.get("skip")
+    )
     generated = next(
         test
         for test in cases.generate_tests()
-        if test["metadata"] == {"suite": "vikunja-clerk-parse", "case": source["id"]}
+        if test["metadata"] == {"suite": f"{name}-parse", "case": source["id"]}
     )
 
     assert generated["vars"]["expected"]["expected_parse"] == source["expected_parse"]
     assert generated["vars"]["case_data"] == source["input"]
-    assert generated["vars"]["static_prefix"] == cases.parse_prompt()
-    assert "Use keys: route, operation" in generated["vars"]["static_prefix"]
+    assert generated["vars"]["static_prefix"] == cases.parse_prompt(name)
     assert {a["metric"] for a in generated["assert"]} == {
         "json-valid",
         "not-truncated",
         "expected-fields-match",
         "parse-json-schema-valid",
-        "forbidden-keys",
+        *({"forbidden-keys"} if suite.get("forbidden_output_keys") else set()),
     }
+    if name == "vikunja-clerk":
+        assert "Use keys: route, operation" in generated["vars"]["static_prefix"]
 
 
 def test_behavior_cases_use_two_independent_rubric_judges_alongside_other_assertions():
@@ -859,14 +954,18 @@ def test_expected_calls_include_all_lists_in_the_envelope(nested_report_call):
     assert _run_js("expectedCalls", nested_report_call, expected) is True
 
 
-def test_only_the_clerk_suites_attach_the_forbidden_keys_check():
+def test_only_suites_with_forbidden_output_keys_attach_the_check():
+    forbidden_suites = {
+        name for name, suite in source_suites().items() if suite.get("forbidden_output_keys")
+    }
+    parse_suites = parse_suite_names(source_suites())
     for test in cases.generate_tests():
+        suite = test["vars"]["suite"]
+        base_suite = suite.removesuffix("-parse") if suite in parse_suites else suite
         has_check = any(
             assertion["metric"] == "forbidden-keys" for assertion in test["assert"]
         )
-        assert has_check == (
-            test["vars"]["suite"] in {"vikunja-clerk", "vikunja-clerk-parse"}
-        )
+        assert has_check == (base_suite in forbidden_suites)
 
 
 def test_forbidden_keys_find_a_key_nested_in_a_proposed_call():

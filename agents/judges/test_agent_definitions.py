@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import shutil
 
 import pytest
 import yaml
@@ -311,11 +312,30 @@ def test_self_reference_does_not_require_a_peer():
     _validate_prompt_handoffs(agent, "You are task-clerk.", {"incident-clerk", "task-clerk"})
 
 
-def test_agent_roster_paths_and_prompt_metadata_are_complete():
-    definitions = _definitions()
+def _chain_shared_prefixes(root, agent):
+    """shared_prefix values declared by profiles in this definition's extends chain, resolved through
+    root's agents/profiles; defaults.yaml joins every chain as its base layer, like make resolve-agents."""
+    prefixes = set()
+    name = agent.get("extends")
+    seen = set()
+    while name and name not in seen:
+        seen.add(name)
+        profile = yaml.safe_load((root / "agents" / "profiles" / f"{name}.yaml").read_text()) or {}
+        if profile.get("shared_prefix"):
+            prefixes.add(profile["shared_prefix"])
+        name = profile.get("extends")
+    if seen:
+        defaults = yaml.safe_load((root / "agents" / "profiles" / "defaults.yaml").read_text()) or {}
+        if defaults.get("shared_prefix"):
+            prefixes.add(defaults["shared_prefix"])
+    return prefixes
+
+
+def _roster_paths_and_prompt_metadata(definitions, root=None):
+    root = _ROOT if root is None else root
     assert definitions
 
-    shared_prefixes = set()
+    roster_prefixes = set()
     for path, agent in definitions:
         assert isinstance(agent, dict), f"{path.name} must contain a YAML mapping"
         missing = _missing_roster_fields(agent)
@@ -327,13 +347,53 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
                 f"{path.name} {field} does not name a file: {agent[field]}"
             )
 
-        shared_prefixes.add(agent["shared_prefix"])
         _prompt_body(_ROOT / agent["prompt"])
+        chain_prefixes = _chain_shared_prefixes(root, agent)
+        assert agent["shared_prefix"] in chain_prefixes, (
+            f"{path.name} shared_prefix {agent['shared_prefix']} is not declared by a profile in its "
+            f"extends chain: {sorted(chain_prefixes)}"
+        )
+        roster_prefixes.add(agent["shared_prefix"])
 
-    assert len(shared_prefixes) == 1, (
-        f"agents use different shared prefixes: {sorted(shared_prefixes)}"
-    )
-    _prompt_body(_ROOT / next(iter(shared_prefixes)))
+    for shared_prefix in sorted(roster_prefixes):
+        _prompt_body(_ROOT / shared_prefix)
+
+
+def test_agent_roster_paths_and_prompt_metadata_are_complete():
+    _roster_paths_and_prompt_metadata(_definitions())
+
+
+def _chain_fixture(name, extends, shared_prefix):
+    agent = dict(definition("vikunja-triage"))
+    agent.update(name=name, extends=extends, shared_prefix=shared_prefix)
+    return Path(f"{name}.yaml"), agent
+
+
+def test_a_same_chain_definition_with_a_different_prefix_fails():
+    base = _chain_fixture("sample-clerk", "connector", "agents/prompts/shared/homelab.md")
+    other = _chain_fixture("overlay-clerk", "connector", "agents/prompts/vikunja-clerk.md")
+    with pytest.raises(AssertionError, match="not declared by a profile in its extends chain"):
+        _roster_paths_and_prompt_metadata([base, other])
+
+
+def test_an_overlay_profile_may_declare_its_own_shared_prefix(tmp_path):
+    profiles = tmp_path / "agents" / "profiles"
+    profiles.mkdir(parents=True)
+    shutil.copy(_ROOT / "agents" / "profiles" / "defaults.yaml", profiles / "defaults.yaml")
+    (profiles / "overlay.yaml").write_text("shared_prefix: agents/prompts/vikunja-clerk.md\n")
+    overlay = _chain_fixture("overlay-clerk", "overlay", "agents/prompts/vikunja-clerk.md")
+
+    _roster_paths_and_prompt_metadata([overlay], root=tmp_path)
+
+
+def test_a_definition_whose_chain_declares_no_prefix_fails(tmp_path):
+    profiles = tmp_path / "agents" / "profiles"
+    profiles.mkdir(parents=True)
+    (profiles / "defaults.yaml").write_text("tier: 0\n")
+    (profiles / "overlay.yaml").write_text("tier: 1\n")
+    overlay = _chain_fixture("overlay-clerk", "overlay", "agents/prompts/vikunja-clerk.md")
+    with pytest.raises(AssertionError, match="not declared by a profile in its extends chain"):
+        _roster_paths_and_prompt_metadata([overlay], root=tmp_path)
 
 
 def _key_references(value):
