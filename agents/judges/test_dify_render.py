@@ -14,6 +14,8 @@ from dify_nodes import node_main
 
 
 ROOT = Path(__file__).resolve().parents[2]
+# The rotation driver DSL is rendered from agents/dify-src/rotation.tmpl, which fixes its name.
+ROTATION_DRIVER = "tier2-rotation"
 
 
 def run_make(*args):
@@ -75,30 +77,114 @@ def test_committed_outputs_match_shared_template(tmp_path):
     assert not list((ROOT / "agents" / "dify-src").glob("*/*.dsl.yml.tmpl"))
 
 
-def test_manifest_covers_rendered_files_with_matching_hashes():
-    manifest = json.loads((ROOT / "agents/dify/manifest.json").read_text())
-    agents = {agent["name"]: agent for _, agent in definitions() if agent["home_platform"] == "dify"}
-    assert [entry["name"] for entry in manifest] == sorted([*agents, "tier2-rotation"])
-    assert {entry["path"] for entry in manifest} == {
-        path.relative_to(ROOT).as_posix() for path in (ROOT / "agents/dify").glob("*.dsl.yml")
+def manifest_files(root):
+    base = root / "agents" / "dify"
+    return [base / "manifest.json", *sorted(base.glob("manifest.*.json"))]
+
+
+def validate_manifests(root, agents):
+    """Every manifest entry keeps its fields, hash and roster metadata, the manifests together cover
+    every Dify-home agent, the rotation driver, and every rendered DSL in agents/dify exactly once."""
+    rendered = {
+        path.relative_to(root).as_posix() for path in (root / "agents/dify").glob("*.dsl.yml")
     }
-    for entry in manifest:
-        assert set(entry) == {"name", "path", "sha256", "mode", "tier", "kind"}
-        path = ROOT / entry["path"]
-        assert path.is_file()
-        assert path.name == f"{entry['name']}.dsl.yml"
-        assert entry["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
-        if entry["name"] in agents:
-            assert entry["kind"] == "agent"
-            assert entry["mode"] == agents[entry["name"]]["mode"]
-            assert entry["tier"] == agents[entry["name"]]["tier"]
-        else:
-            driver = subprocess.run(
-                ["gomplate", "-t", f"driver={ROOT}/agents/dify-src/rotation.tmpl",
-                 "-i", '{{ tmpl.Exec "driver-metadata" . }}'],
-                capture_output=True, text=True, check=True,
-            )
-            assert {key: entry[key] for key in ("name", "kind", "mode", "tier")} == json.loads(driver.stdout)
+    covered = []
+    names = set()
+    for manifest_path in manifest_files(root):
+        manifest = json.loads(manifest_path.read_text())
+        names_in_manifest = [entry["name"] for entry in manifest]
+        assert names_in_manifest == sorted(names_in_manifest), (
+            f"{manifest_path.relative_to(root).as_posix()} entries must be sorted by name"
+        )
+        for entry in manifest:
+            assert set(entry) == {"name", "path", "sha256", "mode", "tier", "kind"}
+            path = root / entry["path"]
+            assert path.is_file()
+            assert path.name == f"{entry['name']}.dsl.yml"
+            assert entry["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+            if entry["name"] in agents:
+                assert entry["kind"] == "agent"
+                assert entry["mode"] == agents[entry["name"]]["mode"]
+                assert entry["tier"] == agents[entry["name"]]["tier"]
+            else:
+                template = root / "agents/dify-src/rotation.tmpl"
+                if not template.exists():
+                    template = ROOT / "agents/dify-src/rotation.tmpl"  # synthetic fixtures carry no templates
+                driver = subprocess.run(
+                    ["gomplate", "-t", f"driver={template}",
+                     "-i", '{{ tmpl.Exec "driver-metadata" . }}'],
+                    capture_output=True, text=True, check=True,
+                )
+                assert {key: entry[key] for key in ("name", "kind", "mode", "tier")} == json.loads(driver.stdout)
+            names.add(entry["name"])
+            covered.append(entry["path"])
+    missing = sorted({*agents, ROTATION_DRIVER} - names)
+    assert not missing, f"manifests omit roster DSLs: {missing}"
+    duplicated = sorted({path for path in covered if covered.count(path) > 1})
+    assert not duplicated, f"DSLs covered by more than one manifest: {duplicated}"
+    assert set(covered) == rendered, (
+        f"manifests do not cover every rendered DSL exactly once: "
+        f"uncovered={sorted(rendered - set(covered))}, unknown={sorted(set(covered) - rendered)}"
+    )
+
+
+def test_manifest_covers_rendered_files_with_matching_hashes():
+    agents = {agent["name"]: agent for _, agent in definitions() if agent["home_platform"] == "dify"}
+    validate_manifests(ROOT, agents)
+
+
+def synthetic_manifest_checkout(tmp_path, driver=True):
+    """A base manifest for the driver and an overlay manifest for one agent, over one shared DSL tree."""
+    agents = {"sample-clerk": {"mode": "shadow", "tier": 1}}
+    dify = tmp_path / "agents" / "dify"
+    dify.mkdir(parents=True)
+    entries = {}
+    if driver:
+        entries["tier2-rotation"] = {
+            "name": "tier2-rotation", "kind": "driver", "mode": None, "tier": 2,
+            "path": "agents/dify/tier2-rotation.dsl.yml",
+            "sha256": hashlib.sha256(b"# Generated from agents/dify-src/rotation.tmpl\n").hexdigest(),
+        }
+        (dify / "tier2-rotation.dsl.yml").write_bytes(b"# Generated from agents/dify-src/rotation.tmpl\n")
+    for name, metadata in agents.items():
+        content = f"# Generated from agents/{name}.yaml\napp: {{name: {name}}}\n".encode()
+        (dify / f"{name}.dsl.yml").write_bytes(content)
+        entries[name] = {
+            "name": name, "kind": "agent", **metadata,
+            "path": f"agents/dify/{name}.dsl.yml",
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+    (dify / "manifest.json").write_text(json.dumps([entries["tier2-rotation"]] if driver else []))
+    (dify / "manifest.overlay.json").write_text(json.dumps([entries["sample-clerk"]]))
+    return agents
+
+
+def test_an_overlay_manifest_covers_its_rosters_dsls(tmp_path):
+    agents = synthetic_manifest_checkout(tmp_path)
+    validate_manifests(tmp_path, agents)
+
+
+@pytest.mark.parametrize("drift", ["overlap", "uncovered", "outside", "roster"])
+def test_manifests_reject_incomplete_or_shared_coverage(tmp_path, drift):
+    agents = synthetic_manifest_checkout(tmp_path)
+    manifest = json.loads((tmp_path / "agents/dify/manifest.json").read_text())
+    overlay = json.loads((tmp_path / "agents/dify/manifest.overlay.json").read_text())
+    if drift == "overlap":
+        (tmp_path / "agents/dify/manifest.json").write_text(json.dumps(manifest + overlay))
+    elif drift == "uncovered":
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([]))
+    elif drift == "roster":
+        # A definition whose DSL was never rendered: coverage of existing files stays complete.
+        (tmp_path / "agents/dify/sample-clerk.dsl.yml").unlink()
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([]))
+    else:
+        outside = tmp_path / "agents/elsewhere/sample-clerk.dsl.yml"
+        outside.parent.mkdir(parents=True)
+        outside.write_bytes((tmp_path / "agents/dify/sample-clerk.dsl.yml").read_bytes())
+        displaced = {**overlay[0], "path": "agents/elsewhere/sample-clerk.dsl.yml"}
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([displaced]))
+    with pytest.raises(AssertionError):
+        validate_manifests(tmp_path, agents)
 
 
 @pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])

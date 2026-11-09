@@ -2,6 +2,10 @@
 
 ## 2026-11-09
 
+* **Feat (agents)**: Accept an overlay roster's prefix, manifest, and parse suites — the judges require each
+  definition's `shared_prefix` to equal the prefix declared by a profile in its `extends` chain, additional
+  `agents/dify/manifest.<roster>.json` manifests that together name every roster DSL and cover every rendered DSL
+  exactly once, and `<agent>-parse` suites derived from every eval suite's unskipped `expected_parse` cases.
 * **Fix (auto-ai-agent)**: The Hermes surface gains one cron tool rule — a cron run never runs an inline `-c`/`-e`
   script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
   per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
