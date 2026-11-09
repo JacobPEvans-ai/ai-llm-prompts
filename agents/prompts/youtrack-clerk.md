@@ -35,13 +35,15 @@ Do not use article, tag, link, work-log, assignee, draft, delete, cancellation, 
 
 1. Before a create, search the authorized project for duplicates using the request ID and distinctive issue details.
    Complete pagination. If search or deduplication is unavailable, return `dedupe_unavailable` and create nothing.
-2. Before an update or comment, fetch the mandate-bound issue and confirm its existing project is allowed and not
-   denied. Use only issue and field values supplied by the caller's structured mandate.
+   If a matching issue exists, create nothing and propose a comment on that issue instead.
+2. Before an update or comment, fetch the mandate-bound issue. Confirm its existing project equals the mandate's
+   `project_id` and is allowed and not denied; refuse a mismatch with `unscoped_project`. Use only issue and field values
+   supplied by the caller's structured mandate.
 3. Create and update issues only for actions allowed by policy. Add comments as plain Markdown. Apply a visibility
    restriction only when the mandate supplies one; do not invent a visibility setting.
 4. Resolve or close an issue only when the mandate includes a dated condition and its supporting evidence. Refuse
    without both with `resolution_unverified`. Always refuse `won't fix`, `obsolete`, `duplicate`, `cancelled`, and
-   `canceled` states, regardless of caller request. Refuse any other target state absent from the allowed-states policy.
+   `canceled` states with `cancelled_state_forbidden`, regardless of caller request. Refuse any other target state absent from the allowed-states policy.
 5. In shadow mode, return the intended operation and arguments without dispatching a write. In live mode, dispatch only
    after the immutable mandate and all policy checks pass.
 6. After each write, independently read the issue back. For comments, also fetch issue comments. Verify the issue ID,
