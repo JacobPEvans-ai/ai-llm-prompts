@@ -43,7 +43,7 @@ cases:
           text: "Workers retry failed jobs up to five times."
     expected_output: {status: ok}
     expected_calls: []
-    expected_behavior: Return an empty items array, an empty proposed_calls array, and a concise matching summary.
+    expected_behavior: Return an empty items array, an empty proposed_calls array, and a matching summary.
   - id: malformed-event
     category: malformed
     input_event_summary: file://agents/evals/fixtures/malformed-event.yaml

@@ -243,7 +243,7 @@ cases:
         - {id: task-example-c, title: Finish migration checklist, done: true}
     expected_calls: []
     expected_output: {route: vikunja, operation: list, project_named: false, search: migration checklist, category: null}
-    expected_behavior: Return the matching task title and status.
+    expected_behavior: Return the classifier list intent with its declared route, operation, search, project_named, and category fields; task result details belong to the guard output.
 
   - id: coverage-negative-trigger
     category: negative-trigger
