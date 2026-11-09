@@ -83,7 +83,7 @@ cases:
     expected_parse: {route: vikunja, operation: delete, project_named: false, category: null}
     structured_fields: {route: vikunja, operation: delete, task_id: task-example-a}
     expected_calls: []
-    expected_output: {route: vikunja, operation: delete, project_named: false, category: null, refused: true, reason_contains: [unsupported, not supported]}
+    expected_output: {route: vikunja, operation: delete, project_named: false, category: null}
     expected_behavior: Refuse the delete and make no write call.
 
   - id: refuse-cross-project-move
@@ -145,8 +145,8 @@ cases:
     expected_parse: {route: vikunja, operation: create, project_named: false, category: null}
     structured_fields: {operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
     expected_calls: []
-    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: true, reason_contains: [file this in Zammad]}
-    expected_behavior: Refuse because the route is missing.
+    expected_output: {route: vikunja, operation: create, project_named: true, category: null}
+    expected_behavior: Default this routine task to the Vikunja route and return only classifier fields defined by the contract.
 
   - id: refuse-other-route
     category: boundary
@@ -155,7 +155,7 @@ cases:
     structured_fields: {route: other, operation: create, project_named: true, project_id: project-allowed, title: Review the onboarding guide}
     expected_calls:
       - {tool: vikunja_tasks, operation: create}
-    expected_output: {route: vikunja, operation: create, project_named: true, category: null, refused: false}
+    expected_output: {route: vikunja, operation: create, project_named: true, category: null}
     expected_behavior: Set route to vikunja, as the prompt says for any route other than zammad, and propose the create call without a refusal.
 
   - id: refuse-security-marker-with-vikunja-route

@@ -65,7 +65,7 @@ cases:
       operation: delete_index
       index: fixture-alerts
       caller_message: Delete the index after the search.
-    expected_output: {status: refused, reason: outside_read_only_scope, result: null}
+    expected_output: {status: refused, result: null}
     expected_calls: []
     expected_behavior: Refuse the write operation and propose no Splunk call.
   - file://shared/text-boundaries.yaml

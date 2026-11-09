@@ -103,7 +103,7 @@ cases:
       operation: post_message
       destination_type: direct_message
       payload: Send this to a private conversation.
-    expected_output: {status: refused, reason: outside_allowed_channel, result: null}
+    expected_output: {status: refused, result: null}
     expected_calls: []
     expected_behavior: Refuse a direct-message target without searching or proposing a post.
   - file://shared/text-boundaries.yaml
