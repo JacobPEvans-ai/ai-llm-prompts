@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.95.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.94.0...v1.95.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** run the five short-task agents on the small role ([#408](https://github.com/dryvist/ai-llm-prompts/issues/408)) ([e3b2bd2](https://github.com/dryvist/ai-llm-prompts/commit/e3b2bd2c1ef060e27f3d9c1eafef29a56366b5d5))
+
 ## [1.94.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.2...v1.94.0) (2026-11-09)
 
 
