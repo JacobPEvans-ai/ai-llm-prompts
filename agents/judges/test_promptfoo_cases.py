@@ -158,6 +158,30 @@ def test_a_second_connector_suite_yields_its_own_parse_suite(tmp_path, monkeypat
     }
 
 
+def test_a_suite_with_only_skipped_parse_cases_needs_no_dsl(tmp_path, monkeypatch):
+    path, agent = sample_checkout(tmp_path, "sample-clerk")
+    agent.update(tools=[], eval_set="agents/evals/sample-clerk.yaml")
+    path.write_text(yaml.safe_dump(agent))
+    shutil.copy(_ROOT / "Makefile", tmp_path / "Makefile")
+    template = tmp_path / "agents/dify-src/agent.tmpl"
+    template.parent.mkdir()
+    shutil.copy(_ROOT / "agents/dify-src/agent.tmpl", template)
+    suite = tmp_path / agent["eval_set"]
+    suite.parent.mkdir()
+    suite.write_text(yaml.safe_dump({"cases": [{
+        "id": "parse-request",
+        "input": {"message": "create a task", "mode": "shadow"},
+        "expected_parse": {"route": "sample", "operation": "create", "project_named": False},
+        "skip": "the parse step has no rendered DSL yet",
+    }]}))
+    assert parse_suite_names({"sample-clerk": cases.load_suite(suite)}) == set()
+    monkeypatch.setattr(cases, "ROOT", tmp_path)
+
+    generated = cases.generate_tests()
+    assert not [test for test in generated if test["vars"]["suite"].endswith("-parse")]
+    assert not (tmp_path / "agents/dify/sample-clerk.dsl.yml").exists()
+
+
 def test_report_envelope_does_not_gain_an_incompatible_output_contract(tmp_path, monkeypatch):
     prompt = tmp_path / "report.md"
     contract = "Return only status, reason, and result; no other top-level fields."

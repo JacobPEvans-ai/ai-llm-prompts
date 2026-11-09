@@ -1,7 +1,7 @@
 ---
 type: Agent definition specification
 description: Version 2 of the platform-neutral agent definition contract.
-timestamp: 2026-11-09T19:34:18Z
+timestamp: 2026-11-09T20:40:34Z
 ---
 
 # Agent definition schema v2
@@ -29,13 +29,14 @@ profiles. `identity` and `api_key_ref` remain explicit in each definition.
 A downstream overlay copies its own definitions, prompts, evals, fixtures, rendered Dify DSLs and
 manifests into a copy of this repository. The judges accept such a roster without deselection:
 
-- Overlay definitions declare their own `extends` profile, with their own `shared_prefix`. Every
-  profile family — the definitions resolving through the same top-level `extends` chain — keeps
-  exactly one shared prefix; different families may use different prefixes.
+- Overlay definitions declare their own `extends` profile, with their own `shared_prefix`. Every definition's
+  `shared_prefix` must equal the `shared_prefix` declared by a profile in its own `extends` chain, resolved through
+  `agents/profiles/*.yaml`; an added overlay profile may declare its own prefix.
 - Overlay Dify DSLs are covered by an additional `agents/dify/manifest.<roster>.json`. Each
-  manifest covers only its own roster's DSLs, every rendered DSL is covered by exactly one
-  manifest, and every entry keeps the fields, sha256, mode, tier, and kind checks.
-- Every eval suite with `expected_parse` cases also yields a `<agent>-parse` suite, scored against
+  manifest covers only its own roster's DSLs, the manifests together name every roster DSL — each Dify-home
+  agent and the rotation driver — and cover every rendered DSL exactly once, and every entry keeps the fields,
+  sha256, mode, tier, and kind checks.
+- Every eval suite with unskipped `expected_parse` cases also yields a `<agent>-parse` suite, scored against
   the "Parse request" system prompt of that agent's own rendered DSL.
 
 ## Fields
@@ -59,7 +60,7 @@ The following requirements apply to the merged definition unless marked source-o
 | `code_work` | enum | Required: `none` or `sandbox`. Agents editing code declare `sandbox`. |
 | `mode` | enum | Required: `shadow` or `live`. |
 | `eval_set`, `prompt` | paths | Derived from `name`; existing eval and OKF prompt files. |
-| `shared_prefix` | path | Required existing OKF prompt file; exactly one per profile family. |
+| `shared_prefix` | path | Required existing OKF prompt file; declared by a profile in the definition's `extends` chain. |
 | `tools`, `mcp_servers` | list[string] | With `mcp_servers`, `prefix.name` names tool `name` if `prefix` is listed, else (not `a2a.*`) a subcommand. |
 | `litellm_role` | string | Required router role. |
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |

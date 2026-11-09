@@ -199,7 +199,11 @@ def generate_tests():
         scoring = suite.get("expected_output_scoring", "field-credit")
         if scoring not in SCORING_MODES:
             raise ValueError(f"{name}: expected_output_scoring must be one of {SCORING_MODES}, got {scoring!r}")
-        parse_system = parse_prompt(name) if any("expected_parse" in case for case in suite["cases"]) else None
+        parse_system = (
+            parse_prompt(name)
+            if any("expected_parse" in case and not case.get("skip") for case in suite["cases"])
+            else None
+        )
         for case in suite["cases"]:
             if case.get("skip"):
                 continue  # the skipped case stays in the suite with its reason

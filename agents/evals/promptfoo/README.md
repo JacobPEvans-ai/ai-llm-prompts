@@ -16,7 +16,7 @@ tool list, canonical JSON output instructions and the names (never the values) o
 is byte-identical across the suite's cases; case data comes last, in the user message. The generator includes
 `shared/homelab.md` because the agent definitions declare that existing file.
 
-Every eval suite case with `expected_parse` also yields a `<agent>-parse` test. That test sends the raw caller input
+Every eval suite case with an unskipped `expected_parse` also yields a `<agent>-parse` test. That test sends the raw caller input
 to the Dify "Parse request" node prompt of that agent's own rendered DSL (`agents/dify/<agent>.dsl.yml`), composed
 from the suite's shared prefix and canonical `agents/prompts/<agent>.md` prompt. It scores `expected-fields-match`
 and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.py`).
