@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.93.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.0...v1.93.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **agents:** give every Dify LLM node its required context block ([#402](https://github.com/dryvist/ai-llm-prompts/issues/402)) ([5899dcf](https://github.com/dryvist/ai-llm-prompts/commit/5899dcf5fac63b46521eebb38a86dc3afb795fed))
+
 ## [1.93.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.92.0...v1.93.0) (2026-11-09)
 
 
