@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.96.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.95.0...v1.96.0) (2026-11-09)
+
+
+### Features
+
+* **agent:** opencode-local run j-382bd042cd4c4465 ([6c007a2](https://github.com/dryvist/ai-llm-prompts/commit/6c007a299e82db6cfd4440100da720e10a9cde0d))
+* **rules:** put one component and one metric on each status line ([#410](https://github.com/dryvist/ai-llm-prompts/issues/410)) ([6c007a2](https://github.com/dryvist/ai-llm-prompts/commit/6c007a299e82db6cfd4440100da720e10a9cde0d))
+
 ## [1.95.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.94.0...v1.95.0) (2026-11-09)
 
 
