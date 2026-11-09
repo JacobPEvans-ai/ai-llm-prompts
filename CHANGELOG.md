@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.98.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.0...v1.98.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **agents:** keep reply keys out of envelope error reasons ([#421](https://github.com/dryvist/ai-llm-prompts/issues/421)) ([30837ea](https://github.com/dryvist/ai-llm-prompts/commit/30837ea2dd22e417f99b0065cd63c68b5b2ca37f))
+
 ## [1.98.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.97.0...v1.98.0) (2026-11-09)
 
 
