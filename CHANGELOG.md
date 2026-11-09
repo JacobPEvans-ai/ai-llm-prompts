@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.97.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.96.0...v1.97.0) (2026-11-09)
+
+
+### Features
+
+* **agent:** zcode run j-888212d211c78a1a ([49a37df](https://github.com/dryvist/ai-llm-prompts/commit/49a37df9c2fb224375ae829aeae0493bcdc98ea3))
+
+
+### Bug Fixes
+
+* **hermes:** keep cron agents off inline scripts and unread overwrites ([#413](https://github.com/dryvist/ai-llm-prompts/issues/413)) ([49a37df](https://github.com/dryvist/ai-llm-prompts/commit/49a37df9c2fb224375ae829aeae0493bcdc98ea3))
+
 ## [1.96.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.95.0...v1.96.0) (2026-11-09)
 
 
