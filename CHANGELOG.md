@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.91.0...v1.92.0) (2026-11-09)
+
+
+### Features
+
+* **delegation:** route by sensitivity to ZCode or Codex Luna, local first, Haiku last ([#394](https://github.com/dryvist/ai-llm-prompts/issues/394)) ([296a0e8](https://github.com/dryvist/ai-llm-prompts/commit/296a0e8724b7261217c3b40f95eecb7a696321af))
+
 ## [1.91.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.90.0...v1.91.0) (2026-11-08)
 
 
