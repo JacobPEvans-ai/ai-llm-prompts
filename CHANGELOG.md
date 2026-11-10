@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.100.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.0...v1.100.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **hermes:** keep the assistant pulse and nudge off scripts and log a quiet run reason ([#433](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/433)) ([a3feeb4](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/a3feeb442b112e576f0045f8ceb0c73bb369d7d5))
+
 ## [1.100.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.99.0...v1.100.0) (2026-11-10)
 
 
