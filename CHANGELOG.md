@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.100.3](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.2...v1.100.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* **hermes:** take the secrets audit skip list at render time and stop without it ([#437](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/437)) ([92a71d4](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/92a71d42e2100c86384ec78e1687df91395e4c7e))
+
 ## [1.100.2](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.1...v1.100.2) (2026-11-10)
 
 
