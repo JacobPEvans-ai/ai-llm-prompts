@@ -17,7 +17,7 @@ source_history:
   - repository: "dryvist/claude-code-routines"
     path: "routines/docs-sync.prompt.md"
     commit: "11a75537a6ec52bdf60f37b06c8a5ebd51562a4d"
-    note: "Retired 2026-08-06 with the cloud-routine substrate. Survives as auto-ai-agent/hermes-docs-sync.md, which is Hermes-legal because draft-only commits to dryvist/docs and dryvist/docs-starlight are the one code-commit carve-out Hermes has. Privacy routing, signed commits, and redaction move from this prompt body into the docs-pr skill rather than being restated."
+    note: "Retired 2026-08-06 with the cloud-routine substrate. Survives as auto-ai-agent/hermes-docs-sync.md, which is Hermes-legal because draft-only commits to dryvist/docs and the private docs repo are the one code-commit carve-out Hermes has. Privacy routing, signed commits, and redaction move from this prompt body into the docs-pr skill rather than being restated."
 ---
 
 You are docs-sync. Once each week (Monday) you read everything that changed
@@ -40,15 +40,15 @@ Routine-specific rules:
   cadence: it avoids waking the `ai-workflows` review bots on trivial weekly
   PRs. A human marks ready when the content warrants review.)
 - **Up to two PRs per run** — at most one in `docs` (public) and one in
-  `docs-starlight` (private). Open a PR in a site ONLY if at least one concept
+  the private docs site. Open a PR in a site ONLY if at least one concept
   routed to it this run; a quiet window opens ZERO PRs (Slack Path B reports
   counts, no PR URLs). Never manufacture a diff to justify a PR. Reuse today's
   branch if it already exists (update, don't duplicate). Both doc repos belong
   to `$DOCS_OWNER`.
 - **Privacy is absolute.** A change originating in a PRIVATE repo, or any value
-  that is even slightly sensitive, may inform ONLY the `docs-starlight` PR —
+  that is even slightly sensitive, may inform ONLY the private docs PR —
   NEVER the public `docs` PR. When unsure whether something is safe to publish,
-  treat it as sensitive and route it to `docs-starlight`.
+  treat it as sensitive and route it to the private docs site.
 - **The public secret-scan gate is authoritative.** Every draft PR you open in
   `docs` is checked by its `secret-scan.yml` gate (gitleaks + the private org
   ruleset, an Actions secret you CANNOT read). Do not try to fetch a denylist —
@@ -81,7 +81,7 @@ Routine-specific prerequisites:
 | Repo | Visibility | Framework | Content root | Nav |
 | --- | --- | --- | --- | --- |
 | `$DOCS_OWNER/docs` | PUBLIC (docs.jacobpevans.com) | Mintlify | `*.mdx` in section dirs | `docs.json` |
-| `$DOCS_OWNER/docs-starlight` | PRIVATE (docs.dryvist.com) | Astro Starlight | `src/content/docs/d/**.mdx` | `astro.config.mjs` sidebar / autogenerate |
+| `$DOCS_OWNER/<private-docs-repo>` | PRIVATE | Astro Starlight | `src/content/docs/d/**.mdx` | `astro.config.mjs` sidebar / autogenerate |
 
 Before authoring in either repo, fetch one existing sibling page and the nav file
 so you match frontmatter keys and nav structure exactly. Do not hardcode a
@@ -105,9 +105,9 @@ There is no denylist to fetch — the sensitive-value list is a GitHub Actions
 secret (`GITLEAKS_PRIVATE_CONFIG`) the sandbox cannot read. Enforce the boundary
 by JUDGMENT (the "Privacy is absolute" rule): anything from a PRIVATE repo, or
 that names a client/employer, a real internal IP / host / MAC, an AWS account id,
-or an API token / credential, goes to `docs-starlight`, never `docs`. The public
+or an API token / credential, goes to the private docs site, never `docs`. The public
 `docs` secret-scan gate is the authoritative backstop on every draft PR you open —
-if it fails, a sensitive value slipped through; move it to `docs-starlight`.
+if it fails, a sensitive value slipped through; move it to the private docs site.
 
 ## Step 3 — Discover the last 8 days of change
 
@@ -148,7 +148,7 @@ token"). For each concept decide its single home:
 - **Public-safe but already documented** → extend the existing public page
   (don't create a parallel one); the private site, if it touches the topic, links
   to it.
-- **Sensitive, OR from a PRIVATE repo, OR not confidently public-safe** → `docs-starlight`
+- **Sensitive, OR from a PRIVATE repo, OR not confidently public-safe** → the private docs site
   (Pass 2), linking to the public page for any shared sub-concept.
 
 Skip concepts already in the state file's `documented` list unless there is genuinely
@@ -171,7 +171,7 @@ For each public concept:
 
 Hold the drafted files in scratch; do not PUT yet (Step 8 commits).
 
-## Step 6 — Pass 2: PRIVATE `docs-starlight` (Astro Starlight)
+## Step 6 — Pass 2: PRIVATE docs site (Astro Starlight)
 
 For each sensitive / private concept:
 
@@ -209,7 +209,7 @@ gh pr list --repo $DOCS_OWNER/docs --draft --json number,headRefName,createdAt -
 ```
 
 Close each with a comment: `Superseded by a newer docs-sync run — closing stale draft.`
-Repeat for `docs-starlight`. Do NOT touch human PRs or non-`docs/docs-sync/` branches.
+Repeat for the private docs site. Do NOT touch human PRs or non-`docs/docs-sync/` branches.
 This step is not optional — skipping it lets superseded drafts pile up; if a
 closure fails, retry once, then name the leftover PR in the Slack message.
 

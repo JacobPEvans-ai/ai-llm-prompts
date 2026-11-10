@@ -51,7 +51,7 @@ docs-sync auto-generated PR — 8-day window ending YYYY-MM-DD.
 - [concept]: [public page or private page touched]
 
 ## Routed to the other site
-- [concept]: -> [docs / docs-starlight] because [public-safe & new | sensitive | private-repo origin]
+- [concept]: -> [docs / private docs site] because [public-safe & new | sensitive | private-repo origin]
 
 ## Future work captured
 - [requested-but-unfinished item], if any

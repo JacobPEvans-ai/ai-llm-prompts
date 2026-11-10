@@ -29,7 +29,7 @@ Scan only: `src/**`, `lib/**`, `terraform/**`, `ansible/roles/**`, `.github/work
 Hard skip, no exceptions:
 
 - `SECURITY.md`, `README.md`, `CHANGELOG.md`, `LICENSE`, and any path matching `*resume*` or `*cover-letter*`.
-- Entire repos: anything matching `obsidian-*` (private note vaults), `int_resume`, `tf-static-website`, `unifi-*` (config dumps), plus your operator skip-list.
+- Entire repos: private note vaults, career-document repos, personal-site repos, config-dump repos, plus your operator skip-list.
 - `tests/**`, `fixtures/**`, `examples/**`, `*.example`, `*.test.*`, `*.spec.*`.
 - Vendor manifests where an author email is intentional: `package.json`, `Cargo.toml`, `pyproject.toml`, `Gemfile`.
 
