@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.100.2](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.1...v1.100.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* replace private names with role words ([#435](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/435)) ([c80aa4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/c80aa4e70f626ba94c149da371a11ae43ae31d31))
+
 ## [1.100.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.0...v1.100.1) (2026-11-10)
 
 
