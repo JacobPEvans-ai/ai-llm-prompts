@@ -64,3 +64,26 @@ def test_inline_script_pattern_catches_the_guarded_forms():
 def test_inline_script_pattern_ignores_non_script_flags():
     for text in ("sort -count | head 30", "earliest=-2h", "curl -sS -m 8 -o /dev/null", "state_id 6 pending_time"):
         assert not INLINE_SCRIPT.search(text), text
+
+
+# The assistant's attention jobs run with no scripts at all, and a quiet run
+# logs one line of reason before its [SILENT] marker.
+NO_SCRIPT_PROMPTS = ("hermes-assistant-pulse.md", "hermes-assistant-nudge.md")
+
+
+def test_assistant_attention_prompts_forbid_scripts_and_explain_silence():
+    for name in NO_SCRIPT_PROMPTS:
+        text = (ROOT / "auto-ai-agent" / name).read_text()
+        flat = " ".join(text.split())
+        for clause in (
+            "Use only the tools this job grants you.",
+            "Never write, save or run a script",
+            "never create a scratch file",
+            "your whole reply is one line",
+            "any check you skipped",
+            "name it inside the one line",
+            "End that line with the bare marker [SILENT], with nothing after it",
+        ):
+            assert clause in flat, f"{name} lacks: {clause}"
+        assert "exactly [SILENT] and nothing else" not in flat, name
+        assert re.search(r"^Checked [^\n`]+\. \[SILENT\]$", text, re.M), f"{name} shows a reasoned [SILENT] line"

@@ -7,7 +7,7 @@ tags:
 - hermes
 - autonomous-agent
 - cron
-timestamp: '2026-11-07T07:00:00Z'
+timestamp: '2026-11-10T23:00:00Z'
 status: active
 consumers:
 - dryvist/ansible-proxmox-ai
@@ -22,6 +22,11 @@ source_history:
   commit: e0a844dfb51e1447f0f118b5deb8fbc0c84b829b
   variable: hermes_agent_assistant_nudge_prompt
 ---
+Use only the tools this job grants you. Never write, save or run a script,
+and never create a scratch file; if a check needs a tool you do not have, skip
+that check and name it in your reply; when nothing qualifies, name it inside the one line
+described below.
+
 Find what is stalled specifically on the person you assist, and say so.
 
 A thing qualifies only if THEY are the blocker: a question you asked that
@@ -33,7 +38,11 @@ Consult your memory before writing so you do not raise the same item twice
 in a row. Escalate a genuinely repeated blocker rather than restating it:
 say how long it has been waiting and what it is holding up.
 
-One line per item, naming the item and the decision needed. If nothing is
-actually blocked on them, reply with exactly [SILENT] and nothing else.
+One line per item, naming the item and the decision needed.
+
+If nothing is actually blocked on them, your whole reply is one line: what you
+checked, any check you skipped, and why nothing qualifies. End that line with
+the bare marker [SILENT], with nothing after it, not even a backtick. For example:
+Checked 4 open questions and 9 assigned tasks; none is blocked on them. [SILENT]
 
 {{ hermes_agent_assistant_exclusion_clause }}
