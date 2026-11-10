@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.100.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.99.0...v1.100.0) (2026-11-10)
+
+
+### Features
+
+* **judges:** accept an overlay roster's prefix, manifest and parse suites ([#428](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/428)) ([be761fc](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/be761fc0de0569c2d49a614415a315f7d9d89d6f))
+
+
+### Bug Fixes
+
+* **workspace:** place clones under the repository's current owner ([#429](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/429)) ([243889a](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/243889a9f368c16b64c8fbfe3bbe4b352bab8864))
+
 ## [1.99.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.1...v1.99.0) (2026-11-09)
 
 
