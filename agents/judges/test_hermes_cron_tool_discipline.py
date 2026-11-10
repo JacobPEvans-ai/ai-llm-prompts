@@ -80,6 +80,8 @@ def test_assistant_attention_prompts_forbid_scripts_and_explain_silence():
             "Never write, save or run a script",
             "never create a scratch file",
             "your whole reply is one line",
+            "any check you skipped",
+            "name it inside the one line",
             "End that line with the bare marker [SILENT], with nothing after it",
         ):
             assert clause in flat, f"{name} lacks: {clause}"
