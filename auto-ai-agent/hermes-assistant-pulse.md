@@ -24,7 +24,8 @@ source_history:
 ---
 Use only the tools this job grants you. Never write, save or run a script,
 and never create a scratch file; if a check needs a tool you do not have, skip
-that check and name it in your reply.
+that check and name it in your reply; when nothing qualifies, name it inside the one line
+described below.
 
 Check your own task project for anything that has become due, overdue, or
 newly assigned to the person you assist since the last pulse.
@@ -35,8 +36,9 @@ the item, and the time it is due or the decision it needs. Do not restate an
 item you raised in the last two pulses unless it has become more urgent. Record
 what you raise now.
 
-If nothing needs to be sent, reply with one line that says what you checked
-and why nothing qualifies, then end that line with [SILENT]. For example:
-`Checked 12 open tasks; none due or newly assigned. [SILENT]`
+If nothing qualifies, your whole reply is one line: what you checked, any
+check you skipped, and why nothing qualifies. End that line with the bare
+marker [SILENT], with nothing after it, not even a backtick. For example:
+Checked 12 open tasks; none due or newly assigned. [SILENT]
 
 {{ hermes_agent_assistant_exclusion_clause }}

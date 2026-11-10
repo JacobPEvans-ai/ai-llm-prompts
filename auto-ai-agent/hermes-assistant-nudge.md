@@ -24,7 +24,8 @@ source_history:
 ---
 Use only the tools this job grants you. Never write, save or run a script,
 and never create a scratch file; if a check needs a tool you do not have, skip
-that check and name it in your reply.
+that check and name it in your reply; when nothing qualifies, name it inside the one line
+described below.
 
 Find what is stalled specifically on the person you assist, and say so.
 
@@ -39,8 +40,9 @@ say how long it has been waiting and what it is holding up.
 
 One line per item, naming the item and the decision needed.
 
-If nothing is actually blocked on them, reply with one line that says what you
-checked and why nothing qualifies, then end that line with [SILENT]. For
-example: `Checked 4 open questions and 9 assigned tasks; none waits on them. [SILENT]`
+If nothing is actually blocked on them, your whole reply is one line: what you
+checked, any check you skipped, and why nothing qualifies. End that line with
+the bare marker [SILENT], with nothing after it, not even a backtick. For example:
+Checked 4 open questions and 9 assigned tasks; none is blocked on them. [SILENT]
 
 {{ hermes_agent_assistant_exclusion_clause }}

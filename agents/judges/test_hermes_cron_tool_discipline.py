@@ -74,6 +74,14 @@ NO_SCRIPT_PROMPTS = ("hermes-assistant-pulse.md", "hermes-assistant-nudge.md")
 def test_assistant_attention_prompts_forbid_scripts_and_explain_silence():
     for name in NO_SCRIPT_PROMPTS:
         text = (ROOT / "auto-ai-agent" / name).read_text()
-        assert "Never write, save or run a script" in text, name
-        assert "exactly [SILENT] and nothing else" not in text, name
-        assert re.search(r"`[^`]+\. \[SILENT\]`", text), f"{name} shows a reasoned [SILENT] line"
+        flat = " ".join(text.split())
+        for clause in (
+            "Use only the tools this job grants you.",
+            "Never write, save or run a script",
+            "never create a scratch file",
+            "your whole reply is one line",
+            "End that line with the bare marker [SILENT], with nothing after it",
+        ):
+            assert clause in flat, f"{name} lacks: {clause}"
+        assert "exactly [SILENT] and nothing else" not in flat, name
+        assert re.search(r"^Checked [^\n`]+\. \[SILENT\]$", text, re.M), f"{name} shows a reasoned [SILENT] line"
