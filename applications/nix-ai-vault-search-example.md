@@ -1,7 +1,7 @@
 ---
 type: LLM Prompt
 title: Nix AI vault search example
-description: Executable example system prompt for grounded Obsidian-vault retrieval.
+description: Executable example system prompt for grounded notes-vault retrieval.
 resource: prompt://dryvist/applications/nix-ai-vault-search-example
 tags: [nix-ai, example, retrieval, obsidian]
 timestamp: 2026-07-18T16:43:26-04:00

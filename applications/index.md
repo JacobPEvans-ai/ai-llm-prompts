@@ -16,6 +16,6 @@ System and user prompt assets consumed by applications and infrastructure servic
 * [Nix AI code review example](nix-ai-code-review-example.md) - Executable example system prompt for code quality and security review.
 * [Nix AI default system fallback](nix-ai-default-system.md) - Fallback system message for orchestrator LLM-call nodes without an explicit prompt.
 * [Nix AI structured extraction example](nix-ai-structured-extract-example.md) - Executable example system prompt for schema-constrained JSON extraction.
-* [Nix AI vault search example](nix-ai-vault-search-example.md) - Executable example system prompt for grounded Obsidian-vault retrieval.
+* [Nix AI vault search example](nix-ai-vault-search-example.md) - Executable example system prompt for grounded notes-vault retrieval.
 * [Raycast Smart Issue system prompt](raycast-smart-issue-system.md) - System role for turning brief ideas into structured GitHub issues.
 * [Raycast Smart Issue user template](raycast-smart-issue-user.md) - Dynamic context, output contract, and example used to generate a GitHub issue.

@@ -68,7 +68,7 @@ If `$LINEAR_API_KEY` is empty or unset: there is no queue to work. Emit Run Outp
 ## State file — `state/issue-solver.json`
 
 Run-history bookkeeping only; nothing operationally critical lives here. The
-file lives on the **`data` branch** of `$STATE_REPO` (`dryvist/routine-state`),
+file lives on the **`data` branch** of `$STATE_REPO`,
 read and written via the GitHub Contents API — the same model every cloud
 routine uses. (This replaced the legacy `solver-state` gist in 2026-07; the App
 installation token has no gist access, so the old gist is NOT read — the
