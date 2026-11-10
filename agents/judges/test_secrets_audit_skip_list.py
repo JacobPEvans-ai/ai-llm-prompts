@@ -4,7 +4,10 @@ from pathlib import Path
 
 PROMPT = Path(__file__).resolve().parents[2] / "auto-ai-agent" / "hermes-secrets-policy-audit.md"
 VARIABLE = "hermes_agent_secrets_audit_skip_repos"
-FAIL_CLOSED = "If the skip list above is empty, scan nothing."
+FAIL_CLOSED = (
+    "If the skip list above is empty, scan nothing. Say in one sentence that the skip list "
+    "is missing, then stop. This check comes after the token check: a missing token still means [SILENT]."
+)
 
 
 def _parts():

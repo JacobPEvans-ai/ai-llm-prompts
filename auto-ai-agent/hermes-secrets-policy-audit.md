@@ -38,7 +38,7 @@ Skip list, one repository or name pattern per line, from private runtime configu
 
 {{ hermes_agent_secrets_audit_skip_repos | default('', true) | trim }}
 
-**If the skip list above is empty, scan nothing. Reply with one line saying the skip list is missing, then stop.** Without it you cannot tell a private repository from a public one, and scanning a private repository is the harm this audit exists to prevent.
+**If the skip list above is empty, scan nothing. Say in one sentence that the skip list is missing, then stop. This check comes after the token check: a missing token still means [SILENT].** Without it you cannot tell a private repository from a public one, and scanning a private repository is the harm this audit exists to prevent.
 
 ## Patterns
 
