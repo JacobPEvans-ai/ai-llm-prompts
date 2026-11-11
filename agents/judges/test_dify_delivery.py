@@ -285,6 +285,31 @@ def test_another_integrations_message_with_the_agent_name_does_not_suppress(tmp_
     assert len(fake.posts(FAILURE)) == 1
 
 
+def test_model_text_link_to_the_dashboard_is_replaced_in_the_digest(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "see https://dashboard.example/agents"})
+    assert fake.posts(DIGEST)[-1]["text"] == "see [REDACTED]"
+
+
+def test_template_built_dashboard_link_is_kept_in_the_failure_notice(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="; failure notice failed$"):
+        run(namespace, {"text": "see https://dashboard.example/agents"})
+    assert "Dashboard: https://dashboard.example/agents" in fake.posts(FAILURE)[0]["text"]
+
+
+def test_model_label_link_is_escaped_so_it_cannot_hide_its_target(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "<https://internal.corp.example|click>"})
+    assert fake.posts(DIGEST)[-1]["text"] == "&lt;[REDACTED]&gt;"
+
+
 @pytest.mark.parametrize("failure_channel", [DIGEST, ""])
 def test_failure_notice_is_never_posted_to_the_digest_channel(tmp_path, failure_channel):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")

@@ -104,6 +104,7 @@ def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, s
             return "suppressed (already notified)"
     except Exception:
         pass  # an unreadable history must not hide the notice, so post anyway
+    # dashboard_url is template-built, so it is not redacted; reason is literal text, never model or fetch output.
     text = escape_mrkdwn(
         notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
     )

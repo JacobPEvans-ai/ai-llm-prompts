@@ -154,6 +154,7 @@ def summary(outputs):
             key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
             for key, value in sorted(outputs.items())
         )
+    # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
     return clip(escape_mrkdwn(redact(body))) or "(no output)"
 
 
