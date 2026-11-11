@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T13:54:35Z"
+timestamp: "2026-11-11T14:11:57Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -18,9 +18,9 @@ source_history: []
 
 # Review gate
 
-Before any other review check, ask whether the change adds or edits a script, unit, timer, scheduled job, or glue code.
+Before any other review check, ask whether the change adds or edits custom code: a script, service unit, timer, scheduled job, or glue code. The last paragraph lists what is not custom code.
 
-If it does, ask whether a native feature of software already in use, a maintained third-party tool, or a maintained project to fork does the same. If one exists, the verdict is CHANGES and the finding names it.
+If it does, apply the tool-choice order in `AGENTS.md`. If a rung before writing code does the same, the verdict is CHANGES and the finding names it.
 
 If none exists, the change must name the options checked, explain why each does not fit, and cite the repository owner's recorded approval. Without all three, the verdict is CHANGES.
 
