@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/docs/code_review
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-10-18T08:44:13-04:00"
+timestamp: "2026-11-11T13:54:35Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -23,7 +23,7 @@ Standardized code review guidelines for AI-assisted development across Gemini Co
 
 ## Review Framework
 
-Code reviews should systematically evaluate changes across five core dimensions. Use this framework for all AI-assisted code reviews.
+First, read and apply `review-gate.md`; then evaluate the change across five core dimensions using this framework.
 
 ### 1. Correctness
 

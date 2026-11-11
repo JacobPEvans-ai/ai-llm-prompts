@@ -48,6 +48,7 @@ layout.
 * [Pre-Integration Checklist for New Inference Backends](agentsmd/rules/pre-integration-checklist.md) - Shared agent instruction file.
 * [Public Disclosure](agentsmd/rules/public-disclosure.md) - Shared agent instruction file.
 * [Repo README standard](agentsmd/rules/repo-readme-standard.md) - Shared agent instruction file.
+* [Review gate](agentsmd/rules/on-demand/review-gate.md) - Shared agent instruction file.
 * [Rule tiers](agentsmd/rules/rule-tiers.md) - Shared agent instruction file.
 * [Shell Conventions](agentsmd/rules/shell-conventions.md) - Shared agent instruction file.
 * [Soul](agentsmd/rules/soul.md) - Shared agent instruction file.
