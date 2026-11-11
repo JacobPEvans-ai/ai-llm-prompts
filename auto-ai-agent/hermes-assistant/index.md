@@ -12,3 +12,5 @@
 * [Hermes pepper card](../hermes-pepper-card.md) - Issue-scoped evidence search and one bounded comment.
 * [Hermes pepper intake](../hermes-pepper-intake.md) - Bounded issue intake with idempotent Kanban cards.
 * [Hermes pepper digest](../hermes-pepper-digest.md) - Weekly evidence and proposed-change digest for the configured destination.
+* [Hermes Pepper AI news](../hermes-pepper-ai-news.md) - Daily AI news digest matched to the principal's stored AI preferences.
+* [Hermes Pepper weekly AI scouting](../hermes-pepper-scouting.md) - Weekly models, benchmarks, pricing and signup-offer report.
