@@ -730,6 +730,7 @@ workflow:
                 else:
                     proposed=intent.get('actions') if isinstance(intent,dict) else None
                     if not isinstance(proposed,list): proposed=[]; failures.append('model reply had the wrong shape')
+                    elif not all(isinstance(item,dict) and type(item.get('task_index')) is int and item.get('kind') in ('rank','comment','done') for item in proposed): failures.append('model reply had an invalid action')
                 allowed_operations={'comment', 'list', 'update'}
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
@@ -866,9 +867,15 @@ workflow:
                   variable_selector:
                     - guard
                     - dispatch
+                - comparison_operator: empty
+                  id: no-fetch-error
+                  varType: string
+                  variable_selector:
+                    - guard
+                    - fetch_error
               id: live
               logical_operator: and
-          desc: Shadow returns the intended action JSON and cannot reach the write iteration.
+          desc: Shadow, or a run with a fetch error, returns the intended action JSON and cannot reach the write iteration.
           selected: false
           title: Live dispatch enabled?
           type: if-else
@@ -1104,6 +1111,7 @@ workflow:
 
             import ipaddress
             import re
+            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -1113,9 +1121,12 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # A public GitHub link keeps its host and path, limited to plain path characters. Any other character ends the exemption,
-            # so a query, fragment, separator, or @ never carries a following host or address past the redaction.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[A-Za-z0-9._~/-]*")
+            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
+            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            PUBLIC_SCHEME = "https"
+            PUBLIC_HOST = "github.com"
+            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1197,10 +1208,24 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
+            def _redact_url(url):
+                try:
+                    parts = urllib.parse.urlsplit(url)
+                    host = (parts.hostname or "").lower()
+                except ValueError:
+                    return REDACTED
+                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
+                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
+                    return REDACTED
+                path_start = url.index("//") + 2 + len(parts.netloc)
+                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
+                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
+
+
             def _redact_string(text):
                 pieces, position = [], 0
-                for match in PUBLIC_LINK_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_secrets(match.group(0))]
+                for match in URL_RE.finditer(text):
+                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
                     position = match.end()
                 return "".join(pieces) + _redact_plain(text[position:])
 
@@ -1233,6 +1258,8 @@ workflow:
             import urllib.request
 
             CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, so every post turns previews off.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False}
 
 
             def call(api, token, method, payload=None, query=None):
@@ -1325,11 +1352,12 @@ workflow:
                         return "suppressed (already notified)"
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
+                # dashboard_url is template-built, so it is not redacted; reason is literal text, never model or fetch output.
                 text = escape_mrkdwn(
                     notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
-                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
                 except Exception:
                     return "failed-unreported"
                 return "failed"
@@ -1350,8 +1378,8 @@ workflow:
                         raise ValueError("digest channel is not a channel ID")
                     ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
                     if ts is None:
-                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
-                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
                 except Exception:
                     fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
                 return "posted"
@@ -1376,6 +1404,7 @@ workflow:
                         key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
                         for key, value in sorted(outputs.items())
                     )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
                 return clip(escape_mrkdwn(redact(body))) or "(no output)"
 
 
@@ -1454,6 +1483,7 @@ workflow:
 
             import ipaddress
             import re
+            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -1463,9 +1493,12 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # A public GitHub link keeps its host and path, limited to plain path characters. Any other character ends the exemption,
-            # so a query, fragment, separator, or @ never carries a following host or address past the redaction.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[A-Za-z0-9._~/-]*")
+            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
+            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            PUBLIC_SCHEME = "https"
+            PUBLIC_HOST = "github.com"
+            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1547,10 +1580,24 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
+            def _redact_url(url):
+                try:
+                    parts = urllib.parse.urlsplit(url)
+                    host = (parts.hostname or "").lower()
+                except ValueError:
+                    return REDACTED
+                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
+                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
+                    return REDACTED
+                path_start = url.index("//") + 2 + len(parts.netloc)
+                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
+                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
+
+
             def _redact_string(text):
                 pieces, position = [], 0
-                for match in PUBLIC_LINK_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_secrets(match.group(0))]
+                for match in URL_RE.finditer(text):
+                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
                     position = match.end()
                 return "".join(pieces) + _redact_plain(text[position:])
 
@@ -1583,6 +1630,8 @@ workflow:
             import urllib.request
 
             CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, so every post turns previews off.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False}
 
 
             def call(api, token, method, payload=None, query=None):
@@ -1675,11 +1724,12 @@ workflow:
                         return "suppressed (already notified)"
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
+                # dashboard_url is template-built, so it is not redacted; reason is literal text, never model or fetch output.
                 text = escape_mrkdwn(
                     notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
-                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
                 except Exception:
                     return "failed-unreported"
                 return "failed"
@@ -1700,8 +1750,8 @@ workflow:
                         raise ValueError("digest channel is not a channel ID")
                     ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
                     if ts is None:
-                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
-                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
                 except Exception:
                     fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
                 return "posted"
@@ -1726,6 +1776,7 @@ workflow:
                         key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
                         for key, value in sorted(outputs.items())
                     )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
                 return clip(escape_mrkdwn(redact(body))) or "(no output)"
 
 
@@ -1814,6 +1865,8 @@ workflow:
             import urllib.request
 
             CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, so every post turns previews off.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False}
 
 
             def call(api, token, method, payload=None, query=None):
@@ -1906,11 +1959,12 @@ workflow:
                         return "suppressed (already notified)"
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
+                # dashboard_url is template-built, so it is not redacted; reason is literal text, never model or fetch output.
                 text = escape_mrkdwn(
                     notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
-                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
                 except Exception:
                     return "failed-unreported"
                 return "failed"
@@ -1931,8 +1985,8 @@ workflow:
                         raise ValueError("digest channel is not a channel ID")
                     ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
                     if ts is None:
-                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
-                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
                 except Exception:
                     fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
                 return "posted"
