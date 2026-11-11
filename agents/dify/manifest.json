@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "2edba7c0dc58f4319189504808d32090281fab12a2c35cfe58322e69e0b232ea"
+    "sha256": "0b4afe66db97ef64d513a14664e272209cda53585e8f3d9e614f93bc842bc46a"
   },
   {
     "name": "code-simplifier",
@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/dep-review.dsl.yml",
-    "sha256": "0babeca2165a9e938535f97a8981ca957250b3564fb01dd68f660624ae68cd8e"
+    "sha256": "2ab06fd59cfc4debb206a450d1f03847f60b13e0f229e0375d37dacadc5dd4d2"
   },
   {
     "name": "doc-contradiction-finder",
@@ -77,7 +77,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
-    "sha256": "19671c2626d72589c778429e934d087772659c4a12dd085a659843553b48207e"
+    "sha256": "dafbfa52749f8049a9e0a37bf135c32acf4bff6d2048561214f4576ea8389bf7"
   },
   {
     "name": "docs-drift",
@@ -85,7 +85,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/docs-drift.dsl.yml",
-    "sha256": "e0d08261c5f54cfc3da73be6a11bb9e60be622d3a9cfea9b68445a7d6b737715"
+    "sha256": "4eeb079f54469ca4dd2d1b6e62d8fa23a30a5952e0f0bd0545ceab9cabf2a6f4"
   },
   {
     "name": "docs-updater",
@@ -197,7 +197,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "f18f5c26df29ff0d9e47e6375b0648c32fd3522391ec73d5a296994f8ad9e7e2"
+    "sha256": "2af7807058c2c33381128ad8fa66fcabd1cdd0ff258aeaf47507d15bc44ed800"
   },
   {
     "name": "promotion-review",
@@ -229,7 +229,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "4179982379564e6f3af09ea112d70e9ea02f5b789f05b5b42999e06f3372adcb"
+    "sha256": "e1dbd14c317200b339a6dc1d02e448f449ea2203a37d5f4226643e65f9154ed2"
   },
   {
     "name": "repo-janitor",
@@ -237,7 +237,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "f53ed7f4dccb1d15ddb755d407fe2d1872644ace7d5fd9527c32c61e1409b640"
+    "sha256": "de5e77c053f66fbe24c97c61d17ad764c6a85875b893559b2e5e8a49d52947e4"
   },
   {
     "name": "semaphore-clerk",
