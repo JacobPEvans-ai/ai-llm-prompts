@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from test_dify_render import render_checkout, sample_checkout
+from test_dify_render import driver_dsl, render_checkout, sample_checkout
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -63,7 +63,7 @@ def driver(tmp_path, definitions):
         (tmp_path / "agents" / f"{name}.yaml").write_text(yaml.safe_dump(definition))
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
-    dsl = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    dsl = yaml.safe_load(driver_dsl(tmp_path).read_text())
     nodes = {node["id"]: node["data"] for node in dsl["workflow"]["graph"]["nodes"]}
     namespace = {}
     exec(nodes["due"]["code"], namespace)
@@ -100,9 +100,9 @@ def test_rendered_offsets_runtime_overlap_and_timestamp(tmp_path):
     assert namespace["main"](60, 1, 0, "false")["due"] == ["alpha"]
     assert nodes["schedule"]["cron_expression"] == "1-59/2 * * * *"
     assert nodes["schedule"]["timezone"] == "UTC"
-    before = (tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_bytes()
+    before = driver_dsl(tmp_path).read_bytes()
     assert render_checkout(tmp_path).returncode == 0
-    assert (tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_bytes() == before
+    assert driver_dsl(tmp_path).read_bytes() == before
 
 
 def test_overlap_check_rejects_crowded_runtime():
@@ -112,7 +112,7 @@ def test_overlap_check_rejects_crowded_runtime():
 
 
 def test_committed_roster_runtime_overlap():
-    dsl = yaml.safe_load((ROOT / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    dsl = yaml.safe_load(driver_dsl(ROOT).read_text())
     due = next(node["data"] for node in dsl["workflow"]["graph"]["nodes"] if node["id"] == "due")
     namespace = {}
     exec(due["code"], namespace)
@@ -133,8 +133,59 @@ def test_only_tier_two_dify_agents_enter_driver(tmp_path, tier, home):
     definition.update(tier=tier, home_platform=home, triggers=[{"kind": "rotation", "every": "1d"}])
     path.write_text(yaml.safe_dump(definition))
     assert render_checkout(tmp_path).returncode == 0
-    output = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    output = yaml.safe_load(driver_dsl(tmp_path).read_text())
     code = next(node["data"]["code"] for node in output["workflow"]["graph"]["nodes"] if node["id"] == "due")
     namespace = {}
     exec(code, namespace)
     assert namespace["ROTATION_AGENTS"] == []
+
+
+@pytest.mark.parametrize("tier", [0, 1])
+def test_native_hourly_rotation_fires_at_its_minute(tmp_path, tier):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=tier, triggers=[{"kind": "rotation", "every": "1h", "minute": 9}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert output["workflow"]["graph"]["nodes"][0]["data"]["cron_expression"] == "9 */1 * * *"
+
+
+def test_tier_two_hourly_rotation_offsets_to_its_minute(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(triggers=[{"kind": "rotation", "every": "1h", "minute": 9}])
+    path.write_text(yaml.safe_dump(definition))
+    assert render_checkout(tmp_path).returncode == 0
+    dsl = yaml.safe_load(driver_dsl(tmp_path).read_text())
+    code = next(node["data"]["code"] for node in dsl["workflow"]["graph"]["nodes"] if node["id"] == "due")
+    namespace = {}
+    exec(code, namespace)
+    assert namespace["ROTATION_AGENTS"] == [
+        {"name": "sample", "every_minutes": 60, "offset_minutes": 9, "expected_runtime_minutes": 10},
+    ]
+    ticks = range(1, 240, 2)  # the driver ticks on odd minutes only
+    due = [minute for minute in ticks if namespace["main"](minute * 60, 1, 0, "false")["due"]]
+    assert due == [9, 69, 129, 189]
+
+
+@pytest.mark.parametrize("trigger", [
+    {"kind": "rotation", "every": "1h"}, {"kind": "rotation", "every": "1h", "minute": 15},
+    {"kind": "rotation", "every": "1h", "minute": 45}, {"kind": "rotation", "every": "1h", "minute": 8},
+    {"kind": "rotation", "every": "1h", "minute": 60}, {"kind": "rotation", "every": "1d", "minute": 7},
+    {"kind": "rotation", "every": "1h", "minute": "7"},
+])
+def test_renderer_rejects_bad_hourly_minutes(tmp_path, trigger):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(triggers=[trigger])
+    path.write_text(yaml.safe_dump(definition))
+    assert render_checkout(tmp_path).returncode != 0
+
+
+def test_tier_two_hourly_minutes_must_be_distinct(tmp_path):
+    _, base = sample_checkout(tmp_path)
+    for name in ("alpha", "beta"):
+        definition = {**base, "name": name, "tier": 2, "triggers": [{"kind": "rotation", "every": "1h", "minute": 9}]}
+        (tmp_path / "agents" / f"{name}.yaml").write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "hourly rotations must use distinct minutes" in result.stderr

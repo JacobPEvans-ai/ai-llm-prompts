@@ -69,10 +69,12 @@ corrupted session, not a cleanup.
 ## Before cloning
 
 Check repository visibility to choose transport and destination, search
-`$GIT_HOME` for an existing clone outside worktree directories, confirm the
-destination uses the repository family rather than its owner, and confirm its
-basename matches the repository name. A misplaced clone is still a valid clone,
-so the duplicate goes unnoticed and the two copies drift.
+`$GIT_HOME` for an existing clone outside worktree directories, resolve the
+repository's current owner (repositories move between owners and keep their
+name), confirm the destination directory is that owner, and confirm its
+basename matches the repository name. Clones in an older layout stay valid until
+moved. A misplaced clone is still a valid clone, so the duplicate goes unnoticed
+and the two copies drift.
 
 **A misplaced clone is a move, not a delete** — unless you have proven it holds
 nothing unique. Check all four: uncommitted changes, commits ahead of the

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import shutil
 
 import pytest
 import yaml
@@ -105,6 +106,36 @@ def _missing_roster_fields(agent):
     ]
 
 
+_DELIVERY_FIELDS = {"kind", "channel_env", "token_env", "failure_channel_env", "dashboard_url_env", "max_chars", "thread", "input_from"}
+_DELIVERY_OPTIONAL = {"error_from"}
+_ENV_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
+
+
+def validate_delivery(agent):
+    """Optional Slack thread delivery. The renderer asserts the same rules when it renders the DSL."""
+    if "delivery" not in agent:
+        return
+    delivery = agent["delivery"]
+    assert isinstance(delivery, dict) and _DELIVERY_FIELDS <= set(delivery) <= _DELIVERY_FIELDS | _DELIVERY_OPTIONAL, (
+        "delivery fields must match the contract"
+    )
+    assert delivery["kind"] == "slack_thread", "delivery kind must be slack_thread"
+    assert delivery["thread"] == "daily_parent", "delivery thread must be daily_parent"
+    envs = [delivery[field] for field in ("channel_env", "token_env", "failure_channel_env", "dashboard_url_env")]
+    assert all(isinstance(env, str) and _ENV_NAME.fullmatch(env) for env in envs), "delivery env names must be uppercase"
+    assert len(set(envs)) == len(envs), "delivery env names must be distinct"
+    assert delivery["failure_channel_env"] != delivery["channel_env"], "failure channel env must differ from the delivery channel env"
+    max_chars = delivery["max_chars"]
+    assert type(max_chars) is int and 100 <= max_chars <= 10000, "delivery max_chars must be from 100 to 10000"
+    for field in ("input_from", "error_from"):
+        if field not in delivery:
+            continue
+        source = delivery[field]
+        assert isinstance(source, list) and len(source) == 2 and all(isinstance(part, str) and part for part in source), (
+            f"delivery {field} must name a node and an output"
+        )
+
+
 def _validate_v2(agent):
     """Executable v2 schema; preserve agent-specific extension fields."""
     assert isinstance(agent, dict), "definition must be a mapping"
@@ -134,6 +165,7 @@ def _validate_v2(agent):
     if code_tools.intersection(agent["tools"]):
         assert agent["code_work"] == "sandbox", "code editing requires sandbox"
     validate_triggers(agent)
+    validate_delivery(agent)
 
 @pytest.fixture
 def agent_v2():
@@ -311,11 +343,30 @@ def test_self_reference_does_not_require_a_peer():
     _validate_prompt_handoffs(agent, "You are task-clerk.", {"incident-clerk", "task-clerk"})
 
 
-def test_agent_roster_paths_and_prompt_metadata_are_complete():
-    definitions = _definitions()
+def _chain_shared_prefixes(root, agent):
+    """shared_prefix values declared by profiles in this definition's extends chain, resolved through
+    root's agents/profiles; defaults.yaml joins every chain as its base layer, like make resolve-agents."""
+    prefixes = set()
+    name = agent.get("extends")
+    seen = set()
+    while name and name not in seen:
+        seen.add(name)
+        profile = yaml.safe_load((root / "agents" / "profiles" / f"{name}.yaml").read_text()) or {}
+        if profile.get("shared_prefix"):
+            prefixes.add(profile["shared_prefix"])
+        name = profile.get("extends")
+    if seen:
+        defaults = yaml.safe_load((root / "agents" / "profiles" / "defaults.yaml").read_text()) or {}
+        if defaults.get("shared_prefix"):
+            prefixes.add(defaults["shared_prefix"])
+    return prefixes
+
+
+def _roster_paths_and_prompt_metadata(definitions, root=None):
+    root = _ROOT if root is None else root
     assert definitions
 
-    shared_prefixes = set()
+    roster_prefixes = set()
     for path, agent in definitions:
         assert isinstance(agent, dict), f"{path.name} must contain a YAML mapping"
         missing = _missing_roster_fields(agent)
@@ -327,13 +378,53 @@ def test_agent_roster_paths_and_prompt_metadata_are_complete():
                 f"{path.name} {field} does not name a file: {agent[field]}"
             )
 
-        shared_prefixes.add(agent["shared_prefix"])
         _prompt_body(_ROOT / agent["prompt"])
+        chain_prefixes = _chain_shared_prefixes(root, agent)
+        assert agent["shared_prefix"] in chain_prefixes, (
+            f"{path.name} shared_prefix {agent['shared_prefix']} is not declared by a profile in its "
+            f"extends chain: {sorted(chain_prefixes)}"
+        )
+        roster_prefixes.add(agent["shared_prefix"])
 
-    assert len(shared_prefixes) == 1, (
-        f"agents use different shared prefixes: {sorted(shared_prefixes)}"
-    )
-    _prompt_body(_ROOT / next(iter(shared_prefixes)))
+    for shared_prefix in sorted(roster_prefixes):
+        _prompt_body(_ROOT / shared_prefix)
+
+
+def test_agent_roster_paths_and_prompt_metadata_are_complete():
+    _roster_paths_and_prompt_metadata(_definitions())
+
+
+def _chain_fixture(name, extends, shared_prefix):
+    agent = dict(definition("vikunja-triage"))
+    agent.update(name=name, extends=extends, shared_prefix=shared_prefix)
+    return Path(f"{name}.yaml"), agent
+
+
+def test_a_same_chain_definition_with_a_different_prefix_fails():
+    base = _chain_fixture("sample-clerk", "connector", "agents/prompts/shared/homelab.md")
+    other = _chain_fixture("overlay-clerk", "connector", "agents/prompts/vikunja-clerk.md")
+    with pytest.raises(AssertionError, match="not declared by a profile in its extends chain"):
+        _roster_paths_and_prompt_metadata([base, other])
+
+
+def test_an_overlay_profile_may_declare_its_own_shared_prefix(tmp_path):
+    profiles = tmp_path / "agents" / "profiles"
+    profiles.mkdir(parents=True)
+    shutil.copy(_ROOT / "agents" / "profiles" / "defaults.yaml", profiles / "defaults.yaml")
+    (profiles / "overlay.yaml").write_text("shared_prefix: agents/prompts/vikunja-clerk.md\n")
+    overlay = _chain_fixture("overlay-clerk", "overlay", "agents/prompts/vikunja-clerk.md")
+
+    _roster_paths_and_prompt_metadata([overlay], root=tmp_path)
+
+
+def test_a_definition_whose_chain_declares_no_prefix_fails(tmp_path):
+    profiles = tmp_path / "agents" / "profiles"
+    profiles.mkdir(parents=True)
+    (profiles / "defaults.yaml").write_text("tier: 0\n")
+    (profiles / "overlay.yaml").write_text("tier: 1\n")
+    overlay = _chain_fixture("overlay-clerk", "overlay", "agents/prompts/vikunja-clerk.md")
+    with pytest.raises(AssertionError, match="not declared by a profile in its extends chain"):
+        _roster_paths_and_prompt_metadata([overlay], root=tmp_path)
 
 
 def _key_references(value):
@@ -524,6 +615,31 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
         f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
     )
+
+
+_DELIVERY = {
+    "kind": "slack_thread", "channel_env": "AGENT_DIGEST_CHANNEL", "token_env": "SLACK_AGENT_BOT_TOKEN",
+    "failure_channel_env": "AGENT_FAILURE_CHANNEL", "dashboard_url_env": "AGENT_DASHBOARD_URL",
+    "max_chars": 3000, "thread": "daily_parent", "input_from": ["prepare", "task_refs"],
+}
+
+
+def test_valid_delivery_fixture_and_absent_delivery():
+    validate_delivery({"delivery": dict(_DELIVERY)})
+    validate_delivery({"delivery": {**_DELIVERY, "error_from": ["guard", "fetch_error"]}})
+    validate_delivery({})
+
+
+@pytest.mark.parametrize("updates", [
+    {"kind": "webhook"}, {"thread": "per_run"}, {"channel_env": "agent_digest"},
+    {"failure_channel_env": "AGENT_DIGEST_CHANNEL"}, {"token_env": "AGENT_FAILURE_CHANNEL"},
+    {"dashboard_url_env": "SLACK_AGENT_BOT_TOKEN"}, {"max_chars": 99}, {"max_chars": 10001},
+    {"max_chars": True}, {"input_from": ["prepare"]}, {"input_from": ["prepare", "task_refs", "x"]},
+    {"error_from": ["guard"]}, {"error_from": "guard"}, {"extra": "field"},
+])
+def test_invalid_delivery_fixtures(updates):
+    with pytest.raises(AssertionError):
+        validate_delivery({"delivery": {**_DELIVERY, **updates}})
 
 
 def test_pr_keeper_replaces_ci_fixer():

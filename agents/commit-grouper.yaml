@@ -1,5 +1,6 @@
 name: commit-grouper
 extends: interactive
+litellm_role: small
 description: |
   Use when: a supplied change list needs conventional commit groups.
   Do not use when: the request requires executing commits or inventing paths.

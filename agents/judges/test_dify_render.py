@@ -3,6 +3,8 @@
 import ast
 import hashlib
 import json
+import os
+from functools import lru_cache
 from pathlib import Path
 import subprocess
 
@@ -24,6 +26,22 @@ def run_make(*args):
         text=True,
         check=False,
     )
+
+
+@lru_cache(maxsize=1)
+def rotation_driver_name():
+    """Read the default driver name from the Makefile so the judges cannot drift from it."""
+    result = subprocess.run(
+        ["make", "--no-print-directory", "--eval",
+         "print-ROTATION_DRIVER_NAME:\n\t@echo $$ROTATION_DRIVER_NAME",
+         "print-ROTATION_DRIVER_NAME"],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip()
+
+
+def driver_dsl(path):
+    return path / "agents/dify" / f"{rotation_driver_name()}.dsl.yml"
 
 
 def sample_checkout(tmp_path, name="sample"):
@@ -64,7 +82,7 @@ def test_committed_outputs_match_shared_template(tmp_path):
         for path, agent in definitions()
         if agent["home_platform"] == "dify"
     }
-    expected.add("tier2-rotation.dsl.yml")
+    expected.add(f"{rotation_driver_name()}.dsl.yml")
     assert {path.name for path in tmp_path.glob("*.dsl.yml")} == expected
     assert {path.name for path in (ROOT / "agents" / "dify").glob("*.dsl.yml")} == expected
     for name in expected:
@@ -75,30 +93,145 @@ def test_committed_outputs_match_shared_template(tmp_path):
     assert not list((ROOT / "agents" / "dify-src").glob("*/*.dsl.yml.tmpl"))
 
 
-def test_manifest_covers_rendered_files_with_matching_hashes():
-    manifest = json.loads((ROOT / "agents/dify/manifest.json").read_text())
-    agents = {agent["name"]: agent for _, agent in definitions() if agent["home_platform"] == "dify"}
-    assert [entry["name"] for entry in manifest] == sorted([*agents, "tier2-rotation"])
-    assert {entry["path"] for entry in manifest} == {
-        path.relative_to(ROOT).as_posix() for path in (ROOT / "agents/dify").glob("*.dsl.yml")
+def manifest_files(root):
+    base = root / "agents" / "dify"
+    return [base / "manifest.json", *sorted(base.glob("manifest.*.json"))]
+
+
+def validate_manifests(root, agents):
+    """Every manifest entry keeps its fields, hash and roster metadata, the manifests together cover
+    every Dify-home agent, the rotation driver, and every rendered DSL in agents/dify exactly once."""
+    rendered = {
+        path.relative_to(root).as_posix() for path in (root / "agents/dify").glob("*.dsl.yml")
     }
-    for entry in manifest:
-        assert set(entry) == {"name", "path", "sha256", "mode", "tier", "kind"}
-        path = ROOT / entry["path"]
-        assert path.is_file()
-        assert path.name == f"{entry['name']}.dsl.yml"
-        assert entry["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
-        if entry["name"] in agents:
-            assert entry["kind"] == "agent"
-            assert entry["mode"] == agents[entry["name"]]["mode"]
-            assert entry["tier"] == agents[entry["name"]]["tier"]
-        else:
-            driver = subprocess.run(
-                ["gomplate", "-t", f"driver={ROOT}/agents/dify-src/rotation.tmpl",
-                 "-i", '{{ tmpl.Exec "driver-metadata" . }}'],
-                capture_output=True, text=True, check=True,
-            )
-            assert {key: entry[key] for key in ("name", "kind", "mode", "tier")} == json.loads(driver.stdout)
+    covered = []
+    names = set()
+    for manifest_path in manifest_files(root):
+        manifest = json.loads(manifest_path.read_text())
+        names_in_manifest = [entry["name"] for entry in manifest]
+        assert names_in_manifest == sorted(names_in_manifest), (
+            f"{manifest_path.relative_to(root).as_posix()} entries must be sorted by name"
+        )
+        for entry in manifest:
+            assert set(entry) == {"name", "path", "sha256", "mode", "tier", "kind"}
+            path = root / entry["path"]
+            assert path.is_file()
+            assert path.name == f"{entry['name']}.dsl.yml"
+            assert entry["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+            if entry["name"] in agents:
+                assert entry["kind"] == "agent"
+                assert entry["mode"] == agents[entry["name"]]["mode"]
+                assert entry["tier"] == agents[entry["name"]]["tier"]
+            else:
+                template = root / "agents/dify-src/rotation.tmpl"
+                if not template.exists():
+                    template = ROOT / "agents/dify-src/rotation.tmpl"  # synthetic fixtures carry no templates
+                driver = subprocess.run(
+                    ["gomplate", "-t", f"driver={template}",
+                     "-i", '{{ tmpl.Exec "driver-metadata" . }}'],
+                    capture_output=True, text=True, check=True,
+                    env={**os.environ, "ROTATION_DRIVER_NAME": rotation_driver_name()},
+                )
+                assert {key: entry[key] for key in ("name", "kind", "mode", "tier")} == json.loads(driver.stdout)
+            names.add(entry["name"])
+            covered.append(entry["path"])
+    missing = sorted({*agents, rotation_driver_name()} - names)
+    assert not missing, f"manifests omit roster DSLs: {missing}"
+    duplicated = sorted({path for path in covered if covered.count(path) > 1})
+    assert not duplicated, f"DSLs covered by more than one manifest: {duplicated}"
+    assert set(covered) == rendered, (
+        f"manifests do not cover every rendered DSL exactly once: "
+        f"uncovered={sorted(rendered - set(covered))}, unknown={sorted(set(covered) - rendered)}"
+    )
+
+
+def test_manifest_covers_rendered_files_with_matching_hashes():
+    agents = {agent["name"]: agent for _, agent in definitions() if agent["home_platform"] == "dify"}
+    validate_manifests(ROOT, agents)
+
+
+def synthetic_manifest_checkout(tmp_path, driver=True):
+    """A base manifest for the driver and an overlay manifest for one agent, over one shared DSL tree."""
+    agents = {"sample-clerk": {"mode": "shadow", "tier": 1}}
+    dify = tmp_path / "agents" / "dify"
+    dify.mkdir(parents=True)
+    entries = {}
+    if driver:
+        entries[rotation_driver_name()] = {
+            "name": rotation_driver_name(), "kind": "driver", "mode": None, "tier": 2,
+            "path": f"agents/dify/{rotation_driver_name()}.dsl.yml",
+            "sha256": hashlib.sha256(b"# Generated from agents/dify-src/rotation.tmpl\n").hexdigest(),
+        }
+        (dify / f"{rotation_driver_name()}.dsl.yml").write_bytes(b"# Generated from agents/dify-src/rotation.tmpl\n")
+    for name, metadata in agents.items():
+        content = f"# Generated from agents/{name}.yaml\napp: {{name: {name}}}\n".encode()
+        (dify / f"{name}.dsl.yml").write_bytes(content)
+        entries[name] = {
+            "name": name, "kind": "agent", **metadata,
+            "path": f"agents/dify/{name}.dsl.yml",
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+    (dify / "manifest.json").write_text(json.dumps([entries[rotation_driver_name()]] if driver else []))
+    (dify / "manifest.overlay.json").write_text(json.dumps([entries["sample-clerk"]]))
+    return agents
+
+
+def test_an_overlay_manifest_covers_its_rosters_dsls(tmp_path):
+    agents = synthetic_manifest_checkout(tmp_path)
+    validate_manifests(tmp_path, agents)
+
+
+@pytest.mark.parametrize("drift", ["overlap", "uncovered", "outside", "roster"])
+def test_manifests_reject_incomplete_or_shared_coverage(tmp_path, drift):
+    agents = synthetic_manifest_checkout(tmp_path)
+    manifest = json.loads((tmp_path / "agents/dify/manifest.json").read_text())
+    overlay = json.loads((tmp_path / "agents/dify/manifest.overlay.json").read_text())
+    if drift == "overlap":
+        (tmp_path / "agents/dify/manifest.json").write_text(json.dumps(manifest + overlay))
+    elif drift == "uncovered":
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([]))
+    elif drift == "roster":
+        # A definition whose DSL was never rendered: coverage of existing files stays complete.
+        (tmp_path / "agents/dify/sample-clerk.dsl.yml").unlink()
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([]))
+    else:
+        outside = tmp_path / "agents/elsewhere/sample-clerk.dsl.yml"
+        outside.parent.mkdir(parents=True)
+        outside.write_bytes((tmp_path / "agents/dify/sample-clerk.dsl.yml").read_bytes())
+        displaced = {**overlay[0], "path": "agents/elsewhere/sample-clerk.dsl.yml"}
+        (tmp_path / "agents/dify/manifest.overlay.json").write_text(json.dumps([displaced]))
+    with pytest.raises(AssertionError):
+        validate_manifests(tmp_path, agents)
+
+
+def test_render_takes_the_rotation_driver_name_as_input(tmp_path):
+    result = run_make(
+        "render-dify", "ROTATION_DRIVER_NAME=sample-rotation", f"DIFY_OUTPUT={tmp_path}",
+    )
+    assert result.returncode == 0, result.stderr
+    expected = {
+        f"{path.stem}.dsl.yml"
+        for path, agent in definitions()
+        if agent["home_platform"] == "dify"
+    }
+    expected.add("sample-rotation.dsl.yml")
+    assert {path.name for path in tmp_path.glob("*.dsl.yml")} == expected
+    assert not (tmp_path / "tier2-rotation.dsl.yml").exists()
+    dsl = yaml.safe_load((tmp_path / "sample-rotation.dsl.yml").read_text())
+    assert dsl["app"]["name"] == "sample-rotation"
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    entry = next(e for e in manifest if e["name"] == "sample-rotation")
+    assert entry["path"] == "agents/dify/sample-rotation.dsl.yml"
+    assert entry["kind"] == "driver" and entry["mode"] is None and entry["tier"] == 2
+
+
+@pytest.mark.parametrize("name", ["ab", "No-Hyphens", "with_underscore", "with space", "x" * 64])
+def test_invalid_rotation_driver_names_fail(tmp_path, name):
+    result = run_make(
+        "render-dify", f"ROTATION_DRIVER_NAME={name}", f"DIFY_OUTPUT={tmp_path}",
+    )
+    assert result.returncode != 0
+    assert "ROTATION_DRIVER_NAME" in result.stderr
 
 
 @pytest.mark.parametrize("name", ["github-clerk", "zammad-clerk"])
@@ -125,7 +258,7 @@ def test_non_dify_agent_is_skipped_without_fragments(tmp_path):
     result = render_checkout(tmp_path)
     assert result.returncode == 0, result.stderr
     assert {p.name for p in (tmp_path / "agents" / "dify").iterdir()} == {
-        "sample.dsl.yml", "tier2-rotation.dsl.yml", "manifest.json",
+        "sample.dsl.yml", f"{rotation_driver_name()}.dsl.yml", "manifest.json",
     }
 
 
@@ -186,7 +319,7 @@ def test_tier1_rotation_uses_native_schedule(tmp_path):
     start = output["workflow"]["graph"]["nodes"][0]["data"]
     assert start["type"] == "trigger-schedule"
     assert start["cron_expression"] == "7,22,37,52 * * * *"
-    driver = yaml.safe_load((tmp_path / "agents/dify/tier2-rotation.dsl.yml").read_text())
+    driver = yaml.safe_load(driver_dsl(tmp_path).read_text())
     assert '"name": "sample"' not in str(driver)
 
 

@@ -1,5 +1,6 @@
 name: style-gate
 extends: interactive
+litellm_role: small
 description: |
   Use when: a supplied draft or structured text needs style findings.
   Do not use when: the request needs rewriting or creating new content.

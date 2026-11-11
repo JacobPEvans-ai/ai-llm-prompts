@@ -4,12 +4,13 @@ title: Hermes secrets policy audit
 description: Issue-only scan for credential and private-topology leaks in dryvist org source, never a pull request.
 resource: prompt://dryvist/auto-ai-agent/hermes-secrets-policy-audit
 tags: [hermes, cron, autonomous-agent, security]
-timestamp: 2026-08-06T00:00:00-04:00
+timestamp: 2026-11-10T23:00:00Z
 status: active
 consumers: [dryvist/ansible-proxmox-ai]
 render:
-  engine: literal
-  variables: []
+  engine: jinja2
+  variables:
+    - hermes_agent_secrets_audit_skip_repos
   frontmatter: strip
 source_history:
   - repository: dryvist/ai-llm-prompts
@@ -29,9 +30,15 @@ Scan only: `src/**`, `lib/**`, `terraform/**`, `ansible/roles/**`, `.github/work
 Hard skip, no exceptions:
 
 - `SECURITY.md`, `README.md`, `CHANGELOG.md`, `LICENSE`, and any path matching `*resume*` or `*cover-letter*`.
-- Entire repos: anything matching `obsidian-*` (private note vaults), `int_resume`, `tf-static-website`, `unifi-*` (config dumps), plus your operator skip-list.
+- Entire repos: every repository or name pattern in the skip list below.
 - `tests/**`, `fixtures/**`, `examples/**`, `*.example`, `*.test.*`, `*.spec.*`.
 - Vendor manifests where an author email is intentional: `package.json`, `Cargo.toml`, `pyproject.toml`, `Gemfile`.
+
+Skip list, one repository or name pattern per line, from private runtime configuration:
+
+{{ hermes_agent_secrets_audit_skip_repos | default('', true) | trim }}
+
+**If the skip list above is empty, scan nothing. Say in one sentence that the skip list is missing, then stop. This check comes after the token check: a missing token still means [SILENT].** Without it you cannot tell a private repository from a public one, and scanning a private repository is the harm this audit exists to prevent.
 
 ## Patterns
 

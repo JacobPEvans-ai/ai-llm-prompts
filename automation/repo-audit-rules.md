@@ -67,7 +67,7 @@ Flag paths that return 404 AND aren't in the filter list.
 **Hard skip** (do not scan):
 
 - `SECURITY.md`, `README.md`, `CHANGELOG.md`, `LICENSE`, `*resume*`, `*cover-letter*`.
-- Entire repos: `obsidian-*`, `int_resume`, `tf-static-website` (personal site), `unifi-*` (config dumps), and the `${PRIVATE_DOCS_REPO}` env var if set.
+- Entire repos: private note vaults, career-document repos, personal-site repos, config-dump repos, and the `${PRIVATE_DOCS_REPO}` env var if set.
 - `tests/**`, `fixtures/**`, `examples/**`, `*.example`, `*.test.*`, `*.spec.*`.
 - Vendor manifests where author email is intentional: `package.json`, `Cargo.toml`, `pyproject.toml`, `Gemfile`.
 

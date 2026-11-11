@@ -1,7 +1,48 @@
 # Change Log
 
+## 2026-11-11
+
+* **Feat (rules)**: Add the on-demand `review-gate.md` rule and make it the first code review check.
+* **Feat (rules)**: Add the on-demand `fleet-utilization.md` rule — worker-fleet cadences, the `QUEUE` block and the
+  two hourly numbers — indexed in `rule-tiers.md` and referenced from the delegation routing paragraph.
+
+## 2026-11-10
+
+* **Fix (auto-ai-agent)**: Donna does not open a conversation about her own faults (a failed job, a missing
+  permission, or a report sent to a room other than the configured one). She states each one in one line in the output
+  of the run where it happened, and answers questions about her configuration and delivery. Questions about the
+  person's tasks, calendar, approvals and preferences are unchanged.
+
 ## 2026-11-09
 
+* **Fix (agents)**: The JSON-fence judge accepts compliant overlay parse nodes — it still requires every listed parse
+  node to route through the shared fence stripper, and it now allows unlisted nodes from DSLs outside this repo's roster
+  (agent definitions that do not extend a profile in `agents/profiles/`), with judge tests covering a synthetic overlay
+  DSL, an unlisted roster node, and a public DSL that loses the stripper call.
+
+* **Feat (agents)**: Accept an overlay roster's prefix, manifest, and parse suites — the judges require each
+  definition's `shared_prefix` to equal the prefix declared by a profile in its `extends` chain, additional
+  `agents/dify/manifest.<roster>.json` manifests that together name every roster DSL and cover every rendered DSL
+  exactly once, and `<agent>-parse` suites derived from every eval suite's unskipped `expected_parse` cases.
+* **Fix (auto-ai-agent)**: The Hermes surface gains one cron tool rule — a cron run never runs an inline `-c`/`-e`
+  script (write a per-run script file or use a native tool) and reads a file in full before overwriting it, preferring
+  per-run scratch file names — and judge tests reject any Hermes prompt that instructs an inline script or restates the
+  rule outside the surface.
+* **Feat (agents)**: The Dify rotation driver's app name is a render input — `make render-dify` takes it
+  from the `ROTATION_DRIVER_NAME` make variable (default `tier2-rotation`), so an overlay can render its
+  own driver beside the public one.
+
+* **Feat (agents)**: Add `youtrack-clerk`, a connector for scoped issue reads, creates, comments, updates and
+  evidence-backed resolution, with readback evals and rendered catalog entries.
+
+* **Fix (agents)**: The shared Dify report-envelope helper states unexpected reply properties as a count in its rejection
+  reason, so no reason ever repeats key names or values a reply can choose, and the judge suite plants a unique marker in
+  an otherwise valid reply to assert no returned reason echoes it.
+
+* **Feat (rules)**: Status posts put one component and one metric on each line, each led by a green, yellow or red status.
+
+* **Feat (agents)**: Run action-extractor, commit-grouper, plain-rewriter, style-gate and tag-suggester on the small
+  role.
 * **Fix (evals)**: The shared promptfoo output instruction now forbids claiming a readback, receipt, dedup result, or
   write unless its result is in the input.
 

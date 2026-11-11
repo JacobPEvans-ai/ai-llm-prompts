@@ -160,6 +160,7 @@ def _guard(tasks, proposed, policy, mode="live"):
         "role",
         "secret",
         _BAO_PATH,
+        "",
     )
 
 

@@ -1,5 +1,146 @@
 # Changelog
 
+## [1.106.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.105.0...v1.106.0) (2026-11-11)
+
+
+### Features
+
+* **agents:** start plan-reconciler on a merged pull request ([#460](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/460)) ([b808cbe](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/b808cbec08e8c0e3ee605b629a36dd8a1d8cea8e))
+
+## [1.105.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.104.0...v1.105.0) (2026-11-11)
+
+
+### Features
+
+* **hermes:** add Pepper AI-side assistant role and its two cron prompts ([#439](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/439)) ([1941c64](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/1941c64f8442b043c60c23282a71205c0ffda6da))
+* **rules:** add first-check code review gate ([ce378c9](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/ce378c9ee38b85d98ec317ceef7697caa496497f))
+* **rules:** add first-check code review gate ([#459](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/459)) ([342fdfd](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/342fdfd910bf2951ce01337710e97943871354ce))
+* **rules:** bar git town undo in executor briefs ([d0d0430](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/d0d043034a962d94d2e20a90c3457078f69f1d76))
+* **rules:** state who launches a merge-gate review ([4141d4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/4141d4e98f712df6eededc1ead04dcbf143f704d))
+
+
+### Bug Fixes
+
+* **rules:** keep the launcher rule and drop seat assignments ([37c8d4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/37c8d4e3299b6389a017cdd35aabf0f30ef43700))
+* **rules:** point the review gate at the rules it applies ([f3e1716](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/f3e1716cf5ca9cee774c10bdbe7f224149c4cf59))
+* **rules:** refer the review gate to the tool-choice order ([e87ee31](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/e87ee31e5e9942eae5afae3a1e21394f557ab943))
+
+## [1.104.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.103.0...v1.104.0) (2026-11-11)
+
+
+### Features
+
+* **dify:** opt the zammad triage agent into Slack digest delivery ([#455](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/455)) ([ccdbd34](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/ccdbd34484dbe264d96f252af7bb058b645a0f8e))
+
+## [1.103.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.102.0...v1.103.0) (2026-11-11)
+
+
+### Features
+
+* **dify:** opt the vikunja triage agent into Slack digest delivery ([#452](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/452)) ([7dce79d](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/7dce79dfb8bd5053e8978654b273ba5c14daa134))
+
+## [1.102.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.1...v1.102.0) (2026-11-11)
+
+
+### Features
+
+* **dify:** deliver agent output to a Slack thread behind a redaction gate ([#449](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/449)) ([0508938](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/0508938c63425b0ddcf4e8555195d32b9aa1f24f))
+
+## [1.101.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.0...v1.101.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **donna:** route questions about her own setup to the issues channel ([#440](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/440)) ([d48c55d](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/d48c55d2176cd2e143246fa08eed2edaee3a2249))
+
+## [1.101.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.3...v1.101.0) (2026-11-11)
+
+
+### Features
+
+* **rules:** add fleet utilization rule for orchestrated workers ([#442](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/442)) ([f2ced67](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/f2ced676b76879db8596f943165bab4ae28995d2))
+
+## [1.100.3](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.2...v1.100.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* **hermes:** take the secrets audit skip list at render time and stop without it ([#437](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/437)) ([92a71d4](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/92a71d42e2100c86384ec78e1687df91395e4c7e))
+
+## [1.100.2](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.1...v1.100.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* replace private names with role words ([#435](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/435)) ([c80aa4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/c80aa4e70f626ba94c149da371a11ae43ae31d31))
+
+## [1.100.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.0...v1.100.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **hermes:** keep the assistant pulse and nudge off scripts and log a quiet run reason ([#433](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/433)) ([a3feeb4](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/a3feeb442b112e576f0045f8ceb0c73bb369d7d5))
+
+## [1.100.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.99.0...v1.100.0) (2026-11-10)
+
+
+### Features
+
+* **judges:** accept an overlay roster's prefix, manifest and parse suites ([#428](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/428)) ([be761fc](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/be761fc0de0569c2d49a614415a315f7d9d89d6f))
+
+
+### Bug Fixes
+
+* **workspace:** place clones under the repository's current owner ([#429](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/429)) ([243889a](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/243889a9f368c16b64c8fbfe3bbe4b352bab8864))
+
+## [1.99.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.1...v1.99.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** take the rotation driver name as a render input ([#418](https://github.com/dryvist/ai-llm-prompts/issues/418)) ([6858b68](https://github.com/dryvist/ai-llm-prompts/commit/6858b68886398d5c011c33334372411be31b863a))
+
+## [1.98.1](https://github.com/dryvist/ai-llm-prompts/compare/v1.98.0...v1.98.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **agents:** keep reply keys out of envelope error reasons ([#421](https://github.com/dryvist/ai-llm-prompts/issues/421)) ([30837ea](https://github.com/dryvist/ai-llm-prompts/commit/30837ea2dd22e417f99b0065cd63c68b5b2ca37f))
+
+## [1.98.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.97.0...v1.98.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** add youtrack-clerk, the issue tracker connector ([#419](https://github.com/dryvist/ai-llm-prompts/issues/419)) ([49f0236](https://github.com/dryvist/ai-llm-prompts/commit/49f0236b5b19ed2b40d03c6e4be377e540995de8))
+
+## [1.97.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.96.0...v1.97.0) (2026-11-09)
+
+
+### Features
+
+* **agent:** zcode run j-888212d211c78a1a ([49a37df](https://github.com/dryvist/ai-llm-prompts/commit/49a37df9c2fb224375ae829aeae0493bcdc98ea3))
+
+
+### Bug Fixes
+
+* **hermes:** keep cron agents off inline scripts and unread overwrites ([#413](https://github.com/dryvist/ai-llm-prompts/issues/413)) ([49a37df](https://github.com/dryvist/ai-llm-prompts/commit/49a37df9c2fb224375ae829aeae0493bcdc98ea3))
+
+## [1.96.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.95.0...v1.96.0) (2026-11-09)
+
+
+### Features
+
+* **agent:** opencode-local run j-382bd042cd4c4465 ([6c007a2](https://github.com/dryvist/ai-llm-prompts/commit/6c007a299e82db6cfd4440100da720e10a9cde0d))
+* **rules:** put one component and one metric on each status line ([#410](https://github.com/dryvist/ai-llm-prompts/issues/410)) ([6c007a2](https://github.com/dryvist/ai-llm-prompts/commit/6c007a299e82db6cfd4440100da720e10a9cde0d))
+
+## [1.95.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.94.0...v1.95.0) (2026-11-09)
+
+
+### Features
+
+* **agents:** run the five short-task agents on the small role ([#408](https://github.com/dryvist/ai-llm-prompts/issues/408)) ([e3b2bd2](https://github.com/dryvist/ai-llm-prompts/commit/e3b2bd2c1ef060e27f3d9c1eafef29a56366b5d5))
+
 ## [1.94.0](https://github.com/dryvist/ai-llm-prompts/compare/v1.93.2...v1.94.0) (2026-11-09)
 
 

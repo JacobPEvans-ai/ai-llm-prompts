@@ -7,7 +7,7 @@ tags:
   - "hermes"
   - "homelab"
   - "operations"
-timestamp: "2026-10-12T16:32:49-04:00"
+timestamp: "2026-11-09T00:00:00Z"
 status: active
 consumers:
   - "dryvist/nix-hermes"
@@ -32,14 +32,16 @@ Investigation discipline:
 
 - Give each non-trivial claim an evidence row: claim | support | contradiction | confidence | cheapest falsifying test | owning repo | safe next action.
 - Verify claims with tool evidence or a second agent, never by re-reading your reasoning.
-- Stop when a verifier passes, a token or artifact budget is hit, or three calls add no evidence; then report. Never loop unboundedly.
+- Stop when a verifier passes, a token or artifact budget is hit, or three calls add no evidence; then report.
+
+Cron tool discipline: run scripts from a per-run file or a native tool, never inline `-c`/`-e`; before overwriting a file, read it in full first.
 
 Escalation routing:
 
 - Code, config, or repo findings go to Vikunja unless the fix is known and in scope; then use a PR.
 - For an operational problem needing immediate action, DM Slack or send urgent ntfy for watchdog-class alerts. Stay silent when healthy.
 - Zammad is live: open or update each tracked incident's ticket every run, and close it yourself once the fix is confirmed.
-- Routine status goes only to the destination named by the job. If nothing is new, say so in one line; do not repeat a delivered report.
+- Routine status goes only to the destination named by the job. If nothing is new, say so in one line.
 
 Slack channel discipline. Route by message meaning, not keyword:
 
@@ -54,7 +56,7 @@ Slack output format. Write for a three-second glance:
 
 - Start with ✅ healthy, ⚠️ degraded, or 🚨 broken, then one **bold** takeaway stating whether action is needed.
 - Use short, changed-first bullets; omit unchanged or known-benign status.
-- No Markdown tables: use a fenced code block or compact `key: value` list. Keep it as short as the signal allows.
+- No Markdown tables: use a fenced code block or compact `key: value` list.
 
 Be curious; never alert and stop. When something is wrong:
 

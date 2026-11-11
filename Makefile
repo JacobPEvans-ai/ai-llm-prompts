@@ -1,5 +1,7 @@
 DIFY_OUTPUT ?= agents/dify
 AGENTS_ROOT ?= .
+ROTATION_DRIVER_NAME ?= tier2-rotation
+export ROTATION_DRIVER_NAME
 INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/index.md
 PROMPT_INDEX_OUTPUT ?= $(AGENTS_ROOT)/agents/prompts/index.md
 PYTEST ?= python3 -m pytest
@@ -58,6 +60,13 @@ resolve-agents:
 
 render-dify:
 	@mkdir -p "$(DIFY_OUTPUT)"
+	@set -eu; name="$$ROTATION_DRIVER_NAME"; \
+		case "$$name" in \
+			*[!a-z0-9-]*) printf 'ROTATION_DRIVER_NAME must use only lowercase letters, digits, and hyphens, got "%s"\n' "$$name" >&2; exit 1 ;; \
+		esac; \
+		if [ "$${#name}" -lt 3 ] || [ "$${#name}" -gt 63 ]; then \
+			printf 'ROTATION_DRIVER_NAME must be 3 to 63 characters long, got "%s"\n' "$$name" >&2; exit 1; \
+		fi
 	@set -eu; output=$$(mktemp -d "$${TMPDIR:-/tmp}/agents.XXXXXX"); trap 'rm -rf "$$output"' EXIT; \
 		$(MAKE) --no-print-directory resolve-agents > "$$output/definitions.jsonl"; \
 		cd "$(AGENTS_ROOT)"; while IFS= read -r definition; do \

@@ -16,10 +16,10 @@ tool list, canonical JSON output instructions and the names (never the values) o
 is byte-identical across the suite's cases; case data comes last, in the user message. The generator includes
 `shared/homelab.md` because the agent definitions declare that existing file.
 
-Every `vikunja-clerk` case with `expected_parse` also yields a `vikunja-clerk-parse` test. That test sends the raw caller
-input to the Dify "Parse request" node prompt (`agents/dify/vikunja-clerk.dsl.yml`), now composed from the shared prefix
-and canonical `agents/prompts/vikunja-clerk.md` prompt, including its "Parse request (classifier step)" section. It
-scores `expected-fields-match` and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.py`).
+Every eval suite case with an unskipped `expected_parse` also yields a `<agent>-parse` test. That test sends the raw caller input
+to the Dify "Parse request" node prompt of that agent's own rendered DSL (`agents/dify/<agent>.dsl.yml`), composed
+from the suite's shared prefix and canonical `agents/prompts/<agent>.md` prompt. It scores `expected-fields-match`
+and `parse-json-schema-valid` (the checker in `agents/judges/parse-json-schema.py`).
 
 A suite's top-level `expected_output_scoring` sets how `expected-output` scores: `field-credit` (the default) is the
 share of expected keys that match, and `strict` is 1 only when every key matches. `vikunja-clerk` is `strict`.

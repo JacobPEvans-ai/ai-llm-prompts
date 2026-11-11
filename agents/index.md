@@ -287,7 +287,7 @@
 
 * Tier: 2
 * Trigger: event: vikunja
-* Trigger: rotation: 1d
+* Trigger: rotation: 1h
 * Reader: Vikunja via vikunja-clerk
 * Acted signal: proposed task move applied
 
@@ -297,6 +297,13 @@
 * Trigger: rotation: 7d
 * Reader: style-gate and plain-rewriter prompts
 * Acted signal: draft PR merged
+
+### [youtrack-clerk](youtrack-clerk.yaml)
+
+* Tier: 1
+* Trigger: call: caller
+* Reader: authorized requesting caller
+* Acted signal: readback-verified issue receipt or actionable refusal
 
 ### [zammad-clerk](zammad-clerk.yaml)
 
@@ -309,6 +316,6 @@
 
 * Tier: 2
 * Trigger: event: zammad
-* Trigger: rotation: 1d
+* Trigger: rotation: 1h
 * Reader: Zammad via zammad-clerk
 * Acted signal: ticket state changes

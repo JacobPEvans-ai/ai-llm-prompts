@@ -120,7 +120,7 @@ gh repo list "$GH_OWNER" --limit 100 \
       | {name, default_branch:.defaultBranchRef.name}]'
 ```
 
-Skip-list (never scan): `agentics`, `agent-os` (upstream mirrors), `obsidian-*` (private-note vaults — see secrets-policy below), `int_resume` / cover-letter / personal-site repos. The skip-list is also used by `secrets-policy` scope filtering.
+Skip-list (never scan): `agentics`, `agent-os` (upstream mirrors), private note-vault repos (see secrets-policy below), career-document / cover-letter / personal-site repos. The skip-list is also used by `secrets-policy` scope filtering.
 
 ## Rule definitions
 

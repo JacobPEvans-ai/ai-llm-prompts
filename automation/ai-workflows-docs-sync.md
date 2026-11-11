@@ -10,7 +10,7 @@ timestamp: "2026-09-24T08:50:00-04:00"
 status: active
 consumers:
   - "JacobPEvans/.github-ai"
-  - "dryvist/docs-starlight"
+  - "the private docs repo"
 render:
   engine: envsubst
   variables:
@@ -21,7 +21,7 @@ render:
 source_history:
   - repository: "dryvist/ai-llm-prompts"
     path: "automation/docs-sync.md"
-    note: "docs-sync retired 2026-08-06 as a weekly, estate-wide cloud routine when its substrate was decommissioned. This prompt is its successor in shape only: a GitHub Actions CI job, triggered once per merged pull request rather than on a schedule, scoped to that one PR's change instead of an 8-day estate sweep. The two-site (public docs / private docs-starlight) targeting, the state file, and the weekly self-cleanup step do not carry over — this job is stateless and single-target (docs-starlight only)."
+    note: "docs-sync retired 2026-08-06 as a weekly, estate-wide cloud routine when its substrate was decommissioned. This prompt is its successor in shape only: a GitHub Actions CI job, triggered once per merged pull request rather than on a schedule, scoped to that one PR's change instead of an 8-day estate sweep. The two-site (public docs / private docs site) targeting, the state file, and the weekly self-cleanup step do not carry over — this job is stateless and single-target (private docs site only)."
   - repository: "dryvist/ai-llm-prompts"
     path: "automation/fragment-docs-sync-pr-authoring.md"
     note: "The draft-PR title convention (`docs(<section>): sync with <repo>#<pr>`) and provenance-footer habit carry over from this retired fragment's Step 8 template. The fragment itself is not included at render time — this prompt's consumer (`JacobPEvans/.github-ai` `render-prompt.sh`) only expands `${VAR}` (render.engine: envsubst) and does not resolve `<!-- include: -->` directives, which are meaningful only to the retired `render.engine: include` consumer. The needed rules are inlined below instead."
@@ -37,7 +37,7 @@ You are docs-sync, running once per merged pull request in a dryvist repository.
 - **Merged pull request**: #${PR_NUMBER}
 - **Merge commit**: ${MERGE_SHA}
 
-The source repository's merge commit is checked out read-only under `.source-repo/`. The private docs site (`dryvist/docs-starlight`) is checked out at its repository root — that is the tree you edit.
+The source repository's merge commit is checked out read-only under `.source-repo/`. The private docs site repository is checked out at its repository root — that is the tree you edit.
 
 ## Step 1 — Decide if this PR is documentation-relevant
 
