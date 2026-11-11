@@ -309,7 +309,7 @@
     "name": "tier2-rotation",
     "tier": 2,
     "path": "agents/dify/tier2-rotation.dsl.yml",
-    "sha256": "9cf903b87c6b77fd1121525379573bba0e65f0a256a59f52902905e5e24db668"
+    "sha256": "166f23dd1298daa4b8e8f859a52b5edbdba3b01aaf04e23959809e501bfcac50"
   },
   {
     "name": "vikunja-clerk",
@@ -325,7 +325,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/vikunja-triage.dsl.yml",
-    "sha256": "c866b2506d07dddc1039fa9c34e6f2d7fad66530cfa65adda805259ca2d84965"
+    "sha256": "5d1ddf286c02afd26025f20e62584f9b14727b2f849951e08c00f006f1c747e8"
   },
   {
     "name": "voice-learn",

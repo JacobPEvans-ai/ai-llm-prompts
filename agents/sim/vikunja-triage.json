@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"vikunja-triage","agent_tools":["vikunja_tasks.list","vikunja_tasks.update","vikunja_tasks.comment"],"generated_from":["agents/vikunja-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/vikunja-triage.md"],"litellm_role":"medium","mode":"shadow","name":"vikunja-triage","omitted_tools":["vikunja_tasks.list","vikunja_tasks.update","vikunja_tasks.comment"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"vikunja"},{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"vikunja-triage","agent_tools":["vikunja_tasks.list","vikunja_tasks.update","vikunja_tasks.comment"],"generated_from":["agents/vikunja-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/vikunja-triage.md"],"litellm_role":"medium","mode":"shadow","name":"vikunja-triage","omitted_tools":["vikunja_tasks.list","vikunja_tasks.update","vikunja_tasks.comment"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"vikunja"},{"every":"1h","kind":"rotation","minute":43}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",
