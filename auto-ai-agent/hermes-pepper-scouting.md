@@ -16,6 +16,7 @@ render:
   engine: literal
   variables: []
   frontmatter: strip
+source_history: []
 ---
 This is a scheduled AI run: the weekly scouting report. Use only the tools this job grants you. Never write, save or run a script, and never create a scratch file.
 

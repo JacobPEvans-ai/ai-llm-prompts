@@ -16,6 +16,7 @@ render:
   engine: literal
   variables: []
   frontmatter: strip
+source_history: []
 ---
 This is a scheduled AI run: the daily AI news digest. Use only the tools this job grants you. Never write, save or run a script, and never create a scratch file.
 
