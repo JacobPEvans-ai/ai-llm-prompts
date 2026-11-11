@@ -52,10 +52,14 @@ def namespace_for(dsl_path, node_id):
 
 
 class FakeSlack:
-    """Stands in for the helper's call(). Records each method. History answers from pages, linked by a cursor."""
+    """Stands in for the helper's call(). Records each method. History answers from pages, linked by a cursor.
 
-    def __init__(self, history=(), pages=None, fail=lambda method, channel: False):
+    channels maps a channel to its own pages; other channels use pages.
+    """
+
+    def __init__(self, history=(), pages=None, fail=lambda method, channel: False, channels=None):
         self.pages = pages if pages is not None else [list(history)]
+        self.channels = channels or {}
         self.fail = fail
         self.calls = []
 
@@ -65,9 +69,10 @@ class FakeSlack:
         if self.fail(method, arguments.get("channel")):
             raise RuntimeError(method + " failed")
         if method == "conversations.history":
+            pages = self.channels.get(arguments.get("channel"), self.pages)
             index = int(arguments.get("cursor") or 0)
-            more = index + 1 < len(self.pages)
-            return {"ok": True, "messages": self.pages[index],
+            more = index + 1 < len(pages)
+            return {"ok": True, "messages": pages[index],
                     "response_metadata": {"next_cursor": str(index + 1) if more else ""}}
         return {"ok": True, "ts": "200.0"}
 
@@ -230,6 +235,43 @@ def test_failed_post_sends_one_notice_to_the_failure_channel_and_fails_the_run(t
         "sample delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents"
     )
     assert not [post for post in fake.posts(DIGEST) if "failed" in post["text"]]
+
+
+def prior_notice(ts):
+    return {"bot_id": "B0BOT", "text": "sample delivery failed at 2026-11-10 09:00 UTC.", "ts": str(ts)}
+
+
+def test_second_failure_within_24_hours_posts_no_notice(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(channels={FAILURE: [[prior_notice(NOON_UTC - 3 * 3600)]]},
+                     fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match=r"delivery failed; failure notice suppressed \(already notified\)"):
+        run(namespace, {"text": "x"})
+    assert fake.posts(FAILURE) == []
+    lookups = [args for method, args in fake.calls
+               if method == "conversations.history" and args["channel"] == FAILURE]
+    assert lookups == [{"channel": FAILURE, "oldest": str(int(NOON_UTC) - 86400), "limit": 200}]
+
+
+def test_failure_after_24_hours_posts_a_new_notice(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(channels={FAILURE: [[prior_notice(NOON_UTC - 86400 - 60)]]},
+                     fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="; failure notice failed$"):
+        run(namespace, {"text": "x"})
+    assert len(fake.posts(FAILURE)) == 1
+
+
+def test_unreadable_failure_history_still_posts_the_notice(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(fail=lambda method, channel: (method == "conversations.history" and channel == FAILURE)
+                     or (method == "chat.postMessage" and channel == DIGEST))
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="; failure notice failed$"):
+        run(namespace, {"text": "x"})
+    assert len(fake.posts(FAILURE)) == 1
 
 
 @pytest.mark.parametrize("failure_channel", [DIGEST, ""])

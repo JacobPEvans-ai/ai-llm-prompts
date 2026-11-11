@@ -1,8 +1,8 @@
 """Slack thread delivery for rendered Dify Code nodes.
 
 The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
-their arguments, and keep no state between runs. Every failure sends one notice and then raises, so the Dify run ends
-failed. Summary text is built by the delivery node, which owns redaction and truncation.
+their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
 """
 
 import datetime
@@ -78,10 +78,27 @@ def parent_ts(api, token, channel, text, since):
             return None
 
 
+def recently_notified(api, token, failure_channel, stamp):
+    """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+    since = int(stamp.timestamp()) - 86400
+    query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+    body = call(api, token, "conversations.history", query=query)
+    prefix = escape_mrkdwn(AGENT) + " "
+    return any(
+        message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+        for message in body.get("messages", [])
+    )
+
+
 def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
-    """Post one failure line. Returns failed when posted, failed-unreported when not. Never posts to the digest channel."""
+    """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
     if not valid_channel(failure_channel) or failure_channel == digest_channel:
         return "failed-unreported"
+    try:
+        if recently_notified(api, token, failure_channel, stamp):
+            return "suppressed (already notified)"
+    except Exception:
+        pass  # an unreadable history must not hide the notice, so post anyway
     text = escape_mrkdwn(
         AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
     )

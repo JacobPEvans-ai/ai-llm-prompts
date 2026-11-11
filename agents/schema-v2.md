@@ -120,7 +120,9 @@ The renderer adds a Code node before each end node. At run time it takes one of 
 - Nothing fetched (the value at `input_from` is an empty list, object, or string): no post, and the run succeeds.
 - Fetched: one reply in the agent's parent thread for the UTC day, cut to `max_chars` with a `[truncated]` marker.
 
-Every failed post or history read sends one notice and then fails the run. Each end node reports `delivery_status`.
+Every failed post or history read sends one notice and then fails the run. An agent sends at most one notice per 24
+hours: when the failure channel already holds one from it in that window, no notice is posted and the run still
+fails. Each end node reports `delivery_status`.
 Text is redacted, then escaped (`&`, `<`, `>`), so model or task text cannot mention, link, or broadcast. Channels must
 be Slack channel IDs (`^[CGD][A-Z0-9]+$`), and the API base must be `https` on `slack.com`. The parent is found by its
 exact text. The history cursor is followed to the end of the day, which starts at 00:00 UTC. Two starts in the same
