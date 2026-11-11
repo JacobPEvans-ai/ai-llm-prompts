@@ -25,11 +25,11 @@ Applies when one lead session coordinates several long-lived worker sessions. Do
 `premium-agent-orchestration` skill in the `ai-delegation` plugin. A session is busy while a task or a background job
 of its own is running; otherwise it is idle.
 
-- **Idle sweep.** Every 15 minutes a worker session, never the lead, asks each idle session for its next `QUEUE`
-  item in one line.
-- **Lead review.** Every 30 minutes the lead reads the sweep results and reassigns work.
-- **Productivity check.** Once an hour each session appends one line to its report file: sessions busy out of
-  total, and idle minutes in the last hour.
+- **Idle sweep.** Every 15 minutes one worker session, never the lead, asks each idle session for its next `QUEUE`
+  item in one line and appends the answers to its own report file.
+- **Lead review.** Every 30 minutes the lead reads that file and reassigns work.
+- **Productivity check.** Once an hour the sweeping session appends one line to the same file: sessions busy out
+  of total, and idle minutes in the last hour.
 - **`QUEUE` block.** Each worker keeps one at the top of its report file: ranked items, each with a check that
   answers yes or no.
 
