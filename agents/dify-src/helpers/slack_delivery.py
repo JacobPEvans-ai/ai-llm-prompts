@@ -78,12 +78,17 @@ def parent_ts(api, token, channel, text, since):
             return None
 
 
+def notice_lead():
+    """The fixed text that opens every failure notice from this agent. The reason follows it."""
+    return AGENT + " failure: "
+
+
 def recently_notified(api, token, failure_channel, stamp):
-    """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+    """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
     since = int(stamp.timestamp()) - 86400
     query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
     body = call(api, token, "conversations.history", query=query)
-    prefix = escape_mrkdwn(AGENT) + " "
+    prefix = escape_mrkdwn(notice_lead())
     return any(
         message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
         for message in body.get("messages", [])
@@ -100,7 +105,7 @@ def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, s
     except Exception:
         pass  # an unreadable history must not hide the notice, so post anyway
     text = escape_mrkdwn(
-        AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+        notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
     )
     try:
         call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})

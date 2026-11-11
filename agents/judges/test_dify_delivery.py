@@ -232,13 +232,13 @@ def test_failed_post_sends_one_notice_to_the_failure_channel_and_fails_the_run(t
     notices = fake.posts(FAILURE)
     assert len(notices) == 1
     assert notices[0]["text"] == (
-        "sample delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents"
+        "sample failure: delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents"
     )
     assert not [post for post in fake.posts(DIGEST) if "failed" in post["text"]]
 
 
 def prior_notice(ts):
-    return {"bot_id": "B0BOT", "text": "sample delivery failed at 2026-11-10 09:00 UTC.", "ts": str(ts)}
+    return {"bot_id": "B0BOT", "text": "sample failure: delivery failed at 2026-11-10 09:00 UTC.", "ts": str(ts)}
 
 
 def test_second_failure_within_24_hours_posts_no_notice(tmp_path):
@@ -274,6 +274,17 @@ def test_unreadable_failure_history_still_posts_the_notice(tmp_path):
     assert len(fake.posts(FAILURE)) == 1
 
 
+def test_another_integrations_message_with_the_agent_name_does_not_suppress(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    foreign = {"bot_id": "B0OTHER", "text": "sample deploy finished at 2026-11-10 09:00 UTC.", "ts": str(NOON_UTC - 3600)}
+    fake = FakeSlack(channels={FAILURE: [[foreign]]},
+                     fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="; failure notice failed$"):
+        run(namespace, {"text": "x"})
+    assert len(fake.posts(FAILURE)) == 1
+
+
 @pytest.mark.parametrize("failure_channel", [DIGEST, ""])
 def test_failure_notice_is_never_posted_to_the_digest_channel(tmp_path, failure_channel):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
@@ -293,7 +304,7 @@ def test_failed_model_run_posts_one_notice_and_fails_the_run(tmp_path):
             run_timestamp=NOON_UTC, bot_token="token", api_base="https://slack.example/api",
             digest_channel=DIGEST, failure_channel=FAILURE, dashboard_url="https://dashboard.example/agents",
         )
-    assert fake.posts(FAILURE)[0]["text"].startswith("sample run failed at 2026-11-10 12:00 UTC")
+    assert fake.posts(FAILURE)[0]["text"].startswith("sample failure: run failed at 2026-11-10 12:00 UTC")
     assert fake.posts(DIGEST) == []
 
 
@@ -446,7 +457,7 @@ def test_history_failure_notifies_and_fails_the_run(tmp_path):
     with pytest.raises(RuntimeError, match="delivery failed; failure notice failed"):
         run(namespace, {"text": "x"})
     assert [post["text"] for post in fake.posts(FAILURE)] == [
-        "sample delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents",
+        "sample failure: delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents",
     ]
     assert fake.posts(DIGEST) == []
 
