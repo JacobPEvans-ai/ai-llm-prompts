@@ -1,7 +1,6 @@
 """Slack thread delivery and failure notices, rendered into Dify Code nodes and run offline against a fake Slack.
 
-Property. (i) No URL from model or fetched text appears in any posted message, at any offset around the limit, including
-a URL that the clip cuts. (ii) No secret or token value appears in any posted text, wherever the limit falls inside it.
+Property. (i) No URL from model or fetched text appears in any posted message. (ii) No secret in a shape the redactor knows appears in any post, verbatim or cut by the limit, at any offset, after invisible format characters are removed.
 """
 
 import ast
@@ -336,6 +335,9 @@ LINKS_AT_THE_LIMIT = [
     "https://github.com.evil.example/x",
     "https://user@github.com/x",
     "ftp://files.example/a?b=1",
+    "https:/intranet/x",
+    "https:\\\\intranet/x",
+    "https:intranet/x",
 ]
 
 SECRET_SHAPES = [
@@ -350,6 +352,8 @@ SECRET_SHAPES = [
     ("", "github_pat_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
     ("", "AKIA" + "ABCDEFGHIJKLMNOP"),
     ("", "-----BEGIN " + "PRIVATE KEY-----"),
+    ("xapi_key=", "H" * 40),
+    ("xBearer ", "F" * 24),
 ]
 
 
@@ -370,15 +374,16 @@ def test_no_secret_value_is_posted_wherever_the_limit_falls_inside_it(tmp_path):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
     limit = namespace["MAX_CHARS"]
     for lead, value in SECRET_SHAPES:
-        secret = lead + value
         runs = {value[i : i + 8] for i in range(len(value) - 7)}  # every 8-character run of the value
-        for cut in range(1, len(secret)):  # the limit falls after `cut` characters of the secret
-            fake = FakeSlack()
-            namespace["call"] = fake
-            run(namespace, {"text": " " * (limit - cut) + secret + " tail"})
-            posted = fake.posts(DIGEST)[-1]["text"]
-            assert len(posted) <= limit, (secret, cut)
-            assert not [chunk for chunk in runs if chunk in posted], (secret, cut)
+        spliced = lead + "​".join(value[i : i + 4] for i in range(0, len(value), 4))  # zero-width splits
+        for secret in (lead + value, spliced):
+            for cut in range(1, len(secret)):  # the limit falls after `cut` characters of the secret
+                fake = FakeSlack()
+                namespace["call"] = fake
+                run(namespace, {"text": " " * (limit - cut) + secret + " tail"})
+                posted = fake.posts(DIGEST)[-1]["text"]
+                assert len(posted) <= limit, (secret, cut)
+                assert not [chunk for chunk in runs if chunk in posted], (secret, cut)
 
 
 def test_reviewer_regression_api_key_cut_by_the_limit_is_not_posted(tmp_path):
@@ -396,6 +401,31 @@ def test_reviewer_regression_ghp_prefix_cut_by_the_limit_is_not_posted(tmp_path)
     run(namespace, {"text": " " * 97 + "gh" + "p_" + "a" * 30})
     posted = fake.posts(DIGEST)[-1]["text"]
     assert "p_" not in posted and "a" * 8 not in posted
+
+
+def test_reviewer_regression_slashless_link_forms_are_not_posted(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "see https:/intranet/x and https:\\\\intranet/x and https:intranet/x"})
+    assert fake.posts(DIGEST)[-1]["text"] == "see [link removed] and [link removed] and [link removed]"
+
+
+def test_reviewer_regression_bearer_inside_a_link_is_not_posted(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "xBearer abcdefgh12345678ijklmnop and https://intranet/xBearer abcdefgh12345678ijklmnop"})
+    assert fake.posts(DIGEST)[-1]["text"] == "xBearer [REDACTED] and [link removed] [REDACTED]"
+
+
+def test_reviewer_regression_zero_width_split_token_is_not_posted(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    split = "​".join("gh" + "p_" + "Ab3" * 8)
+    run(namespace, {"text": f"token {split} end"})
+    assert fake.posts(DIGEST)[-1]["text"] == "token [REDACTED] end"
 
 
 def test_every_post_turns_off_link_previews(tmp_path):

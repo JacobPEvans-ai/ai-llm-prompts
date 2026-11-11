@@ -91,3 +91,64 @@ def test_short_bearer_value_with_a_digit_is_still_redacted():
     out = REDACT.redact(f"auth {token} ok")
     assert token not in out
     assert out == "auth Bearer [REDACTED] ok"
+
+
+def test_the_scheme_list_is_the_owner_list():
+    assert REDACT.SCHEMES == (
+        "http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript",
+    )
+
+
+@pytest.mark.parametrize(
+    "link",
+    ["https:/intranet/x", "https:\\\\intranet/x", "https:\\intranet/x", "https:intranet/x", "HTTPS:intranet/x",
+     "mailto:ops@intranet.example", "javascript:alert(1)", "data:text/plain,hello"],
+)
+def test_slashless_and_backslash_forms_of_a_known_scheme_are_replaced(link):
+    assert REDACT.strip_urls(link) == "[link removed]"
+
+
+@pytest.mark.parametrize("text", ["note: x", "time: 10:30", "key: value", "C:\\Users\\me\\file.txt", "data: value"])
+def test_ordinary_prose_and_windows_paths_are_not_schemes(text):
+    assert REDACT.strip_urls(text) == text
+
+
+def test_bearer_label_without_a_leading_word_boundary_is_redacted():
+    assert REDACT.redact("xBearer abcdefgh12345678ijklmnop") == "xBearer [REDACTED]"
+
+
+def test_a_link_that_carries_a_bearer_value_loses_the_value_too():
+    text = "https://intranet/xBearer abcdefgh12345678ijklmnop"
+    assert REDACT.strip_urls(REDACT.redact(text)) == "[link removed] [REDACTED]"
+
+
+def test_api_key_label_without_a_leading_word_boundary_is_redacted():
+    assert REDACT.redact("xapi_key=" + "A" * 40) == "xapi_key=[REDACTED]"
+
+
+def test_zero_width_characters_cannot_split_a_token():
+    token = "gh" + "p_" + "Ab3" * 8
+    split = "\u200b".join(token)
+    assert REDACT.strip_invisible(split) == token
+    assert REDACT.redact(REDACT.strip_invisible(split)) == "[REDACTED]"
+
+
+class KnownLimits:
+    """Documented gaps in the redactor. The upstream control is that fetched input is redacted before it reaches the model."""
+
+    def test_a_token_with_a_space_every_six_characters_passes_through_unchanged(self):
+        token = "gh" + "p_" + "Ab3" * 8
+        spaced = " ".join(token[i : i + 6] for i in range(0, len(token), 6))
+        assert REDACT.redact(spaced) == spaced
+
+    def test_an_api_key_value_split_by_spaces_passes_through_unchanged(self):
+        text = "api_key=" + " ".join(["A" * 6] * 5)
+        assert REDACT.redact(text) == text
+
+    @pytest.mark.parametrize(
+        "text",
+        ["password=" + "Xk9Lm2Pq7Rs4Tv8Wy1Zb3Cd5", "password: " + "Xk9Lm2Pq7Rs4Tv8Wy1Zb3Cd5",
+         "secret_key=" + "Xk9Lm2Pq7Rs4Tv8Wy1Zb3Cd5"],
+    )
+    def test_labels_the_redactor_does_not_know_pass_through_unchanged(self, text):
+        assert REDACT.redact(text) == text

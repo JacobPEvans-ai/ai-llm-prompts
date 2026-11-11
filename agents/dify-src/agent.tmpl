@@ -149,7 +149,7 @@ def cut_point(text, limit):
 def bounded(text):
     # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
     # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
-    full = strip_urls(redact(text))
+    full = strip_urls(redact(strip_invisible(text)))
     budget = MAX_CHARS
     while True:
         cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED

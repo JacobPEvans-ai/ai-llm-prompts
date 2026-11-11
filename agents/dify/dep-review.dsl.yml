@@ -261,18 +261,23 @@ workflow:
 
             import ipaddress
             import re
+            import unicodedata
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
             SECRET_RE = re.compile(
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
             # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
             # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
             LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
@@ -356,7 +361,13 @@ workflow:
 
 
             def strip_urls(text):
-                return URL_RE.sub(LINK_REMOVED, text)
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
 
 
             def redact(text):
