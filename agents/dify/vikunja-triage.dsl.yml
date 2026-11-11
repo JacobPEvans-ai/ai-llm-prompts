@@ -722,10 +722,10 @@ workflow:
                     refs=json.loads(refs_text)
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
                 except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid','fetch_error':'project policy or task refs are invalid'}
+                cache={}; failures=[]
                 try:
                     intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
-                except Exception: proposed=[]
-                cache={}; failures=[]
+                except Exception: proposed=[]; failures.append('model reply was not JSON')
                 allowed_operations={'comment', 'list', 'update'}
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
@@ -1105,11 +1105,12 @@ workflow:
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
             SECRET_RE = re.compile(
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-                r"|(?P<bearer>\bBearer\s+)[A-Za-z0-9._~+/=-]{16,}|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9.])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Public GitHub links keep their host and path. Secrets inside them are still redacted.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"']*")
+            # A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
+            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"'?#]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1216,8 +1217,8 @@ workflow:
             """Slack thread delivery for rendered Dify Code nodes.
 
             The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
-            their arguments, and keep no state between runs. Every failure sends one notice and then raises, so the Dify run ends
-            failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
             """
 
             import datetime
@@ -1293,10 +1294,27 @@ workflow:
                         return None
 
 
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(AGENT) + " "
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
             def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
-                """Post one failure line. Returns failed when posted, failed-unreported when not. Never posts to the digest channel."""
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
                 if not valid_channel(failure_channel) or failure_channel == digest_channel:
                     return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
                     AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
@@ -1431,11 +1449,12 @@ workflow:
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
             SECRET_RE = re.compile(
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-                r"|(?P<bearer>\bBearer\s+)[A-Za-z0-9._~+/=-]{16,}|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9.])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Public GitHub links keep their host and path. Secrets inside them are still redacted.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"']*")
+            # A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
+            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"'?#]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1542,8 +1561,8 @@ workflow:
             """Slack thread delivery for rendered Dify Code nodes.
 
             The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
-            their arguments, and keep no state between runs. Every failure sends one notice and then raises, so the Dify run ends
-            failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
             """
 
             import datetime
@@ -1619,10 +1638,27 @@ workflow:
                         return None
 
 
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(AGENT) + " "
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
             def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
-                """Post one failure line. Returns failed when posted, failed-unreported when not. Never posts to the digest channel."""
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
                 if not valid_channel(failure_channel) or failure_channel == digest_channel:
                     return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
                     AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
@@ -1751,8 +1787,8 @@ workflow:
             """Slack thread delivery for rendered Dify Code nodes.
 
             The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
-            their arguments, and keep no state between runs. Every failure sends one notice and then raises, so the Dify run ends
-            failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
             """
 
             import datetime
@@ -1828,10 +1864,27 @@ workflow:
                         return None
 
 
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(AGENT) + " "
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
             def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
-                """Post one failure line. Returns failed when posted, failed-unreported when not. Never posts to the digest channel."""
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
                 if not valid_channel(failure_channel) or failure_channel == digest_channel:
                     return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
                     AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
