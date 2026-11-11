@@ -654,6 +654,27 @@ def test_the_valid_empty_reply_has_no_actions_and_no_fetch_error():
     assert out["actions"] == [] and out["fetch_error"] == ""
 
 
+@pytest.mark.parametrize(
+    "reply",
+    ['{"actions": [{"task_index": "0", "kind": "rank", "priority": 3}]}',
+     '{"actions": [{"task_index": 0, "kind": "approve"}]}'],
+)
+def test_an_invalid_action_item_is_a_fetch_error_and_is_not_dropped_silently(reply):
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text=reply)
+    assert out["fetch_error"] == "model reply had an invalid action"
+
+
+def test_a_reply_of_valid_action_items_has_no_fetch_error():
+    ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix", "description": "",
+           "priority": None, "labels": [], "done": False}
+    out = guard_main(
+        namespace_for(VIKUNJA, "guard"),
+        model_text='{"actions": [{"task_index": 0, "kind": "rank", "priority": 3}]}',
+        refs_text=json.dumps([ref]),
+    )
+    assert len(out["actions"]) == 1 and out["fetch_error"] == ""
+
+
 def test_github_state_failure_is_reported_and_no_action_is_proposed():
     ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix https://github.example/acme/app/pull/12",
            "description": "", "priority": None, "labels": [], "done": False}

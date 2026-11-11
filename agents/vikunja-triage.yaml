@@ -507,6 +507,7 @@ dify:
                 else:
                     proposed=intent.get('actions') if isinstance(intent,dict) else None
                     if not isinstance(proposed,list): proposed=[]; failures.append('model reply had the wrong shape')
+                    elif not all(isinstance(item,dict) and type(item.get('task_index')) is int and item.get('kind') in ('rank','comment','done') for item in proposed): failures.append('model reply had an invalid action')
                 allowed_operations=__DIFY_TOOL_OPERATIONS__
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
