@@ -55,3 +55,15 @@ def test_github_exemption_ends_at_the_query_so_a_nested_address_is_redacted():
 def test_github_exemption_ends_at_the_fragment_too():
     out = REDACT.redact("https://github.com/a/b#https://internal.corp.example/x")
     assert out == "https://github.com/a/b#https://[REDACTED]/x"
+
+
+def test_bearer_prose_is_not_redacted():
+    text = "the bearer responsibilities are listed below"
+    assert REDACT.redact(text) == text
+
+
+def test_short_bearer_value_with_a_digit_is_still_redacted():
+    token = "Bearer " + "abcdefgh" + "12345678"
+    out = REDACT.redact(f"auth {token} ok")
+    assert token not in out
+    assert out == "auth Bearer [REDACTED] ok"

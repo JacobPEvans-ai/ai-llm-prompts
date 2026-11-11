@@ -5,7 +5,8 @@ import re
 # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
 SECRET_RE = re.compile(
     r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-    r"|(?P<bearer>\bBearer\s+)[A-Za-z0-9._~+/=-]{16,}|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+    r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9.])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+    r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
     r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
 )
 # A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
