@@ -106,9 +106,9 @@ def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, s
             return "suppressed (already notified)"
     except Exception:
         pass  # an unreadable history must not hide the notice, so post anyway
-    # The reason is redacted and escaped. dashboard_url is template-built, so it is escaped but not redacted.
+    # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
     text = (
-        escape_mrkdwn(notice_lead() + redact(reason) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+        escape_mrkdwn(notice_lead() + strip_urls(redact(reason)) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
         + escape_mrkdwn(dashboard_url)
     )
     try:

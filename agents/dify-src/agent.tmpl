@@ -135,13 +135,25 @@ __DIFY_HELPER_REDACT__
 __DIFY_HELPER_SLACK_DELIVERY__
 
 
+MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+def cut_point(text, limit):
+    # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+    for marker in MARKER_RE.finditer(text):
+        if marker.start() < limit < marker.end():
+            return marker.start()
+    return limit
+
+
 def bounded(text):
-    # Clip the raw text, redact it, then escape it: the redactor judges the text that is posted, so a link the clip cuts
-    # is judged as cut. Escaping and redaction change the length, so the clip budget shrinks until the post fits.
+    # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+    # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+    full = strip_urls(redact(text))
     budget = MAX_CHARS
     while True:
-        cut = text if len(text) <= budget else text[: max(0, budget - len(TRUNCATED))] + TRUNCATED
-        posted = escape_mrkdwn(redact(cut))
+        cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+        posted = escape_mrkdwn(strip_urls(redact(cut)))
         if len(posted) <= MAX_CHARS:
             return posted
         budget = min(budget - 1, budget * MAX_CHARS // len(posted))

@@ -124,9 +124,9 @@ Every failed post or history read sends one notice and then fails the run. An ag
 hours: when the failure channel already holds one from it in that window, no notice is posted and the run still
 fails. Each end node reports `delivery_status`.
 Text is redacted, then escaped (`&`, `<`, `>`), so model or task text cannot mention, link, or broadcast. Every post sets
-`parse: none` and turns unfurling off, so links in a digest, including GitHub ones, appear as plain text, not clickable;
-the dashboard link in a failure notice is also plain text, and whether an explicit `<url>` control sequence renders
-under `parse: none` is unmeasured, so it is left plain. Channels must be Slack channel IDs (`^[CGD][A-Z0-9]+$`), and the
+`parse: none` and turns unfurling off. Agent text never contains a link: every `scheme://` URL is replaced with
+`[link removed]`, and links come only from the template, such as the dashboard link in a failure notice. Channels must be
+Slack channel IDs (`^[CGD][A-Z0-9]+$`), and the
 API base must be `https` on `slack.com`. The parent is found by its exact text. The history cursor is followed to the end
 of the day, which starts at 00:00 UTC. Two starts in the same
 second can both miss the parent and create two; that race remains.

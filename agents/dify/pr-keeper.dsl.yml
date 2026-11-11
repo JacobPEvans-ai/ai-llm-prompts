@@ -422,7 +422,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -432,12 +431,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -519,26 +516,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -548,7 +527,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):
@@ -665,7 +644,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -675,12 +653,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -762,26 +738,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -791,7 +749,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):
@@ -912,7 +870,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -922,12 +879,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1009,26 +964,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -1038,7 +975,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):
@@ -1159,7 +1096,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -1169,12 +1105,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1256,26 +1190,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -1285,7 +1201,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):
@@ -1406,7 +1322,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -1416,12 +1331,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1503,26 +1416,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -1532,7 +1427,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):
@@ -1653,7 +1548,6 @@ workflow:
 
             import ipaddress
             import re
-            import urllib.parse
 
             # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
@@ -1663,12 +1557,10 @@ workflow:
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # Any scheme:// URL runs to whitespace or one of <>"'. A URL is public only when its scheme is PUBLIC_SCHEME and its host is
-            # PUBLIC_HOST, with no userinfo or port. Every other URL is replaced whole. Owners decide the allow-list here.
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
             URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
-            PUBLIC_SCHEME = "https"
-            PUBLIC_HOST = "github.com"
-            PUBLIC_PATH_RE = re.compile(r"[A-Za-z0-9._~/-]*")
+            LINK_REMOVED = "[link removed]"
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1750,26 +1642,8 @@ workflow:
                 return HOST_RE.sub(_redact_host, text)
 
 
-            def _redact_url(url):
-                try:
-                    parts = urllib.parse.urlsplit(url)
-                    host = (parts.hostname or "").lower()
-                except ValueError:
-                    return REDACTED
-                # A netloc other than the bare host means userinfo or a port, so the URL is not the public one.
-                if parts.scheme != PUBLIC_SCHEME or host != PUBLIC_HOST or parts.netloc.lower() != PUBLIC_HOST:
-                    return REDACTED
-                path_start = url.index("//") + 2 + len(parts.netloc)
-                path_end = PUBLIC_PATH_RE.match(url, path_start).end()
-                return _redact_secrets(url[:path_end]) + _redact_string(url[path_end:])
-
-
-            def _redact_string(text):
-                pieces, position = [], 0
-                for match in URL_RE.finditer(text):
-                    pieces += [_redact_plain(text[position : match.start()]), _redact_url(match.group(0))]
-                    position = match.end()
-                return "".join(pieces) + _redact_plain(text[position:])
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
 
 
             def redact(text):
@@ -1779,7 +1653,7 @@ workflow:
                     return [redact(value) for value in text]
                 if not isinstance(text, str):
                     return text
-                return _redact_string(text)
+                return _redact_plain(text)
 
 
             def needs_redaction(text):

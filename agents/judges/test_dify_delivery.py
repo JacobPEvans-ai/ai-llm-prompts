@@ -1,4 +1,8 @@
-"""Slack thread delivery and failure notices: rendered into Dify Code nodes, then run offline against a fake Slack."""
+"""Slack thread delivery and failure notices, rendered into Dify Code nodes and run offline against a fake Slack.
+
+Property. (i) No URL from model or fetched text appears in any posted message, at any offset around the limit, including
+a URL that the clip cuts. (ii) No secret or token value appears in any posted text, wherever the limit falls inside it.
+"""
 
 import ast
 import builtins
@@ -292,7 +296,7 @@ def test_model_text_link_to_the_dashboard_is_replaced_in_the_digest(tmp_path):
     fake = FakeSlack()
     namespace["call"] = fake
     run(namespace, {"text": "see https://dashboard.example/agents"})
-    assert fake.posts(DIGEST)[-1]["text"] == "see [REDACTED]"
+    assert fake.posts(DIGEST)[-1]["text"] == "see [link removed]"
 
 
 def test_template_built_dashboard_link_is_kept_in_the_failure_notice(tmp_path):
@@ -314,7 +318,7 @@ def test_failure_reason_is_redacted_while_the_dashboard_link_is_kept(tmp_path):
         "fetch failed: see https://internal.corp.example/x",
     )
     assert fake.posts(FAILURE)[0]["text"] == (
-        "sample failure: fetch failed: see [REDACTED] at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents"
+        "sample failure: fetch failed: see [link removed] at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents"
     )
 
 
@@ -323,29 +327,75 @@ def test_model_label_link_is_escaped_so_it_cannot_hide_its_target(tmp_path):
     fake = FakeSlack()
     namespace["call"] = fake
     run(namespace, {"text": "<https://internal.corp.example|click>"})
-    assert fake.posts(DIGEST)[-1]["text"] == "&lt;[REDACTED]&gt;"
+    assert fake.posts(DIGEST)[-1]["text"] == "&lt;[link removed]&gt;"
 
 
-def test_posted_digest_links_stay_on_github_however_the_clip_falls(tmp_path):
-    """Property: for bodies with allowed and disallowed links at every offset near the limit, no posted link leaves github.com."""
+LINKS_AT_THE_LIMIT = [
+    "https://github.com/acme/app/pull/12 (state: open).",
+    "https://internal.corp.example/x",
+    "https://github.com.evil.example/x",
+    "https://user@github.com/x",
+    "ftp://files.example/a?b=1",
+]
+
+SECRET_SHAPES = [
+    ("api_key=", "A" * 40 + "z" * 60),
+    ("token: ", "B" * 30 + "9" * 10),
+    ("secret='", "C" * 40),
+    ("Bearer ", "D" * 24),
+    ("Bearer ", "E" * 16 + "1"),
+    ("", "xox" + "b-1234567890abcdefghij"),
+    ("", "hv" + "s.CAESIJabcdefghijklmnopqrstuvwxyz0123"),
+    ("", "gh" + "p_abcdefghijklmnopqrstuvwxyz0123"),
+    ("", "github_pat_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
+    ("", "AKIA" + "ABCDEFGHIJKLMNOP"),
+    ("", "-----BEGIN " + "PRIVATE KEY-----"),
+]
+
+
+def test_no_link_from_model_or_fetched_text_is_posted_at_any_offset(tmp_path):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
     limit = namespace["MAX_CHARS"]
-    urls = [
-        "https://github.com/acme/app/pull/12 (state: open).",
-        "https://internal.corp.example/x",
-        "https://github.com.evil.example/x",
-        "https://user@github.com/x",
-    ]
-    for url in urls:
-        for offset in range(limit - 80, limit + 6):  # a cut inside the link happens at most of these offsets
+    for link in LINKS_AT_THE_LIMIT:
+        for offset in range(limit - 90, limit + 6):  # covers every cut that falls inside the link
             fake = FakeSlack()
             namespace["call"] = fake
-            run(namespace, {"text": " " * offset + "Linked GitHub work: " + url})
+            run(namespace, {"text": " " * offset + "Linked GitHub work: " + link})
             posted = fake.posts(DIGEST)[-1]["text"]
-            assert len(posted) <= limit, (offset, url)
-            for found in re.finditer(r"[A-Za-z][A-Za-z0-9+.-]*://\S*", posted):
-                parts = urllib.parse.urlsplit(found.group(0))
-                assert parts.netloc == "github.com" and parts.hostname == "github.com", (offset, url, posted)
+            assert len(posted) <= limit and "://" not in posted, (offset, link)
+            assert link.split()[0] not in posted, (offset, link)
+
+
+def test_no_secret_value_is_posted_wherever_the_limit_falls_inside_it(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    limit = namespace["MAX_CHARS"]
+    for lead, value in SECRET_SHAPES:
+        secret = lead + value
+        runs = {value[i : i + 8] for i in range(len(value) - 7)}  # every 8-character run of the value
+        for cut in range(1, len(secret)):  # the limit falls after `cut` characters of the secret
+            fake = FakeSlack()
+            namespace["call"] = fake
+            run(namespace, {"text": " " * (limit - cut) + secret + " tail"})
+            posted = fake.posts(DIGEST)[-1]["text"]
+            assert len(posted) <= limit, (secret, cut)
+            assert not [chunk for chunk in runs if chunk in posted], (secret, cut)
+
+
+def test_reviewer_regression_api_key_cut_by_the_limit_is_not_posted(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path, delivery={**DELIVERY, "max_chars": 100}), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": " " * 60 + "api_key=" + "A" * 40 + "z" * 60})
+    assert fake.posts(DIGEST)[-1]["text"] == " " * 60 + "api_key=[REDACTED]"
+
+
+def test_reviewer_regression_ghp_prefix_cut_by_the_limit_is_not_posted(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path, delivery={**DELIVERY, "max_chars": 100}), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": " " * 97 + "gh" + "p_" + "a" * 30})
+    posted = fake.posts(DIGEST)[-1]["text"]
+    assert "p_" not in posted and "a" * 8 not in posted
 
 
 def test_every_post_turns_off_link_previews(tmp_path):
@@ -427,9 +477,9 @@ def test_summary_neutralises_slack_markup_before_posting(tmp_path):
     fake = FakeSlack()
     namespace["call"] = fake
     run(namespace, {"text": "<!channel> <!here> <@UEXAMPLE> <https://evil.example|click> a & b"})
-    # The host is redacted by the shared rule. Escaping keeps the angle brackets from forming a link.
+    # The link becomes the placeholder. Escaping keeps the angle brackets from forming a labelled link.
     assert fake.posts(DIGEST)[-1]["text"] == (
-        "&lt;!channel&gt; &lt;!here&gt; &lt;@UEXAMPLE&gt; &lt;[REDACTED]&gt; a &amp; b"
+        "&lt;!channel&gt; &lt;!here&gt; &lt;@UEXAMPLE&gt; &lt;[link removed]&gt; a &amp; b"
     )
 
 
@@ -454,16 +504,15 @@ def test_slack_vault_and_bearer_tokens_are_redacted_before_posting(tmp_path):
     assert reply.count("[REDACTED]") == 3
 
 
-def test_public_github_links_survive_and_secrets_inside_them_do_not(tmp_path):
+def test_github_links_are_removed_like_any_other_link(tmp_path):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
     fake = FakeSlack()
     namespace["call"] = fake
     run(namespace, {"text": "PR https://github.com/acme/app/pull/12 and "
                             f"https://github.com/acme/app/issues/3?token={GITHUB_TOKEN}"})
     reply = fake.posts(DIGEST)[-1]["text"]
-    assert "https://github.com/acme/app/pull/12" in reply
+    assert reply == "PR [link removed] and [link removed]"
     assert GITHUB_TOKEN not in reply
-    assert "https://github.com/acme/app/issues/3?token=[REDACTED]" in reply
 
 
 def test_history_failure_notifies_and_fails_the_run(tmp_path):
