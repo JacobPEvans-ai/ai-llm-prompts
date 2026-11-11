@@ -27,6 +27,12 @@ def validate_triggers(agent):
         if kind == "rotation":
             assert isinstance(trigger.get("every"), str) and re.fullmatch(r"[1-9]\d*[mhd]", trigger["every"]), "invalid every"
             assert "at" not in trigger and "days" not in trigger, "anchor-only fields"
+            if "minute" in trigger:
+                minute = trigger["minute"]
+                assert trigger["every"] == "1h", "minute applies only to every: 1h"
+                assert type(minute) is int and minute % 2 == 1 and minute < 60 and minute not in (15, 45), "invalid hourly minute"
+            else:
+                assert trigger["every"] != "1h", "every: 1h requires an odd minute"
         elif kind == "anchor":
             at = trigger.get("at")
             assert isinstance(at, str) and re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", at), "invalid UTC time"
@@ -46,10 +52,22 @@ def validate_triggers(agent):
     {"kind": "rotation", "every": "1d"}, {"kind": "rotation", "every": "12h"},
     {"kind": "rotation", "every": "10m"}, {"kind": "anchor", "at": "06:07"},
     {"kind": "anchor", "at": "23:59"}, {"kind": "event", "source": "vikunja"},
-    {"kind": "call", "source": "caller"},
+    {"kind": "call", "source": "caller"}, {"kind": "rotation", "every": "1h", "minute": 7},
+    {"kind": "rotation", "every": "1h", "minute": 59},
 ])
 def test_valid_triggers(trigger):
     validate_triggers({"triggers": [trigger]})
+
+
+@pytest.mark.parametrize("trigger", [
+    {"kind": "rotation", "every": "1h"}, {"kind": "rotation", "every": "1h", "minute": 15},
+    {"kind": "rotation", "every": "1h", "minute": 45}, {"kind": "rotation", "every": "1h", "minute": 8},
+    {"kind": "rotation", "every": "1h", "minute": 60}, {"kind": "rotation", "every": "1h", "minute": "7"},
+    {"kind": "rotation", "every": "1h", "minute": True}, {"kind": "rotation", "every": "1d", "minute": 7},
+])
+def test_invalid_hourly_minutes(trigger):
+    with pytest.raises(AssertionError):
+        validate_triggers({"triggers": [trigger]})
 
 
 @pytest.mark.parametrize("every", [None, "", "0m", "-1h", "1.5d", "1w", "01d", 1, True])
