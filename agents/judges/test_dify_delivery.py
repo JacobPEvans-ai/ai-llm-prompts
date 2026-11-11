@@ -413,7 +413,7 @@ def test_summary_neutralises_slack_markup_before_posting(tmp_path):
     run(namespace, {"text": "<!channel> <!here> <@UEXAMPLE> <https://evil.example|click> a & b"})
     # The host is redacted by the shared rule. Escaping keeps the angle brackets from forming a link.
     assert fake.posts(DIGEST)[-1]["text"] == (
-        "&lt;!channel&gt; &lt;!here&gt; &lt;@UEXAMPLE&gt; &lt;https://[REDACTED]|click&gt; a &amp; b"
+        "&lt;!channel&gt; &lt;!here&gt; &lt;@UEXAMPLE&gt; &lt;[REDACTED]&gt; a &amp; b"
     )
 
 
