@@ -82,6 +82,7 @@ _PUBLIC_NODES = {
     ("alert-triage.dsl.yml", "Bound and redact trigger input"),
     ("dep-review.dsl.yml", "Bound and redact trigger input"),
     ("docs-drift.dsl.yml", "Bound and redact trigger input"),
+    ("plan-reconciler.dsl.yml", "Bound and redact trigger input"),
     ("pr-keeper.dsl.yml", "Bound and redact trigger input"),
     ("release-promoter.dsl.yml", "Bound and redact trigger input"),
     ("repo-janitor.dsl.yml", "Bound and redact trigger input"),

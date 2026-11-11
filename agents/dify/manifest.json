@@ -189,7 +189,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/plan-reconciler.dsl.yml",
-    "sha256": "e424c6e91a12ae5728b39f4937c41387ebf8e79d3750dae6447cb3438fc26cd5"
+    "sha256": "5a3c26de836548264e1b3c127bb309beeb9352135397647de0d4260082e2d74f"
   },
   {
     "name": "pr-keeper",
