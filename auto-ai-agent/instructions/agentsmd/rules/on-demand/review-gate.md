@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T14:29:27Z"
+timestamp: "2026-11-11T14:36:56Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -34,7 +34,8 @@ that runs under the test framework the repository already uses. A new test runne
 
 The review that feeds a merge gate is launched by a seat that did not author the head. Its verdict file carries
 `model:`, `call_id:`, `head:` and a last line `VERDICT: MERGE` or `VERDICT: CHANGES`. A launch is one read-only
-review call with the standard brief, starting with the check above.
+review call with the standard brief, starting with the check above. Every executor brief states that no agent
+runs `git town undo`; recovery is by hand: read the status and the reflog, then fix the one ref.
 
 Fixed pairs launch for each other: deputy and models, infra and bench, build and ops. The co-lead takes host
 repositories and overflow.
