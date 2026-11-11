@@ -585,6 +585,11 @@ def test_guard_carries_the_prepare_fetch_error_forward():
     assert out["actions"] == [] and out["fetch_error"] == "a Vikunja list call failed"
 
 
+def test_a_model_reply_that_is_not_json_is_a_fetch_error_not_an_empty_digest():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text="Here are my actions: none")
+    assert out["actions"] == [] and out["fetch_error"] == "model reply was not JSON"
+
+
 def test_github_state_failure_is_reported_and_no_action_is_proposed():
     ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix https://github.example/acme/app/pull/12",
            "description": "", "priority": None, "labels": [], "done": False}

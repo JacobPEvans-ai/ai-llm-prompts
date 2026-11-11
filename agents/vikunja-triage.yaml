@@ -499,10 +499,10 @@ dify:
                     refs=json.loads(refs_text)
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
                 except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid','fetch_error':'project policy or task refs are invalid'}
+                cache={}; failures=[]
                 try:
                     intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
-                except Exception: proposed=[]
-                cache={}; failures=[]
+                except Exception: proposed=[]; failures.append('model reply was not JSON')
                 allowed_operations=__DIFY_TOOL_OPERATIONS__
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
