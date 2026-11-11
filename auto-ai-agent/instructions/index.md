@@ -29,11 +29,11 @@ layout.
 * [Data pipeline](agentsmd/rules/on-demand/data-pipeline.md) - Shared agent instruction file.
 * [Delegation Trust](agentsmd/rules/on-demand/delegation-trust.md) - Shared agent instruction file.
 * [Dependency automation](agentsmd/rules/on-demand/dependency-automation.md) - Shared agent instruction file.
+* [Fleet utilization](agentsmd/rules/on-demand/fleet-utilization.md) - Shared agent instruction file.
 * [Git flow](agentsmd/rules/on-demand/git-flow.md) - Shared agent instruction file.
 * [Incident management](agentsmd/rules/on-demand/incident-management.md) - Shared agent instruction file.
 * [Infrastructure conventions](agentsmd/rules/on-demand/infrastructure-conventions.md) - Shared agent instruction file.
 * [Read logs from the log platform, never from the host](agentsmd/rules/on-demand/log-platform.md) - Shared agent instruction file.
-* [Fleet utilization](agentsmd/rules/on-demand/fleet-utilization.md) - Shared agent instruction file.
 * [Loop Cadence](agentsmd/rules/on-demand/loop-cadence.md) - Shared agent instruction file.
 * [Model delegation](agentsmd/rules/on-demand/model-delegation.md) - Shared agent instruction file.
 * [Open Knowledge Format (OKF)](agentsmd/rules/on-demand/okf.md) - Shared agent instruction file.
