@@ -686,7 +686,19 @@ def test_github_state_failure_is_reported_and_no_action_is_proposed():
     assert out["actions"] == [] and out["fetch_error"] == "a GitHub state check failed"
 
 
-def test_dispatch_write_is_unreachable_in_shadow_mode():
+WRITE_CAPABLE_TYPES = {"tool", "http-request", "agent"}
+READ_SUBCOMMANDS = {"list", "get"}
+
+
+def writing(data):
+    """Structural test: an external-call node writes unless its subcommand is a literal read verb such as list."""
+    if data.get("type") not in WRITE_CAPABLE_TYPES:
+        return False
+    subcommand = (data.get("tool_parameters") or {}).get("subcommand") or {}
+    return not (subcommand.get("type") == "mixed" and subcommand.get("value") in READ_SUBCOMMANDS)
+
+
+def test_no_writing_node_is_reachable_in_shadow_mode_or_after_a_fetch_error():
     dsl, nodes = committed("vikunja-triage")
     graph = dsl["workflow"]["graph"]
     edges = graph["edges"]
@@ -708,6 +720,11 @@ def test_dispatch_write_is_unreachable_in_shadow_mode():
                          if edge["source"] == node_id and (node_id, edge.get("sourceHandle")) != skip]
         return seen
 
+    writers = {node_id for node_id, data in nodes.items() if writing(data)}
+    live = next(case for case in nodes["mode_gate"]["cases"] if case["case_id"] == "live")
+    gates = {(condition["variable_selector"][-1], condition["comparison_operator"]) for condition in live["conditions"]}
+    assert "dispatch_write" in writers and "list_tasks" not in writers
+    assert gates == {("dispatch", "is"), ("fetch_error", "empty")}  # the live branch needs no fetch error
     assert "dispatch_write" in reachable(skip=None)
-    assert "dispatch_write" not in reachable(skip=("mode_gate", "live"))
+    assert not writers & reachable(skip=("mode_gate", "live"))  # shadow, and any fetch error, skip the live branch
     assert {edge["sourceHandle"] for edge in edges if edge["target"] == "dispatch_loop"} == {"live"}

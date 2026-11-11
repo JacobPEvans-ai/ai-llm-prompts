@@ -605,7 +605,11 @@ dify:
               value: true
               varType: boolean
               variable_selector: [guard, dispatch]
-          desc: Shadow returns the intended action JSON and cannot reach the write iteration.
+            - comparison_operator: empty
+              id: no-fetch-error
+              varType: string
+              variable_selector: [guard, fetch_error]
+          desc: Shadow, or a run with a fetch error, returns the intended action JSON and cannot reach the write iteration.
           selected: false
           title: Live dispatch enabled?
           type: if-else
