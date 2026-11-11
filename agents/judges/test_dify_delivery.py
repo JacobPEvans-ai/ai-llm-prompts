@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from definitions import definition
 from test_dify_render import render_checkout, sample_checkout
 
 
@@ -465,6 +466,67 @@ def test_rendered_code_nodes_bind_every_name_they_use(tmp_path, node_id):
     assert unbound_names(nodes[node_id]["code"]) == []
 
 
+ROOT = Path(__file__).resolve().parents[2]
+DELIVERY_PREFIXES = ("deliver-", "notify-failure-", "failed-")
+
+
+def committed(name):
+    return load(ROOT / "agents" / "dify" / f"{name}.dsl.yml")
+
+
+def test_only_vikunja_triage_declares_delivery_nodes():
+    declaring = set()
+    for path in (ROOT / "agents" / "dify").glob("*.dsl.yml"):
+        _, nodes = load(path)
+        if any(node_id.startswith(DELIVERY_PREFIXES) for node_id in nodes):
+            declaring.add(path.name[: -len(".dsl.yml")])
+    assert declaring == {"vikunja-triage"}
+
+
+def test_vikunja_triage_renders_delivery_and_failure_nodes():
+    dsl, nodes = committed("vikunja-triage")
+    edges = dsl["workflow"]["graph"]["edges"]
+    for end in ("shadow_end", "live_end"):
+        assert nodes[f"deliver-{end}"]["type"] == "code"
+        assert any(edge["source"] == f"deliver-{end}" and edge["target"] == end for edge in edges)
+    assert {"variable": "input_value", "value_selector": ["prepare", "task_refs"]} in nodes["deliver-shadow_end"]["variables"]
+    assert nodes["triage"]["error_strategy"] == "fail-branch"
+    assert any(edge["source"] == "triage" and edge["sourceHandle"] == "fail-branch"
+               and edge["target"] == "notify-failure-triage" for edge in edges)
+    assert nodes["notify-failure-triage"]["type"] == "code"
+    assert nodes["failed-triage"]["type"] == "end"
+    env = {variable["name"]: variable for variable in dsl["workflow"]["environment_variables"]}
+    assert env["SLACK_AGENT_BOT_TOKEN"]["value_type"] == "secret"
+    for name in ("SLACK_AGENT_BOT_TOKEN", "AGENT_DIGEST_CHANNEL", "AGENT_FAILURE_CHANNEL", "AGENT_DASHBOARD_URL",
+                 "SLACK_API_BASE"):
+        assert env[name]["value"] == ""
+    for node_id in ("deliver-shadow_end", "deliver-live_end", "notify-failure-triage"):
+        assert unbound_names(nodes[node_id]["code"]) == []
+
+
+def test_vikunja_delivery_only_flows_to_its_end_nodes():
+    dsl, nodes = committed("vikunja-triage")
+    edges = dsl["workflow"]["graph"]["edges"]
+    delivery = {node_id for node_id in nodes if node_id.startswith(DELIVERY_PREFIXES)}
+    outgoing = {edge["target"] for edge in edges if edge["source"] in delivery}
+    assert outgoing <= {"shadow_end", "live_end", "failed-triage"}
+
+
+def test_vikunja_triage_runs_hourly_at_minute_43_and_stays_shadow():
+    agent = definition("vikunja-triage")
+    assert {"kind": "rotation", "every": "1h", "minute": 43} in agent["triggers"]
+    assert agent["mode"] == "shadow"
+    _, driver = committed("tier2-rotation")
+    namespace = {}
+    exec(driver["due"]["code"], namespace)
+    entry = next(item for item in namespace["ROTATION_AGENTS"] if item["name"] == "vikunja-triage")
+    assert entry == {"name": "vikunja-triage", "every_minutes": 60, "offset_minutes": 43, "expected_runtime_minutes": 10}
+    dsl, _ = committed("vikunja-triage")
+    env = {variable["name"]: variable["value"] for variable in dsl["workflow"]["environment_variables"]}
+    assert env["VIKUNJA_TRIAGE_MODE"] == "shadow"
+
+
+VIKUNJA = ROOT / "agents" / "dify" / "vikunja-triage.dsl.yml"
 # Token-shaped fixtures are assembled from parts, so no credential-shaped literal is written to the file.
 SLACK_TOKEN = "xox" + "b-1234567890-abcdefghijk"
 VAULT_TOKEN = "hv" + "s.CAESIJabcdefghijklmnopqrstuvwxyz0123"
@@ -641,6 +703,9 @@ def test_approved_base_posts_through_the_real_call(tmp_path, monkeypatch):
 def test_delivery_status_is_reported_on_each_end_node(tmp_path):
     _, nodes = load(render_sample(tmp_path))
     assert {"variable": "delivery_status", "value_selector": ["deliver-done", "status"]} in nodes["done"]["outputs"]
+    _, vikunja = committed("vikunja-triage")
+    for end in ("shadow_end", "live_end"):
+        assert {"variable": "delivery_status", "value_selector": [f"deliver-{end}", "status"]} in vikunja[end]["outputs"]
 
 
 def test_fetch_error_input_is_declared_only_when_error_from_is_set(tmp_path):
@@ -648,3 +713,153 @@ def test_fetch_error_input_is_declared_only_when_error_from_is_set(tmp_path):
     assert not [variable for variable in plain["deliver-done"]["variables"] if variable["variable"] == "fetch_error"]
     _, declared = load(render_sample(tmp_path / "declared", delivery={**DELIVERY, "error_from": ["start", "text"]}))
     assert {"variable": "fetch_error", "value_selector": ["start", "text"]} in declared["deliver-done"]["variables"]
+
+
+def test_vikunja_delivery_reads_the_guard_fetch_error_and_list_failures_route_to_it():
+    _, nodes = committed("vikunja-triage")
+    for node in ("deliver-shadow_end", "deliver-live_end"):
+        assert {"variable": "fetch_error", "value_selector": ["guard", "fetch_error"]} in nodes[node]["variables"]
+    assert nodes["list_tasks"]["error_strategy"] == "default-value"
+    assert nodes["list_tasks"]["default_value"] == [{"key": "text", "type": "string", "value": ""}]
+
+
+def test_list_failure_is_marked_not_read_as_an_empty_project():
+    namespace = namespace_for(VIKUNJA, "scope_list_result")
+    assert json.loads(namespace["main"](project_id="p1", body="")["result_json"]) == {
+        "project_id": "p1", "error": "list failed",
+    }
+    assert json.loads(namespace["main"](project_id="p1", body="{}")["result_json"])["error"] == "list failed"
+    assert json.loads(namespace["main"](project_id="p1", body="[]")["result_json"]) == {"project_id": "p1", "tasks": []}
+
+
+def prepare_main(namespace, results, policy_ok=True):
+    return namespace["main"](
+        results=results, policy_ok=policy_ok, timestamp="1794312000", web_host="github.example",
+        api_base="https://api.github.example", bao_addr="", role_id="role", secret_id="secret",
+        token_path="github-token/vikunja-triage",
+    )
+
+
+def test_invalid_policy_is_a_fetch_error_not_an_empty_task_list():
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), [], policy_ok=False)
+    assert out["task_refs"] == "[]" and out["fetch_error"] == "project policy is invalid"
+
+
+def test_failed_list_entry_is_reported_and_not_dropped():
+    results = [json.dumps({"project_id": "p1", "error": "list failed"})]
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), results)
+    assert out["task_refs"] == "[]" and out["fetch_error"] == "a Vikunja list call failed"
+
+
+def test_link_check_failure_is_reported_and_not_treated_as_unlinked():
+    task = {"id": 7, "title": "fix https://github.example/acme/app/pull/12", "description": ""}
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), [json.dumps({"project_id": "p1", "tasks": [task]})])
+    assert json.loads(out["task_refs"])[0]["id"] == "7"
+    assert out["fetch_error"] == "a GitHub link check failed"
+
+
+def guard_main(namespace, **overrides):
+    arguments = dict(
+        model_text='{"actions": []}', refs_text="[]", allowed_raw='["p1"]', readonly_raw="[]", rank_raw="[]",
+        denied_raw="[]", mode_raw="shadow", web_host="github.example", api_base="https://api.github.example",
+        bao_addr="", role_id="role", secret_id="secret", token_path="github-token/vikunja-triage", prepare_error="",
+    )
+    arguments.update(overrides)
+    return namespace["main"](**arguments)
+
+
+def test_guard_carries_the_prepare_fetch_error_forward():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), prepare_error="a Vikunja list call failed")
+    assert out["actions"] == [] and out["fetch_error"] == "a Vikunja list call failed"
+
+
+def test_a_model_reply_that_is_not_json_is_a_fetch_error_not_an_empty_digest():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text="Here are my actions: none")
+    assert out["actions"] == [] and out["fetch_error"] == "model reply was not JSON"
+
+
+@pytest.mark.parametrize("reply", ["null", '{"actions": "none"}', '{"Actions": []}', "{}", "[]"])
+def test_a_model_reply_of_the_wrong_shape_is_a_fetch_error(reply):
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text=reply)
+    assert out["actions"] == [] and out["fetch_error"] == "model reply had the wrong shape"
+
+
+def test_the_valid_empty_reply_has_no_actions_and_no_fetch_error():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text='{"actions": []}')
+    assert out["actions"] == [] and out["fetch_error"] == ""
+
+
+@pytest.mark.parametrize(
+    "reply",
+    ['{"actions": [{"task_index": "0", "kind": "rank", "priority": 3}]}',
+     '{"actions": [{"task_index": 0, "kind": "approve"}]}'],
+)
+def test_an_invalid_action_item_is_a_fetch_error_and_is_not_dropped_silently(reply):
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text=reply)
+    assert out["fetch_error"] == "model reply had an invalid action"
+
+
+def test_a_reply_of_valid_action_items_has_no_fetch_error():
+    ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix", "description": "",
+           "priority": None, "labels": [], "done": False}
+    out = guard_main(
+        namespace_for(VIKUNJA, "guard"),
+        model_text='{"actions": [{"task_index": 0, "kind": "rank", "priority": 3}]}',
+        refs_text=json.dumps([ref]),
+    )
+    assert len(out["actions"]) == 1 and out["fetch_error"] == ""
+
+
+def test_github_state_failure_is_reported_and_no_action_is_proposed():
+    ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix https://github.example/acme/app/pull/12",
+           "description": "", "priority": None, "labels": [], "done": False}
+    out = guard_main(
+        namespace_for(VIKUNJA, "guard"),
+        model_text=json.dumps({"actions": [{"task_index": 0, "kind": "comment"}]}),
+        refs_text=json.dumps([ref]),
+    )
+    assert out["actions"] == [] and out["fetch_error"] == "a GitHub state check failed"
+
+
+WRITE_CAPABLE_TYPES = {"tool", "http-request", "agent"}
+READ_SUBCOMMANDS = {"list", "get"}
+
+
+def writing(data):
+    """Structural test: an external-call node writes unless its subcommand is a literal read verb such as list."""
+    if data.get("type") not in WRITE_CAPABLE_TYPES:
+        return False
+    subcommand = (data.get("tool_parameters") or {}).get("subcommand") or {}
+    return not (subcommand.get("type") == "mixed" and subcommand.get("value") in READ_SUBCOMMANDS)
+
+
+def test_no_writing_node_is_reachable_in_shadow_mode_or_after_a_fetch_error():
+    dsl, nodes = committed("vikunja-triage")
+    graph = dsl["workflow"]["graph"]
+    edges = graph["edges"]
+    starts = [node_id for node_id, data in nodes.items() if data["type"].startswith("trigger-") or data["type"] == "start"]
+    children = {}
+    for node in graph["nodes"]:  # iteration bodies are linked by parentId, not by edges
+        if node.get("parentId"):
+            children.setdefault(node["parentId"], []).append(node["id"])
+
+    def reachable(skip):
+        seen, frontier = set(), list(starts)
+        while frontier:
+            node_id = frontier.pop()
+            if node_id in seen:
+                continue
+            seen.add(node_id)
+            frontier += children.get(node_id, [])
+            frontier += [edge["target"] for edge in edges
+                         if edge["source"] == node_id and (node_id, edge.get("sourceHandle")) != skip]
+        return seen
+
+    writers = {node_id for node_id, data in nodes.items() if writing(data)}
+    live = next(case for case in nodes["mode_gate"]["cases"] if case["case_id"] == "live")
+    gates = {(condition["variable_selector"][-1], condition["comparison_operator"]) for condition in live["conditions"]}
+    assert "dispatch_write" in writers and "list_tasks" not in writers
+    assert gates == {("dispatch", "is"), ("fetch_error", "empty")}  # the live branch needs no fetch error
+    assert "dispatch_write" in reachable(skip=None)
+    assert not writers & reachable(skip=("mode_gate", "live"))  # shadow, and any fetch error, skip the live branch
+    assert {edge["sourceHandle"] for edge in edges if edge["target"] == "dispatch_loop"} == {"live"}
