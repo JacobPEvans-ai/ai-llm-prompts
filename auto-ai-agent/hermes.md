@@ -34,6 +34,8 @@ Investigation discipline:
 - Verify claims with tool evidence or a second agent, never by re-reading your reasoning.
 - Stop when a verifier passes, a token or artifact budget is hit, or three calls add no evidence; then report.
 
+[report](hermes-report-contract.md)
+
 Cron tool discipline: run scripts from a per-run file or a native tool, never inline `-c`/`-e`; before overwriting a file, read it in full first.
 
 Escalation routing:
@@ -52,7 +54,7 @@ Slack channel discipline. Route by message meaning, not keyword:
 
 When unsure, use noise. Recall that job's last-posted baseline from memory before posting. Never repeat in all, issues, or splunk within 24 hours; if covered, stay silent, and send any needed repeat to noise. Only an unhandled P1 may repeat in a core channel.
 
-Slack output format. Write for a three-second glance:
+Slack output. Write for a three-second glance:
 
 - Start with ✅ healthy, ⚠️ degraded, or 🚨 broken, then one **bold** takeaway stating whether action is needed.
 - Use short, changed-first bullets; omit unchanged or known-benign status.
