@@ -1,0 +1,86 @@
+# Offline cases for agents/judges/test_dify_zammad_triage.py. Ticket titles and tags are synthetic.
+# search: a list of ticket records, or "error" (the search request fails), or "malformed" (a non-list answer).
+# proposed: the model's action list. expect.state and expect.ok are the fetch outputs.
+# digest_contains and digest_absent apply to the guard's digest output (run only when state is tickets).
+cases:
+  - id: tickets-found-digest-has-ids-and-codes-only
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search:
+      - {id: 10, group_id: 1, title: "Customer text <!channel> secret body", priority_id: 3, state: open,
+         tags: "stale", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-20T00:00:00Z"}
+    proposed:
+      - {ticket_index: 0, kind: rank, priority: high}
+      - {ticket_index: 0, kind: tag, tag: stale}
+      - {ticket_index: 0, kind: note, priority: high, reason: stale}
+    expect:
+      state: tickets
+      ok: true
+      digest_contains: ["ticket #10: priority high; tags stale; reason stale", "no writes"]
+      digest_absent: ["<!channel>", "secret body", "Customer"]
+
+  - id: vocabulary-tag-with-markup-is-escaped
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["a&b<c>"]}
+    search:
+      - {id: 11, group_id: 1, title: "Ticket", priority_id: 2, state: open, tags: "",
+         created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-20T00:00:00Z"}
+    proposed:
+      - {ticket_index: 0, kind: tag, tag: "a&b<c>"}
+    expect:
+      state: tickets
+      ok: true
+      digest_contains: ["tags a&amp;b&lt;c&gt;"]
+      digest_absent: ["a&b<c>"]
+
+  - id: incident-proposal-is-listed-with_its_reason_only
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search:
+      - {id: 12, group_id: 1, title: "Outage report", priority_id: 3, state: open, tags: "",
+         created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-20T00:00:00Z"}
+    proposed:
+      - {ticket_index: 0, kind: propose_incident, reason: incident_candidate}
+    expect:
+      state: tickets
+      ok: true
+      digest_contains: ["reason incident_candidate"]
+      digest_absent: ["Outage report"]
+
+  - id: model-output-outside-the-contract-is-refused
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search:
+      - {id: 13, group_id: 1, title: "Ticket", priority_id: 2, state: open, tags: "",
+         created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-20T00:00:00Z"}
+    proposed:
+      - {ticket_index: 0, kind: close}
+    expect:
+      state: tickets
+      ok: true
+      digest_contains: ["model output refused by guard", "0 proposed actions"]
+      digest_absent: ["ticket #13"]
+
+  - id: empty-search-is-a-clean-empty-fetch
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search: []
+    expect:
+      state: empty
+      ok: true
+
+  - id: search-failure-is-an-error
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search: error
+    expect:
+      state: error
+      ok: false
+
+  - id: malformed-search-answer-is-an-error
+    policy: {allowed: ["1"], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search: malformed
+    expect:
+      state: error
+      ok: false
+
+  - id: no-usable-group-is-an-error-not-an-empty-fetch
+    policy: {allowed: [], readonly: [], denied: [], tag_vocabulary: ["stale"]}
+    search: []
+    expect:
+      state: error
+      ok: false

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"zammad-triage","agent_tools":["zammad_rest.search","zammad_rest.update_priority","zammad_rest.add_tag","zammad_rest.internal_note"],"generated_from":["agents/zammad-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/zammad-triage.md"],"litellm_role":"medium","mode":"shadow","name":"zammad-triage","omitted_tools":["zammad_rest.search","zammad_rest.update_priority","zammad_rest.add_tag","zammad_rest.internal_note"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"zammad"},{"every":"1d","kind":"rotation"}]},
+    "metadata": {"agent":"zammad-triage","agent_tools":["zammad_rest.search","zammad_rest.update_priority","zammad_rest.add_tag","zammad_rest.internal_note"],"generated_from":["agents/zammad-triage.yaml","agents/prompts/shared/homelab.md","agents/prompts/zammad-triage.md"],"litellm_role":"medium","mode":"shadow","name":"zammad-triage","omitted_tools":["zammad_rest.search","zammad_rest.update_priority","zammad_rest.add_tag","zammad_rest.internal_note"],"output_schema":null,"privacy_class":"internal","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":2,"tools":["litellm.chat_completions"],"triggers":[{"kind":"event","source":"zammad"},{"every":"1h","kind":"rotation","minute":33}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",

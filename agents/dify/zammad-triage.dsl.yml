@@ -55,6 +55,31 @@ workflow:
       name: LITELLM_ROUTER_KEY
       value: ""
       value_type: secret
+    - description: Slack bot token for agent digests
+      id: delivery-token
+      name: SLACK_AGENT_BOT_TOKEN
+      value: ""
+      value_type: secret
+    - description: Approved Slack Web API base
+      id: delivery-api-base
+      name: SLACK_API_BASE
+      value: ""
+      value_type: string
+    - description: Slack channel for agent digests
+      id: delivery-channel
+      name: AGENT_DIGEST_CHANNEL
+      value: ""
+      value_type: string
+    - description: Slack channel for agent failure notices
+      id: delivery-failure-channel
+      name: AGENT_FAILURE_CHANNEL
+      value: ""
+      value_type: string
+    - description: Dashboard URL for agent failure notices
+      id: delivery-dashboard
+      name: AGENT_DASHBOARD_URL
+      value: ""
+      value_type: string
   graph:
     edges:
       - data:
@@ -68,17 +93,44 @@ workflow:
         type: custom
       - data:
           sourceType: code
-          targetType: llm
+          targetType: if-else
         id: e2
         source: fetch
         sourceHandle: source
+        target: fetch_gate
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: llm
+        id: e3
+        source: fetch_gate
+        sourceHandle: tickets
         target: triage
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: code
+        id: e4
+        source: fetch_gate
+        sourceHandle: error
+        target: deliver-failed-fetch
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: code
+        id: e5
+        source: fetch_gate
+        sourceHandle: "false"
+        target: deliver-fetch-empty
         targetHandle: target
         type: custom
       - data:
           sourceType: llm
           targetType: code
-        id: e3
+        id: e6
         source: triage
         sourceHandle: source
         target: guard
@@ -86,11 +138,56 @@ workflow:
         type: custom
       - data:
           sourceType: code
-          targetType: end
-        id: e4
+          targetType: code
+        id: e7
         source: guard
         sourceHandle: source
+        target: deliver-done
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-done-end
+        source: deliver-done
+        sourceHandle: source
         target: done
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-fetch-empty-end
+        source: deliver-fetch-empty
+        sourceHandle: source
+        target: fetch-empty
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-failed-fetch-end
+        source: deliver-failed-fetch
+        sourceHandle: source
+        target: failed-fetch
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: llm
+          targetType: code
+        id: triage-failed
+        source: triage
+        sourceHandle: fail-branch
+        target: notify-failure-triage
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: notify-failure-triage-end
+        source: notify-failure-triage
+        sourceHandle: source
+        target: failed-triage
         targetHandle: target
         type: custom
     nodes:
@@ -115,6 +212,129 @@ workflow:
             import json,re,urllib.request
             from datetime import datetime,timezone
             from urllib.parse import urlencode,urlsplit
+            import ipaddress
+            import re
+            import unicodedata
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
             class NR(urllib.request.HTTPRedirectHandler):
                 def redirect_request(self,*a,**k): return None
             def req(u,m='GET',h=None,b=None):
@@ -137,7 +357,8 @@ workflow:
                     return max(0,(n-d).days)
                 except Exception: return None
             def main(allowed,readonly,denied,tags,base,addr,role,secret,path,stamp):
-                bad={'pol':'{"ok":false}','refs':'[]','model':'[]','ok':False}
+                # state: tickets (refs non-empty), empty (clean search, no tickets), error (any failure; ok false).
+                bad={'pol':'{"ok":false}','refs':'[]','model':'[]','ok':False,'state':'error','fetch_error':'policy or ticket search error'}
                 try:
                     a,r,d,t=map(ids,(allowed,readonly,denied,tags))
                     p={'ok':True,'allowed':sorted(a),'readonly':sorted(r),'denied':sorted(d),'read':sorted((a|r)-d),'write':sorted(a-r-d),'tags':sorted(t)}
@@ -158,10 +379,12 @@ workflow:
                             except Exception: pri=None
                             refs.append({'ticket_index':len(refs),'id':i,'group_id':g,'title':str(x.get('title','')),'priority':pri,'state':s if isinstance(s,str) else '','age_days':age(x.get('created_at'),n),'tags':[v for v in tg if isinstance(v,str)] if isinstance(tg,list) else [],'last_updated_age_days':age(x.get('updated_at'),n)})
                     model=[{k:v for k,v in x.items() if k not in ('id','group_id')} for x in refs]
-                    return {'pol':json.dumps(p),'refs':json.dumps(refs),'model':json.dumps(model),'ok':True}
+                    return {'pol':json.dumps(p),'refs':json.dumps(refs),'model':strip_urls(json.dumps(redact(model),ensure_ascii=False)),'ok':True,'state':'tickets' if refs else 'empty','fetch_error':''}
                 except Exception: return bad
           code_language: python3
           outputs:
+            fetch_error:
+              type: string
             model:
               type: string
             ok:
@@ -169,6 +392,8 @@ workflow:
             pol:
               type: string
             refs:
+              type: string
+            state:
               type: string
           title: Load policy and search authorized groups
           type: code
@@ -219,9 +444,43 @@ workflow:
           "y": 300
         type: custom
       - data:
+          cases:
+            - case_id: tickets
+              conditions:
+                - comparison_operator: is
+                  id: tickets-state
+                  value: tickets
+                  varType: string
+                  variable_selector:
+                    - fetch
+                    - state
+              id: tickets
+              logical_operator: and
+            - case_id: error
+              conditions:
+                - comparison_operator: is
+                  id: error-state
+                  value: error
+                  varType: string
+                  variable_selector:
+                    - fetch
+                    - state
+              id: error
+              logical_operator: and
+          desc: Only fetched tickets reach the model. A fetch error goes to a failure notice. A clean empty fetch ends with no model call and no post.
+          selected: false
+          title: Fetch returned tickets?
+          type: if-else
+        id: fetch_gate
+        position:
+          x: 580
+          "y": 300
+        type: custom
+      - data:
           context:
             enabled: false
             variable_selector: []
+          error_strategy: fail-branch
           model:
             completion_params:
               temperature: 0
@@ -278,7 +537,7 @@ workflow:
           type: llm
         id: triage
         position:
-          x: 640
+          x: 820
           "y": 300
         type: custom
       - data:
@@ -319,8 +578,25 @@ workflow:
                         body = body[4:].strip(" \t\r\n")
                     return body
                 return value
+            def esc(s): return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            def count(s):
+                try: return len(json.loads(s))
+                except Exception: return 0
+            def digest(actions,by,tickets):
+                # Built only from validated ids, allowlisted kinds, priorities and reason codes, and vocabulary tags. Never ticket titles or bodies.
+                rows={}
+                for a in actions:
+                    row=rows.setdefault(a[I],{'priority':'-','tags':[],'reason':'-'})
+                    if a[K] in ('rank','note'): row['priority']=a['priority']
+                    if a[K]=='tag': row['tags'].append(a['tag'])
+                    if a[K] in ('note','propose_incident'): row['reason']=a['reason']
+                lines=[f"zammad-triage shadow: {len(actions)} proposed actions; {tickets} tickets reviewed; no writes"]
+                lines+=[f"ticket #{by[i]['id']}: priority {row['priority']}; tags {','.join(row['tags']) or '-'}; reason {row['reason']}" for i,row in rows.items()]
+                return esc('\n'.join(lines))
             def main(text,refs,pol,ok,mode,base,addr,role,secret,path):
-                mode='live' if LIVE and mode=='live' else 'shadow'; empty={'actions':'[]','results':'[]','mode':mode}
+                mode='live' if LIVE and mode=='live' else 'shadow'; tickets=count(refs)
+                refused=esc(f"zammad-triage shadow: model output refused by guard; 0 proposed actions; {tickets} tickets reviewed; no writes")
+                empty={'actions':'[]','results':'[]','mode':mode,'digest':refused}
                 try:
                     p=json.loads(pol); by={r[I]:r for r in json.loads(refs)}; obj=json.loads(strip_json_fence(text))
                     if not ok or not p.get('ok') or not isinstance(obj,dict) or set(obj)!={'actions'} or not isinstance(obj['actions'],list) or len(obj['actions'])>20: return empty
@@ -343,11 +619,13 @@ workflow:
                             try: req(base.rstrip('/')+u,m,h,json.dumps(b).encode()); out.append({'ok':True,'path':u})
                             except Exception:
                                 out+=[{'ok':False,'path':u}]+[{'ok':False,'path':x[1],'denied':True} for x in plan[n+1:]]; break
-                    return {'actions':json.dumps(actions),'results':json.dumps(out),'mode':mode}
+                    return {'actions':json.dumps(actions),'results':json.dumps(out),'mode':mode,'digest':digest(actions,by,len(by))}
                 except Exception: return empty
           code_language: python3
           outputs:
             actions:
+              type: string
+            digest:
               type: string
             mode:
               type: string
@@ -398,11 +676,15 @@ workflow:
               variable: path
         id: guard
         position:
-          x: 940
+          x: 1120
           "y": 300
         type: custom
       - data:
           outputs:
+            - value_selector:
+                - guard
+                - digest
+              variable: text
             - value_selector:
                 - guard
                 - actions
@@ -415,10 +697,1493 @@ workflow:
                 - guard
                 - results
               variable: results
+            - value_selector:
+                - deliver-done
+                - status
+              variable: delivery_status
           title: Output
           type: end
         id: done
         position:
-          x: 1240
+          x: 1420
           "y": 300
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - fetch
+                - state
+              variable: state
+            - value_selector:
+                - deliver-fetch-empty
+                - status
+              variable: delivery_status
+          title: No tickets fetched
+          type: end
+        id: fetch-empty
+        position:
+          x: 820
+          "y": 120
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - fetch
+                - state
+              variable: state
+            - value_selector:
+                - deliver-failed-fetch
+                - status
+              variable: delivery_status
+          title: Failed fetch
+          type: end
+        id: failed-fetch
+        position:
+          x: 1120
+          "y": 560
+        type: custom
+      - data:
+          code: |-
+            AGENT = "zammad-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+            import unicodedata
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(strip_invisible(reason))) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+            def cut_point(text, limit):
+                # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+                for marker in MARKER_RE.finditer(text):
+                    if marker.start() < limit < marker.end():
+                        return marker.start()
+                return limit
+
+
+            def bounded(text):
+                # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+                # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+                full = strip_urls(redact(strip_invisible(text)))
+                budget = MAX_CHARS
+                while True:
+                    cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+                    posted = escape_mrkdwn(strip_urls(redact(cut)))
+                    if len(posted) <= MAX_CHARS:
+                        return posted
+                    budget = min(budget - 1, budget * MAX_CHARS // len(posted))
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
+                return bounded(body) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if str(fetch_error or "").strip():
+                    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - fetch
+                - refs
+              variable: input_value
+            - value_selector:
+                - fetch
+                - fetch_error
+              variable: fetch_error
+            - value_selector:
+                - guard
+                - digest
+              variable: text
+            - value_selector:
+                - guard
+                - actions
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - guard
+                - results
+              variable: results
+        id: deliver-done
+        position:
+          x: 1420
+          "y": 460
+        type: custom
+      - data:
+          code: |-
+            AGENT = "zammad-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+            import unicodedata
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(strip_invisible(reason))) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+            def cut_point(text, limit):
+                # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+                for marker in MARKER_RE.finditer(text):
+                    if marker.start() < limit < marker.end():
+                        return marker.start()
+                return limit
+
+
+            def bounded(text):
+                # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+                # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+                full = strip_urls(redact(strip_invisible(text)))
+                budget = MAX_CHARS
+                while True:
+                    cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+                    posted = escape_mrkdwn(strip_urls(redact(cut)))
+                    if len(posted) <= MAX_CHARS:
+                        return posted
+                    budget = min(budget - 1, budget * MAX_CHARS // len(posted))
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
+                return bounded(body) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if str(fetch_error or "").strip():
+                    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - fetch
+                - refs
+              variable: input_value
+            - value_selector:
+                - fetch
+                - fetch_error
+              variable: fetch_error
+            - value_selector:
+                - fetch
+                - state
+              variable: state
+        id: deliver-fetch-empty
+        position:
+          x: 820
+          "y": 280
+        type: custom
+      - data:
+          code: |-
+            AGENT = "zammad-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+            import unicodedata
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(strip_invisible(reason))) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+            def cut_point(text, limit):
+                # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+                for marker in MARKER_RE.finditer(text):
+                    if marker.start() < limit < marker.end():
+                        return marker.start()
+                return limit
+
+
+            def bounded(text):
+                # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+                # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+                full = strip_urls(redact(strip_invisible(text)))
+                budget = MAX_CHARS
+                while True:
+                    cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+                    posted = escape_mrkdwn(strip_urls(redact(cut)))
+                    if len(posted) <= MAX_CHARS:
+                        return posted
+                    budget = min(budget - 1, budget * MAX_CHARS // len(posted))
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
+                return bounded(body) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if str(fetch_error or "").strip():
+                    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - fetch
+                - refs
+              variable: input_value
+            - value_selector:
+                - fetch
+                - fetch_error
+              variable: fetch_error
+            - value_selector:
+                - fetch
+                - state
+              variable: state
+        id: deliver-failed-fetch
+        position:
+          x: 1120
+          "y": 720
+        type: custom
+      - data:
+          code: |-
+            AGENT = "zammad-triage"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+            import unicodedata
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>Bearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            # Slashless and backslash forms of a known scheme (scheme:/x, scheme:\\x, scheme:x). Only these names count, as whole
+            # words, so "note: x", "time: 10:30", "key: value" and "C:\\Users" are not treated as links.
+            SCHEMES = ("http", "https", "ftp", "ftps", "ws", "wss", "file", "ssh", "git", "slack", "mailto", "tel", "data", "javascript")
+            SCHEME_FORM_RE = re.compile(r"(?i)\b(?:" + "|".join(SCHEMES) + r"):(?=[^\s<>\"'])[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return SCHEME_FORM_RE.sub(LINK_REMOVED, URL_RE.sub(LINK_REMOVED, text))
+
+
+            def strip_invisible(text):
+                # Format characters (zero-width spaces and joiners, BOM, soft hyphen, bidi marks) can split a token without changing
+                # what a reader sees, so they are removed before matching.
+                return "".join(character for character in text if unicodedata.category(character) != "Cf")
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(strip_invisible(reason))) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")
+          code_language: python3
+          outputs:
+            text:
+              children: null
+              type: string
+          title: Notify agent failure
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+        id: notify-failure-triage
+        position:
+          x: 820
+          "y": 540
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - notify-failure-triage
+                - text
+              variable: text
+          title: Failed run
+          type: end
+        id: failed-triage
+        position:
+          x: 1020
+          "y": 540
         type: custom

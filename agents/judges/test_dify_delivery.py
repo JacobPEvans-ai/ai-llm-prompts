@@ -510,7 +510,7 @@ def test_only_vikunja_triage_declares_delivery_nodes():
         _, nodes = load(path)
         if any(node_id.startswith(DELIVERY_PREFIXES) for node_id in nodes):
             declaring.add(path.name[: -len(".dsl.yml")])
-    assert declaring == {"vikunja-triage"}
+    assert declaring == {"vikunja-triage", "zammad-triage"}
 
 
 def test_vikunja_triage_renders_delivery_and_failure_nodes():

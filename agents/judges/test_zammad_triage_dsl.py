@@ -125,18 +125,38 @@ def test_every_selector_names_a_declared_output_or_env_variable():
         assert name in (env if source == "env" else _outputs(source)), (source, name)
 
 
+def _delivery_nodes():
+    """Code nodes the shared delivery block adds: deliver-<end> for each end node, carrying the Slack helper."""
+    ends = [node_id for node_id, data in _NODES.items() if data["type"] == "end"]
+    return {
+        f"deliver-{end}"
+        for end in ends
+        if f"deliver-{end}" in _NODES and "def post_digest(" in _NODES[f"deliver-{end}"]["code"]
+    }
+
+
 def test_every_code_node_main_takes_exactly_its_declared_variables_by_keyword():
     keyword_kinds = {
         inspect.Parameter.POSITIONAL_OR_KEYWORD,
         inspect.Parameter.KEYWORD_ONLY,
     }
+    delivery = _delivery_nodes()
     for node_id, data in _NODES.items():
-        if data.get("type") == "code":
+        if data.get("type") == "code" and node_id not in delivery:
             params = inspect.signature(_node(node_id)[0]).parameters
             assert list(params) == [
                 variable["variable"] for variable in data["variables"]
             ]
             assert all(p.kind in keyword_kinds for p in params.values())
+
+
+def test_delivery_nodes_are_the_only_exemption_and_take_keyword_outputs():
+    delivery = _delivery_nodes()
+    assert delivery == {"deliver-done", "deliver-fetch-empty", "deliver-failed-fetch"}
+    for node_id in delivery:
+        params = inspect.signature(_node(node_id)[0]).parameters
+        assert list(params)[-1:] == ["outputs"]
+        assert params["outputs"].kind is inspect.Parameter.VAR_KEYWORD
 
 
 def test_empty_or_malformed_policy_refuses_before_any_request():

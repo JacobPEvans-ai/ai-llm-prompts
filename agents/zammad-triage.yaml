@@ -10,7 +10,8 @@ triggers:
   - kind: event
     source: zammad
   - kind: rotation
-    every: 1d
+    every: 1h
+    minute: 33
 reader: Zammad via zammad-clerk
 acted_signal: ticket state changes
 memory_scope: hindsight/zammad-triage
@@ -55,6 +56,16 @@ guards:
   live_writes: {hard_disabled: true, enable_after: executable_injection_eval_in_dsl_tests}
   on_write_error: abort_and_deny_remaining_plan
   on_error: deny
+delivery:
+  kind: slack_thread
+  channel_env: AGENT_DIGEST_CHANNEL
+  token_env: SLACK_AGENT_BOT_TOKEN
+  failure_channel_env: AGENT_FAILURE_CHANNEL
+  dashboard_url_env: AGENT_DASHBOARD_URL
+  max_chars: 3000
+  thread: daily_parent
+  input_from: [fetch, refs]
+  error_from: [fetch, fetch_error]
 dify:
   app: {description: 'Scheduled, policy-scoped Zammad triage with guarded shadow and live branches.', mode: workflow, name: __DIFY_AGENT_NAME__}
   dependencies: []
@@ -85,22 +96,43 @@ dify:
         target: fetch
         targetHandle: target
         type: custom
-      - data: {sourceType: code, targetType: llm}
+      - data: {sourceType: code, targetType: if-else}
         id: e2
         source: fetch
         sourceHandle: source
+        target: fetch_gate
+        targetHandle: target
+        type: custom
+      - data: {sourceType: if-else, targetType: llm}
+        id: e3
+        source: fetch_gate
+        sourceHandle: tickets
         target: triage
         targetHandle: target
         type: custom
+      - data: {sourceType: if-else, targetType: end}
+        id: e4
+        source: fetch_gate
+        sourceHandle: error
+        target: failed-fetch
+        targetHandle: target
+        type: custom
+      - data: {sourceType: if-else, targetType: end}
+        id: e5
+        source: fetch_gate
+        sourceHandle: 'false'
+        target: fetch-empty
+        targetHandle: target
+        type: custom
       - data: {sourceType: llm, targetType: code}
-        id: e3
+        id: e6
         source: triage
         sourceHandle: source
         target: guard
         targetHandle: target
         type: custom
       - data: {sourceType: code, targetType: end}
-        id: e4
+        id: e7
         source: guard
         sourceHandle: source
         target: done
@@ -116,6 +148,7 @@ dify:
             import json,re,urllib.request
             from datetime import datetime,timezone
             from urllib.parse import urlencode,urlsplit
+            __DIFY_HELPER_REDACT__
             class NR(urllib.request.HTTPRedirectHandler):
                 def redirect_request(self,*a,**k): return None
             def req(u,m='GET',h=None,b=None):
@@ -138,7 +171,8 @@ dify:
                     return max(0,(n-d).days)
                 except Exception: return None
             def main(allowed,readonly,denied,tags,base,addr,role,secret,path,stamp):
-                bad={'pol':'{"ok":false}','refs':'[]','model':'[]','ok':False}
+                # state: tickets (refs non-empty), empty (clean search, no tickets), error (any failure; ok false).
+                bad={'pol':'{"ok":false}','refs':'[]','model':'[]','ok':False,'state':'error','fetch_error':'policy or ticket search error'}
                 try:
                     a,r,d,t=map(ids,(allowed,readonly,denied,tags))
                     p={'ok':True,'allowed':sorted(a),'readonly':sorted(r),'denied':sorted(d),'read':sorted((a|r)-d),'write':sorted(a-r-d),'tags':sorted(t)}
@@ -159,7 +193,7 @@ dify:
                             except Exception: pri=None
                             refs.append({'ticket_index':len(refs),'id':i,'group_id':g,'title':str(x.get('title','')),'priority':pri,'state':s if isinstance(s,str) else '','age_days':age(x.get('created_at'),n),'tags':[v for v in tg if isinstance(v,str)] if isinstance(tg,list) else [],'last_updated_age_days':age(x.get('updated_at'),n)})
                     model=[{k:v for k,v in x.items() if k not in ('id','group_id')} for x in refs]
-                    return {'pol':json.dumps(p),'refs':json.dumps(refs),'model':json.dumps(model),'ok':True}
+                    return {'pol':json.dumps(p),'refs':json.dumps(refs),'model':strip_urls(json.dumps(redact(model),ensure_ascii=False)),'ok':True,'state':'tickets' if refs else 'empty','fetch_error':''}
                 except Exception: return bad
           code_language: python3
           outputs:
@@ -167,6 +201,8 @@ dify:
             refs: {type: string}
             model: {type: string}
             ok: {type: boolean}
+            state: {type: string}
+            fetch_error: {type: string}
           title: Load policy and search authorized groups
           type: code
           variables:
@@ -194,6 +230,33 @@ dify:
         position: {x: 340, y: 300}
         type: custom
       - data:
+          cases:
+          - case_id: tickets
+            id: tickets
+            logical_operator: and
+            conditions:
+            - comparison_operator: is
+              id: tickets-state
+              value: tickets
+              varType: string
+              variable_selector: [fetch, state]
+          - case_id: error
+            id: error
+            logical_operator: and
+            conditions:
+            - comparison_operator: is
+              id: error-state
+              value: error
+              varType: string
+              variable_selector: [fetch, state]
+          desc: Only fetched tickets reach the model. A fetch error goes to a failure notice. A clean empty fetch ends with no model call and no post.
+          selected: false
+          title: Fetch returned tickets?
+          type: if-else
+        id: fetch_gate
+        position: {x: 580, y: 300}
+        type: custom
+      - data:
           model:
             completion_params: {temperature: 0}
             mode: chat
@@ -207,7 +270,7 @@ dify:
           title: Triage
           type: llm
         id: triage
-        position: {x: 640, y: 300}
+        position: {x: 820, y: 300}
         type: custom
       - data:
           code: |-
@@ -236,8 +299,25 @@ dify:
                 body='Triage (automated): proposed priority '+a['priority']+'; reason '+a['reason']+'.'
                 return 'POST','/api/v1/ticket_articles',{'ticket_id':int(i),'type':'note','internal':True,'content_type':'text/plain','body':body}
             __DIFY_HELPER_JSON_FENCE__
+            def esc(s): return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            def count(s):
+                try: return len(json.loads(s))
+                except Exception: return 0
+            def digest(actions,by,tickets):
+                # Built only from validated ids, allowlisted kinds, priorities and reason codes, and vocabulary tags. Never ticket titles or bodies.
+                rows={}
+                for a in actions:
+                    row=rows.setdefault(a[I],{'priority':'-','tags':[],'reason':'-'})
+                    if a[K] in ('rank','note'): row['priority']=a['priority']
+                    if a[K]=='tag': row['tags'].append(a['tag'])
+                    if a[K] in ('note','propose_incident'): row['reason']=a['reason']
+                lines=[f"zammad-triage shadow: {len(actions)} proposed actions; {tickets} tickets reviewed; no writes"]
+                lines+=[f"ticket #{by[i]['id']}: priority {row['priority']}; tags {','.join(row['tags']) or '-'}; reason {row['reason']}" for i,row in rows.items()]
+                return esc('\n'.join(lines))
             def main(text,refs,pol,ok,mode,base,addr,role,secret,path):
-                mode='live' if LIVE and mode=='live' else 'shadow'; empty={'actions':'[]','results':'[]','mode':mode}
+                mode='live' if LIVE and mode=='live' else 'shadow'; tickets=count(refs)
+                refused=esc(f"zammad-triage shadow: model output refused by guard; 0 proposed actions; {tickets} tickets reviewed; no writes")
+                empty={'actions':'[]','results':'[]','mode':mode,'digest':refused}
                 try:
                     p=json.loads(pol); by={r[I]:r for r in json.loads(refs)}; obj=json.loads(strip_json_fence(text))
                     if not ok or not p.get('ok') or not isinstance(obj,dict) or set(obj)!={'actions'} or not isinstance(obj['actions'],list) or len(obj['actions'])>20: return empty
@@ -260,13 +340,14 @@ dify:
                             try: req(base.rstrip('/')+u,m,h,json.dumps(b).encode()); out.append({'ok':True,'path':u})
                             except Exception:
                                 out+=[{'ok':False,'path':u}]+[{'ok':False,'path':x[1],'denied':True} for x in plan[n+1:]]; break
-                    return {'actions':json.dumps(actions),'results':json.dumps(out),'mode':mode}
+                    return {'actions':json.dumps(actions),'results':json.dumps(out),'mode':mode,'digest':digest(actions,by,len(by))}
                 except Exception: return empty
           code_language: python3
           outputs:
             actions: {type: string}
             results: {type: string}
             mode: {type: string}
+            digest: {type: string}
           title: Guard and dispatch
           type: code
           variables:
@@ -291,10 +372,12 @@ dify:
           - variable: path
             value_selector: [env, ZAMMAD_TOKEN_PATH]
         id: guard
-        position: {x: 940, y: 300}
+        position: {x: 1120, y: 300}
         type: custom
       - data:
           outputs:
+          - variable: text
+            value_selector: [guard, digest]
           - variable: actions
             value_selector: [guard, actions]
           - variable: mode
@@ -304,5 +387,23 @@ dify:
           title: Output
           type: end
         id: done
-        position: {x: 1240, y: 300}
+        position: {x: 1420, y: 300}
+        type: custom
+      - data:
+          outputs:
+          - variable: state
+            value_selector: [fetch, state]
+          title: No tickets fetched
+          type: end
+        id: fetch-empty
+        position: {x: 820, y: 120}
+        type: custom
+      - data:
+          outputs:
+          - variable: state
+            value_selector: [fetch, state]
+          title: Failed fetch
+          type: end
+        id: failed-fetch
+        position: {x: 1120, y: 560}
         type: custom

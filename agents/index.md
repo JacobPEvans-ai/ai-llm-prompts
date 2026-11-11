@@ -315,6 +315,6 @@
 
 * Tier: 2
 * Trigger: event: zammad
-* Trigger: rotation: 1d
+* Trigger: rotation: 1h
 * Reader: Zammad via zammad-clerk
 * Acted signal: ticket state changes
