@@ -172,6 +172,7 @@
 
 * Tier: 0
 * Trigger: call: planning-lead
+* Trigger: event: github.pull_request
 * Reader: planning lead
 * Acted signal: The lead acts on the reconciled plan and blockers.
 
