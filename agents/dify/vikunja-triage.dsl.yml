@@ -67,6 +67,31 @@ workflow:
       name: GITHUB_WEB_HOST
       value: ""
       value_type: string
+    - description: Slack bot token for agent digests
+      id: delivery-token
+      name: SLACK_AGENT_BOT_TOKEN
+      value: ""
+      value_type: secret
+    - description: Approved Slack Web API base
+      id: delivery-api-base
+      name: SLACK_API_BASE
+      value: ""
+      value_type: string
+    - description: Slack channel for agent digests
+      id: delivery-channel
+      name: AGENT_DIGEST_CHANNEL
+      value: ""
+      value_type: string
+    - description: Slack channel for agent failure notices
+      id: delivery-failure-channel
+      name: AGENT_FAILURE_CHANNEL
+      value: ""
+      value_type: string
+    - description: Dashboard URL for agent failure notices
+      id: delivery-dashboard
+      name: AGENT_DASHBOARD_URL
+      value: ""
+      value_type: string
   features:
     file_upload:
       enabled: false
@@ -147,11 +172,11 @@ workflow:
       - data:
           isInIteration: false
           sourceType: if-else
-          targetType: end
+          targetType: code
         id: shadow-output
         source: mode_gate
         sourceHandle: "false"
-        target: shadow_end
+        target: deliver-shadow_end
         targetHandle: target
         type: custom
       - data:
@@ -167,11 +192,11 @@ workflow:
       - data:
           isInIteration: false
           sourceType: iteration
-          targetType: end
+          targetType: code
         id: live-output
         source: dispatch_loop
         sourceHandle: source
-        target: live_end
+        target: deliver-live_end
         targetHandle: target
         type: custom
       - data:
@@ -198,6 +223,42 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 1002
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-shadow_end-end
+        source: deliver-shadow_end
+        sourceHandle: source
+        target: shadow_end
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-live_end-end
+        source: deliver-live_end
+        sourceHandle: source
+        target: live_end
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: llm
+          targetType: code
+        id: triage-failed
+        source: triage
+        sourceHandle: fail-branch
+        target: notify-failure-triage
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: notify-failure-triage-end
+        source: notify-failure-triage
+        sourceHandle: source
+        target: failed-triage
+        targetHandle: target
+        type: custom
     nodes:
       - data:
           async_mode: true
@@ -505,6 +566,7 @@ workflow:
             enabled: false
             variable_selector: []
           desc: Propose structured triage actions only; no tools or target IDs.
+          error_strategy: fail-branch
           memory:
             query_prompt_template: '{{#sys.timestamp#}}'
             role_prefix:
@@ -991,3 +1053,691 @@ workflow:
         targetPosition: left
         type: custom
         width: 244
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+
+
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                text = SECRET_RE.sub(lambda match: (match.group("label") or "") + REDACTED, text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT before it includes this text. The functions read only AGENT and their arguments, and keep no
+            state between runs. Summary text is built by the delivery node, which owns the redaction and truncation limits.
+            """
+
+            import datetime
+            import json
+            import urllib.parse
+            import urllib.request
+
+
+            def call(api, token, method, payload=None, query=None):
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Reads at most three history pages."""
+                cursor = None
+                for _ in range(3):
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        break
+                return None
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post one failure line. Never posts to the digest channel. Returns failed-unreported when it cannot."""
+                if not failure_channel or failure_channel == digest_channel:
+                    return "failed-unreported"
+                text = AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Returns posted, or a failure status after a notice."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                except Exception:
+                    return notify_failure(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            def clip(text):
+                if len(text) <= MAX_CHARS:
+                    return text
+                return text[: MAX_CHARS - len(TRUNCATED)] + TRUNCATED
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                return clip(redact(body)) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - prepare
+                - task_refs
+              variable: input_value
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - guard
+                - dispatch
+              variable: dispatch
+        id: deliver-shadow_end
+        position:
+          x: 2470
+          "y": 590
+        type: custom
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+
+
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                text = SECRET_RE.sub(lambda match: (match.group("label") or "") + REDACTED, text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT before it includes this text. The functions read only AGENT and their arguments, and keep no
+            state between runs. Summary text is built by the delivery node, which owns the redaction and truncation limits.
+            """
+
+            import datetime
+            import json
+            import urllib.parse
+            import urllib.request
+
+
+            def call(api, token, method, payload=None, query=None):
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Reads at most three history pages."""
+                cursor = None
+                for _ in range(3):
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        break
+                return None
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post one failure line. Never posts to the digest channel. Returns failed-unreported when it cannot."""
+                if not failure_channel or failure_channel == digest_channel:
+                    return "failed-unreported"
+                text = AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Returns posted, or a failure status after a notice."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                except Exception:
+                    return notify_failure(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            def clip(text):
+                if len(text) <= MAX_CHARS:
+                    return text
+                return text[: MAX_CHARS - len(TRUNCATED)] + TRUNCATED
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                return clip(redact(body)) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - prepare
+                - task_refs
+              variable: input_value
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - dispatch_loop
+                - output
+              variable: dispatch_results
+        id: deliver-live_end
+        position:
+          x: 3070
+          "y": 380
+        type: custom
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT before it includes this text. The functions read only AGENT and their arguments, and keep no
+            state between runs. Summary text is built by the delivery node, which owns the redaction and truncation limits.
+            """
+
+            import datetime
+            import json
+            import urllib.parse
+            import urllib.request
+
+
+            def call(api, token, method, payload=None, query=None):
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Reads at most three history pages."""
+                cursor = None
+                for _ in range(3):
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        break
+                return None
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post one failure line. Never posts to the digest channel. Returns failed-unreported when it cannot."""
+                if not failure_channel or failure_channel == digest_channel:
+                    return "failed-unreported"
+                text = AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Returns posted, or a failure status after a notice."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+                except Exception:
+                    return notify_failure(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                return {"text": "Run failed; failure notice: " + notify_failure(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")}
+          code_language: python3
+          outputs:
+            text:
+              children: null
+              type: string
+          title: Notify agent failure
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+        id: notify-failure-triage
+        position:
+          x: 1550
+          "y": 560
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - notify-failure-triage
+                - text
+              variable: text
+          title: Failed run
+          type: end
+        id: failed-triage
+        position:
+          x: 1750
+          "y": 560
+        type: custom

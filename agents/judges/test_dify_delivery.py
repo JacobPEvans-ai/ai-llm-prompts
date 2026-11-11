@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from definitions import definition
 from test_dify_render import render_checkout, sample_checkout
 
 
@@ -274,3 +275,63 @@ def test_unbound_name_check_flags_a_name_nobody_defines():
 def test_rendered_code_nodes_bind_every_name_they_use(tmp_path, node_id):
     _, nodes = load(render_sample(tmp_path))
     assert unbound_names(nodes[node_id]["code"]) == []
+
+
+ROOT = Path(__file__).resolve().parents[2]
+DELIVERY_PREFIXES = ("deliver-", "notify-failure-", "failed-")
+
+
+def committed(name):
+    return load(ROOT / "agents" / "dify" / f"{name}.dsl.yml")
+
+
+def test_only_vikunja_triage_declares_delivery_nodes():
+    declaring = set()
+    for path in (ROOT / "agents" / "dify").glob("*.dsl.yml"):
+        _, nodes = load(path)
+        if any(node_id.startswith(DELIVERY_PREFIXES) for node_id in nodes):
+            declaring.add(path.name[: -len(".dsl.yml")])
+    assert declaring == {"vikunja-triage"}
+
+
+def test_vikunja_triage_renders_delivery_and_failure_nodes():
+    dsl, nodes = committed("vikunja-triage")
+    edges = dsl["workflow"]["graph"]["edges"]
+    for end in ("shadow_end", "live_end"):
+        assert nodes[f"deliver-{end}"]["type"] == "code"
+        assert any(edge["source"] == f"deliver-{end}" and edge["target"] == end for edge in edges)
+    assert {"variable": "input_value", "value_selector": ["prepare", "task_refs"]} in nodes["deliver-shadow_end"]["variables"]
+    assert nodes["triage"]["error_strategy"] == "fail-branch"
+    assert any(edge["source"] == "triage" and edge["sourceHandle"] == "fail-branch"
+               and edge["target"] == "notify-failure-triage" for edge in edges)
+    assert nodes["notify-failure-triage"]["type"] == "code"
+    assert nodes["failed-triage"]["type"] == "end"
+    env = {variable["name"]: variable for variable in dsl["workflow"]["environment_variables"]}
+    assert env["SLACK_AGENT_BOT_TOKEN"]["value_type"] == "secret"
+    for name in ("SLACK_AGENT_BOT_TOKEN", "AGENT_DIGEST_CHANNEL", "AGENT_FAILURE_CHANNEL", "AGENT_DASHBOARD_URL",
+                 "SLACK_API_BASE"):
+        assert env[name]["value"] == ""
+    for node_id in ("deliver-shadow_end", "deliver-live_end", "notify-failure-triage"):
+        assert unbound_names(nodes[node_id]["code"]) == []
+
+
+def test_vikunja_delivery_only_flows_to_its_end_nodes():
+    dsl, nodes = committed("vikunja-triage")
+    edges = dsl["workflow"]["graph"]["edges"]
+    delivery = {node_id for node_id in nodes if node_id.startswith(DELIVERY_PREFIXES)}
+    outgoing = {edge["target"] for edge in edges if edge["source"] in delivery}
+    assert outgoing <= {"shadow_end", "live_end", "failed-triage"}
+
+
+def test_vikunja_triage_runs_hourly_at_minute_43_and_stays_shadow():
+    agent = definition("vikunja-triage")
+    assert {"kind": "rotation", "every": "1h", "minute": 43} in agent["triggers"]
+    assert agent["mode"] == "shadow"
+    _, driver = committed("tier2-rotation")
+    namespace = {}
+    exec(driver["due"]["code"], namespace)
+    entry = next(item for item in namespace["ROTATION_AGENTS"] if item["name"] == "vikunja-triage")
+    assert entry == {"name": "vikunja-triage", "every_minutes": 60, "offset_minutes": 43, "expected_runtime_minutes": 10}
+    dsl, _ = committed("vikunja-triage")
+    env = {variable["name"]: variable["value"] for variable in dsl["workflow"]["environment_variables"]}
+    assert env["VIKUNJA_TRIAGE_MODE"] == "shadow"

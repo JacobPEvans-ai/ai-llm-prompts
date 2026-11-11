@@ -21,9 +21,9 @@ See [generation, synchronization, and Dify 1.18 imports](./IMPORT.md) for the sh
    `agent-vikunja-triage` identity key through `openbao://agent-key/vikunja-triage`. Replace `VIKUNJA_MCP_PROVIDER_ID` in
    [vikunja-triage.dsl.yml](./vikunja-triage.dsl.yml) with its workspace identifier. Confirm the provider supports
    `list`, `update`, and `comment` operations.
-3. Import [vikunja-triage.dsl.yml](./vikunja-triage.dsl.yml) as a **Workflow** app. Do not import it as a Chatflow. Set
-   the native Schedule Trigger from `trigger.cron` in `agents/vikunja-triage.yaml` (`*/10 * * * *`, every ten minutes,
-   minute resolution). Scheduled inputs are `{}`; the workflow uses `sys.timestamp`.
+3. Import [vikunja-triage.dsl.yml](./vikunja-triage.dsl.yml) as a **Workflow** app. Do not import it as a Chatflow. The
+   tier 2 rotation driver calls this app's webhook hourly at minute 43 UTC (`every: 1h`, `minute: 43` in
+   `agents/vikunja-triage.yaml`). The call sends no body; the workflow uses `sys.timestamp`.
 4. Publish with `VIKUNJA_TRIAGE_MODE=shadow`.
 
 ## Protected environment values
@@ -42,6 +42,13 @@ Also configure `VIKUNJA_TRIAGE_MODE` (`shadow` by default), `OPENBAO_ADDR`, `OPE
 provisioned. The AppRole is `agent-vikunja-triage`; `GITHUB_READ_TOKEN_PATH` resolves `github-token/vikunja-triage` and
 must mint a short-lived public-read token. Never log or return the token. Configure both GitHub bases to the approved
 public service endpoints.
+
+Slack digest delivery uses `SLACK_AGENT_BOT_TOKEN` (secret), `AGENT_DIGEST_CHANNEL`, `AGENT_FAILURE_CHANNEL`,
+`AGENT_DASHBOARD_URL`, and `SLACK_API_BASE` (approved Slack Web API base). Keep every value as a
+`<APPROVED_VALUE>` placeholder until provisioned. The bot needs `chat:write` and `channels:history` (or
+`groups:history` for a private channel) and must be a member of both channels. Each run posts one reply in the
+day's parent thread. A failed model step or a failed post sends one line to `AGENT_FAILURE_CHANNEL`. Tool and
+iteration failures do not send a notice.
 
 The guard refuses malformed policy, an unfiltered list, and every project absent from the policy. It lists only
 `allowed ∪ readonly`, subtracting denied IDs; deny wins even when an ID appears on another list. `rank-only` must be a

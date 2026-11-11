@@ -13,7 +13,8 @@ triggers:
   - kind: event
     source: vikunja
   - kind: rotation
-    every: 1d
+    every: 1h
+    minute: 43
 reader: Vikunja via vikunja-clerk
 acted_signal: proposed task move applied
 memory_scope: hindsight/vikunja-triage
@@ -61,6 +62,15 @@ guards:
   incident_action: fixed_zammad_comment_only
   shadow_mode: {dispatch_writes: false, return_intended_actions: true}
   on_error: deny
+delivery:
+  kind: slack_thread
+  channel_env: AGENT_DIGEST_CHANNEL
+  token_env: SLACK_AGENT_BOT_TOKEN
+  failure_channel_env: AGENT_FAILURE_CHANNEL
+  dashboard_url_env: AGENT_DASHBOARD_URL
+  max_chars: 3000
+  thread: daily_parent
+  input_from: [prepare, task_refs]
 dify:
   app: {description: 'Scheduled, policy-scoped task triage with guarded shadow and live branches.', icon: 🤖, icon_background: '#D5F5F6',
     mode: workflow, name: __DIFY_AGENT_NAME__, use_icon_as_answer_icon: false}
