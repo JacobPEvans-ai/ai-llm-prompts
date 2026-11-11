@@ -1,16 +1,23 @@
 """Slack thread delivery for rendered Dify Code nodes.
 
-The node defines AGENT before it includes this text. The functions read only AGENT and their arguments, and keep no
-state between runs. Summary text is built by the delivery node, which owns the redaction and truncation limits.
+The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+their arguments, and keep no state between runs. Every failure sends one notice and then raises, so the Dify run ends
+failed. Summary text is built by the delivery node, which owns redaction and truncation.
 """
 
 import datetime
 import json
+import re
 import urllib.parse
 import urllib.request
 
+CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+
 
 def call(api, token, method, payload=None, query=None):
+    parts = urllib.parse.urlsplit(api)
+    if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+        raise RuntimeError("slack api base is not an approved https host")
     url = api.rstrip("/") + "/" + method
     if query:
         url += "?" + urllib.parse.urlencode(query)
@@ -24,6 +31,16 @@ def call(api, token, method, payload=None, query=None):
     if not body.get("ok"):
         raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
     return body
+
+
+def valid_channel(value):
+    """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+    return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+def escape_mrkdwn(text):
+    """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def fetched(value):
@@ -45,9 +62,9 @@ def day_start(stamp):
 
 
 def parent_ts(api, token, channel, text, since):
-    """Return the ts of this agent's parent post for the day, or None. Reads at most three history pages."""
+    """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
     cursor = None
-    for _ in range(3):
+    while True:
         query = {"channel": channel, "oldest": str(since), "limit": 200}
         if cursor:
             query["cursor"] = cursor
@@ -58,15 +75,16 @@ def parent_ts(api, token, channel, text, since):
                 return message["ts"]
         cursor = (body.get("response_metadata") or {}).get("next_cursor")
         if not cursor:
-            break
-    return None
+            return None
 
 
 def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
-    """Post one failure line. Never posts to the digest channel. Returns failed-unreported when it cannot."""
-    if not failure_channel or failure_channel == digest_channel:
+    """Post one failure line. Returns failed when posted, failed-unreported when not. Never posts to the digest channel."""
+    if not valid_channel(failure_channel) or failure_channel == digest_channel:
         return "failed-unreported"
-    text = AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+    text = escape_mrkdwn(
+        AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+    )
     try:
         call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
     except Exception:
@@ -74,15 +92,23 @@ def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, s
     return "failed"
 
 
+def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+    """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+    status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+    raise RuntimeError(reason + "; failure notice " + status) from None
+
+
 def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
-    """Post body as a reply in today's parent thread. Returns posted, or a failure status after a notice."""
+    """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
     day = stamp.strftime("%Y-%m-%d")
     parent = AGENT + " digest " + day + " (UTC)"
     try:
+        if not valid_channel(channel):
+            raise ValueError("digest channel is not a channel ID")
         ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
         if ts is None:
             ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
         call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
     except Exception:
-        return notify_failure(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+        fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
     return "posted"

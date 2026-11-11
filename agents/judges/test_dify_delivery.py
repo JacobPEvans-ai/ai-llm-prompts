@@ -3,6 +3,8 @@
 import ast
 import builtins
 import datetime
+import json
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -24,7 +26,7 @@ DELIVERY = {
 }
 NOON_UTC = datetime.datetime(2026, 11, 10, 12, tzinfo=datetime.timezone.utc).timestamp()
 DAY_START = int(datetime.datetime(2026, 11, 10, tzinfo=datetime.timezone.utc).timestamp())
-DIGEST, FAILURE = "C-DIGEST", "C-FAILURE"
+DIGEST, FAILURE = "C0DIGEST01", "C0FAILURE1"
 
 
 def render_sample(tmp_path, delivery=DELIVERY):
@@ -50,10 +52,10 @@ def namespace_for(dsl_path, node_id):
 
 
 class FakeSlack:
-    """Stands in for the helper's call(): records each Slack method and answers from canned history."""
+    """Stands in for the helper's call(). Records each method. History answers from pages, linked by a cursor."""
 
-    def __init__(self, history=(), fail=lambda method, channel: False):
-        self.history = list(history)
+    def __init__(self, history=(), pages=None, fail=lambda method, channel: False):
+        self.pages = pages if pages is not None else [list(history)]
         self.fail = fail
         self.calls = []
 
@@ -63,7 +65,10 @@ class FakeSlack:
         if self.fail(method, arguments.get("channel")):
             raise RuntimeError(method + " failed")
         if method == "conversations.history":
-            return {"ok": True, "messages": self.history}
+            index = int(arguments.get("cursor") or 0)
+            more = index + 1 < len(self.pages)
+            return {"ok": True, "messages": self.pages[index],
+                    "response_metadata": {"next_cursor": str(index + 1) if more else ""}}
         return {"ok": True, "ts": "200.0"}
 
     def posts(self, channel=None):
@@ -129,6 +134,7 @@ def test_failure_channel_env_must_differ_from_the_delivery_channel(tmp_path):
 @pytest.mark.parametrize("updates", [
     {"kind": "webhook"}, {"thread": "per_run"}, {"channel_env": "digest"}, {"max_chars": 99},
     {"max_chars": 10001}, {"input_from": ["missing", "text"]}, {"input_from": ["start"]},
+    {"error_from": ["missing", "text"]}, {"error_from": ["start"]}, {"extra": "field"},
 ])
 def test_render_rejects_invalid_delivery(tmp_path, updates):
     path, definition = sample_checkout(tmp_path)
@@ -212,11 +218,12 @@ def test_first_run_of_the_day_creates_one_parent_then_replies(tmp_path):
     assert reply["thread_ts"] == "200.0" and reply["channel"] == DIGEST
 
 
-def test_failed_post_sends_one_notice_to_the_failure_channel(tmp_path):
+def test_failed_post_sends_one_notice_to_the_failure_channel_and_fails_the_run(tmp_path):
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
     fake = FakeSlack(fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
     namespace["call"] = fake
-    assert run(namespace, {"text": "x"}) == {"status": "failed"}
+    with pytest.raises(RuntimeError, match="delivery failed; failure notice failed"):
+        run(namespace, {"text": "x"})
     notices = fake.posts(FAILURE)
     assert len(notices) == 1
     assert notices[0]["text"] == (
@@ -230,19 +237,20 @@ def test_failure_notice_is_never_posted_to_the_digest_channel(tmp_path, failure_
     namespace = namespace_for(render_sample(tmp_path), "deliver-done")
     fake = FakeSlack(fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
     namespace["call"] = fake
-    assert run(namespace, {"text": "x"}, failure_channel=failure_channel) == {"status": "failed-unreported"}
+    with pytest.raises(RuntimeError, match="failure notice failed-unreported"):
+        run(namespace, {"text": "x"}, failure_channel=failure_channel)
     assert not [post for post in fake.posts() if "failed" in post["text"]]
 
 
-def test_failed_model_run_posts_one_notice_and_ends(tmp_path):
+def test_failed_model_run_posts_one_notice_and_fails_the_run(tmp_path):
     namespace = namespace_for(render_sample(tmp_path), "notify-failure-model")
     fake = FakeSlack()
     namespace["call"] = fake
-    output = namespace["main"](
-        run_timestamp=NOON_UTC, bot_token="token", api_base="https://slack.example/api",
-        digest_channel=DIGEST, failure_channel=FAILURE, dashboard_url="https://dashboard.example/agents",
-    )
-    assert output == {"text": "Run failed; failure notice: failed"}
+    with pytest.raises(RuntimeError, match="run failed; failure notice failed"):
+        namespace["main"](
+            run_timestamp=NOON_UTC, bot_token="token", api_base="https://slack.example/api",
+            digest_channel=DIGEST, failure_channel=FAILURE, dashboard_url="https://dashboard.example/agents",
+        )
     assert fake.posts(FAILURE)[0]["text"].startswith("sample run failed at 2026-11-10 12:00 UTC")
     assert fake.posts(DIGEST) == []
 
@@ -335,3 +343,281 @@ def test_vikunja_triage_runs_hourly_at_minute_43_and_stays_shadow():
     dsl, _ = committed("vikunja-triage")
     env = {variable["name"]: variable["value"] for variable in dsl["workflow"]["environment_variables"]}
     assert env["VIKUNJA_TRIAGE_MODE"] == "shadow"
+
+
+VIKUNJA = ROOT / "agents" / "dify" / "vikunja-triage.dsl.yml"
+# Token-shaped fixtures are assembled from parts, so no credential-shaped literal is written to the file.
+SLACK_TOKEN = "xox" + "b-1234567890-abcdefghijk"
+VAULT_TOKEN = "hv" + "s.CAESIJabcdefghijklmnopqrstuvwxyz0123"
+BEARER_VALUE = "abcdefghijklmnopqrstuvwx"
+GITHUB_TOKEN = "gh" + "p_abcdefghijklmnopqrstu"
+
+
+def test_summary_neutralises_slack_markup_before_posting(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "<!channel> <!here> <@UEXAMPLE> <https://evil.example|click> a & b"})
+    # The host is redacted by the shared rule. Escaping keeps the angle brackets from forming a link.
+    assert fake.posts(DIGEST)[-1]["text"] == (
+        "&lt;!channel&gt; &lt;!here&gt; &lt;@UEXAMPLE&gt; &lt;https://[REDACTED]|click&gt; a &amp; b"
+    )
+
+
+def test_truncation_never_splits_an_escaped_entity(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "<" * 5000})
+    reply = fake.posts(DIGEST)[-1]["text"]
+    assert len(reply) == 3000 and reply.endswith("\n[truncated]")
+    assert reply[: -len("\n[truncated]")].replace("&lt;", "") == ""
+
+
+def test_slack_vault_and_bearer_tokens_are_redacted_before_posting(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": f"keys {SLACK_TOKEN}, {VAULT_TOKEN}, Authorization: Bearer {BEARER_VALUE}"})
+    reply = fake.posts(DIGEST)[-1]["text"]
+    for secret in (SLACK_TOKEN, VAULT_TOKEN, BEARER_VALUE):
+        assert secret not in reply
+    assert reply.count("[REDACTED]") == 3
+
+
+def test_public_github_links_survive_and_secrets_inside_them_do_not(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    run(namespace, {"text": "PR https://github.com/acme/app/pull/12 and "
+                            f"https://github.com/acme/app/issues/3?token={GITHUB_TOKEN}"})
+    reply = fake.posts(DIGEST)[-1]["text"]
+    assert "https://github.com/acme/app/pull/12" in reply
+    assert GITHUB_TOKEN not in reply
+    assert "https://github.com/acme/app/issues/3?token=[REDACTED]" in reply
+
+
+def test_history_failure_notifies_and_fails_the_run(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(fail=lambda method, channel: method == "conversations.history")
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="delivery failed; failure notice failed"):
+        run(namespace, {"text": "x"})
+    assert [post["text"] for post in fake.posts(FAILURE)] == [
+        "sample delivery failed at 2026-11-10 12:00 UTC. Dashboard: https://dashboard.example/agents",
+    ]
+    assert fake.posts(DIGEST) == []
+
+
+def test_parent_create_failure_notifies_and_fails_before_any_reply(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(history=[], fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="delivery failed; failure notice failed"):
+        run(namespace, {"text": "x"})
+    assert len(fake.posts(FAILURE)) == 1
+    assert not [post for post in fake.posts(DIGEST) if "thread_ts" in post]
+
+
+def test_parent_is_found_on_a_later_history_page(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    other = {"ts": "50.0", "text": "unrelated", "bot_id": "B2"}
+    parent = {"ts": "111.1", "text": "sample digest 2026-11-10 (UTC)", "bot_id": "B1"}
+    fake = FakeSlack(pages=[[other], [parent]])
+    namespace["call"] = fake
+    assert run(namespace, {"text": "x"}) == {"status": "posted"}
+    histories = [arguments for method, arguments in fake.calls if method == "conversations.history"]
+    assert [history.get("cursor") for history in histories] == [None, "1"]
+    assert all(history["oldest"] == str(DAY_START - 1) for history in histories)
+    assert fake.posts(DIGEST) == [{"channel": DIGEST, "thread_ts": "111.1", "text": "x"}]
+
+
+def test_parent_absent_from_every_page_is_created_once(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    other = {"ts": "50.0", "text": "unrelated", "bot_id": "B2"}
+    fake = FakeSlack(pages=[[other], [other]])
+    namespace["call"] = fake
+    run(namespace, {"text": "x"})
+    assert [method for method, _ in fake.calls].count("conversations.history") == 2
+    assert fake.posts(DIGEST) == [
+        {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)"},
+        {"channel": DIGEST, "thread_ts": "200.0", "text": "x"},
+    ]
+
+
+def test_fetch_error_sends_a_notice_and_fails_even_with_no_input(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="fetch failed: a Vikunja list call failed; failure notice failed"):
+        run(namespace, {"text": "x"}, input_value="[]", fetch_error="a Vikunja list call failed")
+    notices = fake.posts(FAILURE)
+    assert len(notices) == 1 and "fetch failed: a Vikunja list call failed" in notices[0]["text"]
+    assert fake.posts(DIGEST) == []
+
+
+@pytest.mark.parametrize("digest", ["#general", "general", "c0lowercase"])
+def test_digest_channel_must_be_a_channel_id(tmp_path, digest):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack()
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="delivery failed; failure notice failed"):
+        run(namespace, {"text": "x"}, digest_channel=digest)
+    assert not [post for post in fake.posts() if post["channel"] == digest]
+    assert len(fake.posts(FAILURE)) == 1
+
+
+def test_failure_channel_must_be_a_channel_id(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    fake = FakeSlack(fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = fake
+    with pytest.raises(RuntimeError, match="failure notice failed-unreported"):
+        run(namespace, {"text": "x"}, failure_channel="#alerts")
+    assert not [post for post in fake.posts() if post["channel"] == "#alerts"]
+
+
+@pytest.mark.parametrize("api", ["https://evil.example/api", "http://slack.com/api", "slack.com/api"])
+def test_token_is_never_sent_to_an_untrusted_or_plain_base(tmp_path, api):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    with pytest.raises(RuntimeError, match="failure notice failed-unreported"):
+        run(namespace, {"text": "x"}, api_base=api)
+
+
+def test_approved_base_posts_through_the_real_call(tmp_path, monkeypatch):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    sent = []
+
+    class Response:
+        def __init__(self, body):
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return json.dumps(self.body).encode()
+
+    def fake_urlopen(request, timeout):
+        sent.append((request.full_url, request.get_header("Authorization")))
+        if "conversations.history" in request.full_url:
+            return Response({"ok": True, "messages": []})
+        return Response({"ok": True, "ts": "200.0"})
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert run(namespace, {"text": "x"}, api_base="https://slack.com/api", bot_token="token") == {"status": "posted"}
+    assert all(url.startswith("https://slack.com/api/") for url, _ in sent)
+    assert {auth for _, auth in sent} == {"Bearer token"}
+
+
+def test_delivery_status_is_reported_on_each_end_node(tmp_path):
+    _, nodes = load(render_sample(tmp_path))
+    assert {"variable": "delivery_status", "value_selector": ["deliver-done", "status"]} in nodes["done"]["outputs"]
+    _, vikunja = committed("vikunja-triage")
+    for end in ("shadow_end", "live_end"):
+        assert {"variable": "delivery_status", "value_selector": [f"deliver-{end}", "status"]} in vikunja[end]["outputs"]
+
+
+def test_fetch_error_input_is_declared_only_when_error_from_is_set(tmp_path):
+    _, plain = load(render_sample(tmp_path / "plain", delivery=DELIVERY))
+    assert not [variable for variable in plain["deliver-done"]["variables"] if variable["variable"] == "fetch_error"]
+    _, declared = load(render_sample(tmp_path / "declared", delivery={**DELIVERY, "error_from": ["start", "text"]}))
+    assert {"variable": "fetch_error", "value_selector": ["start", "text"]} in declared["deliver-done"]["variables"]
+
+
+def test_vikunja_delivery_reads_the_guard_fetch_error_and_list_failures_route_to_it():
+    _, nodes = committed("vikunja-triage")
+    for node in ("deliver-shadow_end", "deliver-live_end"):
+        assert {"variable": "fetch_error", "value_selector": ["guard", "fetch_error"]} in nodes[node]["variables"]
+    assert nodes["list_tasks"]["error_strategy"] == "default-value"
+    assert nodes["list_tasks"]["default_value"] == [{"key": "text", "type": "string", "value": ""}]
+
+
+def test_list_failure_is_marked_not_read_as_an_empty_project():
+    namespace = namespace_for(VIKUNJA, "scope_list_result")
+    assert json.loads(namespace["main"](project_id="p1", body="")["result_json"]) == {
+        "project_id": "p1", "error": "list failed",
+    }
+    assert json.loads(namespace["main"](project_id="p1", body="{}")["result_json"])["error"] == "list failed"
+    assert json.loads(namespace["main"](project_id="p1", body="[]")["result_json"]) == {"project_id": "p1", "tasks": []}
+
+
+def prepare_main(namespace, results, policy_ok=True):
+    return namespace["main"](
+        results=results, policy_ok=policy_ok, timestamp="1794312000", web_host="github.example",
+        api_base="https://api.github.example", bao_addr="", role_id="role", secret_id="secret",
+        token_path="github-token/vikunja-triage",
+    )
+
+
+def test_invalid_policy_is_a_fetch_error_not_an_empty_task_list():
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), [], policy_ok=False)
+    assert out["task_refs"] == "[]" and out["fetch_error"] == "project policy is invalid"
+
+
+def test_failed_list_entry_is_reported_and_not_dropped():
+    results = [json.dumps({"project_id": "p1", "error": "list failed"})]
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), results)
+    assert out["task_refs"] == "[]" and out["fetch_error"] == "a Vikunja list call failed"
+
+
+def test_link_check_failure_is_reported_and_not_treated_as_unlinked():
+    task = {"id": 7, "title": "fix https://github.example/acme/app/pull/12", "description": ""}
+    out = prepare_main(namespace_for(VIKUNJA, "prepare"), [json.dumps({"project_id": "p1", "tasks": [task]})])
+    assert json.loads(out["task_refs"])[0]["id"] == "7"
+    assert out["fetch_error"] == "a GitHub link check failed"
+
+
+def guard_main(namespace, **overrides):
+    arguments = dict(
+        model_text='{"actions": []}', refs_text="[]", allowed_raw='["p1"]', readonly_raw="[]", rank_raw="[]",
+        denied_raw="[]", mode_raw="shadow", web_host="github.example", api_base="https://api.github.example",
+        bao_addr="", role_id="role", secret_id="secret", token_path="github-token/vikunja-triage", prepare_error="",
+    )
+    arguments.update(overrides)
+    return namespace["main"](**arguments)
+
+
+def test_guard_carries_the_prepare_fetch_error_forward():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), prepare_error="a Vikunja list call failed")
+    assert out["actions"] == [] and out["fetch_error"] == "a Vikunja list call failed"
+
+
+def test_github_state_failure_is_reported_and_no_action_is_proposed():
+    ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix https://github.example/acme/app/pull/12",
+           "description": "", "priority": None, "labels": [], "done": False}
+    out = guard_main(
+        namespace_for(VIKUNJA, "guard"),
+        model_text=json.dumps({"actions": [{"task_index": 0, "kind": "comment"}]}),
+        refs_text=json.dumps([ref]),
+    )
+    assert out["actions"] == [] and out["fetch_error"] == "a GitHub state check failed"
+
+
+def test_dispatch_write_is_unreachable_in_shadow_mode():
+    dsl, nodes = committed("vikunja-triage")
+    graph = dsl["workflow"]["graph"]
+    edges = graph["edges"]
+    starts = [node_id for node_id, data in nodes.items() if data["type"].startswith("trigger-") or data["type"] == "start"]
+    children = {}
+    for node in graph["nodes"]:  # iteration bodies are linked by parentId, not by edges
+        if node.get("parentId"):
+            children.setdefault(node["parentId"], []).append(node["id"])
+
+    def reachable(skip):
+        seen, frontier = set(), list(starts)
+        while frontier:
+            node_id = frontier.pop()
+            if node_id in seen:
+                continue
+            seen.add(node_id)
+            frontier += children.get(node_id, [])
+            frontier += [edge["target"] for edge in edges
+                         if edge["source"] == node_id and (node_id, edge.get("sourceHandle")) != skip]
+        return seen
+
+    assert "dispatch_write" in reachable(skip=None)
+    assert "dispatch_write" not in reachable(skip=("mode_gate", "live"))
+    assert {edge["sourceHandle"] for edge in edges if edge["target"] == "dispatch_loop"} == {"live"}

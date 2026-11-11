@@ -172,6 +172,7 @@ def test_tier_two_hourly_rotation_offsets_to_its_minute(tmp_path):
     {"kind": "rotation", "every": "1h"}, {"kind": "rotation", "every": "1h", "minute": 15},
     {"kind": "rotation", "every": "1h", "minute": 45}, {"kind": "rotation", "every": "1h", "minute": 8},
     {"kind": "rotation", "every": "1h", "minute": 60}, {"kind": "rotation", "every": "1d", "minute": 7},
+    {"kind": "rotation", "every": "1h", "minute": "7"},
 ])
 def test_renderer_rejects_bad_hourly_minutes(tmp_path, trigger):
     path, definition = sample_checkout(tmp_path)

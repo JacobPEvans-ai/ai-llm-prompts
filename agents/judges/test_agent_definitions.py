@@ -107,6 +107,7 @@ def _missing_roster_fields(agent):
 
 
 _DELIVERY_FIELDS = {"kind", "channel_env", "token_env", "failure_channel_env", "dashboard_url_env", "max_chars", "thread", "input_from"}
+_DELIVERY_OPTIONAL = {"error_from"}
 _ENV_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
 
 
@@ -115,7 +116,9 @@ def validate_delivery(agent):
     if "delivery" not in agent:
         return
     delivery = agent["delivery"]
-    assert isinstance(delivery, dict) and set(delivery) == _DELIVERY_FIELDS, "delivery fields must match the contract"
+    assert isinstance(delivery, dict) and _DELIVERY_FIELDS <= set(delivery) <= _DELIVERY_FIELDS | _DELIVERY_OPTIONAL, (
+        "delivery fields must match the contract"
+    )
     assert delivery["kind"] == "slack_thread", "delivery kind must be slack_thread"
     assert delivery["thread"] == "daily_parent", "delivery thread must be daily_parent"
     envs = [delivery[field] for field in ("channel_env", "token_env", "failure_channel_env", "dashboard_url_env")]
@@ -124,10 +127,13 @@ def validate_delivery(agent):
     assert delivery["failure_channel_env"] != delivery["channel_env"], "failure channel env must differ from the delivery channel env"
     max_chars = delivery["max_chars"]
     assert type(max_chars) is int and 100 <= max_chars <= 10000, "delivery max_chars must be from 100 to 10000"
-    source = delivery["input_from"]
-    assert isinstance(source, list) and len(source) == 2 and all(isinstance(part, str) and part for part in source), (
-        "delivery input_from must name a node and an output"
-    )
+    for field in ("input_from", "error_from"):
+        if field not in delivery:
+            continue
+        source = delivery[field]
+        assert isinstance(source, list) and len(source) == 2 and all(isinstance(part, str) and part for part in source), (
+            f"delivery {field} must name a node and an output"
+        )
 
 
 def _validate_v2(agent):
@@ -620,6 +626,7 @@ _DELIVERY = {
 
 def test_valid_delivery_fixture_and_absent_delivery():
     validate_delivery({"delivery": dict(_DELIVERY)})
+    validate_delivery({"delivery": {**_DELIVERY, "error_from": ["guard", "fetch_error"]}})
     validate_delivery({})
 
 
@@ -627,7 +634,8 @@ def test_valid_delivery_fixture_and_absent_delivery():
     {"kind": "webhook"}, {"thread": "per_run"}, {"channel_env": "agent_digest"},
     {"failure_channel_env": "AGENT_DIGEST_CHANNEL"}, {"token_env": "AGENT_FAILURE_CHANNEL"},
     {"dashboard_url_env": "SLACK_AGENT_BOT_TOKEN"}, {"max_chars": 99}, {"max_chars": 10001},
-    {"max_chars": True}, {"input_from": ["prepare"]}, {"extra": "field"},
+    {"max_chars": True}, {"input_from": ["prepare"]}, {"input_from": ["prepare", "task_refs", "x"]},
+    {"error_from": ["guard"]}, {"error_from": "guard"}, {"extra": "field"},
 ])
 def test_invalid_delivery_fixtures(updates):
     with pytest.raises(AssertionError):

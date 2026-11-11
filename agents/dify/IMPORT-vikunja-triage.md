@@ -47,8 +47,8 @@ Slack digest delivery uses `SLACK_AGENT_BOT_TOKEN` (secret), `AGENT_DIGEST_CHANN
 `AGENT_DASHBOARD_URL`, and `SLACK_API_BASE` (approved Slack Web API base). Keep every value as a
 `<APPROVED_VALUE>` placeholder until provisioned. The bot needs `chat:write` and `channels:history` (or
 `groups:history` for a private channel) and must be a member of both channels. Each run posts one reply in the
-day's parent thread. A failed model step or a failed post sends one line to `AGENT_FAILURE_CHANNEL`. Tool and
-iteration failures do not send a notice.
+day's parent thread. A fetch error, a failed model step, or a failed Slack post sends one line to
+`AGENT_FAILURE_CHANNEL` and fails the run. A failed live `dispatch_write` fails the run without a notice.
 
 The guard refuses malformed policy, an unfiltered list, and every project absent from the policy. It lists only
 `allowed ∪ readonly`, subtracting denied IDs; deny wins even when an ID appears on another list. `rank-only` must be a

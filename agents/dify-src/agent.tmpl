@@ -126,6 +126,7 @@ def main(timestamp, event=None):
 AGENT = {{ data.ToJSON .name }}
 MAX_CHARS = {{ .max_chars }}
 TRUNCATED = "\n[truncated]"
+TRUSTED_SLACK_HOSTS = ("slack.com",)
 
 
 __DIFY_HELPER_REDACT__
@@ -137,7 +138,11 @@ __DIFY_HELPER_SLACK_DELIVERY__
 def clip(text):
     if len(text) <= MAX_CHARS:
         return text
-    return text[: MAX_CHARS - len(TRUNCATED)] + TRUNCATED
+    cut = text[: MAX_CHARS - len(TRUNCATED)]
+    amp = cut.rfind("&")
+    if amp != -1 and ";" not in cut[amp:]:
+        cut = cut[:amp]  # never leave half of an escaped entity in the post
+    return cut + TRUNCATED
 
 
 def summary(outputs):
@@ -149,11 +154,13 @@ def summary(outputs):
             key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
             for key, value in sorted(outputs.items())
         )
-    return clip(redact(body)) or "(no output)"
+    return clip(escape_mrkdwn(redact(body))) or "(no output)"
 
 
-def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, **outputs):
+def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
     stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+    if str(fetch_error or "").strip():
+        fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
     if not fetched(input_value):
         return {"status": "skipped"}
     body = summary(outputs)
@@ -161,6 +168,7 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
 {{- end -}}
 {{- define "failure-code" -}}
 AGENT = {{ data.ToJSON .name }}
+TRUSTED_SLACK_HOSTS = ("slack.com",)
 
 
 __DIFY_HELPER_SLACK_DELIVERY__
@@ -168,7 +176,7 @@ __DIFY_HELPER_SLACK_DELIVERY__
 
 def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url):
     stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
-    return {"text": "Run failed; failure notice: " + notify_failure(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")}
+    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")
 {{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
 {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
@@ -195,7 +203,7 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
     {{- $rotation = true -}}
     {{- if coll.Has . "minute" -}}
       {{- test.Assert "minute applies only to every: 1h" (eq .every "1h") -}}
-      {{- test.Assert "minute must be a whole number" (regexp.Match `^[0-9]+$` (printf "%v" .minute)) -}}
+      {{- test.Assert "minute must be an unquoted whole number" (and (test.IsKind "int" .minute) (regexp.Match `^[0-9]+$` (printf "%v" .minute))) -}}
       {{- test.Assert "hourly minute must be odd, below 60, and neither 15 nor 45" (and (regexp.Match `[13579]$` (printf "%v" .minute)) (lt (conv.ToInt .minute) 60) (ne (conv.ToInt .minute) 15) (ne (conv.ToInt .minute) 45)) -}}
     {{- else if eq .every "1h" -}}
       {{- test.Assert "every: 1h requires an odd minute" false -}}
@@ -334,6 +342,11 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
   {{- test.Assert "delivery max_chars must be a whole number from 100 to 10000" (and (regexp.Match `^[0-9]+$` (printf "%v" .max_chars)) (ge (conv.ToInt .max_chars) 100) (le (conv.ToInt .max_chars) 10000)) -}}
   {{- test.Assert "delivery input_from must name a node and an output" (eq (len .input_from) 2) -}}
   {{- test.Assert "delivery input_from must name an existing node" (coll.JQ `.input_from[0] as $n | any(.dsl.workflow.graph.nodes[]; .id == $n)` (dict "dsl" $dsl "input_from" .input_from)) -}}
+  {{- test.Assert "delivery has an unknown field" (coll.JQ `keys - ["channel_env","dashboard_url_env","error_from","failure_channel_env","input_from","kind","max_chars","thread","token_env"] | length == 0` .) -}}
+  {{- if coll.Has . "error_from" -}}
+    {{- test.Assert "delivery error_from must name a node and an output" (eq (len .error_from) 2) -}}
+    {{- test.Assert "delivery error_from must name an existing node" (coll.JQ `.error_from[0] as $n | any(.dsl.workflow.graph.nodes[]; .id == $n)` (dict "dsl" $dsl "error_from" .error_from)) -}}
+  {{- end -}}
   {{- $envs := coll.Slice -}}
   {{- $envs = coll.Append (dict "id" "delivery-token" "name" .token_env "value_type" "secret" "value" "" "description" "Slack bot token for agent digests") $envs -}}
   {{- $envs = coll.Append (dict "id" "delivery-api-base" "name" "SLACK_API_BASE" "value_type" "string" "value" "" "description" "Approved Slack Web API base") $envs -}}
@@ -348,6 +361,9 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
   {{- $common = coll.Append (dict "variable" "failure_channel" "value_selector" (coll.Slice "env" .failure_channel_env)) $common -}}
   {{- $common = coll.Append (dict "variable" "dashboard_url" "value_selector" (coll.Slice "env" .dashboard_url_env)) $common -}}
   {{- $deliverInputs := coll.Append (dict "variable" "input_value" "value_selector" (coll.Slice (index .input_from 0) (index .input_from 1))) $common -}}
+  {{- if coll.Has . "error_from" -}}
+    {{- $deliverInputs = coll.Append (dict "variable" "fetch_error" "value_selector" (coll.Slice (index .error_from 0) (index .error_from 1))) $deliverInputs -}}
+  {{- end -}}
   {{- $deliverCode := tmpl.Exec "delivery-code" (dict "name" $.name "max_chars" .max_chars) -}}
   {{- $failureCode := tmpl.Exec "failure-code" (dict "name" $.name) -}}
   {{- /* Each end node gets a Code node before it, which posts the output. Each llm node routes failures to one failure notice and its own end node. */ -}}
@@ -358,6 +374,7 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
       .edges |= map(if (.target as $t | any($ends[]; . == $t)) then .target = ("deliver-" + .target) | .targetHandle = "target" | .data.targetType = "code" else . end) |
       .edges += [$ends[] | {id: ("deliver-" + . + "-end"), source: ("deliver-" + .), sourceHandle: "source", target: ., targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "end"}}]
     )` -}}
+  {{- $dsl = coll.JQ `.workflow.graph.nodes |= map(if .data.type == "end" then .data.outputs += [{variable: "delivery_status", value_selector: [("deliver-" + .id), "status"]}] else . end)` $dsl -}}
   {{- $dsl = dict "dsl" $dsl "code" $failureCode "inputs" $common | coll.JQ `
     . as $c | $c.dsl | .workflow.graph |= (
       .nodes |= map(if .data.type == "llm" then .data.error_strategy = "fail-branch" else . end) |

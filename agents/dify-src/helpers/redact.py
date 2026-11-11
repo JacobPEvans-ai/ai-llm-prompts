@@ -5,8 +5,11 @@ import re
 # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
 SECRET_RE = re.compile(
     r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+    r"|(?P<bearer>\bBearer\s+)[A-Za-z0-9._~+/=-]{16,}|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
     r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
 )
+# Public GitHub links keep their host and path. Secrets inside them are still redacted.
+PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"']*")
 SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
 HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
 FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -77,6 +80,25 @@ def _is_secret_key(key):
     )
 
 
+def _redact_secrets(text):
+    return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+def _redact_plain(text):
+    text = _redact_secrets(text)
+    text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+    text = IPV6_RE.sub(_redact_ipv6, text)
+    return HOST_RE.sub(_redact_host, text)
+
+
+def _redact_string(text):
+    pieces, position = [], 0
+    for match in PUBLIC_LINK_RE.finditer(text):
+        pieces += [_redact_plain(text[position : match.start()]), _redact_secrets(match.group(0))]
+        position = match.end()
+    return "".join(pieces) + _redact_plain(text[position:])
+
+
 def redact(text):
     if isinstance(text, dict):
         return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
@@ -84,10 +106,7 @@ def redact(text):
         return [redact(value) for value in text]
     if not isinstance(text, str):
         return text
-    text = SECRET_RE.sub(lambda match: (match.group("label") or "") + REDACTED, text)
-    text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
-    text = IPV6_RE.sub(_redact_ipv6, text)
-    return HOST_RE.sub(_redact_host, text)
+    return _redact_string(text)
 
 
 def needs_redaction(text):

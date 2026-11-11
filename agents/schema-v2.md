@@ -111,11 +111,26 @@ triggers:
 
 `delivery` sends a Dify agent's final output to Slack. Its keys are `kind: slack_thread`, `thread: daily_parent`,
 `channel_env`, `token_env`, `failure_channel_env`, `dashboard_url_env`, `max_chars` (100 to 10000), and
-`input_from: [<node>, <output>]`. The four env names must be distinct, and the failure channel env must differ
-from the delivery channel env. The renderer adds a Code node before each end node. It skips the post when
-`input_from` is empty, posts into one parent thread per agent per UTC day, and cuts text to `max_chars` with a
-`[truncated]` marker. A failed post or a failed model node sends one line to the failure channel. Tool and
-iteration failures are not routed. The renderer also declares `SLACK_API_BASE`, which the deployment fills in.
+`input_from: [<node>, <output>]`. `error_from: [<node>, <output>]` is optional. Unknown keys fail the render. The four
+env names must be distinct, and the failure channel env must differ from the delivery channel env.
+
+The renderer adds a Code node before each end node. At run time it takes one of three states:
+
+- Fetch failed (`error_from` is not empty): one notice to the failure channel, then the run fails.
+- Nothing fetched (the value at `input_from` is an empty list, object, or string): no post, and the run succeeds.
+- Fetched: one reply in the agent's parent thread for the UTC day, cut to `max_chars` with a `[truncated]` marker.
+
+Every failed post or history read sends one notice and then fails the run. Each end node reports `delivery_status`.
+Text is redacted, then escaped (`&`, `<`, `>`), so model or task text cannot mention, link, or broadcast. Channels must
+be Slack channel IDs (`^[CGD][A-Z0-9]+$`), and the API base must be `https` on `slack.com`. The parent is found by its
+exact text. The history cursor is followed to the end of the day, which starts at 00:00 UTC. Two starts in the same
+second can both miss the parent and create two; that race remains.
+
+Coverage gaps. Dify gives this pattern no hook for a failed `dispatch_write` in live mode. Such a failure fails the
+iteration and the run, with no notice. Only the list call and its bind node route fetch errors. A model reply that
+does not parse as JSON yields no actions and no notice. Guard verification errors are reported through `fetch_error`.
+
+The renderer also declares `SLACK_API_BASE`, which the deployment fills in.
 
 ## Standards gate
 
