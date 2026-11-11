@@ -130,7 +130,8 @@ second can both miss the parent and create two; that race remains.
 
 Coverage gaps. Dify gives this pattern no hook for a failed `dispatch_write` in live mode. Such a failure fails the
 iteration and the run, with no notice. Only the list call and its bind node route fetch errors. A model reply that
-Guard verification errors are reported through `fetch_error`.
+Guard verification errors are reported through `fetch_error`. A model reply that is not JSON, or not an object with an
+`actions` array, is reported the same way.
 
 The renderer also declares `SLACK_API_BASE`, which the deployment fills in.
 

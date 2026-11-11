@@ -632,6 +632,17 @@ def test_a_model_reply_that_is_not_json_is_a_fetch_error_not_an_empty_digest():
     assert out["actions"] == [] and out["fetch_error"] == "model reply was not JSON"
 
 
+@pytest.mark.parametrize("reply", ["null", '{"actions": "none"}', '{"Actions": []}', "{}", "[]"])
+def test_a_model_reply_of_the_wrong_shape_is_a_fetch_error(reply):
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text=reply)
+    assert out["actions"] == [] and out["fetch_error"] == "model reply had the wrong shape"
+
+
+def test_the_valid_empty_reply_has_no_actions_and_no_fetch_error():
+    out = guard_main(namespace_for(VIKUNJA, "guard"), model_text='{"actions": []}')
+    assert out["actions"] == [] and out["fetch_error"] == ""
+
+
 def test_github_state_failure_is_reported_and_no_action_is_proposed():
     ref = {"task_index": 0, "id": "7", "project_id": "p1", "title": "fix https://github.example/acme/app/pull/12",
            "description": "", "priority": None, "labels": [], "done": False}
