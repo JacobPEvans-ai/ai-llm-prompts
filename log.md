@@ -5,6 +5,12 @@
 * **Feat (rules)**: Add the on-demand `fleet-utilization.md` rule — worker-fleet cadences, the `QUEUE` block and the
   two hourly numbers — indexed in `rule-tiers.md` and referenced from the delegation routing paragraph.
 
+## 2026-11-10
+
+* **Fix (auto-ai-agent)**: Donna's interaction rules route questions about her own configuration, delivery targets,
+  schedules and failures to her issues channel for the platform lead, and limit questions to the principal to the
+  principal's own tasks, decisions and schedule.
+
 ## 2026-11-09
 
 * **Fix (agents)**: The JSON-fence judge accepts compliant overlay parse nodes — it still requires every listed parse
