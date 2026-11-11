@@ -40,3 +40,18 @@ def test_secrets_inside_a_github_link_are_still_removed():
 
 def test_other_hosts_are_still_redacted():
     assert REDACT.redact("https://example.org/x") == "https://[REDACTED]/x"
+
+
+def test_github_exemption_ends_at_the_query_so_a_nested_internal_host_is_redacted():
+    out = REDACT.redact("https://github.com/a/b?u=https://internal.corp.example/x")
+    assert out == "https://github.com/a/b?u=https://[REDACTED]/x"
+
+
+def test_github_exemption_ends_at_the_query_so_a_nested_address_is_redacted():
+    out = REDACT.redact("https://github.com/a/b?next=https://10.1.2.3/admin")
+    assert out == "https://github.com/a/b?next=https://[REDACTED]/admin"
+
+
+def test_github_exemption_ends_at_the_fragment_too():
+    out = REDACT.redact("https://github.com/a/b#https://internal.corp.example/x")
+    assert out == "https://github.com/a/b#https://[REDACTED]/x"
