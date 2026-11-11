@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.101.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.3...v1.101.0) (2026-11-11)
+
+
+### Features
+
+* **rules:** add fleet utilization rule for orchestrated workers ([#442](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/442)) ([f2ced67](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/f2ced676b76879db8596f943165bab4ae28995d2))
+
 ## [1.100.3](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.2...v1.100.3) (2026-11-10)
 
 
