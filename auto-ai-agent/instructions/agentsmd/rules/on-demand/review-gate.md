@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T14:36:56Z"
+timestamp: "2026-11-11T14:45:53Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -22,7 +22,7 @@ Before any other review check, ask whether the change adds or edits custom code:
 
 If it does, apply the tool-choice order in `AGENTS.md`. If a rung before writing code does the same, the verdict is CHANGES and the finding names it.
 
-If none does, the change must show what that rule requires, each rung named with why it failed, and cite the repository owner's recorded approval. Otherwise the verdict is CHANGES.
+If none does, the change must show what that rule requires and cite the repository owner's recorded approval. Otherwise the verdict is CHANGES.
 
 Then apply the DRY principle of the code review instructions to mechanisms as well as code. A second copy of a mechanism that
 already exists, or a value hard-coded for one consumer that should be a parameter, is CHANGES.
@@ -36,6 +36,3 @@ The review that feeds a merge gate is launched by a seat that did not author the
 `model:`, `call_id:`, `head:` and a last line `VERDICT: MERGE` or `VERDICT: CHANGES`. A launch is one read-only
 review call with the standard brief, starting with the check above. Every executor brief states that no agent
 runs `git town undo`; recovery is by hand: read the status and the reflog, then fix the one ref.
-
-Fixed pairs launch for each other: deputy and models, infra and bench, build and ops. The co-lead takes host
-repositories and overflow.

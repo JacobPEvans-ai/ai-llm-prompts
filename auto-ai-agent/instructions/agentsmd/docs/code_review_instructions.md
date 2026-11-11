@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/docs/code_review
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T14:29:27Z"
+timestamp: "2026-11-11T14:45:53Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -23,7 +23,7 @@ Standardized code review guidelines for AI-assisted development across Gemini Co
 
 ## Review Framework
 
-First, read and apply the review-gate rule (`agentsmd/rules/on-demand/review-gate.md`); then evaluate the change across five core dimensions using this framework.
+First, read and apply the review-gate rule (`auto-ai-agent/instructions/agentsmd/rules/on-demand/review-gate.md` from the repository root); then evaluate the change across five core dimensions using this framework.
 
 ### 1. Correctness
 
