@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/rule-tiers
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T02:34:00Z"
+timestamp: "2026-11-11T13:54:35Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -29,6 +29,7 @@ routing and the workflow index go in `AGENTS.md`. Everything below is **not** au
 | When you are… | Read |
 | --- | --- |
 | Branching, PR, releasing | `git-flow.md` |
+| Reviewing a pull request or a diff | `review-gate.md` |
 | Writing or fixing a CI workflow, or a CI run failed | `ci-resilience.md` |
 | Claiming a shared resource | `session-coordination.md` |
 | Spawning subagents | `subagent-resilience.md` |

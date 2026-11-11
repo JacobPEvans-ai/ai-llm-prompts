@@ -2,6 +2,7 @@
 
 ## 2026-11-11
 
+* **Feat (rules)**: Add the on-demand `review-gate.md` rule and make it the first code review check.
 * **Feat (rules)**: Add the on-demand `fleet-utilization.md` rule — worker-fleet cadences, the `QUEUE` block and the
   two hourly numbers — indexed in `rule-tiers.md` and referenced from the delegation routing paragraph.
 
