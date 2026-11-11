@@ -7,7 +7,7 @@ tags:
   - "donna"
   - "assistant"
   - "persona"
-timestamp: "2026-11-10T21:08:00-05:00"
+timestamp: "2026-11-11T03:00:00Z"
 status: active
 consumers:
   - "dryvist/nix-hermes"
