@@ -12,6 +12,8 @@ import urllib.parse
 import urllib.request
 
 CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+# A preview makes Slack fetch a link with no click, so every post turns previews off.
+NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False}
 
 
 def call(api, token, method, payload=None, query=None):
@@ -109,7 +111,7 @@ def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, s
         notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
     )
     try:
-        call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
+        call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
     except Exception:
         return "failed-unreported"
     return "failed"
@@ -130,8 +132,8 @@ def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body
             raise ValueError("digest channel is not a channel ID")
         ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
         if ts is None:
-            ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent})["ts"]
-        call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body})
+            ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+        call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
     except Exception:
         fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
     return "posted"

@@ -27,6 +27,7 @@ DELIVERY = {
 NOON_UTC = datetime.datetime(2026, 11, 10, 12, tzinfo=datetime.timezone.utc).timestamp()
 DAY_START = int(datetime.datetime(2026, 11, 10, tzinfo=datetime.timezone.utc).timestamp())
 DIGEST, FAILURE = "C0DIGEST01", "C0FAILURE1"
+NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False}
 
 
 def render_sample(tmp_path, delivery=DELIVERY):
@@ -209,7 +210,7 @@ def test_a_human_post_with_the_same_text_is_not_reused_as_parent(tmp_path):
     fake = FakeSlack(history=[impostor])
     namespace["call"] = fake
     run(namespace, {"text": "x"})
-    assert fake.posts(DIGEST)[0] == {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)"}
+    assert fake.posts(DIGEST)[0] == {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)", **NO_PREVIEW}
     assert fake.posts(DIGEST)[1]["thread_ts"] == "200.0"
 
 
@@ -219,7 +220,7 @@ def test_first_run_of_the_day_creates_one_parent_then_replies(tmp_path):
     namespace["call"] = fake
     run(namespace, {"text": "x"})
     parent, reply = fake.posts(DIGEST)
-    assert parent == {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)"}
+    assert parent == {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)", **NO_PREVIEW}
     assert reply["thread_ts"] == "200.0" and reply["channel"] == DIGEST
 
 
@@ -308,6 +309,20 @@ def test_model_label_link_is_escaped_so_it_cannot_hide_its_target(tmp_path):
     namespace["call"] = fake
     run(namespace, {"text": "<https://internal.corp.example|click>"})
     assert fake.posts(DIGEST)[-1]["text"] == "&lt;[REDACTED]&gt;"
+
+
+def test_every_post_turns_off_link_previews(tmp_path):
+    namespace = namespace_for(render_sample(tmp_path), "deliver-done")
+    posted = FakeSlack()
+    namespace["call"] = posted
+    run(namespace, {"text": "x"})  # parent and reply
+    failing = FakeSlack(fail=lambda method, channel: method == "chat.postMessage" and channel == DIGEST)
+    namespace["call"] = failing
+    with pytest.raises(RuntimeError):
+        run(namespace, {"text": "x"})  # the failed parent post, then the failure notice
+    sent = posted.posts() + failing.posts()
+    assert len(sent) == 4
+    assert all(args["unfurl_links"] is False and args["unfurl_media"] is False for args in sent)
 
 
 @pytest.mark.parametrize("failure_channel", [DIGEST, ""])
@@ -507,7 +522,7 @@ def test_parent_is_found_on_a_later_history_page(tmp_path):
     histories = [arguments for method, arguments in fake.calls if method == "conversations.history"]
     assert [history.get("cursor") for history in histories] == [None, "1"]
     assert all(history["oldest"] == str(DAY_START - 1) for history in histories)
-    assert fake.posts(DIGEST) == [{"channel": DIGEST, "thread_ts": "111.1", "text": "x"}]
+    assert fake.posts(DIGEST) == [{"channel": DIGEST, "thread_ts": "111.1", "text": "x", **NO_PREVIEW}]
 
 
 def test_parent_absent_from_every_page_is_created_once(tmp_path):
@@ -518,8 +533,8 @@ def test_parent_absent_from_every_page_is_created_once(tmp_path):
     run(namespace, {"text": "x"})
     assert [method for method, _ in fake.calls].count("conversations.history") == 2
     assert fake.posts(DIGEST) == [
-        {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)"},
-        {"channel": DIGEST, "thread_ts": "200.0", "text": "x"},
+        {"channel": DIGEST, "text": "sample digest 2026-11-10 (UTC)", **NO_PREVIEW},
+        {"channel": DIGEST, "thread_ts": "200.0", "text": "x", **NO_PREVIEW},
     ]
 
 
@@ -578,8 +593,12 @@ def test_approved_base_posts_through_the_real_call(tmp_path, monkeypatch):
         def read(self):
             return json.dumps(self.body).encode()
 
+    bodies = []
+
     def fake_urlopen(request, timeout):
         sent.append((request.full_url, request.get_header("Authorization")))
+        if request.data:
+            bodies.append(json.loads(request.data))
         if "conversations.history" in request.full_url:
             return Response({"ok": True, "messages": []})
         return Response({"ok": True, "ts": "200.0"})
@@ -588,6 +607,8 @@ def test_approved_base_posts_through_the_real_call(tmp_path, monkeypatch):
     assert run(namespace, {"text": "x"}, api_base="https://slack.com/api", bot_token="token") == {"status": "posted"}
     assert all(url.startswith("https://slack.com/api/") for url, _ in sent)
     assert {auth for _, auth in sent} == {"Bearer token"}
+    posts = [body for body in bodies if "text" in body]
+    assert len(posts) == 2 and all(body["unfurl_links"] is False and body["unfurl_media"] is False for body in posts)
 
 
 def test_delivery_status_is_reported_on_each_end_node(tmp_path):
