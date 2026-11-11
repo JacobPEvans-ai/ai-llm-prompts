@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.104.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.103.0...v1.104.0) (2026-11-11)
+
+
+### Features
+
+* **dify:** opt the zammad triage agent into Slack digest delivery ([#455](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/455)) ([ccdbd34](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/ccdbd34484dbe264d96f252af7bb058b645a0f8e))
+
 ## [1.103.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.102.0...v1.103.0) (2026-11-11)
 
 
