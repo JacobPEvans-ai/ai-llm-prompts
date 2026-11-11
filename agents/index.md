@@ -286,7 +286,7 @@
 
 * Tier: 2
 * Trigger: event: vikunja
-* Trigger: rotation: 1d
+* Trigger: rotation: 1h
 * Reader: Vikunja via vikunja-clerk
 * Acted signal: proposed task move applied
 
