@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-11T14:11:57Z"
+timestamp: "2026-11-11T14:24:51Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -30,3 +30,12 @@ Does anything hard-coded for one consumer need to be a parameter? If yes, the ve
 
 These are not custom code: configuration of existing software, a maintained tool's own plugin or module, and a test case
 that runs under the test framework the repository already uses. A new test runner, harness, or helper script is custom code.
+
+## Who launches the review
+
+The review that feeds a merge gate is launched by a seat that did not author the head. Its verdict file carries
+`model:`, `call_id:`, `head:` and a last line `VERDICT: MERGE` or `VERDICT: CHANGES`. A launch is one read-only
+review call with the standard brief, starting with the check above.
+
+Fixed pairs launch for each other: deputy and models, infra and bench, build and ops. The co-lead takes host
+repositories and overflow.
