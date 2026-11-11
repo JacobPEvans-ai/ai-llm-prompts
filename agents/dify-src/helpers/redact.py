@@ -9,8 +9,9 @@ SECRET_RE = re.compile(
     r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
     r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
 )
-# A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
-PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"'?#]*")
+# A public GitHub link keeps its host and path, limited to plain path characters. Any other character ends the exemption,
+# so a query, fragment, separator, or @ never carries a following host or address past the redaction.
+PUBLIC_LINK_RE = re.compile(r"https://github\.com/[A-Za-z0-9._~/-]*")
 SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
 HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
 FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}

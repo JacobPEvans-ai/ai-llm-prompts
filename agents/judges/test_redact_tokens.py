@@ -67,3 +67,18 @@ def test_short_bearer_value_with_a_digit_is_still_redacted():
     out = REDACT.redact(f"auth {token} ok")
     assert token not in out
     assert out == "auth Bearer [REDACTED] ok"
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("https://github.com/a/b,https://internal.corp.example/x", "https://github.com/a/b,https://[REDACTED]/x"),
+        ("https://github.com/a/b;https://internal.corp.example/x", "https://github.com/a/b;https://[REDACTED]/x"),
+        ("https://github.com/a/b|https://10.1.2.3/x", "https://github.com/a/b|https://[REDACTED]/x"),
+        ("https://github.com/a/b)https://internal.corp.example/x", "https://github.com/a/b)https://[REDACTED]/x"),
+        ("https://github.com/a/b@10.1.2.3", "https://github.com/a/b@[REDACTED]"),
+        ("https://github.com/@internal.corp.example/x", "https://github.com/@[REDACTED]/x"),
+    ],
+)
+def test_github_exemption_stops_at_any_non_path_character(text, expected):
+    assert REDACT.redact(text) == expected
