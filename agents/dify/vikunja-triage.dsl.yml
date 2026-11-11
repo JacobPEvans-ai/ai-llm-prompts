@@ -67,6 +67,31 @@ workflow:
       name: GITHUB_WEB_HOST
       value: ""
       value_type: string
+    - description: Slack bot token for agent digests
+      id: delivery-token
+      name: SLACK_AGENT_BOT_TOKEN
+      value: ""
+      value_type: secret
+    - description: Approved Slack Web API base
+      id: delivery-api-base
+      name: SLACK_API_BASE
+      value: ""
+      value_type: string
+    - description: Slack channel for agent digests
+      id: delivery-channel
+      name: AGENT_DIGEST_CHANNEL
+      value: ""
+      value_type: string
+    - description: Slack channel for agent failure notices
+      id: delivery-failure-channel
+      name: AGENT_FAILURE_CHANNEL
+      value: ""
+      value_type: string
+    - description: Dashboard URL for agent failure notices
+      id: delivery-dashboard
+      name: AGENT_DASHBOARD_URL
+      value: ""
+      value_type: string
   features:
     file_upload:
       enabled: false
@@ -147,11 +172,11 @@ workflow:
       - data:
           isInIteration: false
           sourceType: if-else
-          targetType: end
+          targetType: code
         id: shadow-output
         source: mode_gate
         sourceHandle: "false"
-        target: shadow_end
+        target: deliver-shadow_end
         targetHandle: target
         type: custom
       - data:
@@ -167,11 +192,11 @@ workflow:
       - data:
           isInIteration: false
           sourceType: iteration
-          targetType: end
+          targetType: code
         id: live-output
         source: dispatch_loop
         sourceHandle: source
-        target: live_end
+        target: deliver-live_end
         targetHandle: target
         type: custom
       - data:
@@ -198,6 +223,42 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 1002
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-shadow_end-end
+        source: deliver-shadow_end
+        sourceHandle: source
+        target: shadow_end
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: deliver-live_end-end
+        source: deliver-live_end
+        sourceHandle: source
+        target: live_end
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: llm
+          targetType: code
+        id: triage-failed
+        source: triage
+        sourceHandle: fail-branch
+        target: notify-failure-triage
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: notify-failure-triage-end
+        source: notify-failure-triage
+        sourceHandle: source
+        target: failed-triage
+        targetHandle: target
+        type: custom
     nodes:
       - data:
           async_mode: true
@@ -313,7 +374,12 @@ workflow:
         type: custom
         width: 540
       - data:
+          default_value:
+            - key: text
+              type: string
+              value: ""
           desc: A list call always carries the current project filter.
+          error_strategy: default-value
           isInIteration: true
           isIterationStart: true
           iteration_id: project_loop
@@ -356,9 +422,10 @@ workflow:
             def main(project_id:str, body:str)->dict:
                 try:
                     data=json.loads(body)
-                    tasks=data if isinstance(data,list) else next((data.get(k) for k in ('tasks','items','data','result') if isinstance(data.get(k),list)),[])
+                    tasks=data if isinstance(data,list) else next((data.get(k) for k in ('tasks','items','data','result') if isinstance(data.get(k),list)),None)
+                    if tasks is None: raise ValueError()
                     return {'result_json':json.dumps({'project_id':project_id,'tasks':tasks})}
-                except Exception: return {'result_json':'{}'}
+                except Exception: return {'result_json':json.dumps({'project_id':project_id,'error':'list failed'})}
           code_language: python3
           desc: Bind each result to its policy-selected project, not model output.
           isInIteration: true
@@ -399,33 +466,149 @@ workflow:
             import json,re,urllib.request
             from urllib.parse import urlsplit
             def link_state(url,web_host,api_base,addr,role,secret,path,session):
+                p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                if p.scheme!='https' or p.netloc!=web_host or not m:return None
+                if not session:
+                    req=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                    with urllib.request.urlopen(req,timeout=10) as r: login=json.loads(r.read())
+                    client=login.get('auth',{}).get('client_token','')
+                    req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                    with urllib.request.urlopen(req,timeout=10) as r: payload=json.loads(r.read())
+                    data=payload.get('data',{}); session.append(data.get('token') or data.get('data',{}).get('token'))
+                token=session[0]
+                if not token:raise ValueError('no read token')
+                owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
+                req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                 try:
-                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
-                    if p.scheme!='https' or p.netloc!=web_host or not m:return None
-                    if not session:
-                        req=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
-                        with urllib.request.urlopen(req,timeout=10) as r: login=json.loads(r.read())
-                        client=login.get('auth',{}).get('client_token','')
-                        req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
-                        with urllib.request.urlopen(req,timeout=10) as r: payload=json.loads(r.read())
-                        data=payload.get('data',{}); session.append(data.get('token') or data.get('data',{}).get('token'))
-                    token=session[0]
-                    if not token:return None
-                    owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
-                    req=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(req,timeout=10) as r: obj=json.loads(r.read())
-                    pr=obj.get('pull_request')
-                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
-                    state='merged' if merged else str(obj.get('state','')).lower()
-                    if (kind=='pull' or 'pull_request' in obj) and state=='closed': state='closed-unmerged'
-                    return state if state in ('merged','closed','closed-unmerged','open') else None
-                except Exception:return None
-            def main(results:list, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
+                except urllib.error.HTTPError as error:
+                    if error.code==404:return None
+                    raise
+                pr=obj.get('pull_request')
+                merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                state='merged' if merged else str(obj.get('state','')).lower()
+                if (kind=='pull' or 'pull_request' in obj) and state=='closed': state='closed-unmerged'
+                return state if state in ('merged','closed','closed-unmerged','open') else None
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+            def main(results:list, policy_ok:bool, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
                 refs=[]; visible=[]
-                session=[]
+                session=[]; failures=[]
+                if not policy_ok: failures.append('project policy is invalid')
                 for entry in results or []:
                     try:
                         group=json.loads(entry) if isinstance(entry,str) else entry
+                        if group.get('error'): failures.append('a Vikunja list call failed'); continue
                         project=str(group.get('project_id',''))
                         for task in group.get('tasks',[]):
                             if not isinstance(task,dict): continue
@@ -436,15 +619,20 @@ workflow:
                             links=re.findall(r'https://[^\s<>"\']+',title+' '+desc)
                             url=''; state=None
                             for candidate in links:
-                                candidate=candidate.rstrip('.,);]'); found=link_state(candidate,web_host,api_base,bao_addr,role_id,secret_id,token_path,session)
+                                candidate=candidate.rstrip('.,);]')
+                                try: found=link_state(candidate,web_host,api_base,bao_addr,role_id,secret_id,token_path,session)
+                                except Exception: failures.append('a GitHub link check failed'); found=None
                                 if not url:url=candidate
                                 if found:url,state=candidate,found; break
                             visible.append({'task_index':i,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[]),'linked_work':{'url':url,'state':state or 'unverified'} if url else None})
-                    except Exception: continue
-                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps({'timestamp':timestamp,'tasks':visible},ensure_ascii=False)}
+                    except Exception: failures.append('a task record could not be read')
+                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps(redact({'timestamp':timestamp,'tasks':visible}),ensure_ascii=False),'fetch_error':'; '.join(sorted(set(failures)))}
           code_language: python3
-          desc: Hide task and project IDs from the model; retain immutable refs for the guard.
+          desc: Hide task and project IDs from the model and redact fetched text; retain immutable refs for the guard.
           outputs:
+            fetch_error:
+              children: null
+              type: string
             model_tasks:
               children: null
               type: string
@@ -487,6 +675,10 @@ workflow:
                 - env
                 - GITHUB_READ_TOKEN_PATH
               variable: token_path
+            - value_selector:
+                - policy
+                - policy_ok
+              variable: policy_ok
         height: 54
         id: prepare
         position:
@@ -505,6 +697,7 @@ workflow:
             enabled: false
             variable_selector: []
           desc: Propose structured triage actions only; no tools or target IDs.
+          error_strategy: fail-branch
           memory:
             query_prompt_template: '{{#sys.timestamp#}}'
             role_prefix:
@@ -600,26 +793,28 @@ workflow:
                 return {str(x).strip() for x in v}
             def state_for(url,web_host,api_base,addr,role,secret,path,cache):
                 if url in cache: return cache[url]
+                p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
+                if p.scheme!='https' or p.netloc!=web_host or not m: return None
+                auth=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
+                with urllib.request.urlopen(auth,timeout=10) as r: login=json.loads(r.read())
+                client=login.get('auth',{}).get('client_token','')
+                req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
+                with urllib.request.urlopen(req,timeout=10) as r: token_data=json.loads(r.read())
+                data=token_data.get('data',{}); token=data.get('token') or data.get('data',{}).get('token')
+                if not client or not token: raise ValueError('no read token')
+                owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
+                gh=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                 try:
-                    p=urlsplit(url); m=re.fullmatch(r'/([^/]+)/([^/]+)/(pull|issues)/([1-9][0-9]*)/?',p.path)
-                    if p.scheme!='https' or p.netloc!=web_host or not m: return None
-                    auth=urllib.request.Request(addr.rstrip('/')+'/v1/auth/approle/login',data=json.dumps({'role_id':role,'secret_id':secret}).encode(),headers={'Content-Type':'application/json'},method='POST')
-                    with urllib.request.urlopen(auth,timeout=10) as r: login=json.loads(r.read())
-                    client=login.get('auth',{}).get('client_token','')
-                    req=urllib.request.Request(addr.rstrip('/')+'/v1/'+path.strip('/'),headers={'X-Vault-Token':client})
-                    with urllib.request.urlopen(req,timeout=10) as r: token_data=json.loads(r.read())
-                    data=token_data.get('data',{}); token=data.get('token') or data.get('data',{}).get('token')
-                    if not client or not token: return None
-                    owner,repo,kind,num=m.groups(); endpoint='pulls' if kind=='pull' else 'issues'
-                    gh=urllib.request.Request(api_base.rstrip('/')+f'/repos/{owner}/{repo}/{endpoint}/{num}',headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'})
                     with urllib.request.urlopen(gh,timeout=10) as r: obj=json.loads(r.read())
-                    pr=obj.get('pull_request')
-                    merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
-                    value='merged' if merged else str(obj.get('state','')).lower()
-                    if (kind=='pull' or 'pull_request' in obj) and value=='closed': value='closed-unmerged'
-                    cache[url]=value if value in ('merged','closed','closed-unmerged','open') else None
-                    return cache[url]
-                except Exception: return None
+                except urllib.error.HTTPError as error:
+                    if error.code==404: return None
+                    raise
+                pr=obj.get('pull_request')
+                merged=obj.get('merged') is True or bool(isinstance(pr,dict) and pr.get('merged_at'))
+                value='merged' if merged else str(obj.get('state','')).lower()
+                if (kind=='pull' or 'pull_request' in obj) and value=='closed': value='closed-unmerged'
+                cache[url]=value if value in ('merged','closed','closed-unmerged','open') else None
+                return cache[url]
             def strip_json_fence(text):
                 # Remove one surrounding Markdown fence (```json or a bare ```) from model output. Only ASCII spaces, tabs, and
                 # line breaks count as whitespace, so the JavaScript mirror trims the same characters. Text without a surrounding
@@ -632,17 +827,22 @@ workflow:
                         body = body[4:].strip(" \t\r\n")
                     return body
                 return value
-            def main(model_text:str,refs_text:str,allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str,web_host:str,api_base:str,bao_addr:str,role_id:str,secret_id:str,token_path:str)->dict:
+            def main(model_text:str,refs_text:str,allowed_raw:str,readonly_raw:str,rank_raw:str,denied_raw:str,mode_raw:str,web_host:str,api_base:str,bao_addr:str,role_id:str,secret_id:str,token_path:str,prepare_error:str)->dict:
                 actions=[]; seen=set(); mode=str(mode_raw or '').strip().lower()
                 try:
                     allowed,readonly,rank_only,denied=map(projects,(allowed_raw,readonly_raw,rank_raw,denied_raw))
                     refs=json.loads(refs_text)
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
-                except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid'}
+                except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid','fetch_error':'project policy or task refs are invalid'}
+                cache={}; failures=[]; proposed=[]
                 try:
-                    intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
-                except Exception: proposed=[]
-                cache={}
+                    intent=json.loads(strip_json_fence(model_text))
+                except Exception:
+                    failures.append('model reply was not JSON')
+                else:
+                    proposed=intent.get('actions') if isinstance(intent,dict) else None
+                    if not isinstance(proposed,list): proposed=[]; failures.append('model reply had the wrong shape')
+                    elif not all(isinstance(item,dict) and type(item.get('task_index')) is int and item.get('kind') in ('rank','comment','done') for item in proposed): failures.append('model reply had an invalid action')
                 allowed_operations={'comment', 'list', 'update'}
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
@@ -670,14 +870,15 @@ workflow:
                             urls=re.findall(r'https://[^\s<>"\']+',text)
                             for raw_url in urls:
                                 url=raw_url.rstrip('.,);]')
-                                state=state_for(url,web_host,api_base,bao_addr,role_id,secret_id,token_path,cache)
+                                try: state=state_for(url,web_host,api_base,bao_addr,role_id,secret_id,token_path,cache)
+                                except Exception: failures.append('a GitHub state check failed'); continue
                                 if state is None: continue
                                 if kind=='comment':
                                     add(ref,'comment',comment=f'Linked GitHub work: {url} (state: {state}).')
                                     break
                                 if kind=='done' and state in ('merged','closed') and not ref.get('done'):
                                     add(ref,'update',done=True); break
-                return {'actions':actions,'actions_json':json.dumps(actions,ensure_ascii=False),'dispatch':mode=='live','mode':mode}
+                return {'actions':actions,'actions_json':json.dumps(actions,ensure_ascii=False),'dispatch':mode=='live','mode':mode,'fetch_error':'; '.join(sorted(set(f for f in [str(prepare_error or '').strip()]+failures if f)))}
           code_language: python3
           desc: Enforce project tiers and incidents; mint a short-lived public-read token through AppRole and verify GitHub state in code before authorizing comments or done.
           outputs:
@@ -689,6 +890,9 @@ workflow:
               type: string
             dispatch:
               type: boolean
+            fetch_error:
+              children: null
+              type: string
             mode:
               type: string
           selected: false
@@ -747,6 +951,10 @@ workflow:
                 - env
                 - GITHUB_READ_TOKEN_PATH
               variable: token_path
+            - value_selector:
+                - prepare
+                - fetch_error
+              variable: prepare_error
         height: 54
         id: guard
         position:
@@ -771,9 +979,15 @@ workflow:
                   variable_selector:
                     - guard
                     - dispatch
+                - comparison_operator: empty
+                  id: no-fetch-error
+                  varType: string
+                  variable_selector:
+                    - guard
+                    - fetch_error
               id: live
               logical_operator: and
-          desc: Shadow returns the intended action JSON and cannot reach the write iteration.
+          desc: Shadow, or a run with a fetch error, returns the intended action JSON and cannot reach the write iteration.
           selected: false
           title: Live dispatch enabled?
           type: if-else
@@ -805,6 +1019,10 @@ workflow:
                 - guard
                 - dispatch
               variable: dispatch
+            - value_selector:
+                - deliver-shadow_end
+                - status
+              variable: delivery_status
           selected: false
           title: Shadow output
           type: end
@@ -975,6 +1193,10 @@ workflow:
                 - dispatch_loop
                 - output
               variable: dispatch_results
+            - value_selector:
+                - deliver-live_end
+                - status
+              variable: delivery_status
           selected: false
           title: Live output
           type: end
@@ -991,3 +1213,1050 @@ workflow:
         targetPosition: left
         type: custom
         width: 244
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(reason)) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+            def cut_point(text, limit):
+                # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+                for marker in MARKER_RE.finditer(text):
+                    if marker.start() < limit < marker.end():
+                        return marker.start()
+                return limit
+
+
+            def bounded(text):
+                # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+                # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+                full = strip_urls(redact(text))
+                budget = MAX_CHARS
+                while True:
+                    cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+                    posted = escape_mrkdwn(strip_urls(redact(cut)))
+                    if len(posted) <= MAX_CHARS:
+                        return posted
+                    budget = min(budget - 1, budget * MAX_CHARS // len(posted))
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
+                return bounded(body) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if str(fetch_error or "").strip():
+                    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - prepare
+                - task_refs
+              variable: input_value
+            - value_selector:
+                - guard
+                - fetch_error
+              variable: fetch_error
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - guard
+                - dispatch
+              variable: dispatch
+        id: deliver-shadow_end
+        position:
+          x: 2470
+          "y": 590
+        type: custom
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+            MAX_CHARS = 3000
+            TRUNCATED = "\n[truncated]"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(reason)) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            MARKER_RE = re.compile(re.escape(REDACTED) + "|" + re.escape(LINK_REMOVED))
+
+
+            def cut_point(text, limit):
+                # A cut never lands inside a redaction marker or a link placeholder; it moves to that marker's start.
+                for marker in MARKER_RE.finditer(text):
+                    if marker.start() < limit < marker.end():
+                        return marker.start()
+                return limit
+
+
+            def bounded(text):
+                # Secrets and links leave the full text before the clip, so a cut can never leave part of either. After the clip the
+                # text is redacted and stripped again, then escaped. Escaping can grow the text, so the clip budget shrinks until it fits.
+                full = strip_urls(redact(text))
+                budget = MAX_CHARS
+                while True:
+                    cut = full if len(full) <= budget else full[: cut_point(full, max(0, budget - len(TRUNCATED)))] + TRUNCATED
+                    posted = escape_mrkdwn(strip_urls(redact(cut)))
+                    if len(posted) <= MAX_CHARS:
+                        return posted
+                    budget = min(budget - 1, budget * MAX_CHARS // len(posted))
+
+
+            def summary(outputs):
+                text = outputs.get("text")
+                if isinstance(text, str):
+                    body = text
+                else:
+                    body = "\n".join(
+                        key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+                        for key, value in sorted(outputs.items())
+                    )
+                # Model and fetch text is redacted here; links the template builds (the dashboard URL) are never added to body.
+                return bounded(body) or "(no output)"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, fetch_error="", **outputs):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                if str(fetch_error or "").strip():
+                    fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "fetch failed: " + str(fetch_error))
+                if not fetched(input_value):
+                    return {"status": "skipped"}
+                body = summary(outputs)
+                return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+          code_language: python3
+          outputs:
+            status:
+              children: null
+              type: string
+          title: Deliver output
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+            - value_selector:
+                - prepare
+                - task_refs
+              variable: input_value
+            - value_selector:
+                - guard
+                - fetch_error
+              variable: fetch_error
+            - value_selector:
+                - guard
+                - actions_json
+              variable: actions
+            - value_selector:
+                - guard
+                - mode
+              variable: mode
+            - value_selector:
+                - dispatch_loop
+                - output
+              variable: dispatch_results
+        id: deliver-live_end
+        position:
+          x: 3070
+          "y": 380
+        type: custom
+      - data:
+          code: |-
+            AGENT = "vikunja-triage"
+            TRUSTED_SLACK_HOSTS = ("slack.com",)
+
+
+            import ipaddress
+            import re
+
+            # The one redaction rule. The finder validator applies it to each quote and to the cited page text before the verbatim
+            # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
+            SECRET_RE = re.compile(
+                r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
+                r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
+            )
+            # Every scheme:// URL runs to whitespace or one of <>"'. Agent and fetched text never keeps one: strip_urls replaces each
+            # with LINK_REMOVED. The template builds the only links, from validated ids, outside this rule.
+            URL_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s<>\"']*")
+            LINK_REMOVED = "[link removed]"
+            SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
+            HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
+            FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
+            # md and py are also country-code TLDs, so two-label matches may be file references rather than hosts.
+            # shortcut: keep that exception until a collision calls for a page-path allowlist.
+            CCTLD_EXTENSIONS = {"md", "py"}
+            IPV4_RE = re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+            IPV6_RE = re.compile(r"(?<![A-Fa-f0-9:])[A-Fa-f0-9:]{2,}(?![A-Fa-f0-9:])")
+            REDACTED = "[REDACTED]"
+            MAX_IPV6_LEN = 45  # longest textual IPv6 form (IPv4-mapped, no zone)
+
+
+            def _is_address(candidate):
+                if IPV4_RE.fullmatch(candidate):
+                    # ipaddress rejects leading zeros, so read each octet as decimal first.
+                    candidate = ".".join(str(int(octet)) for octet in candidate.split("."))
+                try:
+                    ipaddress.ip_address(candidate)
+                    return True
+                except ValueError:
+                    return False
+
+
+            def _redact_ipv6(match):
+                candidate = match.group(0)
+                if ":" not in candidate:
+                    return candidate
+                # Prose can touch an address on either side ("Peer:2001:db8::1", "2001:db8::: is down", "ab2001:db8::1"); scan the
+                # run left to right, redact the longest address at the leftmost start, and keep the text around it.
+                parts, pos = [], 0
+                while pos < len(candidate):
+                    span = _first_address_span(candidate, pos)
+                    if span is None:
+                        break
+                    parts += [candidate[pos : span[0]], REDACTED]
+                    pos = span[1]
+                return "".join(parts) + candidate[pos:]
+
+
+            def _first_address_span(candidate, pos):
+                for start in range(pos, len(candidate)):
+                    for end in range(min(len(candidate), start + MAX_IPV6_LEN), start + 1, -1):
+                        span = candidate[start:end]
+                        if ":" in span and _is_address(span):
+                            return start, end
+                return None
+
+
+            def _redact_host(match):
+                name = match.group(0)
+                labels = name.lower().split(".")
+                if labels[-1] in FILE_EXTENSIONS and (labels[-1] not in CCTLD_EXTENSIONS or len(labels) == 2):
+                    return name
+                return REDACTED
+
+
+            def _is_secret_key(key):
+                compact = re.sub(r"[^a-z0-9]", "", key.lower())
+                if any(word in compact for word in ("password", "secret", "authorization", "cookie", "apikey")) or compact.endswith("token"):
+                    return True
+                # Keep case-insensitive words as well as camelCase segments (for example, ToKeN).
+                words = re.split(r"[^a-z0-9]+", key.lower())
+                key = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+                key = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+                segments = re.split(r"[^a-z0-9]+", key.lower())
+                return any(segment in SECRET_KEY_SEGMENTS for segment in words + segments) or any(
+                    left == "api" and right == "key" for left, right in zip(segments, segments[1:])
+                )
+
+
+            def _redact_secrets(text):
+                return SECRET_RE.sub(lambda match: (match.group("label") or match.group("bearer") or "") + REDACTED, text)
+
+
+            def _redact_plain(text):
+                text = _redact_secrets(text)
+                text = IPV4_RE.sub(lambda match: REDACTED if _is_address(match.group(0)) else match.group(0), text)
+                text = IPV6_RE.sub(_redact_ipv6, text)
+                return HOST_RE.sub(_redact_host, text)
+
+
+            def strip_urls(text):
+                return URL_RE.sub(LINK_REMOVED, text)
+
+
+            def redact(text):
+                if isinstance(text, dict):
+                    return {key: REDACTED if _is_secret_key(key) else redact(value) for key, value in text.items()}
+                if isinstance(text, list):
+                    return [redact(value) for value in text]
+                if not isinstance(text, str):
+                    return text
+                return _redact_plain(text)
+
+
+            def needs_redaction(text):
+                return REDACTED in text or redact(text) != text
+
+
+            """Slack thread delivery for rendered Dify Code nodes.
+
+            The node defines AGENT and TRUSTED_SLACK_HOSTS before it includes this text. The functions read only those names and
+            their arguments, and keep no state between runs. Every failure sends at most one notice per 24 hours, then raises,
+            so the Dify run ends failed. Summary text is built by the delivery node, which owns redaction and truncation.
+            """
+
+            import datetime
+            import json
+            import re
+            import urllib.parse
+            import urllib.request
+
+            CHANNEL_ID = re.compile(r"[CGD][A-Z0-9]+")
+            # A preview makes Slack fetch a link with no click, and parse none stops Slack auto-linking host names and URLs in text.
+            NO_PREVIEW = {"unfurl_links": False, "unfurl_media": False, "parse": "none"}
+
+
+            def call(api, token, method, payload=None, query=None):
+                parts = urllib.parse.urlsplit(api)
+                if parts.scheme != "https" or parts.hostname not in TRUSTED_SLACK_HOSTS:
+                    raise RuntimeError("slack api base is not an approved https host")
+                url = api.rstrip("/") + "/" + method
+                if query:
+                    url += "?" + urllib.parse.urlencode(query)
+                data = None if payload is None else json.dumps(payload).encode()
+                headers = {"Authorization": "Bearer " + token}
+                if payload is not None:
+                    headers["Content-Type"] = "application/json; charset=utf-8"
+                request = urllib.request.Request(url, data=data, headers=headers)
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    body = json.loads(response.read())
+                if not body.get("ok"):
+                    raise RuntimeError(method + " failed: " + str(body.get("error", "unknown")))
+                return body
+
+
+            def valid_channel(value):
+                """Channel IDs only. A name such as #general would not reliably identify the channel at run time."""
+                return isinstance(value, str) and CHANNEL_ID.fullmatch(value) is not None
+
+
+            def escape_mrkdwn(text):
+                """Escape the three characters Slack reads as markup, so model or task text cannot mention, link, or broadcast."""
+                return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+            def fetched(value):
+                """True when the run fetched any input. An empty list, object, or string is a heartbeat."""
+                if isinstance(value, str):
+                    if not value.strip():
+                        return False
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        return True
+                if isinstance(value, (list, dict)):
+                    return len(value) > 0
+                return value is not None
+
+
+            def day_start(stamp):
+                return int(datetime.datetime(stamp.year, stamp.month, stamp.day, tzinfo=datetime.timezone.utc).timestamp())
+
+
+            def parent_ts(api, token, channel, text, since):
+                """Return the ts of this agent's parent post for the day, or None. Follows the history cursor until found or done."""
+                cursor = None
+                while True:
+                    query = {"channel": channel, "oldest": str(since), "limit": 200}
+                    if cursor:
+                        query["cursor"] = cursor
+                    body = call(api, token, "conversations.history", query=query)
+                    for message in body.get("messages", []):
+                        is_parent = message.get("thread_ts", message.get("ts")) == message.get("ts")
+                        if message.get("bot_id") and message.get("text") == text and is_parent:
+                            return message["ts"]
+                    cursor = (body.get("response_metadata") or {}).get("next_cursor")
+                    if not cursor:
+                        return None
+
+
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
+            def recently_notified(api, token, failure_channel, stamp):
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
+                since = int(stamp.timestamp()) - 86400
+                query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
+                body = call(api, token, "conversations.history", query=query)
+                prefix = escape_mrkdwn(notice_lead())
+                return any(
+                    message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
+                    for message in body.get("messages", [])
+                )
+
+
+            def notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Post at most one failure line per 24 hours. Returns failed, suppressed, or failed-unreported."""
+                if not valid_channel(failure_channel) or failure_channel == digest_channel:
+                    return "failed-unreported"
+                try:
+                    if recently_notified(api, token, failure_channel, stamp):
+                        return "suppressed (already notified)"
+                except Exception:
+                    pass  # an unreadable history must not hide the notice, so post anyway
+                # The reason is redacted, stripped of links, and escaped. dashboard_url is template-built, so it is only escaped.
+                text = (
+                    escape_mrkdwn(notice_lead() + strip_urls(redact(reason)) + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: ")
+                    + escape_mrkdwn(dashboard_url)
+                )
+                try:
+                    call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text, **NO_PREVIEW})
+                except Exception:
+                    return "failed-unreported"
+                return "failed"
+
+
+            def fail(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason):
+                """Send the failure notice, then raise so the Dify run ends failed. The message names no secret or response body."""
+                status = notify_failure(api, token, failure_channel, digest_channel, dashboard_url, stamp, reason)
+                raise RuntimeError(reason + "; failure notice " + status) from None
+
+
+            def post_digest(api, token, channel, failure_channel, dashboard_url, stamp, body):
+                """Post body as a reply in today's parent thread. Raises, after a failure notice, when any step fails."""
+                day = stamp.strftime("%Y-%m-%d")
+                parent = AGENT + " digest " + day + " (UTC)"
+                try:
+                    if not valid_channel(channel):
+                        raise ValueError("digest channel is not a channel ID")
+                    ts = parent_ts(api, token, channel, parent, day_start(stamp) - 1)
+                    if ts is None:
+                        ts = call(api, token, "chat.postMessage", {"channel": channel, "text": parent, **NO_PREVIEW})["ts"]
+                    call(api, token, "chat.postMessage", {"channel": channel, "thread_ts": ts, "text": body, **NO_PREVIEW})
+                except Exception:
+                    fail(api, token, failure_channel, channel, dashboard_url, stamp, "delivery failed")
+                return "posted"
+
+
+            def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url):
+                stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+                fail(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")
+          code_language: python3
+          outputs:
+            text:
+              children: null
+              type: string
+          title: Notify agent failure
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - timestamp
+              variable: run_timestamp
+            - value_selector:
+                - env
+                - SLACK_AGENT_BOT_TOKEN
+              variable: bot_token
+            - value_selector:
+                - env
+                - SLACK_API_BASE
+              variable: api_base
+            - value_selector:
+                - env
+                - AGENT_DIGEST_CHANNEL
+              variable: digest_channel
+            - value_selector:
+                - env
+                - AGENT_FAILURE_CHANNEL
+              variable: failure_channel
+            - value_selector:
+                - env
+                - AGENT_DASHBOARD_URL
+              variable: dashboard_url
+        id: notify-failure-triage
+        position:
+          x: 1550
+          "y": 560
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - notify-failure-triage
+                - text
+              variable: text
+          title: Failed run
+          type: end
+        id: failed-triage
+        position:
+          x: 1750
+          "y": 560
+        type: custom

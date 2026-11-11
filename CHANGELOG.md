@@ -1,12 +1,5 @@
 # Changelog
 
-## [1.101.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.0...v1.101.1) (2026-11-11)
-
-
-### Bug Fixes
-
-* **donna:** route questions about her own setup to the issues channel ([#440](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/440)) ([d48c55d](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/d48c55d2176cd2e143246fa08eed2edaee3a2249))
-
 ## [1.101.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.100.3...v1.101.0) (2026-11-11)
 
 

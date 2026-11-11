@@ -66,6 +66,7 @@ The following requirements apply to the merged definition unless marked source-o
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |
 | `identity`, `api_key_ref` | string | Explicit, non-empty runtime identity and credential reference; never inherited or derived. |
 | `eval_policy` | object | Merged acceptance thresholds and baseline comparison rule. |
+| `delivery` | object | Optional Slack thread digest for Dify agents; see [Delivery](#delivery). |
 
 Tool and server lists hold unique strings, and empty lists are permitted. Any other dotted entry except `a2a.*` keeps
 the subcommand form: tool `prefix` on the first MCP server, called with subcommand `name`. An entry without a dot
@@ -77,7 +78,7 @@ Each trigger declares one of these kinds:
 
 | Kind | Fields | Meaning |
 | --- | --- | --- |
-| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; Tier 0/1 use native schedules; tier 2 uses the driver. |
+| `rotation` | `every: <positive integer><m\|h\|d>`, optional `minute` | Minimum interval, meaning "not more often than"; tier 0/1 native, tier 2 driver. |
 | `anchor` | `at: "HH:MM"`, optional `days: [Mon, ..., Sun]` | Fixed UTC time, daily when days is omitted; odd minute excluding `:15` and `:45`. |
 | `event` | `source: <integration>` | An integration webhook, with optional event filters. |
 | `call` | `source: <caller>` | Explicit invocation through the gateway. |
@@ -93,6 +94,9 @@ Native minute schedules omit `:00`, `:15`, `:30`, and `:45` from their compiled
 minute lists. Omitted starts wait for the next scheduled minute, preserving the
 minimum interval; `every: 15m` starts at `:07`, `:22`, `:37`, and `:52`.
 Anchors render a native Dify schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
+`minute` is valid only with `every: 1h`, and `every: 1h` requires it. The value must be an odd minute
+from 1 to 59, excluding 15 and 45. Native schedules fire at that minute; tier 2 agents offset to it, so
+hourly tier 2 agents must not share a minute.
 Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 
 ```yaml
@@ -102,6 +106,38 @@ triggers:
   - kind: rotation
     every: 1d
 ```
+
+## Delivery
+
+`delivery` sends a Dify agent's final output to Slack. Its keys are `kind: slack_thread`, `thread: daily_parent`,
+`channel_env`, `token_env`, `failure_channel_env`, `dashboard_url_env`, `max_chars` (100 to 10000), and
+`input_from: [<node>, <output>]`. `error_from: [<node>, <output>]` is optional. Unknown keys fail the render. The four
+env names must be distinct, and the failure channel env must differ from the delivery channel env.
+
+The renderer adds a Code node before each end node. At run time it takes one of three states:
+
+- Fetch failed (`error_from` is not empty): one notice to the failure channel, then the run fails.
+- Nothing fetched (the value at `input_from` is an empty list, object, or string): no post, and the run succeeds.
+- Fetched: one reply in the agent's parent thread for the UTC day, cut to `max_chars` with a `[truncated]` marker.
+
+Every failed post or history read sends one notice and then fails the run. An agent sends at most one notice per 24
+hours: when the failure channel already holds one from it in that window, no notice is posted and the run still
+fails. Each end node reports `delivery_status`.
+Text is redacted, then escaped (`&`, `<`, `>`), so model or task text cannot mention, link, or broadcast. Every post sets
+`parse: none` and turns unfurling off. Agent text never contains a link: every `scheme://` URL is replaced with
+`[link removed]`, and links come only from the template, such as the dashboard link in a failure notice. Channels must be
+Slack channel IDs (`^[CGD][A-Z0-9]+$`), and the
+API base must be `https` on `slack.com`. The parent is found by its exact text. The history cursor is followed to the end
+of the day, which starts at 00:00 UTC. Two starts in the same
+second can both miss the parent and create two; that race remains.
+
+Coverage gaps. Dify gives this pattern no hook for a failed `dispatch_write` in live mode. Such a failure fails the
+iteration and the run, with no notice. Only the list call and its bind node route fetch errors.
+Guard verification errors are reported through `fetch_error`. A model reply that is not JSON, or not an object with an
+`actions` array, is reported the same way. An action item that is not an object with an integer `task_index` and a known
+`kind` is reported the same way.
+
+The renderer also declares `SLACK_API_BASE`, which the deployment fills in.
 
 ## Standards gate
 

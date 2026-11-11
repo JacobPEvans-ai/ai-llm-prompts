@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "2edba7c0dc58f4319189504808d32090281fab12a2c35cfe58322e69e0b232ea"
+    "sha256": "af4b006a05db039f94cb07735573a24fc06d68d83cd108f444f26538e2c6bd54"
   },
   {
     "name": "code-simplifier",
@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/dep-review.dsl.yml",
-    "sha256": "0babeca2165a9e938535f97a8981ca957250b3564fb01dd68f660624ae68cd8e"
+    "sha256": "a0a0c096f7d88725b8680a3e6b28f8ad52f2361dc9fca55f208fbb61909437cf"
   },
   {
     "name": "doc-contradiction-finder",
@@ -77,7 +77,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
-    "sha256": "19671c2626d72589c778429e934d087772659c4a12dd085a659843553b48207e"
+    "sha256": "499714953690076228bfc7bcc1b89f7d2ca3d8e9377054ea24cfe578267a7638"
   },
   {
     "name": "docs-drift",
@@ -85,7 +85,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/docs-drift.dsl.yml",
-    "sha256": "e0d08261c5f54cfc3da73be6a11bb9e60be622d3a9cfea9b68445a7d6b737715"
+    "sha256": "35fce88aabe46340c91d15e6cff18dde22ce282e6d0d1dbd77ad76a213deef2d"
   },
   {
     "name": "docs-updater",
@@ -197,7 +197,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "f18f5c26df29ff0d9e47e6375b0648c32fd3522391ec73d5a296994f8ad9e7e2"
+    "sha256": "f2005210e5e8b999b423d70a88179847d97d3afe46994024711faf9efd32befc"
   },
   {
     "name": "promotion-review",
@@ -229,7 +229,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "4179982379564e6f3af09ea112d70e9ea02f5b789f05b5b42999e06f3372adcb"
+    "sha256": "6bca4fb23bf3f38f3c5afe8285aa8911eb14dcd02c9efab76ef67f12ae601d8c"
   },
   {
     "name": "repo-janitor",
@@ -237,7 +237,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "f53ed7f4dccb1d15ddb755d407fe2d1872644ace7d5fd9527c32c61e1409b640"
+    "sha256": "481bea5f45f15d80057a70350743b5e92f2c1acae5bc98196af3501c9bbb06e7"
   },
   {
     "name": "semaphore-clerk",
@@ -309,7 +309,7 @@
     "name": "tier2-rotation",
     "tier": 2,
     "path": "agents/dify/tier2-rotation.dsl.yml",
-    "sha256": "9cf903b87c6b77fd1121525379573bba0e65f0a256a59f52902905e5e24db668"
+    "sha256": "166f23dd1298daa4b8e8f859a52b5edbdba3b01aaf04e23959809e501bfcac50"
   },
   {
     "name": "vikunja-clerk",
@@ -325,7 +325,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/vikunja-triage.dsl.yml",
-    "sha256": "c866b2506d07dddc1039fa9c34e6f2d7fad66530cfa65adda805259ca2d84965"
+    "sha256": "495d198b46df43173da2f97b953610ea68db9f64af5ba8a2d704d562361956c2"
   },
   {
     "name": "voice-learn",
