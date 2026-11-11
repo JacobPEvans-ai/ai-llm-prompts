@@ -358,6 +358,7 @@ dify:
                 state='merged' if merged else str(obj.get('state','')).lower()
                 if (kind=='pull' or 'pull_request' in obj) and state=='closed': state='closed-unmerged'
                 return state if state in ('merged','closed','closed-unmerged','open') else None
+            __DIFY_HELPER_REDACT__
             def main(results:list, policy_ok:bool, timestamp:str, web_host:str, api_base:str, bao_addr:str, role_id:str, secret_id:str, token_path:str)->dict:
                 refs=[]; visible=[]
                 session=[]; failures=[]
@@ -383,9 +384,9 @@ dify:
                                 if found:url,state=candidate,found; break
                             visible.append({'task_index':i,'title':title,'description':desc,'created':task.get('created',''),'due_date':task.get('dueDate',task.get('due_date','')),'priority':task.get('priority'),'done':task.get('done',False),'labels':task.get('labels',[]),'linked_work':{'url':url,'state':state or 'unverified'} if url else None})
                     except Exception: failures.append('a task record could not be read')
-                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps({'timestamp':timestamp,'tasks':visible},ensure_ascii=False),'fetch_error':'; '.join(sorted(set(failures)))}
+                return {'task_refs':json.dumps(refs),'model_tasks':json.dumps(redact({'timestamp':timestamp,'tasks':visible}),ensure_ascii=False),'fetch_error':'; '.join(sorted(set(failures)))}
           code_language: python3
-          desc: Hide task and project IDs from the model; retain immutable refs for the guard.
+          desc: Hide task and project IDs from the model and redact fetched text; retain immutable refs for the guard.
           outputs:
             task_refs: {type: string, children: null}
             model_tasks: {type: string, children: null}
