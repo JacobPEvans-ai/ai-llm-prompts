@@ -7,9 +7,9 @@
 
 ## 2026-11-10
 
-* **Fix (auto-ai-agent)**: Donna no longer opens a thread to the person she works for about her own setup. A failed job,
-  a wrong target or a missing permission goes to failure reporting, and she mentions it only when asked. She still
-  answers questions about her configuration and delivery, and still asks once about choices only that person can make.
+* **Fix (auto-ai-agent)**: Donna does not start a thread with the person she works for to diagnose her own setup. She
+  names a failed job, a wrong target or a missing permission once as the Blocker where the task is reported. She
+  answers questions about her configuration and delivery, and asks once about a preference only that person can set.
 
 ## 2026-11-09
 
