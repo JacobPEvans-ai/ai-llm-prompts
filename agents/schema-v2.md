@@ -66,6 +66,7 @@ The following requirements apply to the merged definition unless marked source-o
 | `memory_scope` | string | Required per-agent memory boundary, or `none`. |
 | `identity`, `api_key_ref` | string | Explicit, non-empty runtime identity and credential reference; never inherited or derived. |
 | `eval_policy` | object | Merged acceptance thresholds and baseline comparison rule. |
+| `delivery` | object | Optional Slack thread digest for Dify agents; see [Delivery](#delivery). |
 
 Tool and server lists hold unique strings, and empty lists are permitted. Any other dotted entry except `a2a.*` keeps
 the subcommand form: tool `prefix` on the first MCP server, called with subcommand `name`. An entry without a dot
@@ -105,6 +106,16 @@ triggers:
   - kind: rotation
     every: 1d
 ```
+
+## Delivery
+
+`delivery` sends a Dify agent's final output to Slack. Its keys are `kind: slack_thread`, `thread: daily_parent`,
+`channel_env`, `token_env`, `failure_channel_env`, `dashboard_url_env`, `max_chars` (100 to 10000), and
+`input_from: [<node>, <output>]`. The four env names must be distinct, and the failure channel env must differ
+from the delivery channel env. The renderer adds a Code node before each end node. It skips the post when
+`input_from` is empty, posts into one parent thread per agent per UTC day, and cuts text to `max_chars` with a
+`[truncated]` marker. A failed post or a failed model node sends one line to the failure channel. Tool and
+iteration failures are not routed. The renderer also declares `SLACK_API_BASE`, which the deployment fills in.
 
 ## Standards gate
 

@@ -122,6 +122,54 @@ def main(timestamp, event=None):
         }
     return {"text": text, "stop": False}
 {{- end -}}
+{{- define "delivery-code" -}}
+AGENT = {{ data.ToJSON .name }}
+MAX_CHARS = {{ .max_chars }}
+TRUNCATED = "\n[truncated]"
+
+
+__DIFY_HELPER_REDACT__
+
+
+__DIFY_HELPER_SLACK_DELIVERY__
+
+
+def clip(text):
+    if len(text) <= MAX_CHARS:
+        return text
+    return text[: MAX_CHARS - len(TRUNCATED)] + TRUNCATED
+
+
+def summary(outputs):
+    text = outputs.get("text")
+    if isinstance(text, str):
+        body = text
+    else:
+        body = "\n".join(
+            key + ": " + (value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
+            for key, value in sorted(outputs.items())
+        )
+    return clip(redact(body)) or "(no output)"
+
+
+def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url, input_value, **outputs):
+    stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+    if not fetched(input_value):
+        return {"status": "skipped"}
+    body = summary(outputs)
+    return {"status": post_digest(api_base, bot_token, digest_channel, failure_channel, dashboard_url, stamp, body)}
+{{- end -}}
+{{- define "failure-code" -}}
+AGENT = {{ data.ToJSON .name }}
+
+
+__DIFY_HELPER_SLACK_DELIVERY__
+
+
+def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, dashboard_url):
+    stamp = datetime.datetime.fromtimestamp(float(run_timestamp), datetime.timezone.utc)
+    return {"text": "Run failed; failure notice: " + notify_failure(api_base, bot_token, failure_channel, digest_channel, dashboard_url, stamp, "run failed")}
+{{- end -}}
 {{- test.Assert "definition must declare home_platform: dify" (eq .home_platform "dify") -}}
 {{- test.Assert "invalid agent name" (regexp.Match `^[a-z0-9]+(-[a-z0-9]+)*$` .name) -}}
 {{- if and (not (coll.Has . "dify")) (coll.Has . "tools") (gt (len .tools) 0) -}}
@@ -183,7 +231,7 @@ def main(timestamp, event=None):
   {{- $schema := tmpl.Exec "json" . | strings.ReplaceAll "\\" "\\\\" | strings.ReplaceAll "'" "\\'" -}}
   {{- $params = coll.Set "__DIFY_OUTPUT_SCHEMA__" (printf "'%s'" $schema) $params -}}
 {{- end -}}
-{{- range $name := coll.Slice "redact" "json_fence" "finder_inputs" "envelope" -}}
+{{- range $name := coll.Slice "redact" "json_fence" "finder_inputs" "envelope" "slack_delivery" -}}
   {{- $body := file.Read (printf "%s/helpers/%s.py" (tmpl.PathDir) $name) | strings.TrimSuffix "\n" -}}
   {{- $params = coll.Set (printf "__DIFY_HELPER_%s__" (strings.ToUpper $name)) $body $params -}}
 {{- end -}}
@@ -277,6 +325,47 @@ def main(timestamp, event=None):
   {{- end -}}
 {{- end -}}
 {{- test.Assert "Start node and trigger nodes cannot coexist" (coll.JQ `(.workflow.graph.nodes // [] | map(.data.type)) as $types | (($types | index("start")) == null or ([$types[] | select(startswith("trigger-"))] | length) == 0)` $dsl) -}}
+{{- with (index . "delivery") -}}
+  {{- test.Assert "delivery kind must be slack_thread" (eq .kind "slack_thread") -}}
+  {{- test.Assert "delivery thread must be daily_parent" (eq .thread "daily_parent") -}}
+  {{- test.Assert "delivery env names must be uppercase environment variable names" (and (regexp.Match `^[A-Z][A-Z0-9_]*$` .channel_env) (regexp.Match `^[A-Z][A-Z0-9_]*$` .token_env) (regexp.Match `^[A-Z][A-Z0-9_]*$` .failure_channel_env) (regexp.Match `^[A-Z][A-Z0-9_]*$` .dashboard_url_env)) -}}
+  {{- test.Assert "failure channel env must differ from the delivery channel env" (ne .failure_channel_env .channel_env) -}}
+  {{- test.Assert "delivery env names must be distinct" (and (ne .token_env .channel_env) (ne .token_env .failure_channel_env) (ne .dashboard_url_env .channel_env) (ne .dashboard_url_env .failure_channel_env) (ne .dashboard_url_env .token_env)) -}}
+  {{- test.Assert "delivery max_chars must be a whole number from 100 to 10000" (and (regexp.Match `^[0-9]+$` (printf "%v" .max_chars)) (ge (conv.ToInt .max_chars) 100) (le (conv.ToInt .max_chars) 10000)) -}}
+  {{- test.Assert "delivery input_from must name a node and an output" (eq (len .input_from) 2) -}}
+  {{- test.Assert "delivery input_from must name an existing node" (coll.JQ `.input_from[0] as $n | any(.dsl.workflow.graph.nodes[]; .id == $n)` (dict "dsl" $dsl "input_from" .input_from)) -}}
+  {{- $envs := coll.Slice -}}
+  {{- $envs = coll.Append (dict "id" "delivery-token" "name" .token_env "value_type" "secret" "value" "" "description" "Slack bot token for agent digests") $envs -}}
+  {{- $envs = coll.Append (dict "id" "delivery-api-base" "name" "SLACK_API_BASE" "value_type" "string" "value" "" "description" "Approved Slack Web API base") $envs -}}
+  {{- $envs = coll.Append (dict "id" "delivery-channel" "name" .channel_env "value_type" "string" "value" "" "description" "Slack channel for agent digests") $envs -}}
+  {{- $envs = coll.Append (dict "id" "delivery-failure-channel" "name" .failure_channel_env "value_type" "string" "value" "" "description" "Slack channel for agent failure notices") $envs -}}
+  {{- $envs = coll.Append (dict "id" "delivery-dashboard" "name" .dashboard_url_env "value_type" "string" "value" "" "description" "Dashboard URL for agent failure notices") $envs -}}
+  {{- $common := coll.Slice -}}
+  {{- $common = coll.Append (dict "variable" "run_timestamp" "value_selector" (coll.Slice "sys" "timestamp")) $common -}}
+  {{- $common = coll.Append (dict "variable" "bot_token" "value_selector" (coll.Slice "env" .token_env)) $common -}}
+  {{- $common = coll.Append (dict "variable" "api_base" "value_selector" (coll.Slice "env" "SLACK_API_BASE")) $common -}}
+  {{- $common = coll.Append (dict "variable" "digest_channel" "value_selector" (coll.Slice "env" .channel_env)) $common -}}
+  {{- $common = coll.Append (dict "variable" "failure_channel" "value_selector" (coll.Slice "env" .failure_channel_env)) $common -}}
+  {{- $common = coll.Append (dict "variable" "dashboard_url" "value_selector" (coll.Slice "env" .dashboard_url_env)) $common -}}
+  {{- $deliverInputs := coll.Append (dict "variable" "input_value" "value_selector" (coll.Slice (index .input_from 0) (index .input_from 1))) $common -}}
+  {{- $deliverCode := tmpl.Exec "delivery-code" (dict "name" $.name "max_chars" .max_chars) -}}
+  {{- $failureCode := tmpl.Exec "failure-code" (dict "name" $.name) -}}
+  {{- /* Each end node gets a Code node before it, which posts the output. Each llm node routes failures to one failure notice and its own end node. */ -}}
+  {{- $dsl = dict "dsl" $dsl "envs" $envs "code" $deliverCode "inputs" $deliverInputs | coll.JQ `
+    . as $c | $c.dsl | .workflow.environment_variables += $c.envs | .workflow.graph |= (
+      (.nodes | map(select(.data.type == "end") | .id)) as $ends |
+      .nodes += [.nodes[] | select(.data.type == "end") | {id: ("deliver-" + .id), type: "custom", position: {x: .position.x, y: (.position.y + 160)}, data: {title: "Deliver output", type: "code", code_language: "python3", code: $c.code, variables: ($c.inputs + [.data.outputs[] | {variable: .variable, value_selector: .value_selector}]), outputs: {status: {type: "string", children: null}}}}] |
+      .edges |= map(if (.target as $t | any($ends[]; . == $t)) then .target = ("deliver-" + .target) | .targetHandle = "target" | .data.targetType = "code" else . end) |
+      .edges += [$ends[] | {id: ("deliver-" + . + "-end"), source: ("deliver-" + .), sourceHandle: "source", target: ., targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "end"}}]
+    )` -}}
+  {{- $dsl = dict "dsl" $dsl "code" $failureCode "inputs" $common | coll.JQ `
+    . as $c | $c.dsl | .workflow.graph |= (
+      .nodes |= map(if .data.type == "llm" then .data.error_strategy = "fail-branch" else . end) |
+      .nodes += [.nodes[] | select(.data.type == "llm") | {id: ("notify-failure-" + .id), type: "custom", position: {x: .position.x, y: (.position.y + 240)}, data: {title: "Notify agent failure", type: "code", code_language: "python3", code: $c.code, variables: $c.inputs, outputs: {text: {type: "string", children: null}}}}] |
+      .nodes += [.nodes[] | select(.data.type == "llm") | {id: ("failed-" + .id), type: "custom", position: {x: (.position.x + 200), y: (.position.y + 240)}, data: {title: "Failed run", type: "end", outputs: [{variable: "text", value_selector: [("notify-failure-" + .id), "text"]}]}}] |
+      .edges += [.nodes[] | select(.data.type == "llm") | ({id: (.id + "-failed"), source: .id, sourceHandle: "fail-branch", target: ("notify-failure-" + .id), targetHandle: "target", type: "custom", data: {sourceType: "llm", targetType: "code"}}, {id: ("notify-failure-" + .id + "-end"), source: ("notify-failure-" + .id), sourceHandle: "source", target: ("failed-" + .id), targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "end"}})]
+    )` -}}
+{{- end -}}
 {{- /* Substitute data values, never evaluate prompts or Code-node source as templates. */ -}}
 {{- $dsl = dict "dsl" $dsl "params" $params | coll.JQ `.params as $params | .dsl | walk(if type == "string" then reduce ($params | to_entries[]) as $p (.; split($p.key) | join($p.value)) else . end)` -}}
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}

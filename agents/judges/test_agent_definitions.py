@@ -106,6 +106,30 @@ def _missing_roster_fields(agent):
     ]
 
 
+_DELIVERY_FIELDS = {"kind", "channel_env", "token_env", "failure_channel_env", "dashboard_url_env", "max_chars", "thread", "input_from"}
+_ENV_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
+
+
+def validate_delivery(agent):
+    """Optional Slack thread delivery. The renderer asserts the same rules when it renders the DSL."""
+    if "delivery" not in agent:
+        return
+    delivery = agent["delivery"]
+    assert isinstance(delivery, dict) and set(delivery) == _DELIVERY_FIELDS, "delivery fields must match the contract"
+    assert delivery["kind"] == "slack_thread", "delivery kind must be slack_thread"
+    assert delivery["thread"] == "daily_parent", "delivery thread must be daily_parent"
+    envs = [delivery[field] for field in ("channel_env", "token_env", "failure_channel_env", "dashboard_url_env")]
+    assert all(isinstance(env, str) and _ENV_NAME.fullmatch(env) for env in envs), "delivery env names must be uppercase"
+    assert len(set(envs)) == len(envs), "delivery env names must be distinct"
+    assert delivery["failure_channel_env"] != delivery["channel_env"], "failure channel env must differ from the delivery channel env"
+    max_chars = delivery["max_chars"]
+    assert type(max_chars) is int and 100 <= max_chars <= 10000, "delivery max_chars must be from 100 to 10000"
+    source = delivery["input_from"]
+    assert isinstance(source, list) and len(source) == 2 and all(isinstance(part, str) and part for part in source), (
+        "delivery input_from must name a node and an output"
+    )
+
+
 def _validate_v2(agent):
     """Executable v2 schema; preserve agent-specific extension fields."""
     assert isinstance(agent, dict), "definition must be a mapping"
@@ -135,6 +159,7 @@ def _validate_v2(agent):
     if code_tools.intersection(agent["tools"]):
         assert agent["code_work"] == "sandbox", "code editing requires sandbox"
     validate_triggers(agent)
+    validate_delivery(agent)
 
 @pytest.fixture
 def agent_v2():
@@ -584,6 +609,29 @@ def test_dify_system_prompt_matches_its_declared_source(agent_name):
     assert _normalize_whitespace(actual_prompt) == _normalize_whitespace(expected), (
         f"{agent_name} Dify system prompt must equal the canonical shared prefix and prompt body"
     )
+
+
+_DELIVERY = {
+    "kind": "slack_thread", "channel_env": "AGENT_DIGEST_CHANNEL", "token_env": "SLACK_AGENT_BOT_TOKEN",
+    "failure_channel_env": "AGENT_FAILURE_CHANNEL", "dashboard_url_env": "AGENT_DASHBOARD_URL",
+    "max_chars": 3000, "thread": "daily_parent", "input_from": ["prepare", "task_refs"],
+}
+
+
+def test_valid_delivery_fixture_and_absent_delivery():
+    validate_delivery({"delivery": dict(_DELIVERY)})
+    validate_delivery({})
+
+
+@pytest.mark.parametrize("updates", [
+    {"kind": "webhook"}, {"thread": "per_run"}, {"channel_env": "agent_digest"},
+    {"failure_channel_env": "AGENT_DIGEST_CHANNEL"}, {"token_env": "AGENT_FAILURE_CHANNEL"},
+    {"dashboard_url_env": "SLACK_AGENT_BOT_TOKEN"}, {"max_chars": 99}, {"max_chars": 10001},
+    {"max_chars": True}, {"input_from": ["prepare"]}, {"extra": "field"},
+])
+def test_invalid_delivery_fixtures(updates):
+    with pytest.raises(AssertionError):
+        validate_delivery({"delivery": {**_DELIVERY, **updates}})
 
 
 def test_pr_keeper_replaces_ci_fixer():
