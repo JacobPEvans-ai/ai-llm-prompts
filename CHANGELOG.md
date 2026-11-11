@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.106.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.105.0...v1.106.0) (2026-11-11)
+
+
+### Features
+
+* **agents:** start plan-reconciler on a merged pull request ([#460](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/460)) ([b808cbe](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/b808cbec08e8c0e3ee605b629a36dd8a1d8cea8e))
+
 ## [1.105.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.104.0...v1.105.0) (2026-11-11)
 
 
