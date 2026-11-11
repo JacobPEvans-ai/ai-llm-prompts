@@ -7,9 +7,9 @@
 
 ## 2026-11-10
 
-* **Fix (auto-ai-agent)**: Donna's interaction rules route questions about her own configuration, delivery targets,
-  schedules and failures to her issues channel for the platform lead, and limit questions to the principal to the
-  principal's own tasks, decisions and schedule.
+* **Fix (auto-ai-agent)**: Donna no longer opens a thread to the person she works for about her own setup. A failed job,
+  a wrong target or a missing permission goes to failure reporting, and she mentions it only when asked. She still
+  answers questions about her configuration and delivery, and still asks once about choices only that person can make.
 
 ## 2026-11-09
 
