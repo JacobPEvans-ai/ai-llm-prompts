@@ -6,7 +6,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/AGENTS"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-08T19:01:00Z"
+timestamp: "2026-11-11T02:34:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -67,7 +67,8 @@ Repo boundaries: `dryvist/ai-llm-prompts` `auto-ai-agent/instructions` (rules, `
 skills, agents, hooks).
 
 **Delegation routing (binding, the only routing statement).** The lead never does delegable work itself: it plans,
-judges results, and merges, fanning every independent task out to subagents in parallel. Route each task to the first
+judges results, and merges, fanning every independent task out to subagents in parallel and keeping long-lived workers busy
+([fleet-utilization.md](agentsmd/rules/on-demand/fleet-utilization.md)). Route each task to the first
 rung that qualifies; among qualifiers, look up each quota at decision time and send it to the subscription with the
 most headroom against its pace for the period (ZCode 5-hour and weekly, Codex weekly, OpenCode Go monthly).
 

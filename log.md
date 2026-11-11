@@ -1,5 +1,10 @@
 # Change Log
 
+## 2026-11-11
+
+* **Feat (rules)**: Add the on-demand `fleet-utilization.md` rule — worker-fleet cadences, the `QUEUE` block and the
+  two hourly numbers — indexed in `rule-tiers.md` and referenced from the delegation routing paragraph.
+
 ## 2026-11-09
 
 * **Fix (agents)**: The JSON-fence judge accepts compliant overlay parse nodes — it still requires every listed parse

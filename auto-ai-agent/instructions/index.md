@@ -29,6 +29,7 @@ layout.
 * [Data pipeline](agentsmd/rules/on-demand/data-pipeline.md) - Shared agent instruction file.
 * [Delegation Trust](agentsmd/rules/on-demand/delegation-trust.md) - Shared agent instruction file.
 * [Dependency automation](agentsmd/rules/on-demand/dependency-automation.md) - Shared agent instruction file.
+* [Fleet utilization](agentsmd/rules/on-demand/fleet-utilization.md) - Shared agent instruction file.
 * [Git flow](agentsmd/rules/on-demand/git-flow.md) - Shared agent instruction file.
 * [Incident management](agentsmd/rules/on-demand/incident-management.md) - Shared agent instruction file.
 * [Infrastructure conventions](agentsmd/rules/on-demand/infrastructure-conventions.md) - Shared agent instruction file.
