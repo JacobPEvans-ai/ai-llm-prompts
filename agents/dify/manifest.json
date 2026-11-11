@@ -29,7 +29,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/alert-triage.dsl.yml",
-    "sha256": "54675e025b7d7ced840839bb43cf3e8910381d561e3c09fd39d4ca02bf74aef5"
+    "sha256": "9f872e61110f36b4f9360b42655c8a2a573a5eb616e6a073233b335d3c40276d"
   },
   {
     "name": "code-simplifier",
@@ -69,7 +69,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/dep-review.dsl.yml",
-    "sha256": "1ffd08f39e32cc5f8747ea111abc6040b4d4fc8d7f5045fd54cbf1828d304887"
+    "sha256": "9606df74ee1a154f92f664365916beca79a2834f0d3a00d55206017537155135"
   },
   {
     "name": "doc-contradiction-finder",
@@ -77,7 +77,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/doc-contradiction-finder.dsl.yml",
-    "sha256": "713bcea11d2886b59159ff7134faf1cc577c7c203bfb53834de77410b6982cfb"
+    "sha256": "d7b1a04820f9ff356ac7372358fdaf5f54af60182e42c112ae642da642a7bb3f"
   },
   {
     "name": "docs-drift",
@@ -85,7 +85,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/docs-drift.dsl.yml",
-    "sha256": "3d83629368978f80159d2d905264981cdc5d83d07568e7287317715b947b34f0"
+    "sha256": "c8eab06926ee4a2d806a4aca5dd16e297174a0231eed3137839d99eb7c7a2834"
   },
   {
     "name": "docs-updater",
@@ -197,7 +197,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "5f8d31cd2c0f697b8d8403cb6cb835fd85270644d38002a594283d13dd1df207"
+    "sha256": "4190b0fe2557152a0eade4845d2e0fabc529007baf1af6f9b42fcb750cd632b0"
   },
   {
     "name": "promotion-review",
@@ -229,7 +229,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/release-promoter.dsl.yml",
-    "sha256": "2c400b4dbbaf0939c253870ba8e2a1ff4f1ef148edaa0f938ed102a2cb76ec94"
+    "sha256": "bdcd18331c3eb841f4aa1187bbf38b88c056cbfdbcb5fc302bf9066aff915972"
   },
   {
     "name": "repo-janitor",
@@ -237,7 +237,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/repo-janitor.dsl.yml",
-    "sha256": "b04d282724c35dcfd5d7150ef953167b28764b5bb8a866b8a725245c19e41692"
+    "sha256": "bff0a9c52d8d4fa6f4e00bc27c7b62e59db11b0d8d439e84a3bdd52cf9e021dd"
   },
   {
     "name": "semaphore-clerk",
@@ -325,7 +325,7 @@
     "tier": 2,
     "kind": "agent",
     "path": "agents/dify/vikunja-triage.dsl.yml",
-    "sha256": "ce8d26dcc71ff93b0bde53bc3741c4ae2c24fc06ac17b8266ecf372f2367a398"
+    "sha256": "b9f02e2b5659eb6414cd94ea56baf348240ccbfaa6e9152f30a70b7d2917d130"
   },
   {
     "name": "voice-learn",

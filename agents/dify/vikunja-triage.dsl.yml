@@ -722,10 +722,14 @@ workflow:
                     refs=json.loads(refs_text)
                     if rank_only-allowed or mode not in ('shadow','live'): raise ValueError()
                 except Exception: return {'actions':[],'actions_json':'[]','dispatch':False,'mode':'invalid','fetch_error':'project policy or task refs are invalid'}
-                cache={}; failures=[]
+                cache={}; failures=[]; proposed=[]
                 try:
-                    intent=json.loads(strip_json_fence(model_text)); proposed=intent.get('actions',[]) if isinstance(intent,dict) else []
-                except Exception: proposed=[]; failures.append('model reply was not JSON')
+                    intent=json.loads(strip_json_fence(model_text))
+                except Exception:
+                    failures.append('model reply was not JSON')
+                else:
+                    proposed=intent.get('actions') if isinstance(intent,dict) else None
+                    if not isinstance(proposed,list): proposed=[]; failures.append('model reply had the wrong shape')
                 allowed_operations={'comment', 'list', 'update'}
                 def add(ref,op,**fields):
                     if op not in allowed_operations: raise ValueError('Operation is not declared by this agent.')
@@ -1105,12 +1109,13 @@ workflow:
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
             SECRET_RE = re.compile(
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9.])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"'?#]*")
+            # A public GitHub link keeps its host and path, limited to plain path characters. Any other character ends the exemption,
+            # so a query, fragment, separator, or @ never carries a following host or address past the redaction.
+            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[A-Za-z0-9._~/-]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1294,12 +1299,17 @@ workflow:
                         return None
 
 
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
             def recently_notified(api, token, failure_channel, stamp):
-                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
                 since = int(stamp.timestamp()) - 86400
                 query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
                 body = call(api, token, "conversations.history", query=query)
-                prefix = escape_mrkdwn(AGENT) + " "
+                prefix = escape_mrkdwn(notice_lead())
                 return any(
                     message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
                     for message in body.get("messages", [])
@@ -1316,7 +1326,7 @@ workflow:
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
-                    AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                    notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
                     call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
@@ -1449,12 +1459,13 @@ workflow:
             # check, so a quote that the prompt redacted still matches its page. A credential keeps its label and loses its value.
             SECRET_RE = re.compile(
                 r"(?i)(?:(?P<label>(?:api[_-]?key|secret|token)\s*[:=]\s*['\"]?)[A-Za-z0-9_./+=-]{24,}"
-                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9.])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
+                r"|(?P<bearer>\bBearer\s+)(?:(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{16,}|[A-Za-z0-9._~+/=-]{24,})"
                 r"|xox[abposr]-[A-Za-z0-9-]{10,}|\bhv[sbr]\.[A-Za-z0-9_-]{20,}"
                 r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
             )
-            # A public GitHub link keeps its host and path up to the query or fragment. The rest of the string is redacted as usual.
-            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[^\s<>\"'?#]*")
+            # A public GitHub link keeps its host and path, limited to plain path characters. Any other character ends the exemption,
+            # so a query, fragment, separator, or @ never carries a following host or address past the redaction.
+            PUBLIC_LINK_RE = re.compile(r"https://github\.com/[A-Za-z0-9._~/-]*")
             SECRET_KEY_SEGMENTS = {"token", "authorization", "password", "secret", "cookie", "apikey"}
             HOST_RE = re.compile(r"(?i)\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b")
             FILE_EXTENSIONS = {"md", "py", "ts", "tsx", "js", "jsx", "json", "yaml", "yml", "toml", "txt", "html", "css"}
@@ -1638,12 +1649,17 @@ workflow:
                         return None
 
 
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
             def recently_notified(api, token, failure_channel, stamp):
-                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
                 since = int(stamp.timestamp()) - 86400
                 query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
                 body = call(api, token, "conversations.history", query=query)
-                prefix = escape_mrkdwn(AGENT) + " "
+                prefix = escape_mrkdwn(notice_lead())
                 return any(
                     message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
                     for message in body.get("messages", [])
@@ -1660,7 +1676,7 @@ workflow:
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
-                    AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                    notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
                     call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
@@ -1864,12 +1880,17 @@ workflow:
                         return None
 
 
+            def notice_lead():
+                """The fixed text that opens every failure notice from this agent. The reason follows it."""
+                return AGENT + " failure: "
+
+
             def recently_notified(api, token, failure_channel, stamp):
-                """True when this agent's notice is in the failure channel from the last 24 hours. One bounded read, no paging."""
+                """True when this agent's notice is in the failure channel within 24 hours. One bounded read, no paging."""
                 since = int(stamp.timestamp()) - 86400
                 query = {"channel": failure_channel, "oldest": str(since), "limit": 200}
                 body = call(api, token, "conversations.history", query=query)
-                prefix = escape_mrkdwn(AGENT) + " "
+                prefix = escape_mrkdwn(notice_lead())
                 return any(
                     message.get("bot_id") and message.get("text", "").startswith(prefix) and float(message.get("ts", 0)) >= since
                     for message in body.get("messages", [])
@@ -1886,7 +1907,7 @@ workflow:
                 except Exception:
                     pass  # an unreadable history must not hide the notice, so post anyway
                 text = escape_mrkdwn(
-                    AGENT + " " + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
+                    notice_lead() + reason + " at " + stamp.strftime("%Y-%m-%d %H:%M") + " UTC. Dashboard: " + dashboard_url
                 )
                 try:
                     call(api, token, "chat.postMessage", {"channel": failure_channel, "text": text})
