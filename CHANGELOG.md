@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.103.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.102.0...v1.103.0) (2026-11-11)
+
+
+### Features
+
+* **dify:** opt the vikunja triage agent into Slack digest delivery ([#452](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/452)) ([7dce79d](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/7dce79dfb8bd5053e8978654b273ba5c14daa134))
+
 ## [1.102.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.1...v1.102.0) (2026-11-11)
 
 
