@@ -145,13 +145,20 @@ def main(timestamp, event=None):
   {{- else if eq .kind "rotation" -}}
     {{- test.Assert "invalid rotation interval" (regexp.Match `^[1-9][0-9]*[mhd]$` .every) -}}
     {{- $rotation = true -}}
+    {{- if coll.Has . "minute" -}}
+      {{- test.Assert "minute applies only to every: 1h" (eq .every "1h") -}}
+      {{- test.Assert "minute must be a whole number" (regexp.Match `^[0-9]+$` (printf "%v" .minute)) -}}
+      {{- test.Assert "hourly minute must be odd, below 60, and neither 15 nor 45" (and (regexp.Match `[13579]$` (printf "%v" .minute)) (lt (conv.ToInt .minute) 60) (ne (conv.ToInt .minute) 15) (ne (conv.ToInt .minute) 45)) -}}
+    {{- else if eq .every "1h" -}}
+      {{- test.Assert "every: 1h requires an odd minute" false -}}
+    {{- end -}}
     {{- if lt (conv.ToInt (index $ "tier")) 2 -}}
       {{- $nativeRotation = true -}}
       {{- $cron := coll.JQ `
         .every as $every | ($every[:-1] | tonumber) as $n | $every[-1:] as $unit |
         if $unit == "m" and $n >= 2 and $n <= 60 and (60 % $n == 0) then
           ([range(7; 60; $n), range(7 - $n; 0; -$n)] | sort | map(select(IN(0, 15, 30, 45) | not)) | map(tostring) | join(",")) + " * * * *"
-        elif $unit == "h" and $n <= 24 and (24 % $n == 0) then "7 */" + ($n | tostring) + " * * *"
+        elif $unit == "h" and $n <= 24 and (24 % $n == 0) then ((if $n == 1 then (.minute | tostring) else "7" end) + " */" + ($n | tostring) + " * * *")
         elif $unit == "d" and $n == 1 then "7 0 * * *"
         else error("native rotation interval cannot be expressed safely as cron") end` . -}}
       {{- $params = coll.Set "__DIFY_TRIGGER_CRON__" $cron $params -}}

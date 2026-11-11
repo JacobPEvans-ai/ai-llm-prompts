@@ -138,3 +138,53 @@ def test_only_tier_two_dify_agents_enter_driver(tmp_path, tier, home):
     namespace = {}
     exec(code, namespace)
     assert namespace["ROTATION_AGENTS"] == []
+
+
+@pytest.mark.parametrize("tier", [0, 1])
+def test_native_hourly_rotation_fires_at_its_minute(tmp_path, tier):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(tier=tier, triggers=[{"kind": "rotation", "every": "1h", "minute": 9}])
+    path.write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode == 0, result.stderr
+    output = yaml.safe_load((tmp_path / "agents/dify/sample.dsl.yml").read_text())
+    assert output["workflow"]["graph"]["nodes"][0]["data"]["cron_expression"] == "9 */1 * * *"
+
+
+def test_tier_two_hourly_rotation_offsets_to_its_minute(tmp_path):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(triggers=[{"kind": "rotation", "every": "1h", "minute": 9}])
+    path.write_text(yaml.safe_dump(definition))
+    assert render_checkout(tmp_path).returncode == 0
+    dsl = yaml.safe_load(driver_dsl(tmp_path).read_text())
+    code = next(node["data"]["code"] for node in dsl["workflow"]["graph"]["nodes"] if node["id"] == "due")
+    namespace = {}
+    exec(code, namespace)
+    assert namespace["ROTATION_AGENTS"] == [
+        {"name": "sample", "every_minutes": 60, "offset_minutes": 9, "expected_runtime_minutes": 10},
+    ]
+    ticks = range(1, 240, 2)  # the driver ticks on odd minutes only
+    due = [minute for minute in ticks if namespace["main"](minute * 60, 1, 0, "false")["due"]]
+    assert due == [9, 69, 129, 189]
+
+
+@pytest.mark.parametrize("trigger", [
+    {"kind": "rotation", "every": "1h"}, {"kind": "rotation", "every": "1h", "minute": 15},
+    {"kind": "rotation", "every": "1h", "minute": 45}, {"kind": "rotation", "every": "1h", "minute": 8},
+    {"kind": "rotation", "every": "1h", "minute": 60}, {"kind": "rotation", "every": "1d", "minute": 7},
+])
+def test_renderer_rejects_bad_hourly_minutes(tmp_path, trigger):
+    path, definition = sample_checkout(tmp_path)
+    definition.update(triggers=[trigger])
+    path.write_text(yaml.safe_dump(definition))
+    assert render_checkout(tmp_path).returncode != 0
+
+
+def test_tier_two_hourly_minutes_must_be_distinct(tmp_path):
+    _, base = sample_checkout(tmp_path)
+    for name in ("alpha", "beta"):
+        definition = {**base, "name": name, "tier": 2, "triggers": [{"kind": "rotation", "every": "1h", "minute": 9}]}
+        (tmp_path / "agents" / f"{name}.yaml").write_text(yaml.safe_dump(definition))
+    result = render_checkout(tmp_path)
+    assert result.returncode != 0
+    assert "hourly rotations must use distinct minutes" in result.stderr

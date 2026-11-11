@@ -77,7 +77,7 @@ Each trigger declares one of these kinds:
 
 | Kind | Fields | Meaning |
 | --- | --- | --- |
-| `rotation` | `every: <positive integer><m\|h\|d>` | Minimum interval, meaning "not more often than"; Tier 0/1 use native schedules; tier 2 uses the driver. |
+| `rotation` | `every: <positive integer><m\|h\|d>`, optional `minute` | Minimum interval, meaning "not more often than"; tier 0/1 native, tier 2 driver. |
 | `anchor` | `at: "HH:MM"`, optional `days: [Mon, ..., Sun]` | Fixed UTC time, daily when days is omitted; odd minute excluding `:15` and `:45`. |
 | `event` | `source: <integration>` | An integration webhook, with optional event filters. |
 | `call` | `source: <caller>` | Explicit invocation through the gateway. |
@@ -93,6 +93,9 @@ Native minute schedules omit `:00`, `:15`, `:30`, and `:45` from their compiled
 minute lists. Omitted starts wait for the next scheduled minute, preserving the
 minimum interval; `every: 15m` starts at `:07`, `:22`, `:37`, and `:52`.
 Anchors render a native Dify schedule in UTC. Tracker triage uses its webhook plus a rotation catch-up.
+`minute` is valid only with `every: 1h`, and `every: 1h` requires it. The value must be an odd minute
+from 1 to 59, excluding 15 and 45. Native schedules fire at that minute; tier 2 agents offset to it, so
+hourly tier 2 agents must not share a minute.
 Start nodes and trigger nodes remain mutually exclusive within a Dify workflow.
 
 ```yaml
