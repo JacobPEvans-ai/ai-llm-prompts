@@ -62,6 +62,11 @@ def test_bearer_prose_is_not_redacted():
     assert REDACT.redact(text) == text
 
 
+def test_bearer_prose_with_a_sentence_final_dot_is_not_redacted():
+    text = "the bearer responsibilities."
+    assert REDACT.redact(text) == text
+
+
 def test_short_bearer_value_with_a_digit_is_still_redacted():
     token = "Bearer " + "abcdefgh" + "12345678"
     out = REDACT.redact(f"auth {token} ok")
