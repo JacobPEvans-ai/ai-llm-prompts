@@ -1,12 +1,5 @@
 # Changelog
 
-## [1.102.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.1...v1.102.0) (2026-11-11)
-
-
-### Features
-
-* **dify:** deliver agent output to a Slack thread behind a redaction gate ([#449](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/449)) ([0508938](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/0508938c63425b0ddcf4e8555195d32b9aa1f24f))
-
 ## [1.101.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.101.0...v1.101.1) (2026-11-11)
 
 
