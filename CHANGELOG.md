@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.105.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.104.0...v1.105.0) (2026-11-11)
+
+
+### Features
+
+* **hermes:** add Pepper AI-side assistant role and its two cron prompts ([#439](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/439)) ([1941c64](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/1941c64f8442b043c60c23282a71205c0ffda6da))
+* **rules:** add first-check code review gate ([ce378c9](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/ce378c9ee38b85d98ec317ceef7697caa496497f))
+* **rules:** add first-check code review gate ([#459](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/459)) ([342fdfd](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/342fdfd910bf2951ce01337710e97943871354ce))
+* **rules:** bar git town undo in executor briefs ([d0d0430](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/d0d043034a962d94d2e20a90c3457078f69f1d76))
+* **rules:** state who launches a merge-gate review ([4141d4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/4141d4e98f712df6eededc1ead04dcbf143f704d))
+
+
+### Bug Fixes
+
+* **rules:** keep the launcher rule and drop seat assignments ([37c8d4e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/37c8d4e3299b6389a017cdd35aabf0f30ef43700))
+* **rules:** point the review gate at the rules it applies ([f3e1716](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/f3e1716cf5ca9cee774c10bdbe7f224149c4cf59))
+* **rules:** refer the review gate to the tool-choice order ([e87ee31](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/e87ee31e5e9942eae5afae3a1e21394f557ab943))
+
 ## [1.104.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.103.0...v1.104.0) (2026-11-11)
 
 
