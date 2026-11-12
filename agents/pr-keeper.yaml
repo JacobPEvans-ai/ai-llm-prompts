@@ -23,3 +23,4 @@ reader: pull requests via github-clerk
 acted_signal: required checks green on current head
 identity: agent-pr-keeper
 api_key_ref: openbao://agent-key/pr-keeper
+dify_pr_queue_shadow: true

@@ -197,7 +197,7 @@
     "tier": 1,
     "kind": "agent",
     "path": "agents/dify/pr-keeper.dsl.yml",
-    "sha256": "20c984e1becc0f7ddc7bb3cd3799415820986b7db80701ecf538729f4b01104b"
+    "sha256": "c927a7e20cf10daa9f33f0e1af71934387998a997a82beaeea0fe232f7fd28fe"
   },
   {
     "name": "promotion-review",

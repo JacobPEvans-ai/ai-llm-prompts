@@ -565,9 +565,15 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
     if "dify" not in agent:
         if agent.get("tools"):
             assert agent["mode"] == "shadow"
-        assert {node["data"]["type"] for node in nodes} <= {
+        allowed_node_types = {
             "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "if-else", "variable-aggregator"
         }
+        if agent.get("dify_pr_queue_shadow") is True:
+            allowed_node_types |= {"http-request", "iteration"}
+            http_nodes = [node["data"] for node in nodes if node.get("data", {}).get("type") == "http-request"]
+            assert http_nodes
+            assert all(node.get("method") == "get" for node in http_nodes)
+        assert {node["data"]["type"] for node in nodes} <= allowed_node_types
     elif agent.get("mcp_servers"):
         servers = agent["mcp_servers"]
         dotted = [tool.split(".", 1) for tool in agent["tools"] if "." in tool]

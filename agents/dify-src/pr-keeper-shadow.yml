@@ -1,0 +1,569 @@
+environment_variables:
+  - id: pr-automation-repos
+    name: PR_AUTOMATION_REPOS
+    value: JacobPEvans-ai/pr-automation-fixture
+    value_type: string
+    selector: []
+    description: Comma-separated repositories to inspect for open pull requests.
+  - id: pr-automation-shadow
+    name: PR_AUTOMATION_SHADOW
+    value: "true"
+    value_type: string
+    selector: []
+    description: Shadow mode is fixed on for this read-only workflow.
+  - id: github-read-token
+    name: GITHUB_READ_TOKEN
+    value: ""
+    value_type: secret
+    selector: []
+    description: Optional GitHub read token; empty uses anonymous public API access.
+  - id: github-api-base
+    name: GITHUB_API_BASE
+    value: https://api.github.com
+    value_type: string
+    selector: []
+    description: GitHub REST API base configured in the Dify workspace.
+nodes:
+  - id: prepare_scan
+    type: custom
+    position: {x: 140, y: 1360}
+    data:
+      title: Prepare read-only PR scan
+      type: code
+      code_language: python3
+      code: |-
+        import re
+
+        DEFAULT_REPO = "JacobPEvans-ai/pr-automation-fixture"
+        REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+
+        def main(raw_repositories: str, token: str) -> dict:
+            raw = raw_repositories.strip() if isinstance(raw_repositories, str) else ""
+            values = [item.strip() for item in raw.split(",") if item.strip()] if raw else [DEFAULT_REPO]
+            repositories = []
+            seen = set()
+            for repository in values:
+                if REPO_PATTERN.fullmatch(repository) is None:
+                    raise ValueError("PR_AUTOMATION_REPOS must contain owner/repository names")
+                if repository not in seen:
+                    repositories.append(repository)
+                    seen.add(repository)
+            headers = "Accept: application/vnd.github+json\nX-GitHub-Api-Version: 2022-11-28"
+            token = token.strip() if isinstance(token, str) else ""
+            if token:
+                headers += "\nAuthorization: Bearer " + token
+            return {"repositories": repositories, "headers": headers}
+      variables:
+        - {variable: raw_repositories, value_selector: [env, PR_AUTOMATION_REPOS]}
+        - {variable: token, value_selector: [env, GITHUB_READ_TOKEN]}
+      outputs:
+        repositories: {type: "array[string]", children: null}
+        headers: {type: string, children: null}
+  - id: repo_loop
+    type: custom
+    position: {x: 430, y: 1360}
+    data:
+      title: List open pull requests by repository
+      type: iteration
+      iterator_selector: [prepare_scan, repositories]
+      output_selector: [parse_open_prs, prs_json]
+      output_type: array[string]
+      start_node_id: list_open_prs
+      startNodeType: http-request
+      error_handle_mode: terminated
+  - id: list_open_prs
+    type: custom
+    parentId: repo_loop
+    extent: parent
+    position: {x: 60, y: 60}
+    data:
+      title: List open pull requests
+      type: http-request
+      authorization: {type: no-auth}
+      body: {type: none, data: []}
+      headers: "{{#prepare_scan.headers#}}"
+      method: get
+      params: ""
+      ssl_verify: true
+      timeout: {connect: 10, read: 30, write: 30}
+      url: '{{#env.GITHUB_API_BASE#}}/repos/{{#repo_loop.item#}}/pulls?state=open&per_page=100'
+      isInIteration: true
+      isIterationStart: true
+      iteration_id: repo_loop
+  - id: parse_open_prs
+    type: custom
+    parentId: repo_loop
+    extent: parent
+    position: {x: 360, y: 60}
+    data:
+      title: Keep open pull request identifiers
+      type: code
+      isInIteration: true
+      iteration_id: repo_loop
+      code_language: python3
+      code: |-
+        import json
+
+        def main(repository: str, status_code: int, body: str) -> dict:
+            if status_code != 200:
+                error = {
+                    "repository": repository,
+                    "pr_number": 0,
+                    "head_sha": "",
+                    "state": "error",
+                    "action": "none",
+                    "shadow": True,
+                    "attempt": 0,
+                    "detail": f"GitHub returned HTTP {status_code} while listing open pull requests.",
+                }
+                return {"prs_json": json.dumps([error], separators=(",", ":"))}
+            try:
+                pulls = json.loads(body)
+            except (TypeError, ValueError):
+                pulls = None
+            if not isinstance(pulls, list):
+                error = {
+                    "repository": repository,
+                    "pr_number": 0,
+                    "head_sha": "",
+                    "state": "error",
+                    "action": "none",
+                    "shadow": True,
+                    "attempt": 0,
+                    "detail": f"GitHub returned an invalid open pull request list (HTTP {status_code}).",
+                }
+                return {"prs_json": json.dumps([error], separators=(",", ":"))}
+            prs = []
+            for pull in pulls:
+                number = pull.get("number") if isinstance(pull, dict) else None
+                if isinstance(number, int) and not isinstance(number, bool) and number > 0:
+                    prs.append({"repository": repository, "pr_number": number})
+            return {"prs_json": json.dumps(prs, separators=(",", ":"))}
+      variables:
+        - {variable: repository, value_selector: [repo_loop, item]}
+        - {variable: status_code, value_selector: [list_open_prs, status_code]}
+        - {variable: body, value_selector: [list_open_prs, body]}
+      outputs:
+        prs_json: {type: string, children: null}
+  - id: flatten_prs
+    type: custom
+    position: {x: 720, y: 1360}
+    data:
+      title: Flatten pull request identifiers
+      type: code
+      code_language: python3
+      code: |-
+        import json
+
+        def main(repository_results: list) -> dict:
+            prs = []
+            errors = []
+            for result in repository_results if isinstance(repository_results, list) else []:
+                try:
+                    batch = json.loads(result) if isinstance(result, str) else result
+                except (TypeError, ValueError):
+                    continue
+                if isinstance(batch, list):
+                    for item in batch:
+                        if not isinstance(item, dict):
+                            continue
+                        if item.get("state") == "error":
+                            errors.append(item)
+                        else:
+                            prs.append(item)
+            return {"prs": prs, "errors": errors}
+      variables:
+        - {variable: repository_results, value_selector: [repo_loop, output]}
+      outputs:
+        prs: {type: "array[object]", children: null}
+        errors: {type: "array[object]", children: null}
+  - id: end_shadow
+    type: custom
+    position: {x: 1330, y: 1360}
+    data:
+      title: Shadow PR classifications
+      type: end
+      outputs:
+        - variable: results
+          value_selector: [combine_results, results]
+  - id: pr_loop
+    type: custom
+    position: {x: 1010, y: 1360}
+    data:
+      title: Read and classify each pull request
+      type: iteration
+      iterator_selector: [flatten_prs, prs]
+      output_selector: [classify_pr, result]
+      output_type: array[object]
+      start_node_id: get_pull_request
+      startNodeType: http-request
+      error_handle_mode: terminated
+  - id: combine_results
+    type: custom
+    position: {x: 1250, y: 1600}
+    data:
+      title: Combine pull request results and read errors
+      type: code
+      code_language: python3
+      code: |-
+        def main(pr_results: list, repository_errors: list) -> dict:
+            results = []
+            if isinstance(pr_results, list):
+                results.extend(item for item in pr_results if isinstance(item, dict))
+            if isinstance(repository_errors, list):
+                results.extend(item for item in repository_errors if isinstance(item, dict))
+            return {"results": results}
+      variables:
+        - {variable: pr_results, value_selector: [pr_loop, output]}
+        - {variable: repository_errors, value_selector: [flatten_prs, errors]}
+      outputs:
+        results: {type: "array[object]", children: null}
+  - id: get_pull_request
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 60, y: 60}
+    data:
+      title: Read pull request state
+      type: http-request
+      authorization: {type: no-auth}
+      body: {type: none, data: []}
+      headers: "{{#prepare_scan.headers#}}"
+      method: get
+      params: ""
+      ssl_verify: true
+      timeout: {connect: 10, read: 30, write: 30}
+      url: '{{#env.GITHUB_API_BASE#}}/repos/{{#pr_loop.item.repository#}}/pulls/{{#pr_loop.item.pr_number#}}'
+      isInIteration: true
+      isIterationStart: true
+      iteration_id: pr_loop
+  - id: pull_fields
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 360, y: 60}
+    data:
+      title: Extract pull request head
+      type: code
+      isInIteration: true
+      iteration_id: pr_loop
+      code_language: python3
+      code: |-
+        import json
+
+        def main(status_code: int, body: str) -> dict:
+            head_sha = ""
+            if status_code == 200:
+                try:
+                    pull = json.loads(body)
+                    head = pull.get("head", {}) if isinstance(pull, dict) else {}
+                    head_sha = head.get("sha", "") if isinstance(head, dict) else ""
+                except (TypeError, ValueError, AttributeError):
+                    pass
+            return {"head_sha": head_sha if isinstance(head_sha, str) else ""}
+      variables:
+        - {variable: status_code, value_selector: [get_pull_request, status_code]}
+        - {variable: body, value_selector: [get_pull_request, body]}
+      outputs:
+        head_sha: {type: string, children: null}
+  - id: get_check_runs
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 660, y: 60}
+    data:
+      title: Read head check runs
+      type: http-request
+      authorization: {type: no-auth}
+      body: {type: none, data: []}
+      headers: "{{#prepare_scan.headers#}}"
+      method: get
+      params: ""
+      ssl_verify: true
+      timeout: {connect: 10, read: 30, write: 30}
+      url: '{{#env.GITHUB_API_BASE#}}/repos/{{#pr_loop.item.repository#}}/commits/{{#pull_fields.head_sha#}}/check-runs?per_page=100'
+      isInIteration: true
+      iteration_id: pr_loop
+  - id: get_commit_status
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 960, y: 60}
+    data:
+      title: Read head commit status
+      type: http-request
+      authorization: {type: no-auth}
+      body: {type: none, data: []}
+      headers: "{{#prepare_scan.headers#}}"
+      method: get
+      params: ""
+      ssl_verify: true
+      timeout: {connect: 10, read: 30, write: 30}
+      url: '{{#env.GITHUB_API_BASE#}}/repos/{{#pr_loop.item.repository#}}/commits/{{#pull_fields.head_sha#}}/status'
+      isInIteration: true
+      iteration_id: pr_loop
+  - id: get_reviews
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 1260, y: 60}
+    data:
+      title: Read pull request reviews
+      type: http-request
+      authorization: {type: no-auth}
+      body: {type: none, data: []}
+      headers: "{{#prepare_scan.headers#}}"
+      method: get
+      params: ""
+      ssl_verify: true
+      timeout: {connect: 10, read: 30, write: 30}
+      url: '{{#env.GITHUB_API_BASE#}}/repos/{{#pr_loop.item.repository#}}/pulls/{{#pr_loop.item.pr_number#}}/reviews?per_page=100'
+      isInIteration: true
+      iteration_id: pr_loop
+  - id: classify_pr
+    type: custom
+    parentId: pr_loop
+    extent: parent
+    position: {x: 1560, y: 60}
+    data:
+      title: Classify pull request in shadow mode
+      type: code
+      isInIteration: true
+      iteration_id: pr_loop
+      code_language: python3
+      code: |-
+        import json
+
+        STATES = {
+            "behind": "update-branch",
+            "conflicted": "label merge-conflict + fix",
+            "checks_red": "fix",
+            "review_changes": "fix",
+            "needs_reviewer": "request reviewer",
+            "ready_to_merge": "hand to merge-steward",
+            "held": "one line for the lead",
+            "pending": "none",
+            "error": "none",
+        }
+        RED_CONCLUSIONS = {"failure", "error", "timed_out", "action_required", "cancelled", "stale"}
+        OK_CONCLUSIONS = {"success", "neutral", "skipped"}
+
+        def decode(raw):
+            try:
+                return json.loads(raw)
+            except (TypeError, ValueError):
+                return None
+
+        def record(repository, pr_number, head_sha, state, detail):
+            return {
+                "repository": repository,
+                "pr_number": int(pr_number),
+                "head_sha": head_sha,
+                "state": state,
+                "action": STATES[state],
+                "shadow": True,
+                "attempt": 0,
+                "detail": detail,
+            }
+
+        def main(repository: str, pr_number: int, pull_status_code: int, pull_body: str,
+                 head_sha: str, checks_status_code: int, checks_body: str,
+                 commit_status_code: int, commit_status_body: str,
+                 reviews_status_code: int, reviews_body: str) -> dict:
+            failed_reads = [
+                ("pull request details", pull_status_code),
+                ("head check runs", checks_status_code),
+                ("head commit status", commit_status_code),
+                ("pull request reviews", reviews_status_code),
+            ]
+            failed_reads = [(endpoint, status) for endpoint, status in failed_reads if status != 200]
+            if failed_reads:
+                detail = "; ".join(f"GitHub returned HTTP {status} for {endpoint}." for endpoint, status in failed_reads)
+                return {"result": record(repository, pr_number, head_sha, "error", detail)}
+            pull = decode(pull_body) if pull_status_code == 200 else None
+            if not isinstance(pull, dict):
+                return {"result": record(repository, pr_number, head_sha, "pending", "Pull request details are unavailable.")}
+            head = pull.get("head", {})
+            resolved_sha = head.get("sha", "") if isinstance(head, dict) else ""
+            resolved_sha = resolved_sha if isinstance(resolved_sha, str) else ""
+            if not resolved_sha:
+                return {"result": record(repository, pr_number, "", "pending", "Pull request head SHA is unavailable.")}
+
+            mergeable_state = pull.get("mergeable_state")
+            mergeable = pull.get("mergeable")
+            if mergeable_state == "behind":
+                return {"result": record(repository, pr_number, resolved_sha, "behind", "The head branch is behind its base branch.")}
+            if mergeable_state in {"dirty", "conflicting"}:
+                return {"result": record(repository, pr_number, resolved_sha, "conflicted", "GitHub reports a merge conflict.")}
+            if pull.get("draft") is True or mergeable_state == "blocked":
+                return {"result": record(repository, pr_number, resolved_sha, "held", "The pull request is draft or blocked.")}
+            if mergeable is False:
+                return {"result": record(repository, pr_number, resolved_sha, "conflicted", "GitHub reports a merge conflict.")}
+
+            checks_data = decode(checks_body) if checks_status_code == 200 else None
+            commit_data = decode(commit_status_body) if commit_status_code == 200 else None
+            reviews = decode(reviews_body) if reviews_status_code == 200 else None
+            if not isinstance(checks_data, dict) or not isinstance(checks_data.get("check_runs"), list):
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "Check run evidence is unavailable.")}
+            if not isinstance(commit_data, dict) or not isinstance(commit_data.get("state"), str):
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "Commit status evidence is unavailable.")}
+            if not isinstance(reviews, list):
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "Review evidence is unavailable.")}
+
+            check_runs = checks_data["check_runs"]
+            conclusions = [run.get("conclusion") for run in check_runs if isinstance(run, dict)]
+            commit_state = commit_data["state"].lower()
+            statuses = commit_data.get("statuses", [])
+            status_states = [item.get("state", "").lower() for item in statuses if isinstance(item, dict)] if isinstance(statuses, list) else []
+            if any(value in RED_CONCLUSIONS for value in conclusions) or commit_state in {"failure", "error"} or any(value in {"failure", "error"} for value in status_states):
+                return {"result": record(repository, pr_number, resolved_sha, "checks_red", "A check run or commit status reports failure.")}
+
+            latest_reviews = {}
+            for review in reviews:
+                if not isinstance(review, dict):
+                    continue
+                user = review.get("user") if isinstance(review.get("user"), dict) else {}
+                reviewer_id = user.get("id") or user.get("login") or review.get("id")
+                if reviewer_id is not None:
+                    latest_reviews[str(reviewer_id)] = str(review.get("state", "")).upper()
+            if "CHANGES_REQUESTED" in latest_reviews.values():
+                return {"result": record(repository, pr_number, resolved_sha, "review_changes", "A current review requests changes.")}
+
+            pending_checks = (
+                any(
+                    not isinstance(run, dict)
+                    or run.get("status") != "completed"
+                    or run.get("conclusion") not in OK_CONCLUSIONS | RED_CONCLUSIONS
+                    for run in check_runs
+                )
+                or commit_state == "pending"
+                or any(value == "pending" for value in status_states)
+            )
+            if pending_checks:
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "Checks are still pending or have an unknown conclusion.")}
+            if mergeable is not True:
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "GitHub has not confirmed that the pull request is mergeable.")}
+            if not any(state == "APPROVED" for state in latest_reviews.values()):
+                requested = pull.get("requested_reviewers", [])
+                if isinstance(requested, list) and requested:
+                    return {"result": record(repository, pr_number, resolved_sha, "pending", "A requested reviewer has not submitted an approval.")}
+                return {"result": record(repository, pr_number, resolved_sha, "needs_reviewer", "No current approval is present.")}
+            if mergeable_state != "clean":
+                return {"result": record(repository, pr_number, resolved_sha, "pending", "GitHub has not reported a clean merge state.")}
+            return {"result": record(repository, pr_number, resolved_sha, "ready_to_merge", "Observed checks passed and a current approval is present.")}
+      variables:
+        - {variable: repository, value_selector: [pr_loop, item, repository]}
+        - {variable: pr_number, value_selector: [pr_loop, item, pr_number]}
+        - {variable: pull_status_code, value_selector: [get_pull_request, status_code]}
+        - {variable: pull_body, value_selector: [get_pull_request, body]}
+        - {variable: head_sha, value_selector: [pull_fields, head_sha]}
+        - {variable: checks_status_code, value_selector: [get_check_runs, status_code]}
+        - {variable: checks_body, value_selector: [get_check_runs, body]}
+        - {variable: commit_status_code, value_selector: [get_commit_status, status_code]}
+        - {variable: commit_status_body, value_selector: [get_commit_status, body]}
+        - {variable: reviews_status_code, value_selector: [get_reviews, status_code]}
+        - {variable: reviews_body, value_selector: [get_reviews, body]}
+      outputs:
+        result:
+          type: object
+          children:
+            - {name: repository, type: string, children: null}
+            - {name: pr_number, type: number, children: null}
+            - {name: head_sha, type: string, children: null}
+            - {name: state, type: string, children: null}
+            - {name: action, type: string, children: null}
+            - {name: shadow, type: boolean, children: null}
+            - {name: attempt, type: number, children: null}
+            - {name: detail, type: string, children: null}
+edges:
+  - id: start-input-continue-pr-scan
+    source: start-input-gate
+    sourceHandle: "false"
+    target: prepare_scan
+    targetHandle: target
+    type: custom
+    data: {sourceType: if-else, targetType: code}
+  - id: prepare-scan-repo-loop
+    source: prepare_scan
+    sourceHandle: source
+    target: repo_loop
+    targetHandle: target
+    type: custom
+    data: {sourceType: code, targetType: iteration}
+  - id: list-open-prs-parse
+    source: list_open_prs
+    sourceHandle: source
+    target: parse_open_prs
+    targetHandle: target
+    type: custom
+    data: {sourceType: http-request, targetType: code, isInIteration: true, iteration_id: repo_loop}
+  - id: repo-loop-flatten-prs
+    source: repo_loop
+    sourceHandle: source
+    target: flatten_prs
+    targetHandle: target
+    type: custom
+    data: {sourceType: iteration, targetType: code}
+  - id: flatten-prs-pr-loop
+    source: flatten_prs
+    sourceHandle: source
+    target: pr_loop
+    targetHandle: target
+    type: custom
+    data: {sourceType: code, targetType: iteration}
+  - id: get-pull-fields
+    source: get_pull_request
+    sourceHandle: source
+    target: pull_fields
+    targetHandle: target
+    type: custom
+    data: {sourceType: http-request, targetType: code, isInIteration: true, iteration_id: pr_loop}
+  - id: pull-fields-check-runs
+    source: pull_fields
+    sourceHandle: source
+    target: get_check_runs
+    targetHandle: target
+    type: custom
+    data: {sourceType: code, targetType: http-request, isInIteration: true, iteration_id: pr_loop}
+  - id: check-runs-commit-status
+    source: get_check_runs
+    sourceHandle: source
+    target: get_commit_status
+    targetHandle: target
+    type: custom
+    data: {sourceType: http-request, targetType: http-request, isInIteration: true, iteration_id: pr_loop}
+  - id: commit-status-reviews
+    source: get_commit_status
+    sourceHandle: source
+    target: get_reviews
+    targetHandle: target
+    type: custom
+    data: {sourceType: http-request, targetType: http-request, isInIteration: true, iteration_id: pr_loop}
+  - id: reviews-classify
+    source: get_reviews
+    sourceHandle: source
+    target: classify_pr
+    targetHandle: target
+    type: custom
+    data: {sourceType: http-request, targetType: code, isInIteration: true, iteration_id: pr_loop}
+  - id: pr-loop-shadow-end
+    source: pr_loop
+    sourceHandle: source
+    target: combine_results
+    targetHandle: target
+    type: custom
+    data: {sourceType: iteration, targetType: code}
+  - id: flatten-prs-combine-results
+    source: flatten_prs
+    sourceHandle: source
+    target: combine_results
+    targetHandle: target
+    type: custom
+    data: {sourceType: code, targetType: code}
+  - id: combine-results-shadow-end
+    source: combine_results
+    sourceHandle: source
+    target: end_shadow
+    targetHandle: target
+    type: custom
+    data: {sourceType: code, targetType: end}
