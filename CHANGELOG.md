@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.2](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.1...v1.111.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **dify:** declare pr-keeper classify outputs as a mapping ([#483](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/483)) ([6a8eac7](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/6a8eac7f38cd308d285fff123493b31c2541b4dd))
+
 ## [1.111.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.0...v1.111.1) (2026-11-12)
 
 
