@@ -2833,29 +2833,29 @@ workflow:
           outputs:
             result:
               children:
-                - children: null
-                  name: repository
+                action:
+                  children: null
                   type: string
-                - children: null
-                  name: pr_number
+                attempt:
+                  children: null
                   type: number
-                - children: null
-                  name: head_sha
+                detail:
+                  children: null
                   type: string
-                - children: null
-                  name: state
+                head_sha:
+                  children: null
                   type: string
-                - children: null
-                  name: action
+                pr_number:
+                  children: null
+                  type: number
+                repository:
+                  children: null
                   type: string
-                - children: null
-                  name: shadow
+                shadow:
+                  children: null
                   type: boolean
-                - children: null
-                  name: attempt
-                  type: number
-                - children: null
-                  name: detail
+                state:
+                  children: null
                   type: string
               type: object
           title: Classify pull request in shadow mode
