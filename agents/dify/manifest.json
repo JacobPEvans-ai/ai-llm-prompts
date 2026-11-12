@@ -317,7 +317,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/vikunja-clerk.dsl.yml",
-    "sha256": "91e31932f41469a3a356779908481c94e44ae11f956f31326d3ddf2d6d51e2fb"
+    "sha256": "4ecc11db19e06d25e3412765afbe8965b753638ae238f3f0aed536c62be66ebc"
   },
   {
     "name": "vikunja-triage",

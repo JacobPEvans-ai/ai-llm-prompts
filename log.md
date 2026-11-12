@@ -3,9 +3,9 @@
 ## 2026-11-12
 
 * **Fix (agents)**: The Vikunja clerk prompt states its reply contract once as a fixed twelve-key classifier object,
-  adds `refused` and `reason` with prescribed refusal reasons to outcome replies, keeps `dispatch`, `mode`, and
-  `proposed_calls` for shadow and other-route writes, and routes incidents and security findings to Zammad in the
-  reply object instead of the report envelope.
+  adds `refused` and `reason` with prescribed refusal reasons to outcome replies, adds `dispatch` and `mode` to
+  shadow-write replies, and keeps `proposed_calls` for shadow and other-route write replies. It routes incidents and
+  security findings to Zammad in the reply object instead of the report envelope.
 
 ## 2026-11-11
 
