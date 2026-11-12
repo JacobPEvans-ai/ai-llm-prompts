@@ -8,6 +8,10 @@
   limits, stop conditions, and the one-line `FIXED`/`STOP` output contract; `pr-fix/README.md` maps each GitHub API state to its
   brief and caps attempts at three per head state before the `needs-lead` label.
 * **Fix (auto-ai-agent)**: Pepper's AI news prompt uses only run-supplied items and preferences, and the Pepper surface separates tracker and AI run rules.
+* **Update (auto-ai-agent)**: Pepper's shared prompt makes secret, channel, and tracker-write
+  authority explicit; its digest prompt checks the latest channel digest time,
+  skips posts under three hours or when the time is unknown, and logs unknown
+  times in the run summary.
 
 ## 2026-11-11
 
