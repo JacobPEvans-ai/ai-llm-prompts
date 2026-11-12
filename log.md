@@ -240,6 +240,8 @@
 * **Update (instructions)**: Reference the canonical delegate brief rules by their cross-package prompt resource identifier.
 
 * **Add (auto-ai-agent)**: Add Pepper's project manager persona with one-issue evidence review and bounded comment authority.
+  Authority guards prevent secret echo, restrict posts to Pepper's own channels, and keep tracker access read-only except for
+  declared writes; digests are limited to one post per channel every three hours.
 
 * **Update (instructions)**: Agent standards link to the canonical delegate brief rules for verification and evidence reporting.
 
