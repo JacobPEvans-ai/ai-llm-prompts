@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "state": {
-    "metadata": {"agent":"slack-clerk","agent_tools":["slack.search_messages","slack.get_message","slack.post_message"],"generated_from":["agents/slack-clerk.yaml","agents/prompts/shared/homelab.md","agents/prompts/slack-clerk.md"],"litellm_role":"small","mode":"shadow","name":"slack-clerk","omitted_tools":["slack.search_messages","slack.get_message","slack.post_message"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":0,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","skew_minutes":0,"source":"caller"}]},
+    "metadata": {"agent":"slack-clerk","agent_tools":["slack.search_messages","slack.get_message","slack.post_message","slack.get_channel_history","slack.get_thread_replies"],"generated_from":["agents/slack-clerk.yaml","agents/prompts/shared/homelab.md","agents/prompts/slack-clerk.md"],"litellm_role":"small","mode":"shadow","name":"slack-clerk","omitted_tools":["slack.search_messages","slack.get_message","slack.post_message","slack.get_channel_history","slack.get_thread_replies"],"output_schema":null,"privacy_class":"private","results":["langfuse-trace","phoenix-trace"],"runtime_version":"0.9.33","tier":0,"tools":["litellm.chat_completions"],"triggers":[{"kind":"call","skew_minutes":0,"source":"caller"}]},
     "blocks": {
       "start": {
         "id": "start", "type": "start_trigger", "name": "Start",
