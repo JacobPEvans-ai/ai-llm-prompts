@@ -6,7 +6,7 @@ resource: prompt://dryvist/auto-ai-agent/hermes-daily-status-kanban-summary
 tags:
 - hermes
 - autonomous-agent
-timestamp: '2026-11-11T22:36:33Z'
+timestamp: '2026-11-12T01:57:56Z'
 status: active
 consumers:
 - dryvist/ansible-proxmox-ai
@@ -25,9 +25,8 @@ Board summary, appended once at the end of your report: use your kanban
 tool to get today's card count per status (ready, in_progress, blocked,
 done, and any other status it reports). One line, e.g. "board: 3 ready, 1
 in_progress, 2 blocked, 14 done today". For fetched board items, follow the
-shared report contract (`hermes-report-contract.md`), including its priority
-counts, completed-action outcomes, and accounting for every fetched
-urgent item. If a card has been in_progress or blocked for unusually long
+scheduled-report contract in the shared Hermes surface. If a card has been
+in_progress or blocked for unusually long
 relative to your other observations this run, name it by id with a link into
 the dashboard (http://localhost:{{ hermes_agent_dashboard_port }}/) so the
 operator can open it directly. This line is informational and never on its

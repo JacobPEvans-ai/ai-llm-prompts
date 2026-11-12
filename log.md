@@ -2,6 +2,8 @@
 
 ## 2026-11-11
 
+* **Update (auto-ai-agent)**: Move the shared scheduled-report contract into `hermes.md`; the daily status Kanban
+  summary points to that surface, and its duplicate catalog entry is removed.
 * **Update (auto-ai-agent)**: Add `hermes-report-contract.md` as the shared scheduled-report contract for exact fetched
   priority counts, completed actions and outcomes, and accounting for each fetched urgent item; the daily status Kanban
   summary follows it while retaining per-status counts and long-running-card links.
