@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.0...v1.111.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **pr-keeper:** read the fixture anonymously in shadow mode with no token variable ([#480](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/480)) ([148efee](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/148efee500fd9497ea9f667fd69ce688b9133be5))
+
 ## [1.111.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.110.0...v1.111.0) (2026-11-12)
 
 
