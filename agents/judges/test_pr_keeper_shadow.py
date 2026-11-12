@@ -48,24 +48,29 @@ def test_pr_scan_caps_the_flattened_list_before_the_pr_loop_and_reports_counts()
     output = code_main(flatten)([
         json.dumps([
             {"repository": "owner/one", "pr_number": number}
-            for number in (1, 2, 3)
+            for number in (1, 2)
         ]),
         json.dumps([
             {"repository": "owner/two", "pr_number": number}
-            for number in (4, 5)
+            for number in (3,)
         ]),
     ], prepared["max_prs_per_run"])
     assert output["prs"] == [
         {"repository": "owner/one", "pr_number": 1},
         {"repository": "owner/one", "pr_number": 2},
     ]
-    assert output["found_pr_count"] == 5
-    assert output["skipped_pr_count"] == 3
+    assert output["found_pr_count"] == 3
+    assert output["found_is_lower_bound"] is True
+    assert output["skipped_pr_count"] == 1
     assert nodes["combine_results"]["outputs"]["found_pr_count"]["type"] == "number"
+    assert nodes["combine_results"]["outputs"]["found_is_lower_bound"]["type"] == "boolean"
     assert nodes["combine_results"]["outputs"]["skipped_pr_count"]["type"] == "number"
     assert {item["variable"] for item in nodes["end_shadow"]["outputs"]} >= {
-        "found_pr_count", "skipped_pr_count",
+        "found_pr_count", "found_is_lower_bound", "skipped_pr_count",
     }
+    assert code_main(flatten)([json.dumps([{"repository": "owner/one", "pr_number": 1}])], 2)[
+        "found_is_lower_bound"
+    ] is False
 
 
 def test_non_true_shadow_flag_changes_records_without_enabling_writes():
@@ -104,3 +109,26 @@ def test_non_true_shadow_flag_changes_records_without_enabling_writes():
         for case in node["data"].get("cases", [])
         for item in case.get("conditions", [])
     )
+
+
+def test_non_decisive_reviews_do_not_replace_or_restore_decisive_state():
+    classify_pr = code_main(nodes_by_id(workflow())["classify_pr"])
+
+    def state_for(reviews):
+        return classify_pr(
+            "owner/repo", 7, 200,
+            '{"head":{"sha":"abc"},"mergeable":true,"mergeable_state":"clean"}',
+            "abc", 200,
+            '{"check_runs":[{"status":"completed","conclusion":"success"}]}',
+            200, '{"state":"success","statuses":[]}',
+            200, json.dumps(reviews), "true",
+        )["result"]["state"]
+
+    approved = {"user": {"id": 42}, "state": "APPROVED"}
+    changes_requested = {"user": {"id": 42}, "state": "CHANGES_REQUESTED"}
+    commented = {"user": {"id": 42}, "state": "COMMENTED"}
+    dismissed = {"user": {"id": 42}, "state": "DISMISSED"}
+
+    assert state_for([approved, commented]) == "ready_to_merge"
+    assert state_for([changes_requested, commented]) == "review_changes"
+    assert state_for([approved, dismissed]) == "needs_reviewer"

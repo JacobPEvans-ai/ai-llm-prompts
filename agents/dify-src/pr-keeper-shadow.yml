@@ -181,12 +181,15 @@ nodes:
         def main(repository_results: list, max_prs_per_run: int) -> dict:
             prs = []
             errors = []
+            cap = max_prs_per_run if isinstance(max_prs_per_run, int) and max_prs_per_run > 0 else 10
+            found_is_lower_bound = False
             for result in repository_results if isinstance(repository_results, list) else []:
                 try:
                     batch = json.loads(result) if isinstance(result, str) else result
                 except (TypeError, ValueError):
                     continue
                 if isinstance(batch, list):
+                    page_prs = []
                     for item in batch:
                         if not isinstance(item, dict):
                             continue
@@ -194,11 +197,14 @@ nodes:
                             errors.append(item)
                         else:
                             prs.append(item)
-            cap = max_prs_per_run if isinstance(max_prs_per_run, int) and max_prs_per_run > 0 else 10
+                            page_prs.append(item)
+                    if len(page_prs) >= cap:
+                        found_is_lower_bound = True
             return {
                 "prs": prs[:cap],
                 "errors": errors,
                 "found_pr_count": len(prs),
+                "found_is_lower_bound": found_is_lower_bound,
                 "skipped_pr_count": max(0, len(prs) - cap),
             }
       variables:
@@ -208,6 +214,7 @@ nodes:
         prs: {type: "array[object]", children: null}
         errors: {type: "array[object]", children: null}
         found_pr_count: {type: number, children: null}
+        found_is_lower_bound: {type: boolean, children: null}
         skipped_pr_count: {type: number, children: null}
   - id: end_shadow
     type: custom
@@ -220,6 +227,8 @@ nodes:
           value_selector: [combine_results, results]
         - variable: found_pr_count
           value_selector: [combine_results, found_pr_count]
+        - variable: found_is_lower_bound
+          value_selector: [combine_results, found_is_lower_bound]
         - variable: skipped_pr_count
           value_selector: [combine_results, skipped_pr_count]
   - id: pr_loop
@@ -242,7 +251,8 @@ nodes:
       type: code
       code_language: python3
       code: |-
-        def main(pr_results: list, repository_errors: list, found_pr_count: int, skipped_pr_count: int) -> dict:
+        def main(pr_results: list, repository_errors: list, found_pr_count: int,
+                 found_is_lower_bound: bool, skipped_pr_count: int) -> dict:
             results = []
             if isinstance(pr_results, list):
                 results.extend(item for item in pr_results if isinstance(item, dict))
@@ -251,16 +261,19 @@ nodes:
             return {
                 "results": results,
                 "found_pr_count": found_pr_count,
+                "found_is_lower_bound": found_is_lower_bound,
                 "skipped_pr_count": skipped_pr_count,
             }
       variables:
         - {variable: pr_results, value_selector: [pr_loop, output]}
         - {variable: repository_errors, value_selector: [flatten_prs, errors]}
         - {variable: found_pr_count, value_selector: [flatten_prs, found_pr_count]}
+        - {variable: found_is_lower_bound, value_selector: [flatten_prs, found_is_lower_bound]}
         - {variable: skipped_pr_count, value_selector: [flatten_prs, skipped_pr_count]}
       outputs:
         results: {type: "array[object]", children: null}
         found_pr_count: {type: number, children: null}
+        found_is_lower_bound: {type: boolean, children: null}
         skipped_pr_count: {type: number, children: null}
   - id: get_pull_request
     type: custom
@@ -474,7 +487,12 @@ nodes:
                 user = review.get("user") if isinstance(review.get("user"), dict) else {}
                 reviewer_id = user.get("id") or user.get("login") or review.get("id")
                 if reviewer_id is not None:
-                    latest_reviews[str(reviewer_id)] = str(review.get("state", "")).upper()
+                    reviewer_key = str(reviewer_id)
+                    review_state = str(review.get("state", "")).upper()
+                    if review_state in {"APPROVED", "CHANGES_REQUESTED"}:
+                        latest_reviews[reviewer_key] = review_state
+                    elif review_state == "DISMISSED":
+                        latest_reviews.pop(reviewer_key, None)
             if "CHANGES_REQUESTED" in latest_reviews.values():
                 return {"result": record(repository, pr_number, resolved_sha, "review_changes", "A current review requests changes.")}
 
