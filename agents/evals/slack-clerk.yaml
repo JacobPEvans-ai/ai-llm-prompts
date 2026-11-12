@@ -1,5 +1,6 @@
 agent: slack-clerk
 cases:
+  - file://promptfoo/slack-clerk-dify.yaml
   - id: report-existing-channel-message
     category: normal
     input:
