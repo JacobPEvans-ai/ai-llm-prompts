@@ -532,14 +532,14 @@ nodes:
         result:
           type: object
           children:
-            - {name: repository, type: string, children: null}
-            - {name: pr_number, type: number, children: null}
-            - {name: head_sha, type: string, children: null}
-            - {name: state, type: string, children: null}
-            - {name: action, type: string, children: null}
-            - {name: shadow, type: boolean, children: null}
-            - {name: attempt, type: number, children: null}
-            - {name: detail, type: string, children: null}
+            repository: {type: string, children: null}
+            pr_number: {type: number, children: null}
+            head_sha: {type: string, children: null}
+            state: {type: string, children: null}
+            action: {type: string, children: null}
+            shadow: {type: boolean, children: null}
+            attempt: {type: number, children: null}
+            detail: {type: string, children: null}
 edges:
   - id: start-input-continue-pr-scan
     source: start-input-gate
