@@ -13,7 +13,7 @@
     reason: ''
     result:
       status: found
-      items: [{repository: {full_name: example/repo}, pull_request: {number: 17, title: Synthetic pull request, state: open}}]
+      items: [{repository: example/repo, pull_request: {number: 17, title: Synthetic pull request, state: open}}]
       error: ''
   expected_calls: []
   expected_behavior: Return the supplied pull request in the typed read-only result with status found, items, and an empty error; propose no write.
