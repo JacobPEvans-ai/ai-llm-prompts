@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.109.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.109.0...v1.109.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **pr-keeper:** treat zero commit statuses as no status signal ([#473](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/473)) ([a04e279](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/a04e279c88e64765c38e6151f0e0d3d0723e2590))
+
 ## [1.109.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.108.0...v1.109.0) (2026-11-12)
 
 
