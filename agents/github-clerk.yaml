@@ -10,10 +10,489 @@ acted_signal: verified receipt or actionable blocked result
 identity: agent-github-clerk
 api_key_ref: openbao://agent-key/github-clerk
 mcp_servers: [github]
+dify_tools: [github.github_repository_info, github.github_pull_detail, github.github_repository_pulls]
+dify:
+  app:
+    description: Read an allowed repository and retrieve one pull request or a filtered pull request list.
+    icon: 🔎
+    icon_background: '#D5F5F6'
+    mode: workflow
+    name: __DIFY_AGENT_NAME__
+    use_icon_as_answer_icon: false
+  dependencies: []
+  kind: app
+  version: 0.7.0
+  workflow:
+    environment_variables:
+      - {id: github-allowed-repos, name: GITHUB_ALLOWED_REPOS, value_type: secret, value: '', description: JSON array of allowed owner/repository names}
+    graph:
+      edges:
+        - {id: start-to-parse, source: start, sourceHandle: source, target: parse_request, targetHandle: target, type: custom, data: {sourceType: start, targetType: llm}}
+        - {id: parse-to-guard, source: parse_request, sourceHandle: source, target: guard, targetHandle: target, type: custom, data: {sourceType: llm, targetType: code}}
+        - {id: guard-to-gate, source: guard, sourceHandle: source, target: guard_gate, targetHandle: target, type: custom, data: {sourceType: code, targetType: if-else}}
+        - {id: guard-allowed-to-repository, source: guard_gate, sourceHandle: allowed, target: repository_info, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
+        - {id: guard-refused-to-end, source: guard_gate, sourceHandle: 'false', target: end_refused, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: end}}
+        - {id: repository-success-to-parse, source: repository_info, sourceHandle: success-branch, target: parse_repository, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: repository-failure-to-error, source: repository_info, sourceHandle: fail-branch, target: repository_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: repository-parse-to-gate, source: parse_repository, sourceHandle: source, target: repository_gate, targetHandle: target, type: custom, data: {sourceType: code, targetType: if-else}}
+        - {id: repository-ready-to-operation, source: repository_gate, sourceHandle: ready, target: operation_gate, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+        - {id: repository-missing-to-end, source: repository_gate, sourceHandle: 'false', target: end_repository, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: end}}
+        - {id: operation-get-to-detail, source: operation_gate, sourceHandle: get-pull-request, target: pull_detail, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
+        - {id: operation-list-to-list, source: operation_gate, sourceHandle: list-pull-requests, target: list_pulls, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
+        - {id: detail-success-to-normalize, source: pull_detail, sourceHandle: success-branch, target: normalize_detail, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: detail-failure-to-error, source: pull_detail, sourceHandle: fail-branch, target: detail_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: list-success-to-normalize, source: list_pulls, sourceHandle: success-branch, target: normalize_list, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: list-failure-to-error, source: list_pulls, sourceHandle: fail-branch, target: list_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: normalize-detail-to-end, source: normalize_detail, sourceHandle: source, target: end_detail, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: normalize-list-to-end, source: normalize_list, sourceHandle: source, target: end_list, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: repo-error-to-end, source: repository_error, sourceHandle: source, target: end_repository_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: detail-error-to-end, source: detail_error, sourceHandle: source, target: end_detail_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: list-error-to-end, source: list_error, sourceHandle: source, target: end_list_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+      nodes:
+        - id: start
+          type: custom
+          position: {x: 40, y: 500}
+          data:
+            title: Start
+            type: start
+            variables:
+              - {variable: operation, label: operation, type: text-input, required: true, max_length: 32, options: [], default: '', hint: Use get_pull_request or list_pull_requests., placeholder: ''}
+              - {variable: repo, label: repo, type: text-input, required: true, max_length: 256, options: [], default: '', hint: Repository in owner/repository form., placeholder: ''}
+              - {variable: pr_number, label: pr_number, type: number, required: false, hint: Required for get_pull_request; omit for list_pull_requests.}
+              - {variable: state, label: state, type: text-input, required: false, max_length: 16, options: [], default: '', hint: 'Required for list_pull_requests: open, closed, or all.', placeholder: ''}
+        - id: parse_request
+          type: custom
+          position: {x: 340, y: 500}
+          data:
+            title: Parse request
+            type: llm
+            context: {enabled: false, variable_selector: []}
+            model: {completion_params: {temperature: 0}, mode: chat, name: small, provider: langgenius/openai_api_compatible/openai_api_compatible}
+            prompt_template:
+              - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
+              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} repo={{#start.repo#}} pr_number={{#start.pr_number#}} state={{#start.state#}}'}
+            prompt_config: {jinja2_variables: []}
+        - id: guard
+          type: custom
+          position: {x: 640, y: 500}
+          data:
+            title: Allowed-repository read guard
+            type: code
+            code_language: python3
+            code: |-
+              import json
+              import re
+
+              REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+
+              def refused(reason: str, status: str = "refused") -> dict:
+                  return {"allowed": False, "status": status, "items": [], "error": reason, "operation": "", "owner": "", "repo_name": "", "repo": "", "pull_number": 0, "state": ""}
+
+              def main(intent_text: str, operation_raw: str, repo_raw: str, pr_number_raw, state_raw: str, allowed_raw: str) -> dict:
+                  operation = str(operation_raw or "").strip()
+                  repo = str(repo_raw or "").strip()
+                  state = str(state_raw or "").strip().lower()
+                  try:
+                      intent = json.loads(str(intent_text or ""))
+                  except (TypeError, ValueError):
+                      intent = None
+                  if not isinstance(intent, dict) or set(intent) != {"operation"} or intent.get("operation") != operation:
+                      return refused("request classification did not match the typed operation")
+                  if operation not in ("get_pull_request", "list_pull_requests"):
+                      return refused("operation is outside the read-only scope")
+                  if not REPO_RE.fullmatch(repo):
+                      return refused("repository must use owner/repository form")
+                  owner, repo_name = repo.split("/", 1)
+                  if owner in (".", "..") or repo_name in (".", ".."):
+                      return refused("repository name is invalid")
+                  try:
+                      allowed = json.loads(str(allowed_raw or ""))
+                  except (TypeError, ValueError):
+                      return refused("allowed-repository configuration is invalid", "error")
+                  if not isinstance(allowed, list) or not all(isinstance(item, str) and REPO_RE.fullmatch(item) for item in allowed):
+                      return refused("allowed-repository configuration is invalid", "error")
+                  if repo.casefold() not in {item.casefold() for item in allowed}:
+                      return refused("repository is not on the allowed list")
+                  if operation == "get_pull_request":
+                      if state or isinstance(pr_number_raw, bool) or not isinstance(pr_number_raw, (int, float)) or int(pr_number_raw) != pr_number_raw or pr_number_raw <= 0:
+                          return refused("get_pull_request requires a positive integer pr_number only")
+                      pull_number = int(pr_number_raw)
+                  else:
+                      if pr_number_raw not in (None, "", 0, 0.0) or state not in ("open", "closed", "all"):
+                          return refused("list_pull_requests requires a supported state filter only")
+                      pull_number = 0
+                  return {"allowed": True, "status": "", "items": [], "error": "", "operation": operation, "owner": owner, "repo_name": repo_name, "repo": repo, "pull_number": pull_number, "state": state}
+            outputs:
+              allowed: {type: boolean}
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+              operation: {type: string, children: null}
+              owner: {type: string, children: null}
+              repo_name: {type: string, children: null}
+              repo: {type: string, children: null}
+              pull_number: {type: number}
+              state: {type: string, children: null}
+            variables:
+              - {variable: intent_text, value_selector: [parse_request, text]}
+              - {variable: operation_raw, value_selector: [start, operation]}
+              - {variable: repo_raw, value_selector: [start, repo]}
+              - {variable: pr_number_raw, value_selector: [start, pr_number]}
+              - {variable: state_raw, value_selector: [start, state]}
+              - {variable: allowed_raw, value_selector: [env, GITHUB_ALLOWED_REPOS]}
+        - id: guard_gate
+          type: custom
+          position: {x: 940, y: 500}
+          data:
+            title: Allow repository read?
+            type: if-else
+            cases:
+              - case_id: allowed
+                id: allowed
+                logical_operator: and
+                conditions:
+                  - {id: guard-allowed, variable_selector: [guard, allowed], varType: boolean, comparison_operator: is, value: true}
+        - id: repository_info
+          type: custom
+          position: {x: 1240, y: 500}
+          data:
+            title: Read repository
+            type: tool
+            provider_id: langgenius/github/github
+            provider_name: github
+            provider_type: builtin
+            tool_configurations: {}
+            tool_label: GitHub
+            tool_name: github_repository_info
+            tool_parameters:
+              owner: {type: mixed, value: '{{#guard.owner#}}'}
+              repo: {type: mixed, value: '{{#guard.repo_name#}}'}
+            tool_node_version: '2'
+            retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
+            error_strategy: fail-branch
+        - id: parse_repository
+          type: custom
+          position: {x: 1540, y: 360}
+          data:
+            title: Check repository result
+            type: code
+            code_language: python3
+            code: |-
+              import json
+
+              def main(response_text: str) -> dict:
+                  try:
+                      value = json.loads(str(response_text or ""))
+                  except (TypeError, ValueError):
+                      return {"ready": False, "status": "error", "items": [], "error": "repository response was not valid JSON", "repository_json": ""}
+                  if isinstance(value, dict) and str(value.get("message", "")).lower() == "not found":
+                      return {"ready": False, "status": "not_found", "items": [], "error": "repository was not found", "repository_json": ""}
+                  if isinstance(value, dict) and value:
+                      fields = ("full_name", "name", "description", "html_url", "private", "fork", "archived", "default_branch", "stargazers_count", "open_issues_count")
+                      summary = {key: value[key] for key in fields if key in value and isinstance(value[key], (str, int, float, bool, type(None)))}
+                      if not summary:
+                          return {"ready": False, "status": "error", "items": [], "error": "repository response had an unexpected shape", "repository_json": ""}
+                      return {"ready": True, "status": "", "items": [], "error": "", "repository_json": json.dumps(summary, ensure_ascii=False)}
+                  return {"ready": False, "status": "not_found", "items": [], "error": "repository was not found", "repository_json": ""}
+            outputs:
+              ready: {type: boolean}
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+              repository_json: {type: string, children: null}
+            variables:
+              - {variable: response_text, value_selector: [repository_info, text]}
+        - id: repository_gate
+          type: custom
+          position: {x: 1840, y: 360}
+          data:
+            title: Repository exists?
+            type: if-else
+            cases:
+              - case_id: ready
+                id: ready
+                logical_operator: and
+                conditions:
+                  - {id: repository-ready, variable_selector: [parse_repository, ready], varType: boolean, comparison_operator: is, value: true}
+        - id: operation_gate
+          type: custom
+          position: {x: 2140, y: 360}
+          data:
+            title: Select read operation
+            type: if-else
+            cases:
+              - case_id: get-pull-request
+                id: get-pull-request
+                logical_operator: and
+                conditions:
+                  - {id: operation-get, variable_selector: [guard, operation], varType: string, comparison_operator: is, value: get_pull_request}
+              - case_id: list-pull-requests
+                id: list-pull-requests
+                logical_operator: and
+                conditions:
+                  - {id: operation-list, variable_selector: [guard, operation], varType: string, comparison_operator: is, value: list_pull_requests}
+        - id: pull_detail
+          type: custom
+          position: {x: 2440, y: 240}
+          data:
+            title: Read pull request
+            type: tool
+            provider_id: langgenius/github/github
+            provider_name: github
+            provider_type: builtin
+            tool_configurations: {}
+            tool_label: GitHub
+            tool_name: github_pull_detail
+            tool_parameters:
+              owner: {type: mixed, value: '{{#guard.owner#}}'}
+              repo: {type: mixed, value: '{{#guard.repo_name#}}'}
+              pull_number: {type: mixed, value: '{{#guard.pull_number#}}'}
+            tool_node_version: '2'
+            retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
+            error_strategy: fail-branch
+        - id: list_pulls
+          type: custom
+          position: {x: 2440, y: 480}
+          data:
+            title: List pull requests
+            type: tool
+            provider_id: langgenius/github/github
+            provider_name: github
+            provider_type: builtin
+            tool_configurations: {}
+            tool_label: GitHub
+            tool_name: github_repository_pulls
+            tool_parameters:
+              owner: {type: mixed, value: '{{#guard.owner#}}'}
+              repo: {type: mixed, value: '{{#guard.repo_name#}}'}
+              state: {type: mixed, value: '{{#guard.state#}}'}
+            tool_node_version: '2'
+            retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
+            error_strategy: fail-branch
+        - id: normalize_detail
+          type: custom
+          position: {x: 2740, y: 180}
+          data:
+            title: Normalize pull request
+            type: code
+            code_language: python3
+            code: |-
+              import json
+
+              def pull_summary(pull: dict) -> dict:
+                  fields = ("number", "title", "state", "html_url", "body", "draft", "merged", "merged_at", "created_at", "updated_at")
+                  result = {key: pull[key] for key in fields if key in pull and isinstance(pull[key], (str, int, float, bool, type(None)))}
+                  for key in ("head", "base"):
+                      value = pull.get(key)
+                      if isinstance(value, dict):
+                          result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
+                  return result
+
+              def main(response_text: str, repository_json: str) -> dict:
+                  try:
+                      pull = json.loads(str(response_text or ""))
+                      repository = json.loads(str(repository_json or ""))
+                  except (TypeError, ValueError):
+                      return {"status": "error", "items": [], "error": "pull request response was not valid JSON"}
+                  if not isinstance(pull, dict) or not pull:
+                      return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                  if str(pull.get("message", "")).lower() == "not found":
+                      return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                  if pull.get("error"):
+                      return {"status": "error", "items": [], "error": "pull request response indicated an error"}
+                  return {"status": "found", "items": [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)}], "error": ""}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: response_text, value_selector: [pull_detail, text]}
+              - {variable: repository_json, value_selector: [parse_repository, repository_json]}
+        - id: normalize_list
+          type: custom
+          position: {x: 2740, y: 480}
+          data:
+            title: Normalize pull request list
+            type: code
+            code_language: python3
+            code: |-
+              import json
+
+              def pull_summary(pull: dict) -> dict:
+                  fields = ("number", "title", "state", "html_url", "body", "draft", "merged", "merged_at", "created_at", "updated_at")
+                  result = {key: pull[key] for key in fields if key in pull and isinstance(pull[key], (str, int, float, bool, type(None)))}
+                  for key in ("head", "base"):
+                      value = pull.get(key)
+                      if isinstance(value, dict):
+                          result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
+                  return result
+
+              def main(response_text: str, repository_json: str) -> dict:
+                  try:
+                      value = json.loads(str(response_text or ""))
+                      repository = json.loads(str(repository_json or ""))
+                  except (TypeError, ValueError):
+                      return {"status": "error", "items": [], "error": "pull request list was not valid JSON"}
+                  if isinstance(value, list):
+                      pulls = value
+                  elif isinstance(value, dict):
+                      if str(value.get("message", "")).lower() == "not found":
+                          return {"status": "not_found", "items": [], "error": "pull request list was not found"}
+                      if value.get("error"):
+                          return {"status": "error", "items": [], "error": "pull request list response indicated an error"}
+                      pulls = next((value[key] for key in ("pulls", "pull_requests", "items", "data") if isinstance(value.get(key), list)), None)
+                      if pulls is None:
+                          return {"status": "error", "items": [], "error": "pull request list had an unexpected shape"}
+                  else:
+                      return {"status": "error", "items": [], "error": "pull request list had an unexpected shape"}
+                  if not all(isinstance(pull, dict) for pull in pulls):
+                      return {"status": "error", "items": [], "error": "pull request list contained an invalid item"}
+                  items = [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)} for pull in pulls]
+                  return {"status": "found" if items else "not_found", "items": items, "error": "" if items else "no pull requests matched the filter"}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: response_text, value_selector: [list_pulls, text]}
+              - {variable: repository_json, value_selector: [parse_repository, repository_json]}
+        - id: repository_error
+          type: custom
+          position: {x: 1540, y: 680}
+          data:
+            title: Normalize repository read error
+            type: code
+            code_language: python3
+            code: |-
+              def main(error_message: str, error_type: str) -> dict:
+                  message = str(error_message or "").lower()
+                  status = "not_found" if "404" in message or "not found" in message else "error"
+                  error = "repository was not found" if status == "not_found" else "repository read failed"
+                  return {"status": status, "items": [], "error": error}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: error_message, value_selector: [repository_info, error_message]}
+              - {variable: error_type, value_selector: [repository_info, error_type]}
+        - id: detail_error
+          type: custom
+          position: {x: 2740, y: 300}
+          data:
+            title: Normalize pull request read error
+            type: code
+            code_language: python3
+            code: |-
+              def main(error_message: str, error_type: str) -> dict:
+                  message = str(error_message or "").lower()
+                  status = "not_found" if "404" in message or "not found" in message else "error"
+                  error = "pull request was not found" if status == "not_found" else "pull request read failed"
+                  return {"status": status, "items": [], "error": error}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: error_message, value_selector: [pull_detail, error_message]}
+              - {variable: error_type, value_selector: [pull_detail, error_type]}
+        - id: list_error
+          type: custom
+          position: {x: 2740, y: 600}
+          data:
+            title: Normalize pull request list error
+            type: code
+            code_language: python3
+            code: |-
+              def main(error_message: str, error_type: str) -> dict:
+                  message = str(error_message or "").lower()
+                  status = "not_found" if "404" in message or "not found" in message else "error"
+                  error = "pull request list was not found" if status == "not_found" else "pull request list failed"
+                  return {"status": status, "items": [], "error": error}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: error_message, value_selector: [list_pulls, error_message]}
+              - {variable: error_type, value_selector: [list_pulls, error_type]}
+        - id: end_refused
+          type: custom
+          position: {x: 1240, y: 900}
+          data:
+            title: Refused
+            type: end
+            outputs:
+              - {variable: status, value_selector: [guard, status]}
+              - {variable: items, value_selector: [guard, items]}
+              - {variable: error, value_selector: [guard, error]}
+        - id: end_repository
+          type: custom
+          position: {x: 2140, y: 700}
+          data:
+            title: Repository result
+            type: end
+            outputs:
+              - {variable: status, value_selector: [parse_repository, status]}
+              - {variable: items, value_selector: [parse_repository, items]}
+              - {variable: error, value_selector: [parse_repository, error]}
+        - id: end_detail
+          type: custom
+          position: {x: 3040, y: 180}
+          data:
+            title: Pull request result
+            type: end
+            outputs:
+              - {variable: status, value_selector: [normalize_detail, status]}
+              - {variable: items, value_selector: [normalize_detail, items]}
+              - {variable: error, value_selector: [normalize_detail, error]}
+        - id: end_list
+          type: custom
+          position: {x: 3040, y: 480}
+          data:
+            title: Pull request list result
+            type: end
+            outputs:
+              - {variable: status, value_selector: [normalize_list, status]}
+              - {variable: items, value_selector: [normalize_list, items]}
+              - {variable: error, value_selector: [normalize_list, error]}
+        - id: end_repository_error
+          type: custom
+          position: {x: 1840, y: 680}
+          data:
+            title: Repository read error
+            type: end
+            outputs:
+              - {variable: status, value_selector: [repository_error, status]}
+              - {variable: items, value_selector: [repository_error, items]}
+              - {variable: error, value_selector: [repository_error, error]}
+        - id: end_detail_error
+          type: custom
+          position: {x: 3040, y: 300}
+          data:
+            title: Pull request read error
+            type: end
+            outputs:
+              - {variable: status, value_selector: [detail_error, status]}
+              - {variable: items, value_selector: [detail_error, items]}
+              - {variable: error, value_selector: [detail_error, error]}
+        - id: end_list_error
+          type: custom
+          position: {x: 3040, y: 600}
+          data:
+            title: Pull request list error
+            type: end
+            outputs:
+              - {variable: status, value_selector: [list_error, status]}
+              - {variable: items, value_selector: [list_error, items]}
+              - {variable: error, value_selector: [list_error, error]}
 connectors: [vikunja-clerk, zammad-clerk]
 tools:
   - a2a.call
   - github.read
+  - github.github_repository_info
+  - github.github_pull_detail
+  - github.github_repository_pulls
   - github.push_bundle
   - github.create_pull_request
   - github.comment

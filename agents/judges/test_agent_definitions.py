@@ -520,6 +520,20 @@ def _system_prompts(dsl):
     ]
 
 
+def _declared_mcp_tools(agent, tools):
+    servers = agent.get("mcp_servers", [])
+    dotted = [tool.split(".", 1) for tool in tools if "." in tool]
+    return {
+        (prefix, name) for prefix, name in dotted if prefix in servers
+    } | {
+        (servers[0], prefix)
+        for prefix, _ in dotted
+        if servers and prefix not in servers and prefix != "a2a"
+    } | {
+        (servers[0], tool) for tool in tools if servers and "." not in tool
+    }
+
+
 @pytest.mark.parametrize("agent_name", _DSL_AGENTS)
 def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
     agent = definition(agent_name)
@@ -568,23 +582,26 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
         assert {node["data"]["type"] for node in nodes} <= {
             "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "if-else", "variable-aggregator"
         }
-    elif agent.get("mcp_servers"):
-        servers = agent["mcp_servers"]
-        dotted = [tool.split(".", 1) for tool in agent["tools"] if "." in tool]
-        expected_tools = {
-            (prefix, name) for prefix, name in dotted if prefix in servers
-        } | {
-            (servers[0], prefix)
-            for prefix, _ in dotted
-            if prefix not in servers and prefix != "a2a"
-        } | {(servers[0], tool) for tool in agent["tools"] if "." not in tool}
+    elif agent.get("mcp_servers") or "dify_tools" in agent:
+        expected_tools = _declared_mcp_tools(agent, agent["tools"])
         actual_tools = {
             (data.get("provider_name"), data.get("tool_name"))
             for node in nodes
             for data in [node.get("data", {})]
             if data.get("type") == "tool"
         }
-        assert actual_tools == expected_tools
+        if "dify_tools" in agent:
+            assert set(agent["dify_tools"]) <= set(agent.get("tools", []))
+            expected_dify_tools = _declared_mcp_tools(agent, agent["dify_tools"])
+            assert actual_tools == expected_dify_tools
+            assert actual_tools <= expected_tools
+            if not agent["dify_tools"]:
+                tool_nodes = [node for node in nodes if node.get("data", {}).get("type") == "tool"]
+                http_nodes = [node["data"] for node in nodes if node.get("data", {}).get("type") == "http-request"]
+                assert not tool_nodes
+                assert http_nodes and all(data.get("method", "").lower() == "get" for data in http_nodes)
+        else:
+            assert actual_tools == expected_tools
 
     github_reader = agent.get("github_reader")
     if github_reader:

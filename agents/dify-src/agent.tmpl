@@ -406,8 +406,29 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}
 {{- $source := data.ToJSON $dsl | strings.ReplaceAll "__DIFY_SYSTEM_PROMPT__" "" -}}
 {{- test.Assert "workflow has unresolved Dify parameters" (not (regexp.Match `__DIFY_[A-Z0-9_]+__` $source)) -}}
+{{- $difyMcpAgent := . -}}
+{{- with (dict "agent" .) -}}
+  {{- if coll.Has .agent "dify_tools" -}}
+    {{- test.Assert "dify_tools must be a unique array of declared tools" (coll.JQ `. as $agent | ($agent.dify_tools | type == "array" and all(.[]; type == "string")) and (($agent.dify_tools | unique | length) == ($agent.dify_tools | length)) and all($agent.dify_tools[]; . as $tool | ($agent.tools // []) | index($tool) != null)` .agent) -}}
+    {{- /* Retain unmatched declarations for the missing check; graph-matched non-MCP nodes are plugin tools. */ -}}
+    {{- $difyMcpTools := coll.JQ `
+      . as $c |
+      ($c.agent.dify_tools // []) as $tools |
+      [($c.dsl.workflow.graph.nodes // [])[] |
+        select(.data.type == "tool" and .data.provider_type != "mcp") |
+        ((.data.provider_name // "") + "." + (.data.tool_name // ""))] as $nonMcpTools |
+      [($c.dsl.workflow.graph.nodes // [])[] |
+        select(.data.type == "tool" and .data.provider_type == "mcp") |
+        ((.data.provider_name // "") + "." + (.data.tool_name // ""))] as $mcpTools |
+      [$tools[] | . as $tool | select(
+        (($nonMcpTools | index($tool)) == null) or
+        (($mcpTools | index($tool)) != null))]`
+      (dict "agent" .agent "dsl" $dsl) -}}
+    {{- $difyMcpAgent = coll.Set "tools" $difyMcpTools $difyMcpAgent -}}
+  {{- end -}}
+{{- end -}}
 {{- with (index . "dify") -}}
-  {{- $classified := tmpl.Exec "mcp-classification" $ | data.JSON -}}
+  {{- $classified := tmpl.Exec "mcp-classification" $difyMcpAgent | data.JSON -}}
   {{- $report := dict "graph" $dsl "classified" $classified | coll.JQ `
     .graph as $graph | .classified as $c |
     [($graph.workflow.graph.nodes // [])[] |

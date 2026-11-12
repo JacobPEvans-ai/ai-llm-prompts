@@ -50,4 +50,5 @@ cases:
     category: negative-trigger
     input: Create an incident ticket.
     expected_behavior: Refuse an operation outside GitHub; propose no write.
+  - file://promptfoo/github-clerk-dify.yaml
   - file://shared/text-boundaries.yaml
