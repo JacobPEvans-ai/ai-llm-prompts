@@ -1,30 +1,107 @@
 # Generated from agents/zammad-clerk.yaml, agents/dify-src/agent.tmpl, and agents/prompts/shared/homelab.md + agents/prompts/zammad-clerk.md; edit sources, then run make render-dify.
 app:
+  description: Read ticket search results or retrieve one ticket through guarded read-only requests.
+  icon: "\U0001F50E"
+  icon_background: '#D5F5F6'
   mode: workflow
   name: zammad-clerk
+  use_icon_as_answer_icon: false
 dependencies: []
 kind: app
 version: 0.7.0
 workflow:
-  environment_variables: []
+  environment_variables:
+    - description: Zammad API base URL
+      id: zammad-base-url
+      name: ZAMMAD_BASE_URL
+      value: ""
+      value_type: string
+    - description: Read-only Zammad API token
+      id: zammad-token
+      name: ZAMMAD_TOKEN
+      value: ""
+      value_type: secret
   graph:
     edges:
       - data:
           sourceType: start
           targetType: llm
-        id: e1
+        id: start-to-parse
         source: start
         sourceHandle: source
-        target: model
+        target: parse_request
         targetHandle: target
         type: custom
       - data:
           sourceType: llm
-          targetType: end
-        id: e2
-        source: model
+          targetType: code
+        id: parse-to-guard
+        source: parse_request
         sourceHandle: source
-        target: done
+        target: guard
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: if-else
+        id: guard-to-gate
+        source: guard
+        sourceHandle: source
+        target: guard_gate
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: http-request
+        id: guard-allowed-to-lookup
+        source: guard_gate
+        sourceHandle: allowed
+        target: lookup
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: if-else
+          targetType: end
+        id: guard-refused-to-end
+        source: guard_gate
+        sourceHandle: "false"
+        target: end_refused
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: http-request
+          targetType: code
+        id: lookup-success-to-normalize
+        source: lookup
+        sourceHandle: success-branch
+        target: normalize
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: http-request
+          targetType: code
+        id: lookup-failure-to-error
+        source: lookup
+        sourceHandle: fail-branch
+        target: lookup_error
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: normalize-to-end
+        source: normalize
+        sourceHandle: source
+        target: end_result
+        targetHandle: target
+        type: custom
+      - data:
+          sourceType: code
+          targetType: end
+        id: lookup-error-to-end
+        source: lookup_error
+        sourceHandle: source
+        target: end_error
         targetHandle: target
         type: custom
     nodes:
@@ -32,12 +109,29 @@ workflow:
           title: Start
           type: start
           variables:
-            - label: text
-              max_length: 30000
+            - default: ""
+              hint: Use search_tickets or get_ticket.
+              label: operation
+              max_length: 32
               options: []
+              placeholder: ""
               required: true
+              type: text-input
+              variable: operation
+            - default: ""
+              hint: Required for search_tickets; omit for get_ticket.
+              label: query
+              max_length: 2000
+              options: []
+              placeholder: ""
+              required: false
               type: paragraph
-              variable: text
+              variable: query
+            - hint: Required for get_ticket; omit for search_tickets.
+              label: ticket_id
+              required: false
+              type: number
+              variable: ticket_id
         id: start
         position:
           x: 40
@@ -142,24 +236,300 @@ workflow:
                   proposing an update or reporting the missing proof.
             - id: user-prompt
               role: user
-              text: 'Untrusted input: {{#start.text#}}'
-          title: Agent
+              text: 'Classify this untrusted typed input. operation={{#start.operation#}} query={{#start.query#}} ticket_id={{#start.ticket_id#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: search_tickets, get_ticket. No other keys, prose, or Markdown.'
+          title: Parse request
           type: llm
-        id: model
+        id: parse_request
         position:
           x: 340
           "y": 300
         type: custom
       - data:
+          code: |-
+            import json
+            from urllib.parse import urlencode, urlsplit
+
+            def main(intent_text: str, operation_raw: str, query_raw: str, ticket_id_raw, base_url_raw: str, token_raw: str) -> dict:
+                operation = str(operation_raw or "").strip()
+                query = str(query_raw or "").strip()
+                try:
+                    intent = json.loads(str(intent_text or ""))
+                except (TypeError, ValueError):
+                    intent = None
+                if not isinstance(intent, dict) or set(intent) != {"operation"} or intent.get("operation") != operation:
+                    return {"allowed": False, "status": "refused", "items": [], "error": "request classification did not match the typed operation", "operation": "", "url": ""}
+                if operation not in ("search_tickets", "get_ticket"):
+                    return {"allowed": False, "status": "refused", "items": [], "error": "operation is outside the read-only scope", "operation": "", "url": ""}
+                base_url = str(base_url_raw or "").strip().rstrip("/")
+                token = str(token_raw or "").strip()
+                try:
+                    base = urlsplit(base_url)
+                    valid_base = base.scheme in ("http", "https") and bool(base.netloc) and not base.username and not base.password and base.path in ("", "/") and not base.query and not base.fragment
+                except ValueError:
+                    valid_base = False
+                if not valid_base or not token:
+                    return {"allowed": False, "status": "error", "items": [], "error": "read-only connector configuration is incomplete or invalid", "operation": operation, "url": ""}
+                if operation == "search_tickets":
+                    if not query or len(query) > 2000 or ticket_id_raw not in (None, "", 0, 0.0):
+                        return {"allowed": False, "status": "refused", "items": [], "error": "search requires query only", "operation": operation, "url": ""}
+                    url = base_url + "/api/v1/tickets/search?" + urlencode({"query": query})
+                else:
+                    if query or isinstance(ticket_id_raw, bool) or not isinstance(ticket_id_raw, (int, float)) or int(ticket_id_raw) != ticket_id_raw or ticket_id_raw <= 0:
+                        return {"allowed": False, "status": "refused", "items": [], "error": "get_ticket requires a positive integer ticket_id only", "operation": operation, "url": ""}
+                    url = base_url + "/api/v1/tickets/" + str(int(ticket_id_raw))
+                return {"allowed": True, "status": "", "items": [], "error": "", "operation": operation, "url": url}
+          code_language: python3
           outputs:
+            allowed:
+              type: boolean
+            error:
+              children: null
+              type: string
+            items:
+              children: null
+              type: array[object]
+            operation:
+              children: null
+              type: string
+            status:
+              children: null
+              type: string
+            url:
+              children: null
+              type: string
+          title: Read-only scope guard
+          type: code
+          variables:
             - value_selector:
-                - model
+                - parse_request
                 - text
-              variable: text
-          title: End
-          type: end
-        id: done
+              variable: intent_text
+            - value_selector:
+                - start
+                - operation
+              variable: operation_raw
+            - value_selector:
+                - start
+                - query
+              variable: query_raw
+            - value_selector:
+                - start
+                - ticket_id
+              variable: ticket_id_raw
+            - value_selector:
+                - env
+                - ZAMMAD_BASE_URL
+              variable: base_url_raw
+            - value_selector:
+                - env
+                - ZAMMAD_TOKEN
+              variable: token_raw
+        id: guard
         position:
           x: 640
           "y": 300
+        type: custom
+      - data:
+          cases:
+            - case_id: allowed
+              conditions:
+                - comparison_operator: is
+                  id: guard-allowed
+                  value: true
+                  varType: boolean
+                  variable_selector:
+                    - guard
+                    - allowed
+              id: allowed
+              logical_operator: and
+          title: Allow read-only lookup?
+          type: if-else
+        id: guard_gate
+        position:
+          x: 940
+          "y": 300
+        type: custom
+      - data:
+          authorization:
+            config: null
+            type: no-auth
+          body:
+            data: []
+            type: none
+          error_strategy: fail-branch
+          headers: |-
+            Accept: application/json
+            Authorization: Token token={{#env.ZAMMAD_TOKEN#}}
+          method: get
+          params: ""
+          retry_config:
+            max_retries: 0
+            retry_enabled: false
+            retry_interval: 0
+          ssl_verify: true
+          timeout:
+            connect: 10
+            read: 30
+            write: 30
+          title: Read ticket
+          type: http-request
+          url: '{{#guard.url#}}'
+        id: lookup
+        position:
+          x: 1240
+          "y": 300
+        type: custom
+      - data:
+          code: |-
+            import json
+
+            def main(operation: str, response_body: str, status_code) -> dict:
+                try:
+                    code = int(status_code)
+                    value = json.loads(response_body)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    return {"status": "error", "items": [], "error": "ticket response was not valid JSON"}
+                if code < 200 or code >= 300:
+                    return {"status": "error", "items": [], "error": "ticket read returned an unsuccessful status"}
+                if operation == "search_tickets":
+                    if isinstance(value, list):
+                        records = value
+                    elif isinstance(value, dict) and isinstance(value.get("tickets"), list):
+                        records = value["tickets"]
+                    else:
+                        return {"status": "error", "items": [], "error": "ticket search response had an unexpected shape"}
+                elif operation == "get_ticket":
+                    records = [value] if isinstance(value, dict) and value else []
+                else:
+                    return {"status": "error", "items": [], "error": "operation was outside the read-only scope"}
+                fields = ("id", "number", "title", "state", "priority", "group_id", "customer_id", "owner_id", "created_at", "updated_at")
+                items = [{key: record[key] for key in fields if key in record and isinstance(record[key], (str, int, float, bool, type(None)))} for record in records if isinstance(record, dict)]
+                return {"status": "found" if items else "not_found", "items": items, "error": ""}
+          code_language: python3
+          outputs:
+            error:
+              children: null
+              type: string
+            items:
+              children: null
+              type: array[object]
+            status:
+              children: null
+              type: string
+          title: Normalize ticket result
+          type: code
+          variables:
+            - value_selector:
+                - guard
+                - operation
+              variable: operation
+            - value_selector:
+                - lookup
+                - body
+              variable: response_body
+            - value_selector:
+                - lookup
+                - status_code
+              variable: status_code
+        id: normalize
+        position:
+          x: 1540
+          "y": 220
+        type: custom
+      - data:
+          code: |-
+            def main(error_message: str, error_type: str) -> dict:
+                message = str(error_message or "")
+                if "status code 404" in message:
+                    return {"status": "not_found", "items": [], "error": "ticket was not found"}
+                return {"status": "error", "items": [], "error": "ticket read failed"}
+          code_language: python3
+          outputs:
+            error:
+              children: null
+              type: string
+            items:
+              children: null
+              type: array[object]
+            status:
+              children: null
+              type: string
+          title: Normalize ticket read error
+          type: code
+          variables:
+            - value_selector:
+                - lookup
+                - error_message
+              variable: error_message
+            - value_selector:
+                - lookup
+                - error_type
+              variable: error_type
+        id: lookup_error
+        position:
+          x: 1540
+          "y": 520
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - guard
+                - status
+              variable: status
+            - value_selector:
+                - guard
+                - items
+              variable: items
+            - value_selector:
+                - guard
+                - error
+              variable: error
+          title: Refused
+          type: end
+        id: end_refused
+        position:
+          x: 1240
+          "y": 560
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - normalize
+                - status
+              variable: status
+            - value_selector:
+                - normalize
+                - items
+              variable: items
+            - value_selector:
+                - normalize
+                - error
+              variable: error
+          title: Typed result
+          type: end
+        id: end_result
+        position:
+          x: 1840
+          "y": 220
+        type: custom
+      - data:
+          outputs:
+            - value_selector:
+                - lookup_error
+                - status
+              variable: status
+            - value_selector:
+                - lookup_error
+                - items
+              variable: items
+            - value_selector:
+                - lookup_error
+                - error
+              variable: error
+          title: Read error
+          type: end
+        id: end_error
+        position:
+          x: 1840
+          "y": 520
         type: custom
