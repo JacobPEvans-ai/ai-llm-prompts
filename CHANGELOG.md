@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.112.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.3...v1.112.0) (2026-11-12)
+
+
+### Features
+
+* **dify:** wire slack-clerk read tools with typed outputs ([#482](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/482)) ([2d50804](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/2d508046647ea1243b1ee0774f32876bda38a215))
+
 ## [1.111.3](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.2...v1.111.3) (2026-11-12)
 
 
