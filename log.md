@@ -2,6 +2,11 @@
 
 ## 2026-11-12
 
+* **Feat (auto-ai-agent)**: Add the `pr-fix` per-state briefs a PR controller hands a sandboxed coding agent when a pull request
+  is not mergeable - behind base, merge conflict with base, one failing check, or unresolved review threads - each declaring its
+  `{repo}`, `{pr}`, `{head_sha}`, `{base}` placeholders, the exact git and gh steps toward one new commit on the PR branch, hard
+  limits, stop conditions, and the one-line `FIXED`/`STOP` output contract; `pr-fix/README.md` maps each GitHub API state to its
+  brief and caps attempts at three per head state before the `needs-lead` label.
 * **Fix (auto-ai-agent)**: Pepper's AI news prompt uses only run-supplied items and preferences, and the Pepper surface separates tracker and AI run rules.
 
 ## 2026-11-11
