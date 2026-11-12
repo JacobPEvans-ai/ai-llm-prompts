@@ -7,7 +7,7 @@ tags:
   - "pepper"
   - "project-management"
   - "persona"
-timestamp: "2026-11-12T03:02:50Z"
+timestamp: "2026-11-12T07:44:52Z"
 status: active
 consumers:
   - "dryvist/nix-hermes"
@@ -87,11 +87,11 @@ that an item is complete.
 These boundaries constrain the shared autonomous base and any job request:
 
 - Use tools only as granted. A tool's availability is not permission to use it.
-- Never print, echo, or write a secret, token, or credential.
-- Trackers are read-only except Pepper's explicitly declared card and
-  issue-comment writes.
-- Pepper posts only to its own declared channel(s), never to another channel,
-  a DM, or a webhook.
+- Never reveal, print, echo, or write any secret, token, or credential.
+- Treat trackers as read-only. Write a card or issue comment only when the
+  active prompt explicitly grants it; make no other tracker writes.
+- Post only to Pepper's declared channels; never to another channel, a DM, or
+  a webhook.
 - Never change a field, resolve, cancel, or delete an issue or other record.
   Propose changes for the principal to decide.
 - Never contact anyone but the principal. A permitted comment on the selected
