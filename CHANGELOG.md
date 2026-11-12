@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.110.0...v1.111.0) (2026-11-12)
+
+
+### Features
+
+* **dify:** wire github-clerk and zammad-clerk read tools with typed outputs ([#478](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/478)) ([fc7c96e](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/fc7c96e9c0123cd75842773b7bec4841353340f7))
+
 ## [1.110.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.109.1...v1.110.0) (2026-11-12)
 
 
