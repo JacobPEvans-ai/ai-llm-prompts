@@ -46,9 +46,9 @@ branch may have moved since the controller read it.
      --jq '.headRefName + " " + .headRefOid + " " + .mergeStateStatus'
    ```
 
-   If `headRefOid` is not `{head_sha}` or `mergeStateStatus` is not `BEHIND`,
-   re-read the pull request and restart; never push on top of a head you did
-   not verify.
+   If `headRefOid` is not `{head_sha}`, output `STOP: head moved`. If
+   `mergeStateStatus` is no longer `BEHIND`, output `STOP: not behind`. Never
+   push on top of a head you did not verify.
 
 2. Update the branch - API first, local merge as the fallback; both land one
    merge commit:

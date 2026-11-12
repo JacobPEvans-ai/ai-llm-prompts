@@ -50,7 +50,7 @@ thread ids change on every review, so `{threads}` may be stale.
        repository(owner:$owner,name:$repo){
          pullRequest(number:$prNumber){
            reviewDecision
-           reviewThreads(first:100){nodes{
+           reviewThreads(first:100){pageInfo{hasNextPage} nodes{
              id isResolved path line startLine
              comments(first:100){nodes{databaseId body author{login}}}}}
          }
