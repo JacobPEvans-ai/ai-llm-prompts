@@ -477,6 +477,13 @@ nodes:
             commit_state = commit_data["state"].lower()
             statuses = commit_data.get("statuses", [])
             status_states = [item.get("state", "").lower() for item in statuses if isinstance(item, dict)] if isinstance(statuses, list) else []
+            pending_status = any(value == "pending" for value in status_states)
+            total_status_count = commit_data.get("total_count")
+            combined_status_pending = (
+                commit_state == "pending"
+                and isinstance(total_status_count, int)
+                and total_status_count > 0
+            )
             if any(value in RED_CONCLUSIONS for value in conclusions) or commit_state in {"failure", "error"} or any(value in {"failure", "error"} for value in status_states):
                 return {"result": record(repository, pr_number, resolved_sha, "checks_red", "A check run or commit status reports failure.")}
 
@@ -503,8 +510,8 @@ nodes:
                     or run.get("conclusion") not in OK_CONCLUSIONS | RED_CONCLUSIONS
                     for run in check_runs
                 )
-                or commit_state == "pending"
-                or any(value == "pending" for value in status_states)
+                or pending_status
+                or combined_status_pending
             )
             if pending_checks:
                 return {"result": record(repository, pr_number, resolved_sha, "pending", "Checks are still pending or have an unknown conclusion.")}

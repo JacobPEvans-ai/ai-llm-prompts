@@ -78,7 +78,7 @@ cases:
       pr_number: 7
       pull_request: {head: {sha: '7777777777777777777777777777777777777777'}, mergeable: true, mergeable_state: clean, draft: false, requested_reviewers: []}
       check_runs: {check_runs: [{status: completed, conclusion: success}]}
-      commit_status: {state: success, statuses: []}
+      commit_status: {state: pending, statuses: []}
       reviews: [{id: 7, user: {id: 7}, state: APPROVED}]
     expected_output: {state: ready_to_merge, action: 'hand to merge-steward', shadow: true, attempt: 0}
     expected_behavior: Hand the verified ready state to merge-steward as a proposal; do not merge.
