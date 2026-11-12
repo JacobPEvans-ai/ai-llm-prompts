@@ -30,6 +30,11 @@ def test_pr_scan_caps_the_flattened_list_before_the_pr_loop_and_reports_counts()
     prepare = nodes["prepare_scan"]
     flatten = nodes["flatten_prs"]
 
+    assert not any(
+        "GITHUB" in variable.get("name", "") and "TOKEN" in variable.get("name", "")
+        for variable in source["environment_variables"]
+    )
+    assert "Authorization" not in json.dumps(source["nodes"])
     assert {item["name"] for item in source["environment_variables"]} >= {
         "PR_AUTOMATION_MAX_PRS_PER_RUN",
     }
@@ -42,7 +47,7 @@ def test_pr_scan_caps_the_flattened_list_before_the_pr_loop_and_reports_counts()
         ("prepare_scan", "max_prs_per_run"),
     }
 
-    prepared = code_main(prepare)("owner/one,owner/two", "", "2")
+    prepared = code_main(prepare)("owner/one,owner/two", "2")
     assert prepared["max_prs_per_run"] == 2
     assert "Authorization:" not in prepared["headers"]
     output = code_main(flatten)([
