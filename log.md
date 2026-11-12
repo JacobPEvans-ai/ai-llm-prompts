@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-11-12
+
+* **Fix (auto-ai-agent)**: Pepper's AI news prompt uses only run-supplied items and preferences, and the Pepper surface separates tracker and AI run rules.
+
 ## 2026-11-11
 
 * **Update (auto-ai-agent)**: Move the shared scheduled-report contract into `hermes.md`; the daily status Kanban
