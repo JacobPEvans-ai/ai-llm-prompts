@@ -68,4 +68,5 @@ cases:
     expected_output: {status: refused, result: null}
     expected_calls: []
     expected_behavior: Refuse the write operation and propose no Splunk call.
+  - file://promptfoo/splunk-clerk-dify.yaml
   - file://shared/text-boundaries.yaml

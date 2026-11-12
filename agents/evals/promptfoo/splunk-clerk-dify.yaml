@@ -1,0 +1,71 @@
+- id: dify-read-found
+  category: normal
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request:
+      operation: search
+      query: 'search index=fixture-alerts sourcetype=synthetic_event event_type="fixture" | stats count by event_type'
+      earliest: -15m
+      latest: now
+      max_results: 50
+    search_policy: {allowed_indexes: [fixture-alerts], allowed_sourcetypes: [synthetic_event]}
+    source_results:
+      splunk.search: {available: true, search_id: fixture-search-1}
+      splunk.get_search_results:
+        available: true
+        items: [{event_type: fixture, count: 1}]
+  expected_output:
+    status: ok
+    reason: ''
+    result:
+      status: found
+      items: [{event_type: fixture, count: 1}]
+      error: ''
+  expected_calls: []
+  expected_behavior: Return the supplied row in the typed read-only result with status found, items, and an empty error; propose no write.
+- id: dify-read-no-results
+  category: normal
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request:
+      operation: search
+      query: 'search index=fixture-alerts sourcetype=synthetic_event event_type="absent" | table event_type'
+      earliest: -15m
+      latest: now
+      max_results: 50
+    search_policy: {allowed_indexes: [fixture-alerts], allowed_sourcetypes: [synthetic_event]}
+    source_results:
+      splunk.search: {available: true, search_id: fixture-search-empty}
+      splunk.get_search_results: {available: true, items: []}
+  expected_output:
+    status: ok
+    reason: ''
+    result:
+      status: no_results
+      items: []
+      error: no results matched the bounded search
+  expected_calls: []
+  expected_behavior: Return the typed no_results result with empty items and an explanatory error; do not infer a finding or propose a write.
+- id: dify-read-refused-write-command
+  category: negative-trigger
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request:
+      operation: search
+      query: 'search index=fixture-alerts sourcetype=synthetic_event event_type="fixture" | delete'
+      earliest: -15m
+      latest: now
+      max_results: 50
+    search_policy: {allowed_indexes: [fixture-alerts], allowed_sourcetypes: [synthetic_event]}
+  expected_output:
+    status: ok
+    reason: ''
+    result:
+      status: refused
+      items: []
+      error: query contains a write or unsupported pipeline command
+  expected_calls: []
+  expected_behavior: Refuse a query with a write command, return the typed refused result with empty items, and propose no Splunk call.
