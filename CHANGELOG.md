@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.111.3](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.2...v1.111.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* **auto-ai-agent:** treat task text as reference data in the assistant brief and pulse ([#485](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/485)) ([4042dd7](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/4042dd7f0f0b20d57cb3932225642561735447fe))
+
 ## [1.111.2](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.1...v1.111.2) (2026-11-12)
 
 
