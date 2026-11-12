@@ -132,3 +132,21 @@ def test_non_decisive_reviews_do_not_replace_or_restore_decisive_state():
     assert state_for([approved, commented]) == "ready_to_merge"
     assert state_for([changes_requested, commented]) == "review_changes"
     assert state_for([approved, dismissed]) == "needs_reviewer"
+
+
+def test_commit_status_signal_does_not_block_green_checks_without_statuses():
+    classify_pr = code_main(nodes_by_id(workflow())["classify_pr"])
+
+    def state_for(commit_status):
+        return classify_pr(
+            "owner/repo", 7, 200,
+            '{"head":{"sha":"abc"},"mergeable":true,"mergeable_state":"clean"}',
+            "abc", 200,
+            '{"check_runs":[{"status":"completed","conclusion":"success"}]}',
+            200, json.dumps(commit_status),
+            200, json.dumps([{"id": 7, "user": {"id": 7}, "state": "APPROVED"}]), "true",
+        )["result"]["state"]
+
+    assert state_for({"state": "pending", "statuses": []}) == "ready_to_merge"
+    assert state_for({"state": "pending", "statuses": [{"state": "pending"}]}) == "pending"
+    assert state_for({"state": "failure", "statuses": [{"state": "failure"}]}) == "checks_red"
