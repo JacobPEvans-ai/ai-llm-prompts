@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.108.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.107.1...v1.108.0) (2026-11-12)
+
+
+### Features
+
+* **pr-fix:** add per-state fix briefs for unmergeable pull requests ([#467](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/467)) ([1ee9611](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/1ee961198a486ce668a61abd813b93c1df7abf90))
+
 ## [1.107.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.107.0...v1.107.1) (2026-11-12)
 
 
