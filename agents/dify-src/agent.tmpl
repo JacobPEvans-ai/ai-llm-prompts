@@ -401,6 +401,17 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
       .edges += [.nodes[] | select(.data.type == "llm") | ({id: (.id + "-failed"), source: .id, sourceHandle: "fail-branch", target: ("notify-failure-" + .id), targetHandle: "target", type: "custom", data: {sourceType: "llm", targetType: "code"}}, {id: ("notify-failure-" + .id + "-end"), source: ("notify-failure-" + .id), sourceHandle: "source", target: ("failed-" + .id), targetHandle: "target", type: "custom", data: {sourceType: "code", targetType: "end"}})]
     )` -}}
 {{- end -}}
+{{- with (index . "dify_pr_queue_shadow") -}}
+  {{- test.Assert "Dify PR queue shadow flow only applies to pr-keeper" (and (eq $.name "pr-keeper") (eq . true)) -}}
+  {{- $shadow := file.Read "agents/dify-src/pr-keeper-shadow.yml" | data.YAML -}}
+  {{- $dsl = dict "dsl" $dsl "shadow" $shadow | coll.JQ `
+    . as $c | $c.dsl |
+    .workflow.environment_variables += $c.shadow.environment_variables |
+    .workflow.graph |= (
+      .edges += $c.shadow.edges |
+      .nodes += $c.shadow.nodes
+    )` -}}
+{{- end -}}
 {{- /* Substitute data values, never evaluate prompts or Code-node source as templates. */ -}}
 {{- $dsl = dict "dsl" $dsl "params" $params | coll.JQ `.params as $params | .dsl | walk(if type == "string" then reduce ($params | to_entries[]) as $p (.; split($p.key) | join($p.value)) else . end)` -}}
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}
