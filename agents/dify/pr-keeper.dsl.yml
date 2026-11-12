@@ -25,12 +25,6 @@ workflow:
       selector: []
       value: "10"
       value_type: string
-    - description: Optional GitHub read token; empty uses anonymous public API access.
-      id: github-read-token
-      name: GITHUB_READ_TOKEN
-      selector: []
-      value: ""
-      value_type: secret
     - description: GitHub REST API base configured in the Dify workspace.
       id: github-api-base
       name: GITHUB_API_BASE
@@ -2216,7 +2210,7 @@ workflow:
             MAX_PRS_PER_PAGE = 100
             REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
-            def main(raw_repositories: str, token: str, raw_max_prs_per_run: str) -> dict:
+            def main(raw_repositories: str, raw_max_prs_per_run: str) -> dict:
                 raw = raw_repositories.strip() if isinstance(raw_repositories, str) else ""
                 values = [item.strip() for item in raw.split(",") if item.strip()] if raw else [DEFAULT_REPO]
                 repositories = []
@@ -2235,9 +2229,6 @@ workflow:
                     max_prs_per_run = DEFAULT_MAX_PRS_PER_RUN
                 max_prs_per_run = min(max_prs_per_run, MAX_PRS_PER_PAGE)
                 headers = "Accept: application/vnd.github+json\nX-GitHub-Api-Version: 2022-11-28"
-                token = token.strip() if isinstance(token, str) else ""
-                if token:
-                    headers += "\nAuthorization: Bearer " + token
                 return {
                     "repositories": repositories,
                     "headers": headers,
@@ -2261,10 +2252,6 @@ workflow:
                 - env
                 - PR_AUTOMATION_REPOS
               variable: raw_repositories
-            - value_selector:
-                - env
-                - GITHUB_READ_TOKEN
-              variable: token
             - value_selector:
                 - env
                 - PR_AUTOMATION_MAX_PRS_PER_RUN
