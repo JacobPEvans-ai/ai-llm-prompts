@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.107.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.107.0...v1.107.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **pepper:** align authority and schedule prompts ([#465](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/465)) ([f49f672](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/f49f67281a1eecebc8ecc15ab077976f98bb56b9))
+
 ## [1.107.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.106.0...v1.107.0) (2026-11-12)
 
 
