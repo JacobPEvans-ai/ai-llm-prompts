@@ -10,7 +10,9 @@ Prompts for continuously running local agents, shared autonomous behavior, monit
 * [GitHub specialist](github-specialist.md) - Platform-neutral GitHub operations prompt with tiered authority and verified results.
 * [Hermes direct-cron reporting footer](hermes-direct-cron-footer.md) - Evidence and report-shape contract appended to every direct-cron prompt.
 * [Hermes direct-cron footer, quiet when healthy](hermes-direct-cron-footer-quiet.md) - Same contract for a job whose all-clear goes to a quiet channel.
-* [Hermes Surface](hermes.md) - Canonical Hermes identity, tools, investigation discipline, escalation routing, homelab constraints, and model fabric.
+* [Hermes Surface](hermes.md) - Canonical Hermes identity, scheduled report contract,
+  tools, investigation discipline, escalation routing, homelab constraints, and model
+  fabric.
 * [Large-Tier Surface](large-tier.md) - Deep-reasoning and synthesis delta for a staged large-model serving tier.
 * [Maintenance Windows](maintenance-windows.md) - Shared homelab hands-off state as Vikunja tasks, checked before touching live infrastructure.
 * [Model Delegation](model-delegation.md) - Offloading bounded subtasks to a shared model router at the cheapest capable tier, with router-enforced budgets.
