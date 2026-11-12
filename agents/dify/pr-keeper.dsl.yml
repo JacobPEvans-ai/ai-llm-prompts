@@ -13,11 +13,17 @@ workflow:
       selector: []
       value: JacobPEvans-ai/pr-automation-fixture
       value_type: string
-    - description: Shadow mode is fixed on for this read-only workflow.
+    - description: Controls the shadow flag reported in read-only PR records; the workflow never writes.
       id: pr-automation-shadow
       name: PR_AUTOMATION_SHADOW
       selector: []
       value: "true"
+      value_type: string
+    - description: Maximum number of open pull requests classified per run across all repositories.
+      id: pr-automation-max-prs-per-run
+      name: PR_AUTOMATION_MAX_PRS_PER_RUN
+      selector: []
+      value: "10"
       value_type: string
     - description: Optional GitHub read token; empty uses anonymous public API access.
       id: github-read-token
@@ -2206,9 +2212,11 @@ workflow:
             import re
 
             DEFAULT_REPO = "JacobPEvans-ai/pr-automation-fixture"
+            DEFAULT_MAX_PRS_PER_RUN = 10
+            MAX_PRS_PER_PAGE = 100
             REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
-            def main(raw_repositories: str, token: str) -> dict:
+            def main(raw_repositories: str, token: str, raw_max_prs_per_run: str) -> dict:
                 raw = raw_repositories.strip() if isinstance(raw_repositories, str) else ""
                 values = [item.strip() for item in raw.split(",") if item.strip()] if raw else [DEFAULT_REPO]
                 repositories = []
@@ -2219,16 +2227,30 @@ workflow:
                     if repository not in seen:
                         repositories.append(repository)
                         seen.add(repository)
+                try:
+                    max_prs_per_run = int(raw_max_prs_per_run)
+                except (TypeError, ValueError):
+                    max_prs_per_run = DEFAULT_MAX_PRS_PER_RUN
+                if max_prs_per_run < 1:
+                    max_prs_per_run = DEFAULT_MAX_PRS_PER_RUN
+                max_prs_per_run = min(max_prs_per_run, MAX_PRS_PER_PAGE)
                 headers = "Accept: application/vnd.github+json\nX-GitHub-Api-Version: 2022-11-28"
                 token = token.strip() if isinstance(token, str) else ""
                 if token:
                     headers += "\nAuthorization: Bearer " + token
-                return {"repositories": repositories, "headers": headers}
+                return {
+                    "repositories": repositories,
+                    "headers": headers,
+                    "max_prs_per_run": max_prs_per_run,
+                }
           code_language: python3
           outputs:
             headers:
               children: null
               type: string
+            max_prs_per_run:
+              children: null
+              type: number
             repositories:
               children: null
               type: array[string]
@@ -2243,6 +2265,10 @@ workflow:
                 - env
                 - GITHUB_READ_TOKEN
               variable: token
+            - value_selector:
+                - env
+                - PR_AUTOMATION_MAX_PRS_PER_RUN
+              variable: raw_max_prs_per_run
         id: prepare_scan
         position:
           x: 140
@@ -2285,7 +2311,7 @@ workflow:
             write: 30
           title: List open pull requests
           type: http-request
-          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#repo_loop.item#}}/pulls?state=open&per_page=100'
+          url: '{{#env.GITHUB_API_BASE#}}/repos/{{#repo_loop.item#}}/pulls?state=open&per_page={{#prepare_scan.max_prs_per_run#}}'
         extent: parent
         id: list_open_prs
         parentId: repo_loop
@@ -2297,7 +2323,8 @@ workflow:
           code: |-
             import json
 
-            def main(repository: str, status_code: int, body: str) -> dict:
+            def main(repository: str, status_code: int, body: str, shadow_mode: str) -> dict:
+                shadow = shadow_mode == "true"
                 if status_code != 200:
                     error = {
                         "repository": repository,
@@ -2305,7 +2332,7 @@ workflow:
                         "head_sha": "",
                         "state": "error",
                         "action": "none",
-                        "shadow": True,
+                        "shadow": shadow,
                         "attempt": 0,
                         "detail": f"GitHub returned HTTP {status_code} while listing open pull requests.",
                     }
@@ -2321,7 +2348,7 @@ workflow:
                         "head_sha": "",
                         "state": "error",
                         "action": "none",
-                        "shadow": True,
+                        "shadow": shadow,
                         "attempt": 0,
                         "detail": f"GitHub returned an invalid open pull request list (HTTP {status_code}).",
                     }
@@ -2354,6 +2381,10 @@ workflow:
                 - list_open_prs
                 - body
               variable: body
+            - value_selector:
+                - env
+                - PR_AUTOMATION_SHADOW
+              variable: shadow_mode
         extent: parent
         id: parse_open_prs
         parentId: repo_loop
@@ -2365,7 +2396,7 @@ workflow:
           code: |-
             import json
 
-            def main(repository_results: list) -> dict:
+            def main(repository_results: list, max_prs_per_run: int) -> dict:
                 prs = []
                 errors = []
                 for result in repository_results if isinstance(repository_results, list) else []:
@@ -2381,15 +2412,27 @@ workflow:
                                 errors.append(item)
                             else:
                                 prs.append(item)
-                return {"prs": prs, "errors": errors}
+                cap = max_prs_per_run if isinstance(max_prs_per_run, int) and max_prs_per_run > 0 else 10
+                return {
+                    "prs": prs[:cap],
+                    "errors": errors,
+                    "found_pr_count": len(prs),
+                    "skipped_pr_count": max(0, len(prs) - cap),
+                }
           code_language: python3
           outputs:
             errors:
               children: null
               type: array[object]
+            found_pr_count:
+              children: null
+              type: number
             prs:
               children: null
               type: array[object]
+            skipped_pr_count:
+              children: null
+              type: number
           title: Flatten pull request identifiers
           type: code
           variables:
@@ -2397,6 +2440,10 @@ workflow:
                 - repo_loop
                 - output
               variable: repository_results
+            - value_selector:
+                - prepare_scan
+                - max_prs_per_run
+              variable: max_prs_per_run
         id: flatten_prs
         position:
           x: 720
@@ -2408,6 +2455,14 @@ workflow:
                 - combine_results
                 - results
               variable: results
+            - value_selector:
+                - combine_results
+                - found_pr_count
+              variable: found_pr_count
+            - value_selector:
+                - combine_results
+                - skipped_pr_count
+              variable: skipped_pr_count
           title: Shadow PR classifications
           type: end
         id: end_shadow
@@ -2435,18 +2490,28 @@ workflow:
         type: custom
       - data:
           code: |-
-            def main(pr_results: list, repository_errors: list) -> dict:
+            def main(pr_results: list, repository_errors: list, found_pr_count: int, skipped_pr_count: int) -> dict:
                 results = []
                 if isinstance(pr_results, list):
                     results.extend(item for item in pr_results if isinstance(item, dict))
                 if isinstance(repository_errors, list):
                     results.extend(item for item in repository_errors if isinstance(item, dict))
-                return {"results": results}
+                return {
+                    "results": results,
+                    "found_pr_count": found_pr_count,
+                    "skipped_pr_count": skipped_pr_count,
+                }
           code_language: python3
           outputs:
+            found_pr_count:
+              children: null
+              type: number
             results:
               children: null
               type: array[object]
+            skipped_pr_count:
+              children: null
+              type: number
           title: Combine pull request results and read errors
           type: code
           variables:
@@ -2458,6 +2523,14 @@ workflow:
                 - flatten_prs
                 - errors
               variable: repository_errors
+            - value_selector:
+                - flatten_prs
+                - found_pr_count
+              variable: found_pr_count
+            - value_selector:
+                - flatten_prs
+                - skipped_pr_count
+              variable: skipped_pr_count
         id: combine_results
         position:
           x: 1250
@@ -2631,14 +2704,14 @@ workflow:
                 except (TypeError, ValueError):
                     return None
 
-            def record(repository, pr_number, head_sha, state, detail):
+            def build_record(repository, pr_number, head_sha, state, detail, shadow):
                 return {
                     "repository": repository,
                     "pr_number": int(pr_number),
                     "head_sha": head_sha,
                     "state": state,
                     "action": STATES[state],
-                    "shadow": True,
+                    "shadow": shadow,
                     "attempt": 0,
                     "detail": detail,
                 }
@@ -2646,7 +2719,12 @@ workflow:
             def main(repository: str, pr_number: int, pull_status_code: int, pull_body: str,
                      head_sha: str, checks_status_code: int, checks_body: str,
                      commit_status_code: int, commit_status_body: str,
-                     reviews_status_code: int, reviews_body: str) -> dict:
+                     reviews_status_code: int, reviews_body: str, shadow_mode: str) -> dict:
+                shadow = shadow_mode == "true"
+
+                def record(repository, pr_number, head_sha, state, detail):
+                    return build_record(repository, pr_number, head_sha, state, detail, shadow)
+
                 failed_reads = [
                     ("pull request details", pull_status_code),
                     ("head check runs", checks_status_code),
@@ -2808,6 +2886,10 @@ workflow:
                 - get_reviews
                 - body
               variable: reviews_body
+            - value_selector:
+                - env
+                - PR_AUTOMATION_SHADOW
+              variable: shadow_mode
         extent: parent
         id: classify_pr
         parentId: pr_loop
