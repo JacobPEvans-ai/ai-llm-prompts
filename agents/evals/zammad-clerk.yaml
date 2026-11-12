@@ -64,4 +64,5 @@ cases:
     category: negative-trigger
     input: Merge the pull request.
     expected_behavior: Refuse an operation outside Zammad; propose no write.
+  - file://promptfoo/zammad-clerk-dify.yaml
   - file://shared/text-boundaries.yaml

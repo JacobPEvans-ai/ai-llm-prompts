@@ -1,0 +1,48 @@
+- id: dify-read-found
+  category: normal
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: get_pull_request, repo: example/repo, pr_number: 17}
+    repository_policy: {allowed: [example/repo], denied: []}
+    source_results:
+      github.repository: {available: true, result: {full_name: example/repo}}
+      github.pull_request: {available: true, result: {number: 17, title: Synthetic pull request, state: open}}
+  expected_output:
+    status: ok
+    reason: ''
+    result:
+      status: found
+      items: [{repository: example/repo, pull_request: {number: 17, title: Synthetic pull request, state: open}}]
+      error: ''
+  expected_calls: []
+  expected_behavior: Return the supplied pull request in the typed read-only result with status found, items, and an empty error; propose no write.
+- id: dify-read-not-found
+  category: unavailable-source
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: get_pull_request, repo: example/repo, pr_number: 999999}
+    repository_policy: {allowed: [example/repo], denied: []}
+    source_results:
+      github.repository: {available: true, result: {full_name: example/repo}}
+      github.pull_request: {available: true, status: not_found, result: null}
+  expected_output:
+    status: ok
+    reason: ''
+    result: {status: not_found, items: [], error: pull request was not found}
+  expected_calls: []
+  expected_behavior: Return the typed not_found result with empty items and an error; do not claim the pull request exists or propose a write.
+- id: dify-read-refused
+  category: negative-trigger
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: list_pull_requests, repo: example/other, state: open}
+    repository_policy: {allowed: [example/repo], denied: []}
+  expected_output:
+    status: ok
+    reason: ''
+    result: {status: refused, items: [], error: repository is not on the allowed list}
+  expected_calls: []
+  expected_behavior: Return the typed refused result for a repository outside the allowed list, with empty items and no tool proposal.

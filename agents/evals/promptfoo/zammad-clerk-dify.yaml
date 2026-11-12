@@ -1,0 +1,43 @@
+- id: dify-read-found
+  category: normal
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: search_tickets, query: Synthetic ticket}
+    source_results:
+      zammad.search_tickets: {available: true, items: [{id: 101, number: 101, title: Synthetic ticket}]}
+  expected_output:
+    status: ok
+    reason: ''
+    result:
+      status: found
+      items: [{id: 101, number: 101, title: Synthetic ticket}]
+      error: ''
+  expected_calls: []
+  expected_behavior: Return the supplied ticket in the typed read-only result with status found, items, and an empty error; propose no write.
+- id: dify-read-not-found
+  category: unavailable-source
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: get_ticket, ticket_id: 999999}
+    source_results:
+      zammad.get_ticket: {available: true, status: not_found, items: []}
+  expected_output:
+    status: ok
+    reason: ''
+    result: {status: not_found, items: [], error: ticket was not found}
+  expected_calls: []
+  expected_behavior: Return the typed not_found result with empty items and an error; do not claim the ticket exists or propose a write.
+- id: dify-read-refused
+  category: negative-trigger
+  input:
+    mode: shadow
+    contract: Dify typed read-only result
+    request: {operation: create_ticket, query: Synthetic ticket}
+  expected_output:
+    status: ok
+    reason: ''
+    result: {status: refused, items: [], error: operation is outside the read-only scope}
+  expected_calls: []
+  expected_behavior: Return the typed refused result for create_ticket, with empty items and no tool proposal.
