@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.110.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.109.1...v1.110.0) (2026-11-12)
+
+
+### Features
+
+* **pepper:** add authority guards and a per-channel digest limit ([#475](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/475)) ([e512158](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/e5121586586c731ccf2afe3c09086dd171d36500))
+
 ## [1.109.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.109.0...v1.109.1) (2026-11-12)
 
 
