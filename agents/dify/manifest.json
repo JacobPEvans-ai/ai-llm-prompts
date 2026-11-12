@@ -269,7 +269,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/slack-clerk.dsl.yml",
-    "sha256": "c0525621ccf9cb5329b03f95a04e325951a99e3aec1156c0bb2693d1901bec8d"
+    "sha256": "d29365b4a4c7d87cd0621cc70d65d498cc23253b6dc08703cf3e289ecf5a9b7c"
   },
   {
     "name": "splunk-clerk",

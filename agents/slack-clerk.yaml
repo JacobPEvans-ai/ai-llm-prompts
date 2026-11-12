@@ -11,10 +11,13 @@ privacy_class: private
 identity: agent-slack-clerk
 api_key_ref: openbao://agent-key/slack-clerk
 mcp_servers: [slack]
+dify_tools: [slack.get_channel_history, slack.get_thread_replies]
 tools:
   - slack.search_messages
   - slack.get_message
   - slack.post_message
+  - slack.get_channel_history
+  - slack.get_thread_replies
 mandate_binding:
   immutable: true
   from_fields: [caller, request_id, operation, channel, payload]
@@ -25,3 +28,426 @@ guards:
   denied_channels_ref: policy://slack-clerk/denied-channels
   unknown_or_unscoped_channel: refuse
   destinations: {named_channels_only: true, direct_messages: refuse}
+dify:
+  app:
+    description: Read recent history or thread replies from a Slack channel on the configured allowlist.
+    icon: 🔎
+    icon_background: '#D5F5F6'
+    mode: workflow
+    name: __DIFY_AGENT_NAME__
+    use_icon_as_answer_icon: false
+  dependencies: []
+  kind: app
+  version: 0.7.0
+  workflow:
+    environment_variables:
+      - {id: slack-allowed-channels, name: SLACK_ALLOWED_CHANNELS, value_type: secret, value: '', description: JSON array of allowed Slack channel IDs}
+    graph:
+      edges:
+        - {id: start-to-parse, source: start, sourceHandle: source, target: parse_request, targetHandle: target, type: custom, data: {sourceType: start, targetType: llm}}
+        - {id: parse-to-guard, source: parse_request, sourceHandle: source, target: guard, targetHandle: target, type: custom, data: {sourceType: llm, targetType: code}}
+        - {id: guard-to-gate, source: guard, sourceHandle: source, target: guard_gate, targetHandle: target, type: custom, data: {sourceType: code, targetType: if-else}}
+        - {id: guard-allowed-to-operation, source: guard_gate, sourceHandle: allowed, target: operation_gate, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: if-else}}
+        - {id: guard-refused-to-end, source: guard_gate, sourceHandle: 'false', target: end_refused, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: end}}
+        - {id: operation-history-to-tool, source: operation_gate, sourceHandle: history, target: channel_history, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
+        - {id: operation-replies-to-tool, source: operation_gate, sourceHandle: replies, target: thread_replies, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
+        - {id: operation-unmatched-to-end, source: operation_gate, sourceHandle: 'false', target: operation_error, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: code}}
+        - {id: history-success-to-normalize, source: channel_history, sourceHandle: success-branch, target: normalize_history, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: history-failure-to-error, source: channel_history, sourceHandle: fail-branch, target: history_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: replies-success-to-normalize, source: thread_replies, sourceHandle: success-branch, target: normalize_replies, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: replies-failure-to-error, source: thread_replies, sourceHandle: fail-branch, target: replies_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: normalize-history-to-end, source: normalize_history, sourceHandle: source, target: end_history, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: normalize-replies-to-end, source: normalize_replies, sourceHandle: source, target: end_replies, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: history-error-to-end, source: history_error, sourceHandle: source, target: end_history_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: replies-error-to-end, source: replies_error, sourceHandle: source, target: end_replies_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: operation-error-to-end, source: operation_error, sourceHandle: source, target: end_operation_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+      nodes:
+        - id: start
+          type: custom
+          position: {x: 40, y: 500}
+          data:
+            title: Start
+            type: start
+            variables:
+              - {variable: operation, label: operation, type: text-input, required: true, max_length: 32, options: [], default: '', hint: Use get_channel_history or get_thread_replies., placeholder: ''}
+              - {variable: channel, label: channel, type: text-input, required: true, max_length: 128, options: [], default: '', hint: Slack channel ID; must match SLACK_ALLOWED_CHANNELS., placeholder: ''}
+              - {variable: thread_ts, label: thread_ts, type: text-input, required: false, max_length: 32, options: [], default: '', hint: Required only for get_thread_replies., placeholder: ''}
+              - {variable: limit, label: limit, type: number, required: false, hint: Optional result bound from 1 to 100.}
+        - id: parse_request
+          type: custom
+          position: {x: 340, y: 500}
+          data:
+            title: Parse request
+            type: llm
+            context: {enabled: false, variable_selector: []}
+            model: {completion_params: {temperature: 0}, mode: chat, name: small, provider: langgenius/openai_api_compatible/openai_api_compatible}
+            prompt_template:
+              - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
+              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} channel={{#start.channel#}} thread_ts={{#start.thread_ts#}} limit={{#start.limit#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: get_channel_history, get_thread_replies. No other keys, prose, or Markdown.'}
+            prompt_config: {jinja2_variables: []}
+        - id: guard
+          type: custom
+          position: {x: 640, y: 500}
+          data:
+            title: Read-only channel guard
+            type: code
+            code_language: python3
+            code: |-
+              import json
+              import re
+
+              CHANNEL_RE = re.compile(r"^[CGD][A-Z0-9]+$")
+              THREAD_TS_RE = re.compile(r"^[0-9]{1,20}\.[0-9]{1,6}$")
+
+              def result(allowed, status, error, operation="", channel="", thread_ts="", limit=0):
+                  return {"allowed": allowed, "status": status, "items": [], "error": error, "operation": operation, "channel": channel, "thread_ts": thread_ts, "limit": limit}
+
+              def main(intent_text: str, operation_raw: str, channel_raw: str, thread_ts_raw: str, limit_raw, allowed_raw: str) -> dict:
+                  operation = str(operation_raw or "").strip()
+                  try:
+                      intent = json.loads(str(intent_text or ""))
+                  except (TypeError, ValueError):
+                      intent = None
+                  if not isinstance(intent, dict) or set(intent) != {"operation"} or intent.get("operation") != operation:
+                      return result(False, "refused", "request classification did not match the typed operation")
+                  if operation not in ("get_channel_history", "get_thread_replies"):
+                      return result(False, "refused", "operation is outside the read-only scope")
+                  channel = str(channel_raw or "").strip()
+                  if not CHANNEL_RE.fullmatch(channel):
+                      return result(False, "refused", "channel identifier has an invalid format")
+                  try:
+                      allowed_channels = json.loads(str(allowed_raw or ""))
+                  except (TypeError, ValueError):
+                      return result(False, "error", "channel allowlist configuration is invalid")
+                  if not isinstance(allowed_channels, list) or not allowed_channels or any(not isinstance(item, str) or not CHANNEL_RE.fullmatch(item.strip()) for item in allowed_channels):
+                      return result(False, "error", "channel allowlist configuration is invalid")
+                  allowed_channels = [item.strip() for item in allowed_channels]
+                  if channel not in allowed_channels:
+                      return result(False, "refused", "channel is not on the allowed list")
+                  thread_ts = str(thread_ts_raw or "").strip()
+                  if operation == "get_channel_history" and thread_ts:
+                      return result(False, "refused", "channel history does not accept a thread timestamp")
+                  if operation == "get_thread_replies" and not THREAD_TS_RE.fullmatch(thread_ts):
+                      return result(False, "refused", "thread replies require a valid parent timestamp")
+                  default_limit = 20 if operation == "get_channel_history" else 100
+                  if limit_raw in (None, "", 0, 0.0):
+                      limit = default_limit
+                  elif isinstance(limit_raw, bool) or not isinstance(limit_raw, (int, float)) or int(limit_raw) != limit_raw or not 1 <= int(limit_raw) <= 100:
+                      return result(False, "refused", "limit must be a whole number from 1 to 100")
+                  else:
+                      limit = int(limit_raw)
+                  return result(True, "", "", operation, channel, thread_ts, limit)
+            outputs:
+              allowed: {type: boolean}
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+              operation: {type: string, children: null}
+              channel: {type: string, children: null}
+              thread_ts: {type: string, children: null}
+              limit: {type: number}
+            variables:
+              - {variable: intent_text, value_selector: [parse_request, text]}
+              - {variable: operation_raw, value_selector: [start, operation]}
+              - {variable: channel_raw, value_selector: [start, channel]}
+              - {variable: thread_ts_raw, value_selector: [start, thread_ts]}
+              - {variable: limit_raw, value_selector: [start, limit]}
+              - {variable: allowed_raw, value_selector: [env, SLACK_ALLOWED_CHANNELS]}
+        - id: guard_gate
+          type: custom
+          position: {x: 940, y: 500}
+          data:
+            title: Allow scoped read?
+            type: if-else
+            cases:
+              - case_id: allowed
+                id: allowed
+                logical_operator: and
+                conditions:
+                  - {id: guard-allowed, variable_selector: [guard, allowed], varType: boolean, comparison_operator: is, value: true}
+        - id: operation_gate
+          type: custom
+          position: {x: 1240, y: 500}
+          data:
+            title: Select read operation
+            type: if-else
+            cases:
+              - case_id: history
+                id: history
+                logical_operator: and
+                conditions:
+                  - {id: operation-history, variable_selector: [guard, operation], varType: string, comparison_operator: is, value: get_channel_history}
+              - case_id: replies
+                id: replies
+                logical_operator: and
+                conditions:
+                  - {id: operation-replies, variable_selector: [guard, operation], varType: string, comparison_operator: is, value: get_thread_replies}
+        - id: channel_history
+          type: custom
+          position: {x: 1540, y: 320}
+          data:
+            title: Read channel history
+            type: tool
+            provider_id: langgenius/slack/slack
+            provider_name: slack
+            provider_type: builtin
+            tool_configurations: {}
+            tool_label: Slack
+            tool_name: get_channel_history
+            tool_parameters:
+              channel: {type: mixed, value: '{{#guard.channel#}}'}
+              limit: {type: mixed, value: '{{#guard.limit#}}'}
+            tool_node_version: '2'
+            retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
+            error_strategy: fail-branch
+        - id: thread_replies
+          type: custom
+          position: {x: 1540, y: 660}
+          data:
+            title: Read thread replies
+            type: tool
+            provider_id: langgenius/slack/slack
+            provider_name: slack
+            provider_type: builtin
+            tool_configurations: {}
+            tool_label: Slack
+            tool_name: get_thread_replies
+            tool_parameters:
+              channel: {type: mixed, value: '{{#guard.channel#}}'}
+              ts: {type: mixed, value: '{{#guard.thread_ts#}}'}
+              limit: {type: mixed, value: '{{#guard.limit#}}'}
+            tool_node_version: '2'
+            retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
+            error_strategy: fail-branch
+        - id: normalize_history
+          type: custom
+          position: {x: 1840, y: 260}
+          data:
+            title: Normalize channel history
+            type: code
+            code_language: python3
+            code: |-
+              import json
+
+              FIELDS = ("ts", "user", "text", "thread_ts", "reply_count", "subtype")
+
+              def payload_from(value):
+                  if isinstance(value, dict):
+                      if isinstance(value.get("messages"), list):
+                          return value
+                      for key in ("json", "data", "content", "text"):
+                          if key in value:
+                              found = payload_from(value[key])
+                              if found is not None:
+                                  return found
+                  elif isinstance(value, list):
+                      for item in value:
+                          found = payload_from(item)
+                          if found is not None:
+                              return found
+                  elif isinstance(value, str):
+                      try:
+                          return payload_from(json.loads(value))
+                      except (TypeError, ValueError):
+                          decoder = json.JSONDecoder()
+                          for offset, char in enumerate(value):
+                              if char == "{":
+                                  try:
+                                      item, _ = decoder.raw_decode(value, offset)
+                                  except ValueError:
+                                      continue
+                                  found = payload_from(item)
+                                  if found is not None:
+                                      return found
+                  return None
+
+              def main(response_json) -> dict:
+                  value = payload_from(response_json)
+                  raw_error = str(response_json or "").lower()
+                  if value is None and "channel_not_found" in raw_error:
+                      return {"status": "not_found", "items": [], "error": "channel was not found"}
+                  if not isinstance(value, dict) or not isinstance(value.get("messages"), list):
+                      return {"status": "error", "items": [], "error": "channel history response had an unexpected shape"}
+                  if value.get("ok") is False:
+                      return {"status": "error", "items": [], "error": "channel history read failed"}
+                  items = [{key: message[key] for key in FIELDS if key in message and isinstance(message[key], (str, int, float, bool, type(None)))} for message in value["messages"] if isinstance(message, dict)]
+                  return {"status": "found" if items else "not_found", "items": items, "error": "" if items else "no channel messages were found"}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: response_json, value_selector: [channel_history, json]}
+        - id: normalize_replies
+          type: custom
+          position: {x: 1840, y: 600}
+          data:
+            title: Normalize thread replies
+            type: code
+            code_language: python3
+            code: |-
+              import json
+
+              FIELDS = ("ts", "user", "text", "thread_ts", "reply_count", "subtype")
+
+              def payload_from(value):
+                  if isinstance(value, dict):
+                      if isinstance(value.get("messages"), list):
+                          return value
+                      for key in ("json", "data", "content", "text"):
+                          if key in value:
+                              found = payload_from(value[key])
+                              if found is not None:
+                                  return found
+                  elif isinstance(value, list):
+                      for item in value:
+                          found = payload_from(item)
+                          if found is not None:
+                              return found
+                  elif isinstance(value, str):
+                      try:
+                          return payload_from(json.loads(value))
+                      except (TypeError, ValueError):
+                          decoder = json.JSONDecoder()
+                          for offset, char in enumerate(value):
+                              if char == "{":
+                                  try:
+                                      item, _ = decoder.raw_decode(value, offset)
+                                  except ValueError:
+                                      continue
+                                  found = payload_from(item)
+                                  if found is not None:
+                                      return found
+                  return None
+
+              def main(response_json) -> dict:
+                  value = payload_from(response_json)
+                  raw_error = str(response_json or "").lower()
+                  if value is None and any(token in raw_error for token in ("thread_not_found", "message_not_found")):
+                      return {"status": "not_found", "items": [], "error": "thread was not found"}
+                  if not isinstance(value, dict) or not isinstance(value.get("messages"), list):
+                      return {"status": "error", "items": [], "error": "thread replies response had an unexpected shape"}
+                  if value.get("ok") is False:
+                      return {"status": "error", "items": [], "error": "thread replies read failed"}
+                  items = [{key: message[key] for key in FIELDS if key in message and isinstance(message[key], (str, int, float, bool, type(None)))} for message in value["messages"] if isinstance(message, dict)]
+                  return {"status": "found" if items else "not_found", "items": items, "error": "" if items else "no thread replies were found"}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: response_json, value_selector: [thread_replies, json]}
+        - id: history_error
+          type: custom
+          position: {x: 1840, y: 440}
+          data:
+            title: Normalize history read error
+            type: code
+            code_language: python3
+            code: |-
+              def main(error_message: str, error_type: str) -> dict:
+                  message = str(error_message or "").lower()
+                  status = "not_found" if any(token in message for token in ("channel_not_found", "not_found", "not found")) else "error"
+                  error = "channel was not found" if status == "not_found" else "channel history read failed"
+                  return {"status": status, "items": [], "error": error}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: error_message, value_selector: [channel_history, error_message]}
+              - {variable: error_type, value_selector: [channel_history, error_type]}
+        - id: replies_error
+          type: custom
+          position: {x: 1840, y: 780}
+          data:
+            title: Normalize thread read error
+            type: code
+            code_language: python3
+            code: |-
+              def main(error_message: str, error_type: str) -> dict:
+                  message = str(error_message or "").lower()
+                  status = "not_found" if any(token in message for token in ("message_not_found", "thread_not_found", "not_found", "not found")) else "error"
+                  error = "thread was not found" if status == "not_found" else "thread replies read failed"
+                  return {"status": status, "items": [], "error": error}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+            variables:
+              - {variable: error_message, value_selector: [thread_replies, error_message]}
+              - {variable: error_type, value_selector: [thread_replies, error_type]}
+        - id: operation_error
+          type: custom
+          position: {x: 1540, y: 900}
+          data:
+            title: Normalize unmatched operation
+            type: code
+            code_language: python3
+            code: |-
+              def main() -> dict:
+                  return {"status": "error", "items": [], "error": "no supported read operation matched"}
+            outputs:
+              status: {type: string, children: null}
+              items: {type: 'array[object]', children: null}
+              error: {type: string, children: null}
+        - id: end_refused
+          type: custom
+          position: {x: 1240, y: 1100}
+          data:
+            title: Refused or invalid configuration
+            type: end
+            outputs:
+              - {variable: status, value_selector: [guard, status]}
+              - {variable: items, value_selector: [guard, items]}
+              - {variable: error, value_selector: [guard, error]}
+        - id: end_history
+          type: custom
+          position: {x: 2140, y: 260}
+          data:
+            title: Channel history result
+            type: end
+            outputs:
+              - {variable: status, value_selector: [normalize_history, status]}
+              - {variable: items, value_selector: [normalize_history, items]}
+              - {variable: error, value_selector: [normalize_history, error]}
+        - id: end_replies
+          type: custom
+          position: {x: 2140, y: 600}
+          data:
+            title: Thread replies result
+            type: end
+            outputs:
+              - {variable: status, value_selector: [normalize_replies, status]}
+              - {variable: items, value_selector: [normalize_replies, items]}
+              - {variable: error, value_selector: [normalize_replies, error]}
+        - id: end_history_error
+          type: custom
+          position: {x: 2140, y: 440}
+          data:
+            title: Channel history error
+            type: end
+            outputs:
+              - {variable: status, value_selector: [history_error, status]}
+              - {variable: items, value_selector: [history_error, items]}
+              - {variable: error, value_selector: [history_error, error]}
+        - id: end_replies_error
+          type: custom
+          position: {x: 2140, y: 780}
+          data:
+            title: Thread replies error
+            type: end
+            outputs:
+              - {variable: status, value_selector: [replies_error, status]}
+              - {variable: items, value_selector: [replies_error, items]}
+              - {variable: error, value_selector: [replies_error, error]}
+        - id: end_operation_error
+          type: custom
+          position: {x: 1840, y: 900}
+          data:
+            title: Unsupported operation
+            type: end
+            outputs:
+              - {variable: status, value_selector: [operation_error, status]}
+              - {variable: items, value_selector: [operation_error, items]}
+              - {variable: error, value_selector: [operation_error, error]}
