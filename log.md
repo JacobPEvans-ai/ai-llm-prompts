@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-11-12
+
+* **Fix (agents)**: The vikunja-clerk prompt states its output contract once — the twelve classifier keys as a compact
+  schema with one complete refusal example, exact refusal reason phrasings, and the shadow-mode `proposed_calls` shape —
+  and scopes the classifier-only parse step against the outcome fields `refused`, `reason`, `dispatch`, and `mode`;
+  routing, allowed-project, denied-wins, no-delete, and Zammad guard text is unchanged.
+
 ## 2026-11-11
 
 * **Update (auto-ai-agent)**: Move the shared scheduled-report contract into `hermes.md`; the daily status Kanban
