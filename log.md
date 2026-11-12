@@ -12,6 +12,10 @@
   authority explicit; its digest prompt checks the latest channel digest time,
   skips posts under three hours or when the time is unknown, and logs unknown
   times in the run summary.
+* **Fix (agents)**: The Vikunja clerk prompt states its reply contract once as a fixed twelve-key classifier object,
+  adds `refused` and `reason` with prescribed refusal reasons to outcome replies, adds `dispatch` and `mode` to
+  shadow-write replies, and keeps `proposed_calls` for shadow and other-route write replies. It routes incidents and
+  security findings to Zammad in the reply object instead of the report envelope.
 
 ## 2026-11-11
 
