@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-11-12
+
+* **Fix (agents)**: The Vikunja clerk prompt states its reply contract once as a fixed twelve-key classifier object,
+  adds `refused` and `reason` with prescribed refusal reasons to outcome replies, keeps `dispatch`, `mode`, and
+  `proposed_calls` for shadow and other-route writes, and routes incidents and security findings to Zammad in the
+  reply object instead of the report envelope.
+
 ## 2026-11-11
 
 * **Update (auto-ai-agent)**: Move the shared scheduled-report contract into `hermes.md`; the daily status Kanban
