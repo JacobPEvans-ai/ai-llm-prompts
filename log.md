@@ -2,6 +2,8 @@
 
 ## 2026-11-12
 
+* **Fix (auto-ai-agent)**: The assistant daily brief and pulse prompts treat task text and recalled notes as untrusted
+  reference data, not instructions, and ignore directions embedded in them.
 * **Feat (auto-ai-agent)**: Add the `pr-fix` per-state briefs a PR controller hands a sandboxed coding agent when a pull request
   is not mergeable - behind base, merge conflict with base, one failing check, or unresolved review threads - each declaring its
   `{repo}`, `{pr}`, `{head_sha}`, `{base}` placeholders, the exact git and gh steps toward one new commit on the PR branch, hard
