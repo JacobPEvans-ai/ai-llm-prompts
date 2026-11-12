@@ -133,7 +133,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/github-clerk.dsl.yml",
-    "sha256": "9b397112923bd5e13b588ab2b27be121015cfc687654e8caf7d178a579f968c7"
+    "sha256": "dfe3af9e82826ed05d0e272e909f85c582172cbe654fce5d3e150f9302ad9c74"
   },
   {
     "name": "langfuse-clerk",
@@ -349,7 +349,7 @@
     "tier": 0,
     "kind": "agent",
     "path": "agents/dify/zammad-clerk.dsl.yml",
-    "sha256": "b6205f011210f19dabdb1190c0857becfcc4610dd833e783a2c7cdfb2f532dc7"
+    "sha256": "7b91d1a157fa3e79e4c3f9a41919d6b4f850d329289b8a3e2f97f8d00d10abde"
   },
   {
     "name": "zammad-triage",

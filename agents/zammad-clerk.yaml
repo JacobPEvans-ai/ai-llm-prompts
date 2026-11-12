@@ -59,7 +59,7 @@ dify:
             model: {completion_params: {temperature: 0}, mode: chat, name: small, provider: langgenius/openai_api_compatible/openai_api_compatible}
             prompt_template:
               - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
-              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} query={{#start.query#}} ticket_id={{#start.ticket_id#}}'}
+              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} query={{#start.query#}} ticket_id={{#start.ticket_id#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: search_tickets, get_ticket. No other keys, prose, or Markdown.'}
             prompt_config: {jinja2_variables: []}
         - id: guard
           type: custom

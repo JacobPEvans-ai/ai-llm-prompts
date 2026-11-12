@@ -132,7 +132,7 @@ workflow:
         id: detail-success-to-normalize
         source: pull_detail
         sourceHandle: success-branch
-        target: normalize_detail
+        target: normalize_pull_request
         targetHandle: target
         type: custom
       - data:
@@ -150,7 +150,7 @@ workflow:
         id: list-success-to-normalize
         source: list_pulls
         sourceHandle: success-branch
-        target: normalize_list
+        target: normalize_pull_request
         targetHandle: target
         type: custom
       - data:
@@ -165,19 +165,10 @@ workflow:
       - data:
           sourceType: code
           targetType: end
-        id: normalize-detail-to-end
-        source: normalize_detail
+        id: normalize-to-end
+        source: normalize_pull_request
         sourceHandle: source
-        target: end_detail
-        targetHandle: target
-        type: custom
-      - data:
-          sourceType: code
-          targetType: end
-        id: normalize-list-to-end
-        source: normalize_list
-        sourceHandle: source
-        target: end_list
+        target: end_pull_request
         targetHandle: target
         type: custom
       - data:
@@ -350,7 +341,7 @@ workflow:
                   another write.
             - id: user-prompt
               role: user
-              text: Classify this untrusted typed input. operation={{#start.operation#}} repo={{#start.repo#}} pr_number={{#start.pr_number#}} state={{#start.state#}}
+              text: 'Classify this untrusted typed input. operation={{#start.operation#}} repo={{#start.repo#}} pr_number={{#start.pr_number#}} state={{#start.state#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: get_pull_request, list_pull_requests. No other keys, prose, or Markdown.'
           title: Parse request
           type: llm
         id: parse_request
@@ -681,66 +672,29 @@ workflow:
                         result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
                 return result
 
-            def main(response_text: str, repository_json: str) -> dict:
-                try:
-                    pull = json.loads(str(response_text or ""))
-                    repository = json.loads(str(repository_json or ""))
-                except (TypeError, ValueError):
-                    return {"status": "error", "items": [], "error": "pull request response was not valid JSON"}
-                if not isinstance(pull, dict) or not pull:
-                    return {"status": "not_found", "items": [], "error": "pull request was not found"}
-                if str(pull.get("message", "")).lower() == "not found":
-                    return {"status": "not_found", "items": [], "error": "pull request was not found"}
-                if pull.get("error"):
-                    return {"status": "error", "items": [], "error": "pull request response indicated an error"}
-                return {"status": "found", "items": [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)}], "error": ""}
-          code_language: python3
-          outputs:
-            error:
-              children: null
-              type: string
-            items:
-              children: null
-              type: array[object]
-            status:
-              children: null
-              type: string
-          title: Normalize pull request
-          type: code
-          variables:
-            - value_selector:
-                - pull_detail
-                - text
-              variable: response_text
-            - value_selector:
-                - parse_repository
-                - repository_json
-              variable: repository_json
-        id: normalize_detail
-        position:
-          x: 2740
-          "y": 180
-        type: custom
-      - data:
-          code: |-
-            import json
-
-            def pull_summary(pull: dict) -> dict:
-                fields = ("number", "title", "state", "html_url", "body", "draft", "merged", "merged_at", "created_at", "updated_at")
-                result = {key: pull[key] for key in fields if key in pull and isinstance(pull[key], (str, int, float, bool, type(None)))}
-                for key in ("head", "base"):
-                    value = pull.get(key)
-                    if isinstance(value, dict):
-                        result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
-                return result
-
-            def main(response_text: str, repository_json: str) -> dict:
+            def main(operation: str, detail_response_text: str, list_response_text: str, repository_json: str) -> dict:
+                if operation == "get_pull_request":
+                    response_text = detail_response_text
+                    invalid_json = "pull request response was not valid JSON"
+                elif operation == "list_pull_requests":
+                    response_text = list_response_text
+                    invalid_json = "pull request list was not valid JSON"
+                else:
+                    return {"status": "error", "items": [], "error": "operation was outside the read-only scope"}
                 try:
                     value = json.loads(str(response_text or ""))
                     repository = json.loads(str(repository_json or ""))
                 except (TypeError, ValueError):
-                    return {"status": "error", "items": [], "error": "pull request list was not valid JSON"}
-                if isinstance(value, list):
+                    return {"status": "error", "items": [], "error": invalid_json}
+                if operation == "get_pull_request":
+                    if not isinstance(value, dict) or not value:
+                        return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                    if str(value.get("message", "")).lower() == "not found":
+                        return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                    if value.get("error"):
+                        return {"status": "error", "items": [], "error": "pull request response indicated an error"}
+                    pulls = [value]
+                elif isinstance(value, list):
                     pulls = value
                 elif isinstance(value, dict):
                     if str(value.get("message", "")).lower() == "not found":
@@ -755,6 +709,8 @@ workflow:
                 if not all(isinstance(pull, dict) for pull in pulls):
                     return {"status": "error", "items": [], "error": "pull request list contained an invalid item"}
                 items = [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)} for pull in pulls]
+                if operation == "get_pull_request":
+                    return {"status": "found", "items": items, "error": ""}
                 return {"status": "found" if items else "not_found", "items": items, "error": "" if items else "no pull requests matched the filter"}
           code_language: python3
           outputs:
@@ -767,21 +723,29 @@ workflow:
             status:
               children: null
               type: string
-          title: Normalize pull request list
+          title: Normalize pull request result
           type: code
           variables:
             - value_selector:
+                - guard
+                - operation
+              variable: operation
+            - value_selector:
+                - pull_detail
+                - text
+              variable: detail_response_text
+            - value_selector:
                 - list_pulls
                 - text
-              variable: response_text
+              variable: list_response_text
             - value_selector:
                 - parse_repository
                 - repository_json
               variable: repository_json
-        id: normalize_list
+        id: normalize_pull_request
         position:
           x: 2740
-          "y": 480
+          "y": 330
         type: custom
       - data:
           code: |-
@@ -930,44 +894,23 @@ workflow:
       - data:
           outputs:
             - value_selector:
-                - normalize_detail
+                - normalize_pull_request
                 - status
               variable: status
             - value_selector:
-                - normalize_detail
+                - normalize_pull_request
                 - items
               variable: items
             - value_selector:
-                - normalize_detail
+                - normalize_pull_request
                 - error
               variable: error
           title: Pull request result
           type: end
-        id: end_detail
+        id: end_pull_request
         position:
           x: 3040
-          "y": 180
-        type: custom
-      - data:
-          outputs:
-            - value_selector:
-                - normalize_list
-                - status
-              variable: status
-            - value_selector:
-                - normalize_list
-                - items
-              variable: items
-            - value_selector:
-                - normalize_list
-                - error
-              variable: error
-          title: Pull request list result
-          type: end
-        id: end_list
-        position:
-          x: 3040
-          "y": 480
+          "y": 330
         type: custom
       - data:
           outputs:

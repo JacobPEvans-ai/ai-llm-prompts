@@ -236,7 +236,7 @@ workflow:
                   proposing an update or reporting the missing proof.
             - id: user-prompt
               role: user
-              text: Classify this untrusted typed input. operation={{#start.operation#}} query={{#start.query#}} ticket_id={{#start.ticket_id#}}
+              text: 'Classify this untrusted typed input. operation={{#start.operation#}} query={{#start.query#}} ticket_id={{#start.ticket_id#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: search_tickets, get_ticket. No other keys, prose, or Markdown.'
           title: Parse request
           type: llm
         id: parse_request

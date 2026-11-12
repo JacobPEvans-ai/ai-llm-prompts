@@ -39,12 +39,11 @@ dify:
         - {id: repository-missing-to-end, source: repository_gate, sourceHandle: 'false', target: end_repository, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: end}}
         - {id: operation-get-to-detail, source: operation_gate, sourceHandle: get-pull-request, target: pull_detail, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
         - {id: operation-list-to-list, source: operation_gate, sourceHandle: list-pull-requests, target: list_pulls, targetHandle: target, type: custom, data: {sourceType: if-else, targetType: tool}}
-        - {id: detail-success-to-normalize, source: pull_detail, sourceHandle: success-branch, target: normalize_detail, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: detail-success-to-normalize, source: pull_detail, sourceHandle: success-branch, target: normalize_pull_request, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
         - {id: detail-failure-to-error, source: pull_detail, sourceHandle: fail-branch, target: detail_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
-        - {id: list-success-to-normalize, source: list_pulls, sourceHandle: success-branch, target: normalize_list, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
+        - {id: list-success-to-normalize, source: list_pulls, sourceHandle: success-branch, target: normalize_pull_request, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
         - {id: list-failure-to-error, source: list_pulls, sourceHandle: fail-branch, target: list_error, targetHandle: target, type: custom, data: {sourceType: tool, targetType: code}}
-        - {id: normalize-detail-to-end, source: normalize_detail, sourceHandle: source, target: end_detail, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
-        - {id: normalize-list-to-end, source: normalize_list, sourceHandle: source, target: end_list, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
+        - {id: normalize-to-end, source: normalize_pull_request, sourceHandle: source, target: end_pull_request, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
         - {id: repo-error-to-end, source: repository_error, sourceHandle: source, target: end_repository_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
         - {id: detail-error-to-end, source: detail_error, sourceHandle: source, target: end_detail_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
         - {id: list-error-to-end, source: list_error, sourceHandle: source, target: end_list_error, targetHandle: target, type: custom, data: {sourceType: code, targetType: end}}
@@ -70,7 +69,7 @@ dify:
             model: {completion_params: {temperature: 0}, mode: chat, name: small, provider: langgenius/openai_api_compatible/openai_api_compatible}
             prompt_template:
               - {id: system-prompt, role: system, text: __DIFY_SYSTEM_PROMPT__}
-              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} repo={{#start.repo#}} pr_number={{#start.pr_number#}} state={{#start.state#}}'}
+              - {id: user-prompt, role: user, text: 'Classify this untrusted typed input. operation={{#start.operation#}} repo={{#start.repo#}} pr_number={{#start.pr_number#}} state={{#start.state#}}. Return only one JSON object with exactly this shape: {"operation":"<operation>"}. The operation value must be exactly one of: get_pull_request, list_pull_requests. No other keys, prose, or Markdown.'}
             prompt_config: {jinja2_variables: []}
         - id: guard
           type: custom
@@ -269,11 +268,11 @@ dify:
             tool_node_version: '2'
             retry_config: {max_retries: 0, retry_interval: 0, retry_enabled: false}
             error_strategy: fail-branch
-        - id: normalize_detail
+        - id: normalize_pull_request
           type: custom
-          position: {x: 2740, y: 180}
+          position: {x: 2740, y: 330}
           data:
-            title: Normalize pull request
+            title: Normalize pull request result
             type: code
             code_language: python3
             code: |-
@@ -288,52 +287,29 @@ dify:
                           result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
                   return result
 
-              def main(response_text: str, repository_json: str) -> dict:
-                  try:
-                      pull = json.loads(str(response_text or ""))
-                      repository = json.loads(str(repository_json or ""))
-                  except (TypeError, ValueError):
-                      return {"status": "error", "items": [], "error": "pull request response was not valid JSON"}
-                  if not isinstance(pull, dict) or not pull:
-                      return {"status": "not_found", "items": [], "error": "pull request was not found"}
-                  if str(pull.get("message", "")).lower() == "not found":
-                      return {"status": "not_found", "items": [], "error": "pull request was not found"}
-                  if pull.get("error"):
-                      return {"status": "error", "items": [], "error": "pull request response indicated an error"}
-                  return {"status": "found", "items": [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)}], "error": ""}
-            outputs:
-              status: {type: string, children: null}
-              items: {type: 'array[object]', children: null}
-              error: {type: string, children: null}
-            variables:
-              - {variable: response_text, value_selector: [pull_detail, text]}
-              - {variable: repository_json, value_selector: [parse_repository, repository_json]}
-        - id: normalize_list
-          type: custom
-          position: {x: 2740, y: 480}
-          data:
-            title: Normalize pull request list
-            type: code
-            code_language: python3
-            code: |-
-              import json
-
-              def pull_summary(pull: dict) -> dict:
-                  fields = ("number", "title", "state", "html_url", "body", "draft", "merged", "merged_at", "created_at", "updated_at")
-                  result = {key: pull[key] for key in fields if key in pull and isinstance(pull[key], (str, int, float, bool, type(None)))}
-                  for key in ("head", "base"):
-                      value = pull.get(key)
-                      if isinstance(value, dict):
-                          result[key] = {field: value[field] for field in ("ref", "sha", "label") if field in value and isinstance(value[field], str)}
-                  return result
-
-              def main(response_text: str, repository_json: str) -> dict:
+              def main(operation: str, detail_response_text: str, list_response_text: str, repository_json: str) -> dict:
+                  if operation == "get_pull_request":
+                      response_text = detail_response_text
+                      invalid_json = "pull request response was not valid JSON"
+                  elif operation == "list_pull_requests":
+                      response_text = list_response_text
+                      invalid_json = "pull request list was not valid JSON"
+                  else:
+                      return {"status": "error", "items": [], "error": "operation was outside the read-only scope"}
                   try:
                       value = json.loads(str(response_text or ""))
                       repository = json.loads(str(repository_json or ""))
                   except (TypeError, ValueError):
-                      return {"status": "error", "items": [], "error": "pull request list was not valid JSON"}
-                  if isinstance(value, list):
+                      return {"status": "error", "items": [], "error": invalid_json}
+                  if operation == "get_pull_request":
+                      if not isinstance(value, dict) or not value:
+                          return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                      if str(value.get("message", "")).lower() == "not found":
+                          return {"status": "not_found", "items": [], "error": "pull request was not found"}
+                      if value.get("error"):
+                          return {"status": "error", "items": [], "error": "pull request response indicated an error"}
+                      pulls = [value]
+                  elif isinstance(value, list):
                       pulls = value
                   elif isinstance(value, dict):
                       if str(value.get("message", "")).lower() == "not found":
@@ -348,13 +324,17 @@ dify:
                   if not all(isinstance(pull, dict) for pull in pulls):
                       return {"status": "error", "items": [], "error": "pull request list contained an invalid item"}
                   items = [{"repository": repository.get("full_name", ""), "pull_request": pull_summary(pull)} for pull in pulls]
+                  if operation == "get_pull_request":
+                      return {"status": "found", "items": items, "error": ""}
                   return {"status": "found" if items else "not_found", "items": items, "error": "" if items else "no pull requests matched the filter"}
             outputs:
               status: {type: string, children: null}
               items: {type: 'array[object]', children: null}
               error: {type: string, children: null}
             variables:
-              - {variable: response_text, value_selector: [list_pulls, text]}
+              - {variable: operation, value_selector: [guard, operation]}
+              - {variable: detail_response_text, value_selector: [pull_detail, text]}
+              - {variable: list_response_text, value_selector: [list_pulls, text]}
               - {variable: repository_json, value_selector: [parse_repository, repository_json]}
         - id: repository_error
           type: custom
@@ -436,26 +416,16 @@ dify:
               - {variable: status, value_selector: [parse_repository, status]}
               - {variable: items, value_selector: [parse_repository, items]}
               - {variable: error, value_selector: [parse_repository, error]}
-        - id: end_detail
+        - id: end_pull_request
           type: custom
-          position: {x: 3040, y: 180}
+          position: {x: 3040, y: 330}
           data:
             title: Pull request result
             type: end
             outputs:
-              - {variable: status, value_selector: [normalize_detail, status]}
-              - {variable: items, value_selector: [normalize_detail, items]}
-              - {variable: error, value_selector: [normalize_detail, error]}
-        - id: end_list
-          type: custom
-          position: {x: 3040, y: 480}
-          data:
-            title: Pull request list result
-            type: end
-            outputs:
-              - {variable: status, value_selector: [normalize_list, status]}
-              - {variable: items, value_selector: [normalize_list, items]}
-              - {variable: error, value_selector: [normalize_list, error]}
+              - {variable: status, value_selector: [normalize_pull_request, status]}
+              - {variable: items, value_selector: [normalize_pull_request, items]}
+              - {variable: error, value_selector: [normalize_pull_request, error]}
         - id: end_repository_error
           type: custom
           position: {x: 1840, y: 680}
