@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.107.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.106.0...v1.107.0) (2026-11-12)
+
+
+### Features
+
+* **hermes:** add the shared scheduled report contract ([#463](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/463)) ([ee97556](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/ee97556534713e282ac999e52266a6d4a676ea27))
+
 ## [1.106.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.105.0...v1.106.0) (2026-11-11)
 
 
