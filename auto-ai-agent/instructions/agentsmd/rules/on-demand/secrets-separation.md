@@ -1,13 +1,13 @@
 ---
 name: secrets-separation
-description: How credentials are partitioned, scoped, and reached — separate mounts for internet-facing versus internal, engine-minted over static, one bucket per workload, certificate-first access. Read before creating, moving, or consuming any credential.
+description: The secrets method — one path grammar, zone mounts split by blast radius, an admin mirror, access words, identity classes, grants as data, engine-minted over static, and how credentials are reached and handled. Read before creating, moving, granting, or consuming any credential.
 type: LLM Prompt
 title: "Secrets separation"
 resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/secrets-separation"
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-03T12:00:00-05:00"
+timestamp: "2026-11-13T12:00:00-05:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -21,73 +21,135 @@ source_history:
 
 # Secrets separation
 
-## The boundary is the mount, not a path prefix
+This rule is the method. Which services, identities and grants an estate has
+is that estate's private data and lives in its private documentation.
 
-Two key-value mounts, split by blast radius:
+## One path grammar
 
-| Mount | Holds | Leak impact |
-| --- | --- | --- |
-| external | credentials for services reachable from the public internet | critical — exploitable by anyone, anywhere |
-| internal | services that exist only inside the network | bounded by network access |
+Every static secret sits at one of these shapes, and nowhere else:
 
-A path prefix gives no policy boundary. A separate mount does.
+```text
+<zone>/<service>/<instance>/<access>          access = ro | rw | self
+admin/<zone>/<service>/<instance>/<scope>     scope  = admin | management | owner | root
+config/<service>/<instance>                   non-secret settings
+```
 
-Keep the sub-path structure **identical** in both mounts; only the top level
-differs. Do not invent a second hierarchy for external secrets.
+- **`ro`** reads the service. **`rw`** changes its data. **`self`** holds what
+  only the service itself reads, such as its own database password.
+- **One leaf, one access level.** A read key and a write key never share a
+  leaf, so a grant on a leaf is a grant of exactly one capability.
+- **`<instance>`** names which deployment of the service, so two instances
+  never share a credential.
+- A name that does not fit the grammar is a defect, not a special case.
 
-- A credential for anything internet-hosted goes in the external mount. Unsure
-  which side something belongs on? Ask — do not guess.
-- **Never grant a wildcard across an external path.** Grant the single exact
-  path a consumer needs. Wildcards on internal policies are the reason the
-  split was needed; do not reproduce the pattern.
-- **Prefer a secrets engine over static storage** wherever one exists. An
-  engine that mints short-lived credentials removes the rotation problem
-  instead of scheduling it.
-- **Migrating a secret is not done when it is copied.** It is done when the
-  original is deleted, because existing wildcards still reach the old path
-  until then.
+## Zones: the boundary is the mount
 
-## Harness identity and trust tiers
+A path prefix gives no policy boundary. A separate mount does. Each zone is its
+own mount, chosen by how far a leak reaches:
 
-Privileged unattended convergence runs as a **dedicated automation identity**
-at the operating-system level, distinct from the interactive human account. The
-human account stays interactively gated — a biometric or password prompt on
-every privilege escalation — and never carries a standing password-less grant
-so that an agent can converge under it. An agent that needs to converge asks
-for the automation identity, not for the gate to be removed.
-
-Classify every harness by capability, and grant to the class:
-
-| Class | Holds |
+| Zone | Holds |
 | --- | --- |
-| trusted | the credentials its declared work needs, minted per call |
-| untrusted | read-only leaf access to the secret store, and no forge write credential |
-| hosted cloud thread | forge write through the hosting provider's app only; no secret-store access (`claude-projects.md`) |
+| `int` | services reachable only inside the network |
+| `ext-ai` | usage keys for external model providers |
+| `ext-saas` | keys for other internet-reachable vendors |
+| `ext-critical` | internet-reachable and destructive: DNS, cloud accounts, backup accounts, signing |
+| `admin` | a mirror of the zones for anything that can mint, delete or re-permission |
+| `config` | non-secret topology and settings |
+| `state` | lease and lock objects |
 
-An untrusted harness is one whose prompt, tool set, or output path is not fully
-controlled by the operator. Read-only *leaf* access means the exact paths it
-consumes — not a subtree, not a list capability over its neighbours.
+An operator may declare further zones in the estate's arrangement document.
+
+**Placement test.** Ask in order, and stop at the first yes:
+
+1. Can it mint, delete, or change the permissions of other credentials or
+   users? It goes under `admin/<zone>/...`.
+2. Is the service reachable from the public internet? It goes in the `ext-`
+   zone that matches its kind; destructive reach means `ext-critical`.
+3. Otherwise it goes in `int`.
+
+Unsure which zone? Ask. Do not guess.
+
+## Identity classes and grants
+
+Every identity belongs to one class. The class alone sets token lifetime,
+login shape, permitted source network and whether a human gate applies.
+
+| Class | Is |
+| --- | --- |
+| everyday | an interactive agent or tool session doing routine work |
+| service | a workload reading what it runs on |
+| sandbox | a harness whose prompt, tools or output path the operator does not fully control |
+| automation | the dedicated unattended identity that converges infrastructure |
+| restricted | an identity that reaches an operator-declared zone, human-gated per session |
+| operator session | the human-gated full-access session described below |
+
+A **grant** is one line: identity, zone, service, instance, access. A segment
+may be `+` to mean every value of that one segment.
+
+- **No wildcard across zones.** Only the operator session reads more than one
+  zone by wildcard.
+- **Everyday, service and sandbox identities are denied every `admin` path**
+  and every operator-declared zone.
+- **A sandbox identity gets exact leaves**: the paths it consumes, never a
+  subtree and never a list capability over its neighbours.
+- **One reader, one credential.** Two consumers never share a login.
+
+## The arrangement is data
+
+The secrets engine role is a generic engine. It names no service, identity or
+grant. One private, version-controlled **arrangement document** lists the
+zones, services, identities and grants, and the role renders every mount,
+identity and policy from it. A public schema fixes the grammar, the access
+words and the classes, and a document that breaks the schema fails its check.
+
+To change who can read what, change the arrangement document. Never hand-write
+a policy.
+
+## The operator session
+
+One identity has full access: a session opened by the operator with a
+hardware-key touch or a single-sign-on approval. It ends after 12 hours. It can
+read and write every mount and engine. It cannot create a token that outlives
+the session, change its own unlock factor, or disable audit.
+
+Reading is pre-authorized for an identity's own grants. Anything else waits for
+this session. Never propose a locally stored key, a pasted token, or a switch of
+identity to get past a refusal: name the gate that is missing.
+
+## Engines before static secrets
+
+- **Prefer a secrets engine wherever one exists.** An engine that mints
+  short-lived credentials removes the rotation problem instead of scheduling it.
+- An engine keeps its own mount. Its management credential lives in the
+  engine's own configuration, not in a key-value leaf.
+- If the engine for a resource is not configured, that need is blocked. It is
+  not a licence to store a static copy.
+- **Migrating a secret is not done when it is copied.** It is done when a live
+  consumer is proven against the new path and the original is deleted.
+
+## Secret zero
 
 **The run wrapper supplies secret zero and nothing else.** Whatever bootstraps
 a process gives it exactly two things: the address of the central store, and
-the login pair of the identity it runs as. Every other value the process needs
-resolves from the central store at run time. A second value in the wrapper is a
-second store, and it will drift.
+the login pair of the identity it runs as. Every other value resolves from the
+central store at run time. A second value in the wrapper is a second store, and
+it drifts.
 
-**A migration out of the bootstrap store is complete only when both are true:**
-a live consumer has been proven to work against the central store, and the
-bootstrap copy has been deleted. A copy that still resolves is still the source
-of truth for whoever reads it first.
+Privileged unattended convergence runs as the **automation identity** at the
+operating-system level, distinct from the interactive human account. The human
+account stays interactively gated and never carries a standing password-less
+grant so that an agent can converge under it.
+
+A hosted cloud thread has forge write through the hosting provider's app only
+and no secret-store access (`claude-projects.md`).
 
 ## Object storage: one bucket per workload, two keys per bucket
 
 - **Every large or distinct data store gets its own bucket.** Never separate
-  two workloads by key prefix alone — a prefix gives no separate lifecycle
-  policy, no separate cap, no separate key, and no blast-radius boundary.
-  Backups never share with anything.
-- **Exactly two scoped keys per bucket**, named after it: a read-only key
-  (list and read) and a read-write key. Consumers take the narrowest one that
-  works. A reader must never hold a writer key.
+  two workloads by key prefix alone: a prefix gives no separate lifecycle
+  policy, cap, key, or blast-radius boundary. Backups never share with anything.
+- **Exactly two scoped keys per bucket**, named after it: a read-only key and a
+  read-write key. Consumers take the narrowest one that works.
 - Account-wide admin keys are break-glass only. Never used by a service, never
   stored where a service can read them.
 
@@ -95,81 +157,68 @@ of truth for whoever reads it first.
 
 A code-hosting CLI is **not** authenticated, on any agent harness. Nothing
 logs it in at session start, nothing writes a token to disk, and no
-environment file exports one. This is deliberate, not a gap to fix.
+environment file exports one. This is deliberate.
 
-The failure it causes is one every agent hits the same way: reach for the
-CLI's own status probe, read "not logged in", and hand the task back as
-blocked. **A probe that finds no session is the expected state.** It is not
-evidence that credentials are unavailable, and it is not a reason to stop.
+**A probe that finds no session is the expected state.** It is not evidence
+that credentials are unavailable, and it is not a reason to stop.
 
-Instead:
-
-- **Mint at call time, in the shell that uses it.** A token minted in one
-  command is gone by the next; obtain and use it in a single invocation. Never
-  mint at environment-load time — a direnv-style loader caches its dump to
-  disk, which persists the credential.
+- **Mint at call time, in the shell that uses it.** Never mint at
+  environment-load time: a direnv-style loader caches its dump to disk, which
+  persists the credential.
 - **Take the narrowest scope.** Read for anything that only reads; a
-  repo-scoped write credential only to write, and release its lease when done.
+  repo-scoped write credential only to write.
 - **Interactive convenience wrappers are shell functions or aliases**, so they
-  do not exist in a non-interactive agent shell. Reaching for one and finding
-  nothing says nothing about whether credentials work. Use the underlying
-  command the operator's local notes name.
-- **Tag the mint with an identity that names the agent.** Leases and audit
-  entries otherwise record only the login user, which cannot distinguish one
-  harness from another or one concurrent session from the next.
+  do not exist in a non-interactive agent shell. Use the underlying command the
+  operator's local notes name.
+- **Tag the mint with an identity that names the agent**, so leases and audit
+  entries distinguish one harness and one session from another.
 - **A minted installation credential has no user identity.** A call that asks
-  "who am I" is expected to be refused; use resource-scoped calls instead.
+  "who am I" is refused; use resource-scoped calls instead.
 
 The concrete helper, its variable names, and the endpoints are
-environment-specific and live in the operator's own local files — never here,
-and never in any committed artifact.
+environment-specific and live in the operator's own local files, never in a
+committed artifact.
 
-## Minted tokens: record the accessor, revoke on exit
+## Handling a credential
 
-- **Record the accessor at mint time.** Capture the token accessor in the same command that mints the token. Hold it in
-  memory with the token. Never write it to a file.
-- **Revoke in an EXIT trap in the same shell.** Set the trap in the shell that holds the token, before the token is
-  used. The trap revokes that accessor on every exit path, including failure.
-- **Never leave a minted token alive after its shell exits.** A live token outlives its owner and becomes a standing
-  credential.
+- **Never print a value.** Capture it into a variable and use the variable. No
+  echo, no verbose HTTP client, no dump of the environment.
+- **Never put a credential in a command's arguments**, a file, or a brief sent
+  to another agent. Pass it in memory or through a file descriptor.
+- **Record the accessor at mint time** and hold it in memory with the token.
+- **Revoke in an EXIT trap in the same shell**, set before the token is used,
+  so every exit path revokes it. Expiry is not revocation.
+- **Never leave a minted token alive after its shell exits.**
+- **Never hand-type a credential into a shared store.** Generate it at the
+  source, idempotently, at the least-shared place it is first used.
 
 ## Access: certificate first, break-glass never casually
 
 Try the rungs in order and never invert them:
 
 1. **The certificate authority.** Mint an ephemeral keypair, get it signed,
-   use the certificate, discard both. This is the normal path.
-2. **A legacy shared key**, only while its retirement is unfinished. Assume it
-   is absent on anything recently rebuilt.
-3. **Break-glass admin credential** — last resort, only after 1 and 2 have
-   actually been tried and failed. Say so in the write-up when you use it.
+   use the certificate, discard both.
+2. **A legacy shared key**, only while its retirement is unfinished.
+3. **Break-glass admin credential**: last resort, only after 1 and 2 have been
+   tried and failed. Say so in the write-up when you use it.
 
-**An SSH certificate principal is not the login user.** A signed certificate carries a
-principal that may be configured against a different account than the one you
-type. A refusal when connecting as the principal's name is *not* evidence the
-authority is missing — test as the configured login user before concluding
-anything about rollout state.
+**An SSH certificate principal is not the login user.** A refusal when
+connecting as the principal's name is not evidence the authority is missing:
+test as the configured login user first.
 
 **Never weaken host verification.** No disabling strict host key checking, no
-accept-on-first-use flags, no discarding the known-hosts file. On an estate
-where hosts are rebuilt routinely that trades real protection against
-interception for convenience. Remove the one stale entry, re-verify that host,
-and record why. The real fix is a host certificate authority.
+accept-on-first-use flags, no discarding the known-hosts file. Remove the one
+stale entry, re-verify that host, and record why.
 
 ## The failure signature to expect
 
-An HTTP 429 from a secret-store standby node means the standby is healthy, not
-that the store is down.
-
-A helper that exits successfully having exported nothing is the bug — not the
-missing secret. It sends the operator looking in the wrong place. A credential
-helper must fail loudly when it cannot produce a credential.
-
-If a tool cannot authenticate, the fix is the credential path. Never a local
-copy, and never a credential pasted into a file.
-
-**A source-address or network-class refusal is not a broken credential.**
-When an identity is bound to a specific network class, a login attempt from
-outside that class is refused even though the credential itself is valid.
-Do not diagnose this as a dead or misconfigured credential and rotate or
-recreate it in response — check which network class the caller is on first.
+- An HTTP 429 from a secret-store standby node means the standby is healthy.
+- A helper that exits successfully having exported nothing is the bug, not the
+  missing secret. A credential helper fails loudly when it cannot produce one.
+- If a tool cannot authenticate, the fix is the credential path. Never a local
+  copy, and never a credential pasted into a file.
+- **A source-address or network-class refusal is not a broken credential.**
+  Check which network class the caller is on before rotating or recreating
+  anything.
+- An empty list from a read identity is a permission result, not evidence that
+  nothing is there.
