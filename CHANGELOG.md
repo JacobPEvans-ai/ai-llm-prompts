@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.113.0](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.112.2...v1.113.0) (2026-11-13)
+
+
+### Features
+
+* **rules:** state the secrets method as one grammar, zones, classes and grants ([#492](https://github.com/jpe-ai-agents/ai-llm-prompts/issues/492)) ([10b0991](https://github.com/jpe-ai-agents/ai-llm-prompts/commit/10b0991509f6f0d4f56bc947ca325d61fbaf145d))
+
 ## [1.112.2](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.112.1...v1.112.2) (2026-11-13)
 
 
