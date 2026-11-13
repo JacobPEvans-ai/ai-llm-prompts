@@ -106,15 +106,15 @@ def test_github_token_parse(workflow, case):
 
 _REQUESTS = {
     "success": (
-        ("jpe-ai-agents/ai-llm-prompts", "contents-read"),
+        ("dryvist/ai-llm-prompts", "contents-read"),
         1,
-        {"repositories": ["jpe-ai-agents/ai-llm-prompts"], "token_set": "contents-read"},
+        {"repositories": ["dryvist/ai-llm-prompts"], "token_set": "contents-read"},
     ),
     "missing field": (("", "contents-read"), 0, None),
     "error payload": (("https://example.test/not-a-repo", "contents-read"), 0, None),
-    "token-set empty": (("jpe-ai-agents/ai-llm-prompts", ""), 0, None),
-    "token-set blank": (("jpe-ai-agents/ai-llm-prompts", "   "), 0, None),
-    "token-set unset": (("jpe-ai-agents/ai-llm-prompts", None), 0, None),
+    "token-set empty": (("dryvist/ai-llm-prompts", ""), 0, None),
+    "token-set blank": (("dryvist/ai-llm-prompts", "   "), 0, None),
+    "token-set unset": (("dryvist/ai-llm-prompts", None), 0, None),
     "non-dryvist owner": (("other/repo", "contents-read"), 0, None),
 }
 

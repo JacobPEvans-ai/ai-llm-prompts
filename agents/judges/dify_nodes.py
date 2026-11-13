@@ -13,7 +13,7 @@ import yaml
 
 _DIFY = Path(__file__).resolve().parents[2] / "agents" / "dify"
 
-REPO = "jpe-ai-agents/ai-llm-prompts"
+REPO = "dryvist/ai-llm-prompts"
 SHA = "a" * 40
 OTHER_SHA = "e" * 40
 PR_NUMBER = 7
