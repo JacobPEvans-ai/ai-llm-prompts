@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-08T18:20:00Z"
+timestamp: "2026-11-13T12:00:00Z"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -74,8 +74,16 @@ store CLI.
 
 ## Parallelism
 
-Codex delegates have no fixed limit. Before a large fan-out, read CPU and memory; hold back only while machine load
-is above 80%. Batch many small, related tasks into one Agent brief when practical.
+Delegates have no fixed limit. Hold a fan-out of 8 or more heavy workers only on a measured limit, read twice 30
+seconds apart:
+
+- **CPU:** idle below 10% (`top`). Never load average: it counts queued threads, not percent.
+- **Memory:** the OS pressure level above normal (macOS `sysctl kern.memorystatus_vm_pressure_level` above 1; Linux
+  PSI memory `some avg60` above 10). Never a "free" percentage: it is not free memory.
+- **GPU:** a model already generating owns its GPU. Queue behind it; do not add a second heavy load.
+
+One worker, install or build never waits. When holding, state the reading and retry in 5 minutes. Batch small related
+tasks into one brief.
 
 ## Fable is a main-session planning model only
 

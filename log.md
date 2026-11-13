@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-11-13
+
+* **Fix (rules)**: The `model-delegation.md` Parallelism rule gates a fan-out of 8 or more heavy workers on a measured
+  limit read twice 30 seconds apart: CPU idle below 10%, OS memory pressure above normal, or a GPU already owned by a
+  generating model - never load average or a free-memory percentage. One worker, install, or build never waits; a held
+  fan-out states its reading and retries in 5 minutes.
+
 ## 2026-11-12
 
 * **Fix (auto-ai-agent)**: The assistant daily brief and pulse prompts treat task text and recalled notes as untrusted
