@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.112.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.112.0...v1.112.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **instructions:** gate delegate fan-out on measured CPU, memory, and GPU limits ([#488](https://github.com/JacobPEvans-ai/ai-llm-prompts/issues/488)) ([477b986](https://github.com/JacobPEvans-ai/ai-llm-prompts/commit/477b986e1abbb2dd11a74929534afccec08c8e85))
+
 ## [1.112.0](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.111.3...v1.112.0) (2026-11-12)
 
 
