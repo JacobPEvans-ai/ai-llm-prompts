@@ -13,7 +13,7 @@ consumers:
   - dryvist/nix-claude-code
 render: { engine: literal, variables: [], frontmatter: strip }
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: "auto-ai-agent/instructions/agentsmd/docs/tool-role-map.example.md"
     note: New public example.
 ---

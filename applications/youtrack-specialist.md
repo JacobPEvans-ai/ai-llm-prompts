@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: applications/vikunja-specialist.md
     note: Adapts the specialist ownership, request envelope, and write-readback contract.
 ---

@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"hm-conflicting-definition","class":"recipe","match":{"log":"conflicting definition values|is defined multiple times"},"reproduce":null}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/hm-conflicting-definition.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

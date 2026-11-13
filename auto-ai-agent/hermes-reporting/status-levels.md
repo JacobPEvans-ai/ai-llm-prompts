@@ -17,7 +17,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-- repository: dryvist/ai-llm-prompts
+- repository: jpe-ai-agents/ai-llm-prompts
   path: auto-ai-agent/hermes-reporting/status-levels.md
   note: canonical definition; consumers load the machine-readable block from this file
 ---

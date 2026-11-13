@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"app-token-not-found","class":"human","match":{"log":"create-github-app-token[\\s\\S]*\\bnot found\\b|generate github app token\\W*not found"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/app-token-not-found.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

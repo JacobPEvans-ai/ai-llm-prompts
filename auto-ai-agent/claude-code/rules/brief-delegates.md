@@ -16,7 +16,7 @@ render:
   variables: []
   frontmatter: include
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/claude-code/rules/brief-delegates.md"
     note: "Authored net-new. Delivered as an always-loaded Claude Code rule; no hook checks briefs."
 ---

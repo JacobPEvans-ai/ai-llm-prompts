@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"disclosure-denylist","class":"human","match":{"log":"disclosure denylist"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/disclosure-denylist.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

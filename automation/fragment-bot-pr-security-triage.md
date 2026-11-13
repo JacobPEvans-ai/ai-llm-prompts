@@ -15,7 +15,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/bot-pr-merge.md"
     note: "Extracted verbatim from bot-pr-merge Phase A to keep each catalog file under the 12KB file-size limit; recomposed via include, no content change."
 ---

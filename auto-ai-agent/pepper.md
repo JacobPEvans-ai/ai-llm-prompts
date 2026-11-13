@@ -17,7 +17,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/pepper.md"
     note: "Original project coordinator persona for composition with autonomous-base.md."
 ---

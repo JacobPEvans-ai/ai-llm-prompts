@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"file-size-limit","class":"recipe","match":{"log":"exceeds (?:\\d+|n)kb limit|check file sizes"},"reproduce":null}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/file-size-limit.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

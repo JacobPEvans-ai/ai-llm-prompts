@@ -18,7 +18,7 @@ source_history:
   - repository: "dryvist/claude-code-routines"
     path: "routines/issue-solver.prompt.md"
     commit: "11a75537a6ec52bdf60f37b06c8a5ebd51562a4d"
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/routine-issue-solver.md"
     note: "Removed at 6e48f9a as part of retiring the cloud routines, then restored 2026-08-06 under the unprefixed name. The removal was wrong: issue-solver never ran on the cloud substrate. It runs in GitHub Actions on an App token, has succeeded twice daily throughout, and is the one routine still live — so its body was left existing only at the consumer's pinned submodule commit and on no main branch anywhere."
 ---

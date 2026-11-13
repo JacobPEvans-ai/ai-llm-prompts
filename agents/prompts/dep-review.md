@@ -9,7 +9,7 @@ status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/ai-workflows-dep-review.md
     note: Adapted the cataloged dependency review prompt for the standard agent contract.
 ---

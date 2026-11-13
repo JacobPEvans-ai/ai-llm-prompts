@@ -62,7 +62,7 @@ Never put an incident narrative, security finding, credential/secret detail, unp
 topology, host name, or outage timeline in a GitHub issue, PR, comment, or commit message — "side quest" is
 not an exemption.
 
-Repo boundaries: `dryvist/ai-llm-prompts` `auto-ai-agent/instructions` (rules, `AGENTS.md`, workflows),
+Repo boundaries: `jpe-ai-agents/ai-llm-prompts` `auto-ai-agent/instructions` (rules, `AGENTS.md`, workflows),
 `dryvist/nix-claude-code` `data/permissions` (tool permissions), `dryvist/claude-code-plugins` (commands,
 skills, agents, hooks).
 

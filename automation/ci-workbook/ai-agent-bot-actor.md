@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"ai-agent-bot-actor","class":"human","match":{"log":"initiated by non-human actor"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/ai-agent-bot-actor.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

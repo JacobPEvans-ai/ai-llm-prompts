@@ -223,8 +223,8 @@ def test_done_gate_decides_from_the_linked_github_state(
 ):
     kind, number = path.split("/")
     endpoint = "pulls" if kind == "pull" else "issues"
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/{path}"
-    api_url = f"{_API_BASE}/repos/dryvist/ai-llm-prompts/{endpoint}/{number}"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/{path}"
+    api_url = f"{_API_BASE}/repos/jpe-ai-agents/ai-llm-prompts/{endpoint}/{number}"
     requests = _install_stub(monkeypatch, {api_url: payload})
     tasks = [
         {

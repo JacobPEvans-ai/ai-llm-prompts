@@ -10,7 +10,7 @@ status: active
 consumers: [dryvist/nix-ai, dryvist/nix-claude-code]
 render: { engine: literal, variables: [], frontmatter: strip }
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: auto-ai-agent/instructions/agentsmd/rules/on-demand/agent-standards-platform-sources.md
     note: Standards synthesized from R2-practices sections 1-2, research cutoff 2026-11-06.
 ---

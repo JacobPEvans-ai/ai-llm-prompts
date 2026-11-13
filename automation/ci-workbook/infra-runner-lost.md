@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"infra-runner-lost","class":"transient","match":{"log":"lost communication with the server|runner has received a shutdown signal|job was not acquired by runner"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/infra-runner-lost.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

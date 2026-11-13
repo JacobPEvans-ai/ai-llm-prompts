@@ -18,7 +18,7 @@ _WEB_HOST = "github.com"
 _API_BASE = "https://api.github.com"
 _ADDR = "https://bao.example"
 _PATH = "secret/data/gh"
-_REPO = "/repos/dryvist/ai-llm-prompts"
+_REPO = "/repos/jpe-ai-agents/ai-llm-prompts"
 
 
 def _code_with(marker):
@@ -78,7 +78,7 @@ def _link_state(monkeypatch, url, objects):
 
 
 def test_issues_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/issues/236"
     objects = {
         f"{_REPO}/issues/236": {"state": "closed", "pull_request": {"merged_at": None}}
     }
@@ -88,7 +88,7 @@ def test_issues_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
 
 
 def test_issues_url_for_a_merged_pr_is_merged(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/issues/236"
     objects = {
         f"{_REPO}/issues/236": {
             "state": "closed",
@@ -101,7 +101,7 @@ def test_issues_url_for_a_merged_pr_is_merged(monkeypatch):
 
 
 def test_pull_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/pull/236"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/pull/236"
     objects = {f"{_REPO}/pulls/236": {"state": "closed", "merged": False}}
 
     assert _state_for(monkeypatch, url, objects) == "closed-unmerged"
@@ -109,14 +109,14 @@ def test_pull_url_for_a_closed_unmerged_pr_is_not_done(monkeypatch):
 
 
 def test_pull_url_for_a_merged_pr_is_merged(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/pull/236"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/pull/236"
     objects = {f"{_REPO}/pulls/236": {"state": "closed", "merged": True}}
 
     assert _state_for(monkeypatch, url, objects) == "merged"
 
 
 def test_issues_url_with_a_malformed_pull_request_field_is_not_done(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/236"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/issues/236"
     objects = {
         f"{_REPO}/issues/236": {"state": "closed", "pull_request": "not-an-object"}
     }
@@ -126,7 +126,7 @@ def test_issues_url_with_a_malformed_pull_request_field_is_not_done(monkeypatch)
 
 
 def test_issues_url_for_a_closed_issue_stays_closed_and_done(monkeypatch):
-    url = f"https://{_WEB_HOST}/dryvist/ai-llm-prompts/issues/12"
+    url = f"https://{_WEB_HOST}/jpe-ai-agents/ai-llm-prompts/issues/12"
     objects = {f"{_REPO}/issues/12": {"state": "closed"}}
 
     assert _state_for(monkeypatch, url, objects) == "closed"

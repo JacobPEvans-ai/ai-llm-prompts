@@ -16,7 +16,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/slack-interactor.md"
     note: "Authored as the single shared Slack mediation contract; runtime consumer binding is pending."
 ---

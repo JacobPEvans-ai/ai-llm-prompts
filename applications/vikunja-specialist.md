@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: auto-ai-agent/instructions/agentsmd/rules/on-demand/task-tracking.md
     note: Reuses the canonical project routing, duplicate search, and tracker safety rules.
   - repository: Vikunja documentation

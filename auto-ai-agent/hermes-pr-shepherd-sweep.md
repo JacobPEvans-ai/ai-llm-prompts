@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: auto-ai-agent/claude-code/agents/pr-shepherd.md
     note: "Durable counterpart of the in-session shepherd; limited to branch updates and one report comment; the org workflow handles eligible merges."
 ---

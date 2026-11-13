@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/openhands-vikunja-ticket-to-pr.md
     note: Authored for the OpenHands automation that runs on Vikunja webhook events for tasks labeled openhands.
 ---

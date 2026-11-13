@@ -13,7 +13,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/testing/healer.md
     note: Canonical portable body adapted from the Playwright Test Agent healer workflow.
 ---
