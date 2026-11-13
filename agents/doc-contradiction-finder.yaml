@@ -21,7 +21,7 @@ triggers:
       org: dryvist
       base_branch: main
     repositories:
-      - repo: dryvist/ai-llm-prompts
+      - repo: jpe-ai-agents/ai-llm-prompts
         paths: [auto-ai-agent/instructions/**, agents/prompts/**]
     # The private documentation repository is resolved from the runtime secret store.
     private_repository_env: DOC_FINDER_PRIVATE_REPO

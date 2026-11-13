@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"flake-input-not-at-head","class":"recipe","match":{"log":"owned inputs are at branch head|not at (?:the )?branch head"},"reproduce":"nix flake metadata"}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/flake-input-not-at-head.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

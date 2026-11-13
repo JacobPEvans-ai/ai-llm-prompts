@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"script-path-missing","class":"human","match":{"log":"\\.ai-workflows/\\S+: no such file"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/script-path-missing.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

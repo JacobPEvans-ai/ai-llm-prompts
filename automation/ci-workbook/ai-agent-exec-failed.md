@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"ai-agent-exec-failed","class":"human","match":{"log":"claude execution failed|codex exited with code|openai_api_key is required|pr-agent review failed|github copilot cli|release highlights (?:agent|job) (?:did not|failed)"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/ai-agent-exec-failed.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

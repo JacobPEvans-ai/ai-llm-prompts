@@ -13,7 +13,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/testing/ui-smoke.md
     note: Canonical portable body based on the approved testing-agent architecture.
 ---

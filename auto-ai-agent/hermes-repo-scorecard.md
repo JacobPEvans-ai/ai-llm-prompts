@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/estate-briefing.md
     note: "Salvaged from the retired estate-briefing Phase 2. The daily briefing half is dropped as duplicate of hermes-github-triage and hermes-daily-summary; only the weighted scorecard and its week-over-week deltas survive. Scorecard history moves from the routine state repo to Hermes memory, and the Mintlify docs-coverage line is dropped because hermes-nightly-wiki-health already covers docs reachability."
 ---

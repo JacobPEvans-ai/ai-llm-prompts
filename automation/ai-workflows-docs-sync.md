@@ -19,10 +19,10 @@ render:
     - "MERGE_SHA"
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/docs-sync.md"
     note: "docs-sync retired 2026-08-06 as a weekly, estate-wide cloud routine when its substrate was decommissioned. This prompt is its successor in shape only: a GitHub Actions CI job, triggered once per merged pull request rather than on a schedule, scoped to that one PR's change instead of an 8-day estate sweep. The two-site (public docs / private docs site) targeting, the state file, and the weekly self-cleanup step do not carry over — this job is stateless and single-target (private docs site only)."
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/fragment-docs-sync-pr-authoring.md"
     note: "The draft-PR title convention (`docs(<section>): sync with <repo>#<pr>`) and provenance-footer habit carry over from this retired fragment's Step 8 template. The fragment itself is not included at render time — this prompt's consumer (`JacobPEvans/.github-ai` `render-prompt.sh`) only expands `${VAR}` (render.engine: envsubst) and does not resolve `<!-- include: -->` directives, which are meaningful only to the retired `render.engine: include` consumer. The needed rules are inlined below instead."
 ---

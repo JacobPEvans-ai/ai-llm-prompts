@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"ansible-lint","class":"recipe","match":{"log":"jinja templates should only be at the end of .name.|name\\[template\\]|ansible-lint@|ansible-lint .*violation"},"reproduce":"ansible-lint"}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/ansible-lint.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

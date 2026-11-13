@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"molecule-instance-cleanup","class":"transient","match":{"log":"paramiko|wait for instance\\(s\\) deletion"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/molecule-instance-cleanup.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

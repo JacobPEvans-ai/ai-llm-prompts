@@ -16,7 +16,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/maintenance-windows.md"
     note: "Authored net-new in this catalog; canonical mirror of the workstation maintenance-window rule. Hand-consumed by the workstation agent config; intended repo consumer is dryvist/nix-hermes once wired."
 ---

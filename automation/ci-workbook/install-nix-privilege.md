@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"install-nix-privilege","class":"human","match":{"log":"sudo: a (?:password|terminal) is required|install nix[\\s\\S]*sudo"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/install-nix-privilege.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"backmerge-conflict","class":"human","match":{"log":"back-?merge|merge conflict"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/backmerge-conflict.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

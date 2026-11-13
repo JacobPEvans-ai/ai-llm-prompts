@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: auto-ai-agent/hermes-splunk-license.md
     commit: 2bd5868
 ---

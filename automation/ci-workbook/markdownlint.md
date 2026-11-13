@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"markdownlint","class":"deterministic","match":{"log":"markdownlint|\\bmd(?:\\d{3}|n)/"},"fix":{"command":"git fetch -q origin HEAD && git diff --name-only --diff-filter=AM FETCH_HEAD...HEAD -- \u0027*.md\u0027 | xargs -r nix --extra-experimental-features \"nix-command flakes\" shell nixpkgs#markdownlint-cli2 -c markdownlint-cli2 --fix"},"reproduce":"markdownlint-cli2"}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/markdownlint.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

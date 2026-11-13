@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"token-limit","class":"recipe","match":{"log":"exceeds n\\b.{0,40}token|token.{0,40}exceeds n\\b|check token limits"},"reproduce":null}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/token-limit.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

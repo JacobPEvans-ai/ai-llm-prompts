@@ -15,7 +15,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/docs-sync.md"
     note: "Extracted verbatim from docs-sync Step 8 to keep each catalog file under the 12KB file-size limit; recomposed via include, no content change."
 ---

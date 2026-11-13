@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"nix-flake-check","class":"recipe","match":{"log":"nix flake check|check flake|failed assertions|error: builder for"},"reproduce":"nix flake check --print-build-logs"}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/nix-flake-check.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

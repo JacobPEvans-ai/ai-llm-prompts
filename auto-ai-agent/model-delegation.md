@@ -16,7 +16,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/model-delegation.md"
     note: "Authored net-new in this catalog as the single shared statement of delegation doctrine. Intended consumers are every agent surface — the instruction repository's delegation rule and skills reference this fragment rather than restating it."
 ---

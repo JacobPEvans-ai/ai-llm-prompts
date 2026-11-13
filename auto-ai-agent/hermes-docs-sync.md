@@ -12,10 +12,10 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/fragment-docs-sync-pr-authoring.md
     note: "Distilled from the retired docs-sync authoring step for a scheduled Hermes job. Privacy routing, signed commits, redaction, and attribution are deferred to the docs-pr skill rather than restated here."
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: auto-ai-agent/hermes-docs-sync.md
     note: "Retired 2026-09-05. Superseded by the docs publish workflow, which projects the marked subset of the private docs source into the public site under a dedicated publisher identity and merges on required checks. The routine's remaining jobs are all covered natively: selection is a frontmatter flag on the source page, authoring is a generated transform rather than a routed concept, and the merge gate is the repository's required status checks rather than an agent polling a check and renaming a title."
 ---

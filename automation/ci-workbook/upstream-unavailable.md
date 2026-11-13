@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"upstream-unavailable","class":"transient","match":{"log":"service unavailable|bad gateway|gateway time-?out|connection (?:refused|reset by peer)|econnreset"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/upstream-unavailable.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

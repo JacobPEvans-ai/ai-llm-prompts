@@ -12,7 +12,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/fragment-bot-pr-security-triage.md
     note: "Distilled from the retired bot-pr-merge Phase A for a scheduled Hermes job. State-file references adapted to Hermes memory keys; the merge phase removed because Hermes labels and escalates only."
 ---

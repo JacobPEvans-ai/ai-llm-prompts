@@ -23,7 +23,7 @@ source_history:
 
 Behavior that applies to every task (always-loaded status: `rule-tiers.md`). Commit/PR subject conventions:
 `docs.jacobpevans.com/conventions/commit-conventions`. Non-Claude/direct-API agents derive from the immutable
-`dryvist/ai-llm-prompts@0431be6/auto-ai-agent/autonomous-base.md`.
+`jpe-ai-agents/ai-llm-prompts@0431be6/auto-ai-agent/autonomous-base.md`.
 
 ## Rules
 

@@ -13,7 +13,7 @@ render:
     - hermes_agent_secrets_audit_skip_repos
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/repo-audit.md
     note: "Salvaged from the retired repo-audit rule rotation. Only the secrets-policy rule survives — it files an issue and never a PR, which is what makes it Hermes-legal. The no-scripts and claude-md-staleness rules are dropped as already covered by the script-guards:native-first and claude-md-management:claude-md-improver skills."
 ---

@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"missing-secret","class":"human","match":{"log":"copilot_github_token|base_url is empty|router base url secret|illegal header value|private_key is not set|no claude bot app token|either anthropic_api_key"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/missing-secret.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---

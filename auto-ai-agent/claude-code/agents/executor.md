@@ -16,7 +16,7 @@ render:
   variables: []
   frontmatter: include
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "auto-ai-agent/claude-code/agents/"
     note: "Consolidates the former model-specific executor definitions into one model-neutral prompt."
 name: executor

@@ -9,7 +9,7 @@ status: active
 consumers: [Dify, Sim, Langflow, promptfoo]
 render: {engine: literal, variables: [], frontmatter: strip}
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/ai-workflows-docs-drift.prompt.yml
     note: Adapted from the cataloged post-merge drift prompt.
 ---

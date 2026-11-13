@@ -13,7 +13,7 @@ render:
   variables: []
   frontmatter: strip
 source_history:
-  - repository: dryvist/ai-llm-prompts
+  - repository: jpe-ai-agents/ai-llm-prompts
     path: automation/testing/explorer.md
     note: Canonical portable body for on-demand exploratory browser work.
 ---

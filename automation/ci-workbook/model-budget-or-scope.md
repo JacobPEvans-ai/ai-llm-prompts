@@ -10,7 +10,7 @@ consumers: ["dryvist/nix-agent-sandbox"]
 render: {engine: literal, variables: [], frontmatter: strip}
 ci_workbook: '{"id":"model-budget-or-scope","class":"human","match":{"log":"budget has been exceeded|key not allowed to access model"}}'
 source_history:
-  - repository: "dryvist/ai-llm-prompts"
+  - repository: "jpe-ai-agents/ai-llm-prompts"
     path: "automation/ci-workbook/model-budget-or-scope.md"
     note: "Seeded from a 90-day census of failed workflow runs."
 ---
