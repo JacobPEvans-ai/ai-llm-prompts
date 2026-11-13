@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.112.2](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.112.1...v1.112.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* point repository references at the current owners ([#490](https://github.com/jpe-ai-agents/ai-llm-prompts/issues/490)) ([4b1b73d](https://github.com/jpe-ai-agents/ai-llm-prompts/commit/4b1b73d0d5789f88df7d09ca5390b889508f0d80))
+
 ## [1.112.1](https://github.com/JacobPEvans-ai/ai-llm-prompts/compare/v1.112.0...v1.112.1) (2026-11-13)
 
 
