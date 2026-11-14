@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.114.1](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.114.0...v1.114.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **instructions:** remove the macOS keychain setup guide ([#496](https://github.com/jpe-ai-agents/ai-llm-prompts/issues/496)) ([a2cda62](https://github.com/jpe-ai-agents/ai-llm-prompts/commit/a2cda624effbefdca46d20bb4319b95b65c62cb0))
+
 ## [1.114.0](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.113.0...v1.114.0) (2026-11-14)
 
 
