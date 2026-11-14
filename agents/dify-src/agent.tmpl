@@ -412,6 +412,31 @@ def main(run_timestamp, bot_token, api_base, digest_channel, failure_channel, da
       .nodes += $c.shadow.nodes
     )` -}}
 {{- end -}}
+{{- /* Dify rejects an iteration whose first node is an http-request (INVALID_ROOT); such an iteration gets an iteration-start child. */ -}}
+{{- /* shortcut: only the http-request case, the one seen failing; tool and code first nodes run as they are. Widen if another type fails. */ -}}
+{{- $dsl = coll.JQ `
+  .workflow.graph |= (
+    . as $g |
+    [($g.nodes // [])[] | select(.data.type == "iteration") | . as $it |
+      select(([$g.nodes[] | select(.id == $it.data.start_node_id and .data.type == "iteration-start")] | length) == 0) |
+      {loop: $it.id, first: $it.data.start_node_id,
+       first_type: ([$g.nodes[] | select(.id == $it.data.start_node_id) | .data.type][0])} |
+      select(.first_type == "http-request")] as $fix |
+    if ($fix | length) == 0 then . else
+    .nodes |= (map(. as $n |
+        ([$fix[] | select(.loop == $n.id)][0]) as $f |
+        (if $f then .data.start_node_id = ($n.id + "start") | del(.data.startNodeType) else . end) |
+        ([$fix[] | select(.first == $n.id)][0]) as $s |
+        (if $s then del(.data.isIterationStart) else . end))
+      + [$fix[] | {id: (.loop + "start"), type: "custom-iteration-start", parentId: .loop, extent: "parent",
+          position: {x: 24, y: 68}, draggable: false, selectable: false,
+          data: {title: "", desc: "", type: "iteration-start", isInIteration: true}}]) |
+    .edges = (.edges // []) + [$fix[] | {id: (.loop + "start-source-" + .first + "-target"), source: (.loop + "start"),
+        sourceHandle: "source", target: .first, targetHandle: "target", type: "custom",
+        data: {sourceType: "iteration-start", targetType: .first_type, isInIteration: true, iteration_id: .loop}}]
+    end
+  )` $dsl -}}
+{{- test.Assert "no iteration starts at an http-request node" (coll.JQ `[(.workflow.graph.nodes // []) as $n | $n[] | select(.data.type == "iteration") | . as $it | [$n[] | select(.id == $it.data.start_node_id and .data.type == "http-request")] | length == 0] | all` $dsl) -}}
 {{- /* Substitute data values, never evaluate prompts or Code-node source as templates. */ -}}
 {{- $dsl = dict "dsl" $dsl "params" $params | coll.JQ `.params as $params | .dsl | walk(if type == "string" then reduce ($params | to_entries[]) as $p (.; split($p.key) | join($p.value)) else . end)` -}}
 {{- test.Assert "workflow must contain exactly one system prompt" (eq (coll.JQ `[.. | strings | select(contains("__DIFY_SYSTEM_PROMPT__"))] | length` $dsl) 1) -}}

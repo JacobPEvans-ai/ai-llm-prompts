@@ -396,6 +396,28 @@ workflow:
         target: end_shadow
         targetHandle: target
         type: custom
+      - data:
+          isInIteration: true
+          iteration_id: repo_loop
+          sourceType: iteration-start
+          targetType: http-request
+        id: repo_loopstart-source-list_open_prs-target
+        source: repo_loopstart
+        sourceHandle: source
+        target: list_open_prs
+        targetHandle: target
+        type: custom
+      - data:
+          isInIteration: true
+          iteration_id: pr_loop
+          sourceType: iteration-start
+          targetType: http-request
+        id: pr_loopstart-source-get_pull_request-target
+        source: pr_loopstart
+        sourceHandle: source
+        target: get_pull_request
+        targetHandle: target
+        type: custom
     nodes:
       - data:
           cron_expression: 7,22,37,52 * * * *
@@ -2270,8 +2292,7 @@ workflow:
             - parse_open_prs
             - prs_json
           output_type: array[string]
-          start_node_id: list_open_prs
-          startNodeType: http-request
+          start_node_id: repo_loopstart
           title: List open pull requests by repository
           type: iteration
         id: repo_loop
@@ -2287,7 +2308,6 @@ workflow:
             type: none
           headers: '{{#prepare_scan.headers#}}'
           isInIteration: true
-          isIterationStart: true
           iteration_id: repo_loop
           method: get
           params: ""
@@ -2479,8 +2499,7 @@ workflow:
             - classify_pr
             - result
           output_type: array[object]
-          start_node_id: get_pull_request
-          startNodeType: http-request
+          start_node_id: pr_loopstart
           title: Read and classify each pull request
           type: iteration
         id: pr_loop
@@ -2553,7 +2572,6 @@ workflow:
             type: none
           headers: '{{#prepare_scan.headers#}}'
           isInIteration: true
-          isIterationStart: true
           iteration_id: pr_loop
           method: get
           params: ""
@@ -2918,3 +2936,31 @@ workflow:
           x: 1560
           "y": 60
         type: custom
+      - data:
+          desc: ""
+          isInIteration: true
+          title: ""
+          type: iteration-start
+        draggable: false
+        extent: parent
+        id: repo_loopstart
+        parentId: repo_loop
+        position:
+          x: 24
+          "y": 68
+        selectable: false
+        type: custom-iteration-start
+      - data:
+          desc: ""
+          isInIteration: true
+          title: ""
+          type: iteration-start
+        draggable: false
+        extent: parent
+        id: pr_loopstart
+        parentId: pr_loop
+        position:
+          x: 24
+          "y": 68
+        selectable: false
+        type: custom-iteration-start
