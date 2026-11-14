@@ -407,6 +407,17 @@ workflow:
         targetHandle: target
         type: custom
         zIndex: 0
+      - data:
+          isInIteration: true
+          iteration_id: page_loop
+          sourceType: iteration-start
+          targetType: http-request
+        id: page_loopstart-source-fetch_page-target
+        source: page_loopstart
+        sourceHandle: source
+        target: fetch_page
+        targetHandle: target
+        type: custom
     nodes:
       - data:
           desc: Immutable event and mandate fields. Changed documentation pages are read from the pull request.
@@ -1706,8 +1717,7 @@ workflow:
             - page
           output_type: array[object]
           selected: false
-          start_node_id: fetch_page
-          startNodeType: http-request
+          start_node_id: page_loopstart
           title: Read changed documentation pages
           type: iteration
         height: 280
@@ -1736,7 +1746,6 @@ workflow:
           desc: Reads one changed page as raw text. The token is the read-only installation token minted earlier.
           headers: 'Accept: application/vnd.github.raw+json'
           isInIteration: true
-          isIterationStart: true
           iteration_id: page_loop
           method: get
           params: ""
@@ -2007,6 +2016,20 @@ workflow:
         targetPosition: left
         type: custom
         width: 244
+      - data:
+          desc: ""
+          isInIteration: true
+          title: ""
+          type: iteration-start
+        draggable: false
+        extent: parent
+        id: page_loopstart
+        parentId: page_loop
+        position:
+          x: 24
+          "y": 68
+        selectable: false
+        type: custom-iteration-start
     viewport:
       x: 0
       "y": 0
