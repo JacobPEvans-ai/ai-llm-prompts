@@ -583,7 +583,7 @@ def test_dify_model_schedule_and_mcp_tools_follow_agent_definition(agent_name):
             "start", "llm", "end", "trigger-schedule", "trigger-webhook", "code", "if-else", "variable-aggregator"
         }
         if agent.get("dify_pr_queue_shadow") is True:
-            allowed_node_types |= {"http-request", "iteration"}
+            allowed_node_types |= {"http-request", "iteration", "iteration-start"}
             http_nodes = [node["data"] for node in nodes if node.get("data", {}).get("type") == "http-request"]
             assert http_nodes
             assert all(node.get("method") == "get" for node in http_nodes)
