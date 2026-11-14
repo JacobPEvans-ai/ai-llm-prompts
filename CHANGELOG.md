@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.114.0](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.113.0...v1.114.0) (2026-11-14)
+
+
+### Features
+
+* **rules:** add a sudo identity class for gated, scoped elevation ([#494](https://github.com/jpe-ai-agents/ai-llm-prompts/issues/494)) ([3ff476b](https://github.com/jpe-ai-agents/ai-llm-prompts/commit/3ff476bbbd134fc5da6229fd508d64f79db3c554))
+
 ## [1.113.0](https://github.com/jpe-ai-agents/ai-llm-prompts/compare/v1.112.2...v1.113.0) (2026-11-13)
 
 
