@@ -7,7 +7,7 @@ resource: "prompt://dryvist/auto-ai-agent/instructions/agentsmd/rules/on-demand/
 tags:
   - shared-instructions
   - agent-instructions
-timestamp: "2026-11-13T12:00:00-05:00"
+timestamp: "2026-11-13T20:30:00-05:00"
 status: active
 consumers:
   - dryvist/nix-ai
@@ -76,6 +76,7 @@ login shape, permitted source network and whether a human gate applies.
 | service | a workload reading what it runs on |
 | sandbox | a harness whose prompt, tools or output path the operator does not fully control |
 | automation | the dedicated unattended identity that converges infrastructure |
+| sudo | a short-lived, narrowly scoped elevation the operator approves at each opening |
 | restricted | an identity that reaches an operator-declared zone, human-gated per session |
 | operator session | the human-gated full-access session described below |
 
