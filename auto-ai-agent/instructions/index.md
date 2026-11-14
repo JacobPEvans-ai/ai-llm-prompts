@@ -11,7 +11,6 @@ layout.
 * [Claude Code only](agentsmd/claude-code.md) - Shared agent instruction file.
 * [Code Review Instructions](agentsmd/docs/code_review_instructions.md) - Shared agent instruction file.
 * [Issue Resolver](agentsmd/docs/issue-resolver.md) - Shared agent instruction file.
-* [macOS Keychain Setup for AI API Keys](agentsmd/docs/keychain-setup.md) - Shared agent instruction file.
 * [Permission System](agentsmd/docs/permission-system.md) - Shared agent instruction file.
 * [Remote Commit Workflow (DECOMMISSIONED)](agentsmd/docs/remote-commit-workflow.md) - Shared agent instruction file.
 * [Sandbox Environments for AI CLI Auto-Approval Workflows](agentsmd/docs/sandbox-evaluation.md) - Shared agent instruction file.
